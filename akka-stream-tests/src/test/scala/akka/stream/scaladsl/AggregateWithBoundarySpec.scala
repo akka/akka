@@ -24,10 +24,13 @@ class AggregateWithBoundarySpec extends StreamSpec {
     val stream = collection.immutable.Seq(1, 2, 3, 4, 5, 6, 7)
     val groupSize = 3
     val result = Source(stream)
-      .aggregateWithBoundary(allocate = () => ListBuffer.empty[Int])(aggregate = (buffer, i) => {
-        buffer += i
-        (buffer, buffer.size >= groupSize)
-      }, harvest = buffer => buffer.toSeq, emitOnTimer = None)
+      .aggregateWithBoundary(allocate = () => ListBuffer.empty[Int])(
+        aggregate = (buffer, i) => {
+          buffer += i
+          (buffer, buffer.size >= groupSize)
+        },
+        harvest = buffer => buffer.toSeq,
+        emitOnTimer = None)
       .runWith(Sink.collection)
 
     Await.result(result, 10.seconds) should be(stream.grouped(groupSize).toSeq)
@@ -56,10 +59,13 @@ class AggregateWithBoundarySpec extends StreamSpec {
     val weight = 10
 
     val result = Source(stream)
-      .aggregateWithBoundary(allocate = () => ListBuffer.empty[Int])(aggregate = (buffer, i) => {
-        buffer += i
-        (buffer, buffer.sum >= weight)
-      }, harvest = buffer => buffer.toSeq, emitOnTimer = None)
+      .aggregateWithBoundary(allocate = () => ListBuffer.empty[Int])(
+        aggregate = (buffer, i) => {
+          buffer += i
+          (buffer, buffer.sum >= weight)
+        },
+        harvest = buffer => buffer.toSeq,
+        emitOnTimer = None)
       .runWith(Sink.collection)
 
     Await.result(result, 10.seconds) should be(Seq(Seq(1, 2, 3, 4), Seq(5, 6), Seq(7)))
@@ -82,7 +88,7 @@ class AggregateWithTimeBoundaryAndSimulatedTimeSpec extends AnyWordSpecLike with
   private def getEts(actor: ActorSystem): ExplicitlyTriggeredScheduler = {
     actor.scheduler match {
       case ets: ExplicitlyTriggeredScheduler => ets
-      case other                             => throw new Exception(s"expecting ${classOf[ExplicitlyTriggeredScheduler]} but got ${other.getClass}")
+      case other => throw new Exception(s"expecting ${classOf[ExplicitlyTriggeredScheduler]} but got ${other.getClass}")
     }
   }
 
@@ -120,17 +126,23 @@ class AggregateWithTimeBoundaryAndSimulatedTimeSpec extends AnyWordSpecLike with
         }
       }
 
-      source.aggregateWithBoundary(allocate = () => new ValueTimeWrapper(value = allocate))(aggregate = (agg, in) => {
-        agg.updateTime(currentTimeMs)
-        // user provided Agg type must be mutable
-        val (updated, result) = aggregate(agg.value, in)
-        agg.value = updated
-        (agg, result)
-      }, harvest = agg => harvest(agg.value), emitOnTimer = Some((agg => {
-        val currentTime = currentTimeMs
-        maxDuration.exists(md => currentTime - agg.firstTime >= md.toMillis) ||
-        maxGap.exists(mg => currentTime - agg.lastTime >= mg.toMillis)
-      }, interval)))
+      source.aggregateWithBoundary(allocate = () => new ValueTimeWrapper(value = allocate))(
+        aggregate = (agg, in) => {
+          agg.updateTime(currentTimeMs)
+          // user provided Agg type must be mutable
+          val (updated, result) = aggregate(agg.value, in)
+          agg.value = updated
+          (agg, result)
+        },
+        harvest = agg => harvest(agg.value),
+        emitOnTimer = Some(
+          (
+            agg => {
+              val currentTime = currentTimeMs
+              maxDuration.exists(md => currentTime - agg.firstTime >= md.toMillis) ||
+              maxGap.exists(mg => currentTime - agg.lastTime >= mg.toMillis)
+            },
+            interval)))
     }
   }
 
@@ -244,10 +256,16 @@ class AggregateWithTimeBoundaryAndSimulatedTimeSpec extends AnyWordSpecLike with
       .run()
 
     downstream.ensureSubscription()
-    upstream.sendNext(1) // onPush(1) -> aggregator=Seq(1), due to the preStart pull, will pull upstream again since queue is empty
+    upstream.sendNext(
+      1
+    ) // onPush(1) -> aggregator=Seq(1), due to the preStart pull, will pull upstream again since queue is empty
     timePasses(maxGap) // harvest onTimer, queue=Queue(Seq(1)), aggregator=null
-    upstream.sendNext(2) // onPush(2) -> aggregator=Seq(2), due to the previous pull, even the queue is already full at this point due to timer, but it won't pull upstream again
-    timePasses(maxGap) // harvest onTimer, queue=(Seq(1), Seq(2)), aggregator=null, note queue size can be 1 more than the threshold
+    upstream.sendNext(
+      2
+    ) // onPush(2) -> aggregator=Seq(2), due to the previous pull, even the queue is already full at this point due to timer, but it won't pull upstream again
+    timePasses(
+      maxGap
+    ) // harvest onTimer, queue=(Seq(1), Seq(2)), aggregator=null, note queue size can be 1 more than the threshold
     upstream.sendNext(3) // 3 will not be pushed to the stage until the stage pull upstream
     timePasses(maxGap) // since 3 stayed outside of the stage, this gap will not cause 3 to be emitted
     downstream.request(1).expectNext(Seq(1)) // onPull emit Seq(1), queue=(Seq(2))
@@ -262,8 +280,12 @@ class AggregateWithTimeBoundaryAndSimulatedTimeSpec extends AnyWordSpecLike with
     timePasses(maxGap) // emit Seq(3) onTimer
     downstream.expectNext(Seq(3))
     upstream.sendNext(4) // onPush(4) -> aggregator=Seq(4) will follow, and pull upstream again
-    upstream.sendNext(5) // onPush(5) -> aggregator=Seq(4,5) will happen right after due to the previous pull from onPush(4), eagerly pull even out is not available
-    upstream.sendNext(6) // onPush(6) -> aggregator=Seq(4,5,6) will happen right after due to the previous pull from onPush(5), even the queue is full at this point
+    upstream.sendNext(
+      5
+    ) // onPush(5) -> aggregator=Seq(4,5) will happen right after due to the previous pull from onPush(4), eagerly pull even out is not available
+    upstream.sendNext(
+      6
+    ) // onPush(6) -> aggregator=Seq(4,5,6) will happen right after due to the previous pull from onPush(5), even the queue is full at this point
     timePasses(maxGap) // harvest queue=(Seq(4,5,6))
     upstream.sendNext(7) // onPush(7), aggregator=Seq(7), queue=(Seq(4,5,6) no pulling upstream due to queue is full
     // if sending another message it will stay in upstream, prevent the upstream completion from happening

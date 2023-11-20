@@ -133,7 +133,7 @@ class FlowOrElseSpec extends AkkaSpec {
     }
 
     "work in the example" in {
-      //#or-else
+      // #or-else
       val source1 = Source(List("First source"))
       val source2 = Source(List("Second source"))
       val emptySource = Source.empty[String]
@@ -143,7 +143,7 @@ class FlowOrElseSpec extends AkkaSpec {
 
       emptySource.orElse(source2).runWith(Sink.foreach(println))
       // this will print "Second source"
-      //#or-else
+      // #or-else
     }
 
     trait OrElseProbedFlow {

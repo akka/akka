@@ -208,19 +208,13 @@ trait ClusterSharding extends Extension { javadslSelf: javadsl.ClusterSharding =
    */
   def entityRefFor[M](typeKey: EntityTypeKey[M], entityId: String, dataCenter: DataCenter): EntityRef[M]
 
-  /**
-   * Actor for querying Cluster Sharding state
-   */
+  /** Actor for querying Cluster Sharding state */
   def shardState: ActorRef[ClusterShardingQuery]
 
-  /**
-   * The default `ShardAllocationStrategy` is configured by `least-shard-allocation-strategy` properties.
-   */
+  /** The default `ShardAllocationStrategy` is configured by `least-shard-allocation-strategy` properties. */
   def defaultShardAllocationStrategy(settings: ClusterShardingSettings): ShardAllocationStrategy
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[akka] def asJava: javadsl.ClusterSharding = javadslSelf
 
 }
@@ -240,9 +234,7 @@ object Entity {
     new Entity(createBehavior, typeKey, None, Props.empty, None, None, None, None, None)
 }
 
-/**
- * Defines how the entity should be created. Used in [[ClusterSharding#init]].
- */
+/** Defines how the entity should be created. Used in [[ClusterSharding#init]]. */
 final class Entity[M, E] private[akka] (
     val createBehavior: EntityContext[M] => Behavior[M],
     val typeKey: EntityTypeKey[M],
@@ -254,15 +246,11 @@ final class Entity[M, E] private[akka] (
     val role: Option[String],
     val dataCenter: Option[DataCenter]) {
 
-  /**
-   * [[akka.actor.typed.Props]] of the entity actors, such as dispatcher settings.
-   */
+  /** [[akka.actor.typed.Props]] of the entity actors, such as dispatcher settings. */
   def withEntityProps(newEntityProps: Props): Entity[M, E] =
     copy(entityProps = newEntityProps)
 
-  /**
-   * Additional settings, typically loaded from configuration.
-   */
+  /** Additional settings, typically loaded from configuration. */
   def withSettings(newSettings: ClusterShardingSettings): Entity[M, E] =
     copy(settings = Option(newSettings))
 
@@ -276,7 +264,6 @@ final class Entity[M, E] private[akka] (
     copy(stopMessage = Option(newStopMessage))
 
   /**
-   *
    * If a `messageExtractor` is not specified the messages are sent to the entities by wrapping
    * them in [[ShardingEnvelope]] with the entityId of the recipient actor. That envelope
    * is used by the [[HashCodeMessageExtractor]] for extracting entityId and shardId. The number of
@@ -302,9 +289,7 @@ final class Entity[M, E] private[akka] (
   def withAllocationStrategy(newAllocationStrategy: ShardAllocationStrategy): Entity[M, E] =
     copy(allocationStrategy = Option(newAllocationStrategy))
 
-  /**
-   *  Run the Entity actors on nodes with the given role.
-   */
+  /** Run the Entity actors on nodes with the given role. */
   def withRole(newRole: String): Entity[M, E] = copy(role = Some(newRole))
 
   /**
@@ -356,9 +341,7 @@ final class EntityContext[M](
     val entityId: String,
     val shard: ActorRef[ClusterSharding.ShardCommand]) {
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi
   private[akka] def toJava: akka.cluster.sharding.typed.javadsl.EntityContext[M] =
     new akka.cluster.sharding.typed.javadsl.EntityContext[M](
@@ -387,9 +370,7 @@ object StartEntity {
  */
 @DoNotInherit trait EntityTypeKey[-T] {
 
-  /**
-   * Name of the entity type.
-   */
+  /** Name of the entity type. */
   def name: String
 
   private[akka] def asJava: javadsl.EntityTypeKey[T]
@@ -397,9 +378,7 @@ object StartEntity {
 
 object EntityTypeKey {
 
-  /**
-   * Creates an `EntityTypeKey`. The `name` must be unique.
-   */
+  /** Creates an `EntityTypeKey`. The `name` must be unique. */
   def apply[T](name: String)(implicit tTag: ClassTag[T]): EntityTypeKey[T] =
     EntityTypeKeyImpl(name, implicitly[ClassTag[T]].runtimeClass.getName)
 
@@ -429,9 +408,7 @@ object EntityTypeKey {
    */
   def entityId: String
 
-  /**
-   * The EntityTypeKey associated with this EntityRef.
-   */
+  /** The EntityTypeKey associated with this EntityRef. */
   def typeKey: EntityTypeKey[M]
 
   /**
@@ -522,9 +499,7 @@ object EntityTypeKey {
   def ?[Res](message: ActorRef[Res] => M)(implicit timeout: Timeout): Future[Res] =
     this.ask(message)(timeout)
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[akka] def asJava: javadsl.EntityRef[M]
 
 }

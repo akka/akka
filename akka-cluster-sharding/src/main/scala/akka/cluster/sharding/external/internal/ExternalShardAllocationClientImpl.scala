@@ -40,9 +40,7 @@ import akka.util.PrettyDuration._
 import akka.util.Timeout
 import akka.util.ccompat.JavaConverters._
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 final private[external] class ExternalShardAllocationClientImpl(system: ActorSystem, typeName: String)
     extends akka.cluster.sharding.external.scaladsl.ExternalShardAllocationClient
@@ -86,7 +84,7 @@ final private[external] class ExternalShardAllocationClientImpl(system: ActorSys
         case NotFound(_, _) =>
           Future.successful(Map.empty[ShardId, ShardLocation])
         case GetFailure(_, _) =>
-          Future.failed((new ClientTimeoutException(s"Unable to get shard locations after ${timeout.duration.pretty}")))
+          Future.failed(new ClientTimeoutException(s"Unable to get shard locations after ${timeout.duration.pretty}"))
         case _ => throw new IllegalArgumentException() // compiler exhaustiveness check pleaser
       }
       .map { locations =>
@@ -99,8 +97,8 @@ final private[external] class ExternalShardAllocationClientImpl(system: ActorSys
   override def updateShardLocations(locations: Map[ShardId, Address]): Future[Done] = {
     log.debug("updateShardLocations {} for {}", locations, Key)
     (replicator ? Update(Key, LWWMap.empty[ShardId, String], WriteLocal, None) { existing =>
-      locations.foldLeft(existing) {
-        case (acc, (shardId, address)) => acc.put(self, shardId, address.toString)
+      locations.foldLeft(existing) { case (acc, (shardId, address)) =>
+        acc.put(self, shardId, address.toString)
       }
     }).flatMap {
       case UpdateSuccess(_, _) => Future.successful(Done)

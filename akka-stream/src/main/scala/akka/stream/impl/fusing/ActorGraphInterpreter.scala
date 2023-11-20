@@ -35,9 +35,7 @@ import akka.stream.stage.InHandler
 import akka.stream.stage.OutHandler
 import akka.util.OptionVal
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object ActorGraphInterpreter {
 
   object Resume extends DeadLetterSuppression with NoSerializationVerificationNeeded
@@ -356,15 +354,17 @@ import akka.util.OptionVal
     @volatile private var shutdownReason: OptionVal[Throwable] = OptionVal.None
 
     private def reportSubscribeFailure(subscriber: Subscriber[Any]): Unit =
-      try shutdownReason match {
-        case OptionVal.Some(_: SpecViolation) => // ok, not allowed to call onError
-        case OptionVal.Some(e) =>
-          tryOnSubscribe(subscriber, CancelledSubscription)
-          tryOnError(subscriber, e)
-        case _ =>
-          tryOnSubscribe(subscriber, CancelledSubscription)
-          tryOnComplete(subscriber)
-      } catch {
+      try
+        shutdownReason match {
+          case OptionVal.Some(_: SpecViolation) => // ok, not allowed to call onError
+          case OptionVal.Some(e) =>
+            tryOnSubscribe(subscriber, CancelledSubscription)
+            tryOnError(subscriber, e)
+          case _ =>
+            tryOnSubscribe(subscriber, CancelledSubscription)
+            tryOnComplete(subscriber)
+        }
+      catch {
         case _: SpecViolation => // nothing to do
       }
 
@@ -484,9 +484,7 @@ import akka.util.OptionVal
 
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] final class GraphInterpreterShell(
     var connections: Array[Connection],
     var logics: Array[GraphStageLogic],
@@ -558,13 +556,20 @@ import akka.util.OptionVal
   private var enqueueToShortCircuit: (Any) => Unit = _
 
   lazy val interpreter: GraphInterpreter =
-    new GraphInterpreter(mat, log, logics, connections, (logic, event, promise, handler) => {
-      val asyncInput = AsyncInput(this, logic, event, promise, handler)
-      val currentInterpreter = GraphInterpreter.currentInterpreterOrNull
-      if (currentInterpreter == null || (currentInterpreter.context ne self))
-        self ! asyncInput
-      else enqueueToShortCircuit(asyncInput)
-    }, attributes.mandatoryAttribute[ActorAttributes.FuzzingMode].enabled, self)
+    new GraphInterpreter(
+      mat,
+      log,
+      logics,
+      connections,
+      (logic, event, promise, handler) => {
+        val asyncInput = AsyncInput(this, logic, event, promise, handler)
+        val currentInterpreter = GraphInterpreter.currentInterpreterOrNull
+        if (currentInterpreter == null || (currentInterpreter.context ne self))
+          self ! asyncInput
+        else enqueueToShortCircuit(asyncInput)
+      },
+      attributes.mandatoryAttribute[ActorAttributes.FuzzingMode].enabled,
+      self)
 
   // TODO: really needed?
   private var subscribesPending = 0
@@ -654,9 +659,11 @@ import akka.util.OptionVal
         else {
           waitingForShutdown = true
           val subscriptionTimeout = attributes.mandatoryAttribute[ActorAttributes.StreamSubscriptionTimeout].timeout
-          mat.scheduleOnce(subscriptionTimeout, new Runnable {
-            override def run(): Unit = self ! Abort(GraphInterpreterShell.this)
-          })
+          mat.scheduleOnce(
+            subscriptionTimeout,
+            new Runnable {
+              override def run(): Unit = self ! Abort(GraphInterpreterShell.this)
+            })
         }
       } else if (interpreter.isSuspended && !resumeScheduled) sendResume(!usingShellLimit)
 
@@ -702,17 +709,14 @@ import akka.util.OptionVal
 
   def toSnapshot: InterpreterSnapshot = {
     if (!isInitialized)
-      UninitializedInterpreterImpl(logics.zipWithIndex.map {
-        case (logic, idx) =>
-          LogicSnapshotImpl(idx, logic.toString, logic.attributes)
+      UninitializedInterpreterImpl(logics.zipWithIndex.map { case (logic, idx) =>
+        LogicSnapshotImpl(idx, logic.toString, logic.attributes)
       }.toVector)
     else interpreter.toSnapshot
   }
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] final class ActorGraphInterpreter(_initial: GraphInterpreterShell)
     extends Actor
     with ActorLogging {
@@ -738,10 +742,10 @@ import akka.util.OptionVal
         false
     }
 
-  //this limits number of messages that can be processed synchronously during one actor receive.
+  // this limits number of messages that can be processed synchronously during one actor receive.
   private val eventLimit: Int = _initial.attributes.mandatoryAttribute[ActorAttributes.SyncProcessingLimit].limit
   private var currentLimit: Int = eventLimit
-  //this is a var in order to save the allocation when no short-circuiting actually happens
+  // this is a var in order to save the allocation when no short-circuiting actually happens
   private var shortCircuitBuffer: util.ArrayDeque[Any] = null
 
   def enqueueToShortCircuit(input: Any): Unit = {

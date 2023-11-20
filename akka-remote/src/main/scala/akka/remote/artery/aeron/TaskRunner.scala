@@ -19,9 +19,7 @@ import akka.actor.ExtendedActorSystem
 import akka.dispatch.{ AbstractNodeQueue, MonitorableThreadFactory }
 import akka.event.Logging
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[akka] object TaskRunner {
 
   type Task = () => Boolean
@@ -48,7 +46,7 @@ private[akka] object TaskRunner {
         } else if (elements(i) eq null)
           elements(i) = e
         else
-          tryAdd(i + 1) //recursive
+          tryAdd(i + 1) // recursive
       }
       tryAdd(0)
     }
@@ -61,7 +59,7 @@ private[akka] object TaskRunner {
         else if (elements(i) == e)
           elements(i) = null.asInstanceOf[T]
         else
-          tryRemove(i + 1) //recursive
+          tryRemove(i + 1) // recursive
       }
       tryRemove(0)
     }
@@ -110,9 +108,7 @@ private[akka] object TaskRunner {
   }
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[akka] class TaskRunner(system: ExtendedActorSystem, val idleCpuLevel: Int) extends Runnable {
   import TaskRunner._
 

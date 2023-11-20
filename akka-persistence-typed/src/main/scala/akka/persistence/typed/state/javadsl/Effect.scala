@@ -12,9 +12,7 @@ import akka.japi.function
 import akka.persistence.typed.state.internal._
 import akka.persistence.typed.state.internal.SideEffect
 
-/**
- * INTERNAL API: see `class EffectFactories`
- */
+/** INTERNAL API: see `class EffectFactories` */
 @InternalApi private[akka] object EffectFactories extends EffectFactories[Nothing]
 
 /**
@@ -101,9 +99,11 @@ import akka.persistence.typed.state.internal.SideEffect
    * finding mistakes.
    */
   def reply[ReplyMessage](replyTo: ActorRef[ReplyMessage], replyWithMessage: ReplyMessage): ReplyEffect[State] =
-    none().thenReply[ReplyMessage](replyTo, new function.Function[State, ReplyMessage] {
-      override def apply(param: State): ReplyMessage = replyWithMessage
-    })
+    none().thenReply[ReplyMessage](
+      replyTo,
+      new function.Function[State, ReplyMessage] {
+        override def apply(param: State): ReplyMessage = replyWithMessage
+      })
 
   /**
    * When [[DurableStateBehaviorWithEnforcedReplies]] is used there will be compilation errors if the returned effect
@@ -144,14 +144,11 @@ import akka.persistence.typed.state.internal.SideEffect
    *                  but if a known subtype of `State` is expected that can be specified instead (preferably by
    *                  explicitly typing the lambda parameter like so: `thenRun((SubState state) -> { ... })`).
    *                  If the state is not of the expected type an [[java.lang.ClassCastException]] is thrown.
-   *
    */
   final def thenRun[NewState <: State](callback: function.Procedure[NewState]): EffectBuilder[State] =
     CompositeEffect(this, SideEffect[State](s => callback.apply(s.asInstanceOf[NewState])))
 
-  /**
-   * Run the given callback. Callbacks are run sequentially.
-   */
+  /** Run the given callback. Callbacks are run sequentially. */
   final def thenRun(callback: function.Effect): EffectBuilder[State] =
     CompositeEffect(this, SideEffect[State]((_: State) => callback.apply()))
 

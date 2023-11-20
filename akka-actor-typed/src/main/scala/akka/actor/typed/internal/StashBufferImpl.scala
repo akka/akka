@@ -22,9 +22,7 @@ import akka.japi.function.Procedure
 import akka.util.{ unused, ConstantFun }
 import akka.util.OptionVal
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object StashBufferImpl {
   private[akka] final class Node[T](var next: Node[T], val message: T) {
     def apply(f: T => Unit): Unit = f(message)
@@ -34,9 +32,7 @@ import akka.util.OptionVal
     new StashBufferImpl(ctx, capacity, null, null)
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] final class StashBufferImpl[T] private (
     ctx: ActorContext[T],
     val capacity: Int,
@@ -187,14 +183,15 @@ import akka.util.OptionVal
       else {
         val node = messages.next()
         val message = wrap(node.message)
-        val interpretResult = try {
-          message match {
-            case sig: Signal => Behavior.interpretSignal(b2, ctx, sig)
-            case msg         => interpretUnstashedMessage(b2, ctx, msg, node)
+        val interpretResult =
+          try {
+            message match {
+              case sig: Signal => Behavior.interpretSignal(b2, ctx, sig)
+              case msg         => interpretUnstashedMessage(b2, ctx, msg, node)
+            }
+          } catch {
+            case NonFatal(e) => throw UnstashException(e, b2)
           }
-        } catch {
-          case NonFatal(e) => throw UnstashException(e, b2)
-        }
 
         val actualNext =
           if (interpretResult == BehaviorImpl.same) b2
@@ -255,9 +252,7 @@ import akka.util.OptionVal
 
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object UnstashException {
   def unwrap(t: Throwable): Throwable = t match {
     case UnstashException(e, _) => e

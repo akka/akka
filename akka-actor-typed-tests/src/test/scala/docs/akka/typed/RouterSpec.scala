@@ -23,17 +23,16 @@ object RouterSpec {
     def apply(): Behavior[Command] = Behaviors.setup { context =>
       context.log.info("Starting worker")
 
-      Behaviors.receiveMessage {
-        case DoLog(text) =>
-          context.log.info("Got message {}", text)
-          Behaviors.same
+      Behaviors.receiveMessage { case DoLog(text) =>
+        context.log.info("Got message {}", text)
+        Behaviors.same
       }
     }
   }
 
   // #routee
 
-  //intentionally out of the routee section
+  // intentionally out of the routee section
   class DoBroadcastLog(text: String) extends Worker.DoLog(text)
   object DoBroadcastLog {
     def apply(text: String) = new DoBroadcastLog(text)
@@ -93,17 +92,17 @@ class RouterSpec extends ScalaTestWithActorTestKit("akka.loglevel=warning") with
 
           val alternativeRouter = ctx.spawn(alternativePool, "alternative-pool")
           alternativeRouter ! Worker.DoLog("msg")
-          //#pool
+          // #pool
 
           // #broadcast
           val poolWithBroadcast = pool.withBroadcastPredicate(_.isInstanceOf[DoBroadcastLog])
           val routerWithBroadcast = ctx.spawn(poolWithBroadcast, "pool-with-broadcast")
-          //this will be sent to all 4 routees
+          // this will be sent to all 4 routees
           routerWithBroadcast ! DoBroadcastLog("msg")
           Behaviors.empty
         // #broadcast
         }
-        //#pool
+        // #pool
       )
 
       probe.receiveMessages(15)
@@ -157,24 +156,23 @@ class RouterSpec extends ScalaTestWithActorTestKit("akka.loglevel=warning") with
         case class Message(id: String, content: String)
 
         def apply(monitor: ActorRef[String]): Behavior[Message] =
-          Behaviors.receiveMessage {
-            case Message(id, _) =>
-              monitor ! id
-              Behaviors.same
+          Behaviors.receiveMessage { case Message(id, _) =>
+            monitor ! id
+            Behaviors.same
           }
       }
 
-      //registering proxies
+      // registering proxies
       val proxy1 = spawn(Proxy(probe1.ref))
       val proxy2 = spawn(Proxy(probe2.ref))
       val waiterProbe = createTestProbe[Receptionist.Registered]()
 
       system.receptionist ! Receptionist.Register(Proxy.RegisteringKey, proxy1, waiterProbe.ref)
       system.receptionist ! Receptionist.Register(Proxy.RegisteringKey, proxy2, waiterProbe.ref)
-      //wait until both registrations get Receptionist.Registered
+      // wait until both registrations get Receptionist.Registered
       waiterProbe.receiveMessages(2)
 
-      //messages sent to a router with consistent hashing
+      // messages sent to a router with consistent hashing
       // #consistent-hashing
       val router = spawn(Routers.group(Proxy.RegisteringKey).withConsistentHashingRouting(10, Proxy.mapping))
 
@@ -185,8 +183,8 @@ class RouterSpec extends ScalaTestWithActorTestKit("akka.loglevel=warning") with
       router ! Proxy.Message("zh3", "Text4")
       // the hash is calculated over the Proxy.Message first parameter obtained through the Proxy.mapping function
       // #consistent-hashing
-      //Then messages with equal Message.id reach the same actor
-      //so the first message in each probe queue is equal to its second
+      // Then messages with equal Message.id reach the same actor
+      // so the first message in each probe queue is equal to its second
       probe1.receiveMessage() shouldBe probe1.receiveMessage()
       probe2.receiveMessage() shouldBe probe2.receiveMessage()
 

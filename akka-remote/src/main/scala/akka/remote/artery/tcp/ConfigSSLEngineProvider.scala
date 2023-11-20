@@ -88,9 +88,7 @@ class ConfigSSLEngineProvider(protected val config: Config, protected val log: M
     }
   }
 
-  /**
-   * Subclass may override to customize loading of `KeyStore`
-   */
+  /** Subclass may override to customize loading of `KeyStore` */
   protected def loadKeystore(filename: String, password: String): KeyStore = {
     val keyStore = KeyStore.getInstance(KeyStore.getDefaultType)
     val fin = Files.newInputStream(Paths.get(filename))
@@ -99,18 +97,14 @@ class ConfigSSLEngineProvider(protected val config: Config, protected val log: M
     keyStore
   }
 
-  /**
-   * Subclass may override to customize `KeyManager`
-   */
+  /** Subclass may override to customize `KeyManager` */
   protected def keyManagers: Array[KeyManager] = {
     val factory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm)
     factory.init(loadKeystore(SSLKeyStore, SSLKeyStorePassword), SSLKeyPassword.toCharArray)
     factory.getKeyManagers
   }
 
-  /**
-   * Subclass may override to customize `TrustManager`
-   */
+  /** Subclass may override to customize `TrustManager` */
   protected def trustManagers: Array[TrustManager] = {
     val trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm)
     trustManagerFactory.init(loadKeystore(SSLTrustStore, SSLTrustStorePassword))

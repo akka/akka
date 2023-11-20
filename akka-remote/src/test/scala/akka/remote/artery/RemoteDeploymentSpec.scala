@@ -44,10 +44,9 @@ object RemoteDeploymentSpec {
   class Parent(probe: ActorRef) extends Actor {
     var target: ActorRef = context.system.deadLetters
 
-    override val supervisorStrategy = OneForOneStrategy() {
-      case e: Exception =>
-        probe ! e
-        SupervisorStrategy.stop
+    override val supervisorStrategy = OneForOneStrategy() { case e: Exception =>
+      probe ! e
+      SupervisorStrategy.stop
     }
 
     def receive = {
@@ -73,7 +72,8 @@ object RemoteDeploymentSpec {
 
 class RemoteDeploymentSpec
     extends ArteryMultiNodeSpec(
-      ConfigFactory.parseString("""
+      ConfigFactory
+        .parseString("""
     akka.remote.artery.advanced.inbound-lanes = 10
     akka.remote.artery.advanced.outbound-lanes = 3
     akka.remote.use-unsafe-remote-features-outside-cluster = on
@@ -173,17 +173,17 @@ class RemoteDeploymentSpec
 
       val probes = Vector.fill(numParents, numChildren)(TestProbe()(masterSystem))
       val childProps = Props[Echo1]()
-      for (p <- (0 until numParents); c <- (0 until numChildren)) {
+      for (p <- 0 until numParents; c <- 0 until numChildren) {
         parents(p).tell((childProps, numMessages), probes(p)(c).ref)
       }
 
-      for (p <- (0 until numParents); c <- (0 until numChildren)) {
+      for (p <- 0 until numParents; c <- 0 until numChildren) {
         val probe = probes(p)(c)
         probe.expectMsgType[ActorRef] // the child
       }
 
       val expectedMessages = (0 until numMessages).toVector
-      for (p <- (0 until numParents); c <- (0 until numChildren)) {
+      for (p <- 0 until numParents; c <- 0 until numChildren) {
         val probe = probes(p)(c)
         probe.receiveN(numMessages) should equal(expectedMessages)
       }

@@ -25,8 +25,7 @@ object SplitBrainQuarantineSpec extends MultiNodeConfig {
   commonConfig(
     debugConfig(on = true)
       .withFallback(MultiNodeClusterSpec.clusterConfig)
-      .withFallback(ConfigFactory.parseString(
-        """
+      .withFallback(ConfigFactory.parseString("""
         akka.remote.artery.enabled = on
         akka.cluster.downing-provider-class = "akka.cluster.sbr.SplitBrainResolverProvider"
         # we dont really want this to hit, but we need the sbr enabled to know the quarantining

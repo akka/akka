@@ -69,7 +69,7 @@ private[akka] trait BatchingExecutor extends Executor {
       val current = _tasksLocal.get()
       _tasksLocal.remove()
       if ((current eq this) && !current.isEmpty) { // Resubmit ourselves if something bad happened and we still have work to do
-        unbatchedExecute(current) //TODO what if this submission fails?
+        unbatchedExecute(current) // TODO what if this submission fails?
         true
       } else false
     }

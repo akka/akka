@@ -19,15 +19,11 @@ import akka.cluster.ddata.ReplicatedData
 import akka.cluster.ddata.typed.internal.ReplicatorBehavior
 import akka.util.JavaDurationConverters._
 
-/**
- * @see [[akka.cluster.ddata.Replicator]].
- */
+/** @see [[akka.cluster.ddata.Replicator]]. */
 object Replicator {
   import dd.Replicator.DefaultMajorityMinCap
 
-  /**
-   * The `Behavior` for the `Replicator` actor.
-   */
+  /** The `Behavior` for the `Replicator` actor. */
   def behavior(settings: dd.ReplicatorSettings): Behavior[Command] =
     ReplicatorBehavior(settings, underlyingReplicator = None).narrow[Command]
 
@@ -100,14 +96,10 @@ object Replicator {
     @InternalApi private[akka] override def toClassic = dd.Replicator.WriteAll(timeout.asScala)
   }
 
-  /**
-   * The `ReadLocal` instance
-   */
+  /** The `ReadLocal` instance */
   def readLocal: ReadConsistency = ReadLocal
 
-  /**
-   * The `WriteLocal` instance
-   */
+  /** The `WriteLocal` instance */
   def writeLocal: WriteConsistency = WriteLocal
 
   /**
@@ -124,22 +116,16 @@ object Replicator {
     def key: Key[A]
   }
 
-  /**
-   * Reply from `Get`. The data value is retrieved with [[#get]] using the typed key.
-   */
+  /** Reply from `Get`. The data value is retrieved with [[#get]] using the typed key. */
   final case class GetSuccess[A <: ReplicatedData](key: Key[A])(data: A) extends GetResponse[A] {
 
-    /**
-     * The data value, with correct type.
-     */
+    /** The data value, with correct type. */
     def get[T <: ReplicatedData](key: Key[T]): T = {
       require(key == this.key, "wrong key used, must use contained key")
       data.asInstanceOf[T]
     }
 
-    /**
-     * The data value. Use [[#get]] to get the fully typed value.
-     */
+    /** The data value. Use [[#get]] to get the fully typed value. */
     def dataValue: A = data
   }
   final case class NotFound[A <: ReplicatedData](key: Key[A]) extends GetResponse[A]
@@ -150,9 +136,7 @@ object Replicator {
    */
   final case class GetFailure[A <: ReplicatedData](key: Key[A]) extends GetResponse[A]
 
-  /**
-   * The [[Get]] request couldn't be performed because the entry has been deleted.
-   */
+  /** The [[Get]] request couldn't be performed because the entry has been deleted. */
   final case class GetDataDeleted[A <: ReplicatedData](key: Key[A]) extends GetResponse[A]
 
   object Update {
@@ -217,9 +201,7 @@ object Replicator {
    */
   final case class UpdateTimeout[A <: ReplicatedData](key: Key[A]) extends UpdateFailure[A]
 
-  /**
-   * The [[Update]] couldn't be performed because the entry has been deleted.
-   */
+  /** The [[Update]] couldn't be performed because the entry has been deleted. */
   final case class UpdateDataDeleted[A <: ReplicatedData](key: Key[A]) extends UpdateResponse[A]
 
   /**
@@ -271,9 +253,7 @@ object Replicator {
   final case class Unsubscribe[A <: ReplicatedData](key: Key[A], subscriber: ActorRef[SubscribeResponse[A]])
       extends Command
 
-  /**
-   * @see [[Replicator.Subscribe]]
-   */
+  /** @see [[Replicator.Subscribe]] */
   sealed trait SubscribeResponse[A <: ReplicatedData] extends NoSerializationVerificationNeeded {
     def key: Key[A]
   }
@@ -294,20 +274,14 @@ object Replicator {
       data.asInstanceOf[T]
     }
 
-    /**
-     * The data value. Use [[#get]] to get the fully typed value.
-     */
+    /** The data value. Use [[#get]] to get the fully typed value. */
     def dataValue: A = data
   }
 
-  /**
-   * @see [[Replicator.Subscribe]]
-   */
+  /** @see [[Replicator.Subscribe]] */
   final case class Deleted[A <: ReplicatedData](key: Key[A]) extends SubscribeResponse[A]
 
-  /**
-   * @see [[Replicator.Subscribe]]
-   */
+  /** @see [[Replicator.Subscribe]] */
   final case class Expired[A <: ReplicatedData](key: Key[A]) extends SubscribeResponse[A]
 
   /**
@@ -333,9 +307,7 @@ object Replicator {
    */
   final case class GetReplicaCount(replyTo: ActorRef[ReplicaCount]) extends Command
 
-  /**
-   * Current number of replicas. Reply to `GetReplicaCount`.
-   */
+  /** Current number of replicas. Reply to `GetReplicaCount`. */
   final case class ReplicaCount(n: Int)
 
   /**

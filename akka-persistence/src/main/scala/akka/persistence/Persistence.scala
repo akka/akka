@@ -24,9 +24,7 @@ import akka.util.Collections.EmptyImmutableSeq
 import akka.util.Helpers.ConfigOps
 import akka.util.Reflect
 
-/**
- * Persistence configuration.
- */
+/** Persistence configuration. */
 final class PersistenceSettings(config: Config) {
 
   object atLeastOnceDelivery {
@@ -60,15 +58,11 @@ final class PersistenceSettings(config: Config) {
 
 }
 
-/**
- * Identification of [[PersistentActor]].
- */
+/** Identification of [[PersistentActor]]. */
 //#persistence-identity
 trait PersistenceIdentity {
 
-  /**
-   * Id of the persistent entity for which messages should be replayed.
-   */
+  /** Id of the persistent entity for which messages should be replayed. */
   def persistenceId: String
 
   /**
@@ -91,7 +85,7 @@ trait PersistenceIdentity {
 //#persistence-identity
 
 trait PersistenceRecovery {
-  //#persistence-recovery
+  // #persistence-recovery
   /**
    * Called when the persistent actor is started for the first time.
    * The returned [[Recovery]] object defines how the Actor will recover its persistent state before
@@ -101,7 +95,7 @@ trait PersistenceRecovery {
    */
   def recovery: Recovery = Recovery()
 
-  //#persistence-recovery
+  // #persistence-recovery
 }
 
 trait PersistenceStash extends Stash with StashFactory {
@@ -139,9 +133,7 @@ trait RuntimePluginConfig {
   def snapshotPluginConfig: Config
 }
 
-/**
- * Persistence extension provider.
- */
+/** Persistence extension provider. */
 object Persistence extends ExtensionId[Persistence] with ExtensionIdProvider {
 
   /** Java API. */
@@ -193,9 +185,7 @@ object Persistence extends ExtensionId[Persistence] with ExtensionIdProvider {
   }
 }
 
-/**
- * Persistence extension.
- */
+/** Persistence extension. */
 class Persistence(val system: ExtendedActorSystem) extends Extension {
 
   import Persistence._
@@ -271,15 +261,11 @@ class Persistence(val system: ExtendedActorSystem) extends Extension {
       }
     })
 
-  /**
-   * @throws IllegalArgumentException if `configPath` doesn't exist
-   */
+  /** @throws IllegalArgumentException if `configPath` doesn't exist */
   private def verifyJournalPluginConfigExists(pluginConfig: Config, configPath: String): Unit =
     verifyPluginConfigExists(pluginConfig.withFallback(system.settings.config), configPath, "Journal")
 
-  /**
-   * @throws IllegalArgumentException if `configPath` doesn't exist
-   */
+  /** @throws IllegalArgumentException if `configPath` doesn't exist */
   private def verifySnapshotPluginConfigExists(pluginConfig: Config, configPath: String): Unit =
     verifyPluginConfigExists(pluginConfig.withFallback(system.settings.config), configPath, "Snapshot store")
 
@@ -400,18 +386,19 @@ class Persistence(val system: ExtendedActorSystem) extends Extension {
     log.debug(s"Create plugin: $pluginActorName $pluginClassName")
     val pluginClass = system.dynamicAccess.getClassFor[Any](pluginClassName).get
     val pluginDispatcherId = pluginConfig.getString("plugin-dispatcher")
-    val pluginActorArgs: List[AnyRef] = try {
-      Reflect.findConstructor(pluginClass, List(pluginConfig, configPath)) // will throw if not found
-      List(pluginConfig, configPath)
-    } catch {
-      case NonFatal(_) =>
-        try {
-          Reflect.findConstructor(pluginClass, List(pluginConfig)) // will throw if not found
-          List(pluginConfig)
-        } catch {
-          case NonFatal(_) => Nil
-        } // otherwise use empty constructor
-    }
+    val pluginActorArgs: List[AnyRef] =
+      try {
+        Reflect.findConstructor(pluginClass, List(pluginConfig, configPath)) // will throw if not found
+        List(pluginConfig, configPath)
+      } catch {
+        case NonFatal(_) =>
+          try {
+            Reflect.findConstructor(pluginClass, List(pluginConfig)) // will throw if not found
+            List(pluginConfig)
+          } catch {
+            case NonFatal(_) => Nil
+          } // otherwise use empty constructor
+      }
     val pluginActorProps = Props(Deploy(dispatcher = pluginDispatcherId), pluginClass, pluginActorArgs)
     system.systemActorOf(pluginActorProps, pluginActorName)
   }
@@ -473,7 +460,7 @@ class Persistence(val system: ExtendedActorSystem) extends Extension {
       numberOfRanges * rangeSize == numberOfSlices,
       s"numberOfRanges [$numberOfRanges] must be a whole number divisor of numberOfSlices [$numberOfSlices].")
     (0 until numberOfRanges).map { i =>
-      (i * rangeSize until i * rangeSize + rangeSize)
+      i * rangeSize until i * rangeSize + rangeSize
     }.toVector
   }
 

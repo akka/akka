@@ -44,19 +44,18 @@ private[persistence] class LeveldbJournal(cfg: Config) extends AsyncWriteJournal
           if (highSeqNr == 0L || fromSequenceNr > toSeqNr)
             Future.successful(highSeqNr)
           else {
-            asyncReplayTaggedMessages(tag, fromSequenceNr, toSeqNr, max) {
-              case ReplayedTaggedMessage(p, tag, offset) =>
-                adaptFromJournal(p).foreach { adaptedPersistentRepr =>
-                  replyTo.tell(ReplayedTaggedMessage(adaptedPersistentRepr, tag, offset), Actor.noSender)
-                }
+            asyncReplayTaggedMessages(tag, fromSequenceNr, toSeqNr, max) { case ReplayedTaggedMessage(p, tag, offset) =>
+              adaptFromJournal(p).foreach { adaptedPersistentRepr =>
+                replyTo.tell(ReplayedTaggedMessage(adaptedPersistentRepr, tag, offset), Actor.noSender)
+              }
             }.map(_ => highSeqNr)
           }
         }
         .map { highSeqNr =>
           RecoverySuccess(highSeqNr)
         }
-        .recover {
-          case e => ReplayMessagesFailure(e)
+        .recover { case e =>
+          ReplayMessagesFailure(e)
         }
         .pipeTo(replyTo)
 
@@ -74,9 +73,7 @@ private[persistence] class LeveldbJournal(cfg: Config) extends AsyncWriteJournal
   }
 }
 
-/**
- * INTERNAL API.
- */
+/** INTERNAL API. */
 private[persistence] object LeveldbJournal {
   sealed trait SubscriptionCommand
 
@@ -133,24 +130,21 @@ private[persistence] class SharedLeveldbJournal extends AsyncWriteProxy {
   val timeout: Timeout =
     context.system.settings.config.getMillisDuration("akka.persistence.journal.leveldb-shared.timeout")
 
-  override def receivePluginInternal: Receive = {
-    case cmd: LeveldbJournal.SubscriptionCommand =>
-      // forward subscriptions, they are used by query-side
-      store match {
-        case Some(s) => s.forward(cmd)
-        case None =>
-          log.error(
-            "Failed {} request. " +
-            "Store not initialized. Use `SharedLeveldbJournal.setStore(sharedStore, system)`",
-            cmd)
-      }
+  override def receivePluginInternal: Receive = { case cmd: LeveldbJournal.SubscriptionCommand =>
+    // forward subscriptions, they are used by query-side
+    store match {
+      case Some(s) => s.forward(cmd)
+      case None =>
+        log.error(
+          "Failed {} request. " +
+          "Store not initialized. Use `SharedLeveldbJournal.setStore(sharedStore, system)`",
+          cmd)
+    }
 
   }
 }
 
-/**
- * For testing only.
- */
+/** For testing only. */
 object SharedLeveldbJournal {
 
   /**

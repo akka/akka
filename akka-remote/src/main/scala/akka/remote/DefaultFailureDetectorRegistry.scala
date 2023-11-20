@@ -15,7 +15,6 @@ import scala.collection.immutable.Map
  *
  * @param detectorFactory
  *   By-name parameter that returns the failure detector instance to be used by a newly registered resource
- *
  */
 class DefaultFailureDetectorRegistry[A](detectorFactory: () => FailureDetector) extends FailureDetectorRegistry[A] {
 

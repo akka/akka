@@ -485,10 +485,12 @@ class ORMultiMapSpec extends AnyWordSpec with Matchers {
     val m3 = m1.mergeDelta(m2.delta.get)
     val m4 = m1.merge(m2)
 
-    m3.underlying.values
-      .contains("a") should be(false) // tombstone for 'a' has been optimized away at the end of the mergeDelta
-    m4.underlying.values
-      .contains("a") should be(false) // tombstone for 'a' has been optimized away at the end of the merge
+    m3.underlying.values.contains("a") should be(
+      false
+    ) // tombstone for 'a' has been optimized away at the end of the mergeDelta
+    m4.underlying.values.contains("a") should be(
+      false
+    ) // tombstone for 'a' has been optimized away at the end of the merge
 
     val m5 = ORMultiMap.emptyWithValueDeltas[String, String].put(node1, "a", Set("A1"))
     m3.mergeDelta(m5.delta.get).entries("a") should ===(Set("A1"))
@@ -509,10 +511,12 @@ class ORMultiMapSpec extends AnyWordSpec with Matchers {
     val um3 = um1.mergeDelta(um2.delta.get)
     val um4 = um1.merge(um2)
 
-    um3.underlying.values
-      .contains("a") should be(false) // tombstone for 'a' has been optimized away at the end of the mergeDelta
-    um4.underlying.values
-      .contains("a") should be(false) // tombstone for 'a' has been optimized away at the end of the merge
+    um3.underlying.values.contains("a") should be(
+      false
+    ) // tombstone for 'a' has been optimized away at the end of the mergeDelta
+    um4.underlying.values.contains("a") should be(
+      false
+    ) // tombstone for 'a' has been optimized away at the end of the merge
 
     val um5 = ORMultiMap.emptyWithValueDeltas[String, String].addBinding(node1, "a", "A1")
     um3.mergeDelta(um5.delta.get).entries("a") should ===(Set("A1"))
@@ -542,9 +546,9 @@ class ORMultiMapSpec extends AnyWordSpec with Matchers {
       ORMultiMap.emptyWithValueDeltas[String, String].addBinding(node1, "a", "A").underlying.remove(node1, "a"),
       true)
     tm3.underlying.contains("a") should ===(false) // no tombstone, because remove not removeKey
-    tm3
-      .mergeDelta(tm2.delta.get)
-      .entries should ===(Map.empty[String, String]) // no tombstone - update delta could not be applied
+    tm3.mergeDelta(tm2.delta.get).entries should ===(
+      Map.empty[String, String]
+    ) // no tombstone - update delta could not be applied
     tm3.merge(tm2).entries should ===(Map.empty[String, String])
 
     // The only valid value for tombstone created by means of either API call or application of delta propagation is Set()

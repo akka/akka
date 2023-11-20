@@ -10,9 +10,7 @@ import akka.persistence.query.javadsl.ReadJournal
 import akka.persistence.query.typed.EventEnvelope
 import akka.stream.javadsl.Source
 
-/**
- * A plugin may optionally support this query by implementing this trait.
- */
+/** A plugin may optionally support this query by implementing this trait. */
 @ApiMayChange
 trait CurrentEventsByPersistenceIdStartingFromSnapshotQuery extends ReadJournal {
 

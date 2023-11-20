@@ -43,18 +43,14 @@ import akka.util.unused
 object PersistenceTestKitReadJournal {
   val Identifier = "akka.persistence.testkit.query"
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi
   private[akka] def tagsFor(payload: Any): Set[String] = payload match {
     case Tagged(_, tags) => tags
     case _               => Set.empty
   }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi
   private[akka] def timestampOffsetFor(pr: PersistentRepr) = {
     // Note: we don't really have microsecond granularity here, but the testkit uses an increasing unique timestamp
@@ -106,15 +102,14 @@ final class PersistenceTestKitReadJournal(system: ExtendedActorSystem, @unused c
           toSequenceNr,
           storage,
           persistence.sliceForPersistenceId))
-      .map(
-        env =>
-          EventEnvelope(
-            Sequence(env.sequenceNr),
-            env.persistenceId,
-            env.sequenceNr,
-            env.event,
-            env.timestamp,
-            env.eventMetadata))
+      .map(env =>
+        EventEnvelope(
+          Sequence(env.sequenceNr),
+          env.persistenceId,
+          env.sequenceNr,
+          env.event,
+          env.timestamp,
+          env.eventMetadata))
 
   override def eventsByPersistenceIdTyped[Event](
       persistenceId: String,
@@ -192,11 +187,13 @@ final class PersistenceTestKitReadJournal(system: ExtendedActorSystem, @unused c
       case _ =>
         throw new UnsupportedOperationException("Offsets not supported for persistence test kit currentEventsByTag yet")
     }
-    val prs = storage.tryRead(entityType, repr => {
-      val pid = repr.persistenceId
-      val slice = persistence.sliceForPersistenceId(pid)
-      PersistenceId.extractEntityType(pid) == entityType && slice >= minSlice && slice <= maxSlice
-    })
+    val prs = storage.tryRead(
+      entityType,
+      repr => {
+        val pid = repr.persistenceId
+        val slice = persistence.sliceForPersistenceId(pid)
+        PersistenceId.extractEntityType(pid) == entityType && slice >= minSlice && slice <= maxSlice
+      })
     Source(prs).map { pr =>
       val slice = persistence.sliceForPersistenceId(pr.persistenceId)
       new typed.EventEnvelope[Event](

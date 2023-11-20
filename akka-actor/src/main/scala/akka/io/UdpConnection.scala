@@ -20,9 +20,7 @@ import akka.io.UdpConnected._
 import akka.io.dns.DnsProtocol
 import akka.util.{ unused, ByteString }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[io] class UdpConnection(
     udpConn: UdpConnectedExt,
     channelRegistry: ChannelRegistry,
@@ -81,14 +79,13 @@ private[io] class UdpConnection(
     log.debug("Successfully connected to [{}]", remoteAddress)
   }
 
-  def receive = {
-    case registration: ChannelRegistration =>
-      options.foreach {
-        case v2: Inet.SocketOptionV2 => v2.afterConnect(channel.socket)
-        case _                       =>
-      }
-      commander ! Connected
-      context.become(connected(registration), discardOld = true)
+  def receive = { case registration: ChannelRegistration =>
+    options.foreach {
+      case v2: Inet.SocketOptionV2 => v2.afterConnect(channel.socket)
+      case _                       =>
+    }
+    commander ! Connected
+    context.become(connected(registration), discardOld = true)
   }
 
   def connected(registration: ChannelRegistration): Receive = {

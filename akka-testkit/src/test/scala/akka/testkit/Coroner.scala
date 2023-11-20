@@ -33,9 +33,7 @@ object Coroner {
    */
   trait WatchHandle extends Awaitable[Boolean] {
 
-    /**
-     * Will try to ensure that the Coroner has finished reporting.
-     */
+    /** Will try to ensure that the Coroner has finished reporting. */
     def cancel(): Unit
   }
 
@@ -124,9 +122,7 @@ object Coroner {
     watchedHandle
   }
 
-  /**
-   * Print a report containing diagnostic information.
-   */
+  /** Print a report containing diagnostic information. */
   def printReport(reportTitle: String, out: PrintStream): Unit = {
     import out.println
 

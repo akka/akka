@@ -36,9 +36,7 @@ import akka.annotation.DoNotInherit
    */
   def withOccurrences(newOccurrences: Int): LoggingTestKit
 
-  /**
-   * Matching events with the given log level.
-   */
+  /** Matching events with the given log level. */
   def withLogLevel(newLogLevel: Level): LoggingTestKit
 
   /**
@@ -54,14 +52,10 @@ import akka.annotation.DoNotInherit
    */
   def withSource(newSource: String): LoggingTestKit
 
-  /**
-   * Matching events with a message that contains the given value.
-   */
+  /** Matching events with a message that contains the given value. */
   def withMessageContains(newMessageContains: String): LoggingTestKit
 
-  /**
-   * Matching events with a message that matches the given regular expression.
-   */
+  /** Matching events with a message that matches the given regular expression. */
   def withMessageRegex(newMessageRegex: String): LoggingTestKit
 
   /**
@@ -76,20 +70,14 @@ import akka.annotation.DoNotInherit
    */
   def withMdc(newMdc: java.util.Map[String, String]): LoggingTestKit
 
-  /**
-   * After matching the expected number of hits, check for excess messages
-   */
+  /** After matching the expected number of hits, check for excess messages */
   def withCheckExcess(check: Boolean): LoggingTestKit
 
-  /**
-   * Matching events for which the supplied function returns `true`.
-   */
+  /** Matching events for which the supplied function returns `true`. */
   def withCustom(newCustom: Function[LoggingEvent, Boolean]): LoggingTestKit
   // this is a Scala Function, ^ but that can be used with lambda from Java
 
-  /**
-   * @return `true` if the event matches the conditions of the filter.
-   */
+  /** @return `true` if the event matches the conditions of the filter. */
   def matches(event: LoggingEvent): Boolean
 
   /**
@@ -198,9 +186,7 @@ object LoggingTestKit {
   def custom(test: Function[LoggingEvent, Boolean]): LoggingTestKit =
     empty.withCustom(test) // this is a Scala Function, but that can be used with lambda from Java
 
-  /**
-   * Filter for the logging of dead letters.
-   */
+  /** Filter for the logging of dead letters. */
   def deadLetters(): LoggingTestKit =
     empty.withLogLevel(Level.INFO).withMessageRegex(".*was not delivered.*dead letters encountered.*")
 }

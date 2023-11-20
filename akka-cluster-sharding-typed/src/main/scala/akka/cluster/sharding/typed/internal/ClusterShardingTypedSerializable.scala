@@ -6,8 +6,6 @@ package akka.cluster.sharding.typed.internal
 
 import akka.annotation.InternalApi
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] trait ClusterShardingTypedSerializable

@@ -24,9 +24,7 @@ import akka.serialization.{ BaseSerializer, SerializationExtension, SerializerWi
 import akka.util.Helpers.toRootLowerCase
 import akka.util.OptionVal
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object JacksonSerializer {
 
   /**
@@ -65,8 +63,8 @@ import akka.util.OptionVal
         val name = clazz.getSimpleName
         // looking for "AbstractBeanFactoryPointcutAdvisor" but no point to allow any is there?
         if ("AbstractPointcutAdvisor".equals(name)
-            // ditto  for "FileSystemXmlApplicationContext": block all ApplicationContexts
-            || "AbstractApplicationContext".equals(name))
+          // ditto  for "FileSystemXmlApplicationContext": block all ApplicationContexts
+          || "AbstractApplicationContext".equals(name))
           false
         else
           isAllowedSpringClass(clazz.getSuperclass)
@@ -198,10 +196,9 @@ import akka.util.OptionVal
   }
   private val migrations: Map[String, JacksonMigration] = {
     import akka.util.ccompat.JavaConverters._
-    conf.getConfig("migrations").root.unwrapped.asScala.toMap.map {
-      case (k, v) =>
-        val transformer = system.dynamicAccess.createInstanceFor[JacksonMigration](v.toString, Nil).get
-        k -> transformer
+    conf.getConfig("migrations").root.unwrapped.asScala.toMap.map { case (k, v) =>
+      val transformer = system.dynamicAccess.createInstanceFor[JacksonMigration](v.toString, Nil).get
+      k -> transformer
     }
   }
   private val denyList: GadgetClassDenyList = new GadgetClassDenyList

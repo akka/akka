@@ -23,7 +23,7 @@ import scala.concurrent.Future
 
 object LoggingDocSpec {
 
-  //#deadletters
+  // #deadletters
   import akka.actor.typed.Behavior
   import akka.actor.typed.eventstream.EventStream.Subscribe
   import akka.actor.typed.scaladsl.Behaviors
@@ -35,16 +35,15 @@ object LoggingDocSpec {
       val adapter = context.messageAdapter[DeadLetter](d => d.message.toString)
       context.system.eventStream ! Subscribe(adapter)
 
-      Behaviors.receiveMessage {
-        case msg: String =>
-          println(msg)
-          Behaviors.same
+      Behaviors.receiveMessage { case msg: String =>
+        println(msg)
+        Behaviors.same
       }
     }
   }
-  //#deadletters
+  // #deadletters
 
-  //#superclass-subscription-eventstream
+  // #superclass-subscription-eventstream
   object ListenerActor {
     abstract class AllKindsOfMusic { def artist: String }
     case class Jazz(artist: String) extends AllKindsOfMusic
@@ -63,7 +62,7 @@ object LoggingDocSpec {
       }
     }
   }
-  //#superclass-subscription-eventstream
+  // #superclass-subscription-eventstream
 
 }
 
@@ -73,16 +72,18 @@ class LoggingDocSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with
 
   "allow registration to dead letters" in {
     // #deadletters
-    ActorSystem(Behaviors.setup[Void] { context =>
-      context.spawn(DeadLetterListener(), "DeadLetterListener", Props.empty)
-      Behaviors.empty
-    }, "System")
+    ActorSystem(
+      Behaviors.setup[Void] { context =>
+        context.spawn(DeadLetterListener(), "DeadLetterListener", Props.empty)
+        Behaviors.empty
+      },
+      "System")
     // #deadletters
   }
 
   "demonstrate superclass subscriptions on typed eventStream" in {
     import LoggingDocSpec.ListenerActor._
-    //#superclass-subscription-eventstream
+    // #superclass-subscription-eventstream
 
     implicit val system: ActorSystem[SpawnProtocol.Command] = ActorSystem(SpawnProtocol(), "SpawnProtocol")
     implicit val ec: ExecutionContext = system.executionContext
@@ -102,21 +103,21 @@ class LoggingDocSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with
 
     // jazzListener and musicListener will be notified about Jazz:
     system.eventStream ! Publish(Jazz("Sonny Rollins"))
-    //#superclass-subscription-eventstream
+    // #superclass-subscription-eventstream
   }
 
   "allow registration to suppressed dead letters" in {
     val listener: ActorRef[Any] = TestProbe().ref
 
-    //#suppressed-deadletters
+    // #suppressed-deadletters
     import akka.actor.SuppressedDeadLetter
     system.eventStream ! Subscribe[SuppressedDeadLetter](listener)
-    //#suppressed-deadletters
+    // #suppressed-deadletters
 
-    //#all-deadletters
+    // #all-deadletters
     import akka.actor.AllDeadLetters
     system.eventStream ! Subscribe[AllDeadLetters](listener)
-    //#all-deadletters
+    // #all-deadletters
   }
 
 }

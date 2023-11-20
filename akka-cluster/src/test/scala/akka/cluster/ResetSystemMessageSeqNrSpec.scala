@@ -13,14 +13,14 @@ import akka.remote.artery.ArteryMultiNodeSpec
 import akka.testkit.ImplicitSender
 import akka.testkit.TestActors
 
-/**
- * Reproducer for issue #24847
- */
-class ResetSystemMessageSeqNrSpec extends ArteryMultiNodeSpec("""
+/** Reproducer for issue #24847 */
+class ResetSystemMessageSeqNrSpec
+    extends ArteryMultiNodeSpec("""
   akka.loglevel = INFO
   akka.actor.provider=cluster
   akka.cluster.jmx.multi-mbeans-in-same-jvm = on
-  """) with ImplicitSender {
+  """)
+    with ImplicitSender {
 
   "System messages sequence numbers" should {
 

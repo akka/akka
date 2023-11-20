@@ -155,7 +155,6 @@ final class SubSource[Out, Mat](
    * '''Completes when''' upstream completes
    *
    * '''Cancels when''' downstream cancels
-   *
    */
   def wireTap(f: function.Procedure[Out]): SubSource[Out, Mat] =
     new SubSource(delegate.wireTap(f(_)))
@@ -333,9 +332,7 @@ final class SubSource[Out, Mat](
   def mapAsync[T](parallelism: Int, f: function.Function[Out, CompletionStage[T]]): SubSource[T, Mat] =
     new SubSource(delegate.mapAsync(parallelism)(x => f(x).toScala))
 
-  /**
-   * @see [[akka.stream.javadsl.Source.mapAsyncPartitioned]]
-   */
+  /** @see [[akka.stream.javadsl.Source.mapAsyncPartitioned]] */
   def mapAsyncPartitioned[T, P](
       parallelism: Int,
       perPartition: Int,
@@ -393,7 +390,6 @@ final class SubSource[Out, Mat](
    * '''Completes when''' upstream completes
    *
    * '''Cancels when''' downstream cancels
-   *
    */
   def filter(p: function.Predicate[Out]): SubSource[Out, Mat] =
     new SubSource(delegate.filter(p.test))
@@ -977,7 +973,6 @@ final class SubSource[Out, Mat](
    * '''Completes when''' upstream completes or upstream failed with exception pf can handle
    *
    * '''Cancels when''' downstream cancels
-   *
    */
   def recover(pf: PartialFunction[Throwable, Out]): SubSource[Out, Mat] =
     new SubSource(delegate.recover(pf))
@@ -998,7 +993,6 @@ final class SubSource[Out, Mat](
    * '''Completes when''' upstream completes or upstream failed with exception pf can handle
    *
    * '''Cancels when''' downstream cancels
-   *
    */
   def recoverWith(pf: PartialFunction[Throwable, Graph[SourceShape[Out], NotUsed]]): SubSource[Out, Mat] =
     new SubSource(delegate.recoverWith(pf))
@@ -1073,7 +1067,6 @@ final class SubSource[Out, Mat](
    * '''Completes when''' upstream completes or upstream failed with exception pf can handle
    *
    * '''Cancels when''' downstream cancels
-   *
    */
   def recoverWithRetries(
       attempts: Int,
@@ -1097,7 +1090,6 @@ final class SubSource[Out, Mat](
    * '''Completes when''' upstream completes or upstream failed with exception pf can handle
    *
    * '''Cancels when''' downstream cancels
-   *
    */
   def mapError(pf: PartialFunction[Throwable, Throwable]): SubSource[Out, Mat] =
     new SubSource(delegate.mapError(pf))
@@ -1119,7 +1111,6 @@ final class SubSource[Out, Mat](
    * '''Completes when''' upstream completes or upstream failed with exception pf can handle
    *
    * '''Cancels when''' downstream cancels
-   *
    */
   def mapError[E <: Throwable](clazz: Class[E], f: function.Function[E, Throwable]): javadsl.SubSource[Out, Mat] =
     mapError {
@@ -1191,7 +1182,6 @@ final class SubSource[Out, Mat](
    *
    * @param seed Provides the first state for a conflated value using the first unconsumed element as a start
    * @param aggregate Takes the currently aggregated value and the current pending element to produce a new aggregate
-   *
    */
   def conflateWithSeed[S](
       seed: function.Function[Out, S],
@@ -1222,7 +1212,6 @@ final class SubSource[Out, Mat](
    * see also [[SubSource.conflateWithSeed]] [[SubSource.batch]] [[SubSource.batchWeighted]]
    *
    * @param aggregate Takes the currently aggregated value and the current pending element to produce a new aggregate
-   *
    */
   def conflate(aggregate: function.Function2[Out, Out, Out]): SubSource[Out, Mat] =
     new SubSource(delegate.conflate(aggregate.apply))
@@ -1448,7 +1437,7 @@ final class SubSource[Out, Mat](
    *
    *  @param n the number of elements to accumulate before materializing the downstream flow.
    *  @param f a function that produces the downstream flow based on the upstream's prefix.
-   **/
+   */
   def flatMapPrefix[Out2, Mat2](
       n: Int,
       f: function.Function[java.lang.Iterable[Out], javadsl.Flow[Out, Out2, Mat2]]): javadsl.SubSource[Out2, Mat] = {
@@ -1468,7 +1457,6 @@ final class SubSource[Out, Mat](
    * '''Completes when''' upstream completes and all consumed substreams complete
    *
    * '''Cancels when''' downstream cancels
-   *
    */
   def flatMapConcat[T, M](f: function.Function[Out, _ <: Graph[SourceShape[T], M]]): SubSource[T, Mat] =
     new SubSource(delegate.flatMapConcat(x => f(x)))
@@ -1742,7 +1730,8 @@ final class SubSource[Out, Mat](
     val seq = if (those != null) Util.immutableSeq(those).collect {
       case source: Source[Out @unchecked, _] => source.asScala
       case other                             => other
-    } else immutable.Seq()
+    }
+    else immutable.Seq()
     new SubSource(delegate.mergeAll(seq, eagerComplete))
   }
 
@@ -1800,7 +1789,8 @@ final class SubSource[Out, Mat](
     val seq = if (those != null) Util.immutableSeq(those).collect {
       case source: Source[Out @unchecked, _] => source.asScala
       case other                             => other
-    } else immutable.Seq()
+    }
+    else immutable.Seq()
     new SubSource(delegate.interleaveAll(seq, segmentSize, eagerClose))
   }
 
@@ -2074,7 +2064,6 @@ final class SubSource[Out, Mat](
    * '''Completes when''' upstream completes
    *
    * '''Cancels when''' downstream cancels
-   *
    */
   def throttle(elements: Int, per: java.time.Duration): javadsl.SubSource[Out, Mat] =
     new SubSource(delegate.throttle(elements, per.asScala))
@@ -2113,7 +2102,6 @@ final class SubSource[Out, Mat](
    * '''Completes when''' upstream completes
    *
    * '''Cancels when''' downstream cancels
-   *
    */
   def throttle(
       elements: Int,
@@ -2152,7 +2140,6 @@ final class SubSource[Out, Mat](
    * '''Completes when''' upstream completes
    *
    * '''Cancels when''' downstream cancels
-   *
    */
   def throttle(
       cost: Int,
@@ -2197,7 +2184,6 @@ final class SubSource[Out, Mat](
    * '''Completes when''' upstream completes
    *
    * '''Cancels when''' downstream cancels
-   *
    */
   def throttle(
       cost: Int,
@@ -2254,15 +2240,11 @@ final class SubSource[Out, Mat](
   def addAttributes(attr: Attributes): SubSource[Out, Mat] =
     new SubSource(delegate.addAttributes(attr))
 
-  /**
-   * Add a ``name`` attribute to this Flow.
-   */
+  /** Add a ``name`` attribute to this Flow. */
   def named(name: String): SubSource[Out, Mat] =
     new SubSource(delegate.named(name))
 
-  /**
-   * Put an asynchronous boundary around this `SubSource`
-   */
+  /** Put an asynchronous boundary around this `SubSource` */
   def async: SubSource[Out, Mat] =
     new SubSource(delegate.async)
 
@@ -2471,7 +2453,7 @@ final class SubSource[Out, Mat](
       asScala.aggregateWithBoundary(() => allocate.get())(
         aggregate = (agg, out) => aggregate.apply(agg, out).toScala,
         harvest = agg => harvest.apply(agg),
-        emitOnTimer = Option(emitOnTimer).map {
-          case Pair(predicate, duration) => (agg => predicate.test(agg), duration.asScala)
+        emitOnTimer = Option(emitOnTimer).map { case Pair(predicate, duration) =>
+          (agg => predicate.test(agg), duration.asScala)
         }))
 }

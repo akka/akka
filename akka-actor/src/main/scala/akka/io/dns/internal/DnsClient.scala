@@ -20,9 +20,7 @@ import akka.io.{ IO, Tcp, Udp }
 import akka.io.dns.{ RecordClass, RecordType, ResourceRecord }
 import akka.pattern.{ BackoffOpts, BackoffSupervisor }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object DnsClient {
   sealed trait DnsQuestion {
     def id: Short
@@ -49,9 +47,7 @@ import akka.pattern.{ BackoffOpts, BackoffSupervisor }
   }
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] class DnsClient(ns: InetSocketAddress) extends Actor with Stash {
 
   import DnsClient._
@@ -87,9 +83,7 @@ import akka.pattern.{ BackoffOpts, BackoffSupervisor }
     Message(id, MessageFlags(), im.Seq(Question(name, recordType, RecordClass.IN)))
   }
 
-  /**
-   * Silent to allow map update syntax
-   */
+  /** Silent to allow map update syntax */
   @nowarn()
   def ready(socket: ActorRef): Receive = {
     case DropRequest(question) =>
@@ -168,10 +162,9 @@ import akka.pattern.{ BackoffOpts, BackoffSupervisor }
           // best effort, don't throw
           Try {
             val msg = Message.parse(send.payload)
-            inflightRequests.get(msg.id).foreach {
-              case (s, _) =>
-                s ! Failure(new RuntimeException("Send failed to nameserver"))
-                inflightRequests -= msg.id
+            inflightRequests.get(msg.id).foreach { case (s, _) =>
+              s ! Failure(new RuntimeException("Send failed to nameserver"))
+              inflightRequests -= msg.id
             }
           }
         case _ =>

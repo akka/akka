@@ -16,9 +16,7 @@ import akka.cluster.ClusterSettings.DataCenter
 import akka.cluster.MemberStatus._
 import akka.util.ccompat._
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @ccompatUsedUntil213
 @InternalApi private[akka] object MembershipState {
   import MemberStatus._
@@ -31,9 +29,7 @@ import akka.util.ccompat._
   val prepareForShutdownStates = Set[MemberStatus](PreparingForShutdown, ReadyForShutdown)
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] final case class MembershipState(
     latestGossip: Gossip,
     selfUniqueAddress: UniqueAddress,
@@ -69,11 +65,10 @@ import akka.util.ccompat._
     // only assigned once.
     def memberHinderingConvergenceExists = {
       val memberStatus = if (firstMemberInDc) convergenceMemberStatus + Joining + WeaklyUp else convergenceMemberStatus
-      members.exists(
-        member =>
-          (firstMemberInDc || member.dataCenter == selfDc) &&
-          memberStatus(member.status) &&
-          !(latestGossip.seenByNode(member.uniqueAddress) || exitingConfirmed(member.uniqueAddress)))
+      members.exists(member =>
+        (firstMemberInDc || member.dataCenter == selfDc) &&
+        memberStatus(member.status) &&
+        !(latestGossip.seenByNode(member.uniqueAddress) || exitingConfirmed(member.uniqueAddress)))
     }
 
     // Find cluster members in the data center that are unreachable from other members of the data center
@@ -104,9 +99,7 @@ import akka.util.ccompat._
       latestGossip.member(r.subject).dataCenter != selfDc
     }
 
-  /**
-   * @return reachability for data center nodes, with observations from outside the data center or from downed nodes filtered out
-   */
+  /** @return reachability for data center nodes, with observations from outside the data center or from downed nodes filtered out */
   lazy val dcReachabilityExcludingDownedObservers: Reachability = {
     val membersToExclude = members.collect { case m if m.status == Down || m.dataCenter != selfDc => m.uniqueAddress }
     overview.reachability
@@ -117,9 +110,7 @@ import akka.util.ccompat._
   lazy val dcReachabilityNoOutsideNodes: Reachability =
     overview.reachability.remove(members.collect { case m if m.dataCenter != selfDc => m.uniqueAddress })
 
-  /**
-   * @return Up to `crossDcConnections` oldest members for each DC
-   */
+  /** @return Up to `crossDcConnections` oldest members for each DC */
   lazy val ageSortedTopOldestMembersPerDc: Map[DataCenter, immutable.SortedSet[Member]] = {
     latestGossip.members.foldLeft(Map.empty[DataCenter, immutable.SortedSet[Member]]) { (acc, member) =>
       acc.get(member.dataCenter) match {
@@ -174,11 +165,10 @@ import akka.util.ccompat._
     val reachableMembersInDc =
       if (reachability.isAllReachable) mbrs.filter(m => m.dataCenter == selfDc && m.status != Down)
       else
-        mbrs.filter(
-          m =>
-            m.dataCenter == selfDc &&
-            m.status != Down &&
-            (reachability.isReachable(m.uniqueAddress) || m.uniqueAddress == selfUniqueAddress))
+        mbrs.filter(m =>
+          m.dataCenter == selfDc &&
+          m.status != Down &&
+          (reachability.isReachable(m.uniqueAddress) || m.uniqueAddress == selfUniqueAddress))
     if (reachableMembersInDc.isEmpty) None
     else
       reachableMembersInDc
@@ -204,9 +194,7 @@ import akka.util.ccompat._
     mbrs.maxBy(m => if (m.upNumber == Int.MaxValue) 0 else m.upNumber)
   }
 
-  /**
-   * The Exiting change is gossiped to the two oldest nodes for quick dissemination to potential Singleton nodes
-   */
+  /** The Exiting change is gossiped to the two oldest nodes for quick dissemination to potential Singleton nodes */
   def gossipTargetsForExitingMembers(exitingMembers: Set[Member]): Set[Member] = {
     if (exitingMembers.nonEmpty) {
       val roles = exitingMembers.flatten(_.roles).filterNot(_.startsWith(ClusterSettings.DcRolePrefix))
@@ -232,9 +220,7 @@ import akka.util.ccompat._
 
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] class GossipTargetSelector(
     reduceGossipDifferentViewProbability: Double,
     crossDcGossipProbability: Double) {
@@ -247,9 +233,7 @@ import akka.util.ccompat._
     if (state.latestGossip.isMultiDc) multiDcGossipTargets(state)
     else localDcGossipTargets(state)
 
-  /**
-   * Select `n` random nodes to gossip to (used to quickly inform the rest of the cluster when leaving for example)
-   */
+  /** Select `n` random nodes to gossip to (used to quickly inform the rest of the cluster when leaving for example) */
   def randomNodesForFullGossip(state: MembershipState, n: Int): Vector[UniqueAddress] =
     if (state.latestGossip.isMultiDc && state.ageSortedTopOldestMembersPerDc(state.selfDc).contains(state.selfMember)) {
       // this node is one of the N oldest in the cluster, gossip to one cross-dc but mostly locally
@@ -316,9 +300,7 @@ import akka.util.ccompat._
 
   }
 
-  /**
-   * Choose cross-dc nodes if this one of the N oldest nodes, and if not fall back to gossip locally in the dc
-   */
+  /** Choose cross-dc nodes if this one of the N oldest nodes, and if not fall back to gossip locally in the dc */
   protected def multiDcGossipTargets(state: MembershipState): Vector[UniqueAddress] = {
     // only a fraction of the time across data centers
     if (selectDcLocalNodes(state))

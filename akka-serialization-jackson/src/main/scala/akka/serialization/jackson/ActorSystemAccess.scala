@@ -8,9 +8,7 @@ import akka.actor.ExtendedActorSystem
 import akka.annotation.InternalApi
 import akka.serialization.Serialization
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] trait ActorSystemAccess {
   def currentSystem(): ExtendedActorSystem = {
     Serialization.currentTransportInformation.value match {
@@ -22,7 +20,5 @@ import akka.serialization.Serialization
   }
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object ActorSystemAccess extends ActorSystemAccess

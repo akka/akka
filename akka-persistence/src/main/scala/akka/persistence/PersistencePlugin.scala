@@ -17,9 +17,7 @@ import akka.annotation.InternalApi
 import akka.event.Logging
 import akka.persistence.PersistencePlugin.PluginHolder
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] object PersistencePlugin {
   final private[persistence] case class PluginHolder[ScalaDsl, JavaDsl](
@@ -28,21 +26,17 @@ private[akka] object PersistencePlugin {
       extends Extension
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] trait PluginProvider[T, ScalaDsl, JavaDsl] {
   def scalaDsl(t: T): ScalaDsl
   def javaDsl(t: T): JavaDsl
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
-private[akka] abstract class PersistencePlugin[ScalaDsl, JavaDsl, T: ClassTag](system: ExtendedActorSystem)(
-    implicit ev: PluginProvider[T, ScalaDsl, JavaDsl]) {
+private[akka] abstract class PersistencePlugin[ScalaDsl, JavaDsl, T: ClassTag](system: ExtendedActorSystem)(implicit
+    ev: PluginProvider[T, ScalaDsl, JavaDsl]) {
 
   private val plugins = new AtomicReference[Map[String, ExtensionId[PluginHolder[ScalaDsl, JavaDsl]]]](Map.empty)
   private val log = Logging(system, classOf[PersistencePlugin[_, _, _]])
@@ -82,19 +76,17 @@ private[akka] abstract class PersistencePlugin[ScalaDsl, JavaDsl, T: ClassTag](s
     instantiate(
       (classOf[ExtendedActorSystem], system) :: (classOf[Config], pluginConfig) ::
       (classOf[String], configPath) :: Nil)
-      .recoverWith {
-        case _: NoSuchMethodException =>
-          instantiate((classOf[ExtendedActorSystem], system) :: (classOf[Config], pluginConfig) :: Nil)
+      .recoverWith { case _: NoSuchMethodException =>
+        instantiate((classOf[ExtendedActorSystem], system) :: (classOf[Config], pluginConfig) :: Nil)
       }
       .recoverWith { case _: NoSuchMethodException => instantiate((classOf[ExtendedActorSystem], system) :: Nil) }
       .recoverWith { case _: NoSuchMethodException => instantiate(Nil) }
-      .recoverWith {
-        case ex: Exception =>
-          Failure.apply(
-            new IllegalArgumentException(
-              "Unable to create read journal plugin instance for path " +
-              s"[$configPath], class [$pluginClassName]!",
-              ex))
+      .recoverWith { case ex: Exception =>
+        Failure.apply(
+          new IllegalArgumentException(
+            "Unable to create read journal plugin instance for path " +
+            s"[$configPath], class [$pluginClassName]!",
+            ex))
       }
       .get
   }

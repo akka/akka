@@ -12,9 +12,11 @@ import akka.stream.testkit.{ ScriptedTest, StreamSpec, TestPublisher, TestSubscr
 import akka.testkit.TimingTest
 import akka.util.unused
 
-class FlowGroupedWeightedSpec extends StreamSpec("""
+class FlowGroupedWeightedSpec
+    extends StreamSpec("""
     akka.stream.materializer.initial-input-buffer-size = 2
-  """) with ScriptedTest {
+  """)
+    with ScriptedTest {
 
   "A GroupedWeighted" must {
     "produce no group (empty sink sequence) when source is empty" in {
@@ -26,7 +28,7 @@ class FlowGroupedWeightedSpec extends StreamSpec("""
     }
 
     "always exhaust a source into a single group if cost is 0" in {
-      val input = (1 to 15)
+      val input = 1 to 15
       def costFn(@unused e: Int): Long = 0L
       val minWeight = 1 // chose the least possible value for minWeight
       val future = Source(input).groupedWeighted(minWeight)(costFn).runWith(Sink.seq)
@@ -35,7 +37,7 @@ class FlowGroupedWeightedSpec extends StreamSpec("""
     }
 
     "exhaust source into one group if minWeight equals the accumulated cost of the source" in {
-      val input = (1 to 16)
+      val input = 1 to 16
       def costFn(@unused e: Int): Long = 1L
       val minWeight = input.length
       val future = Source(input).groupedWeighted(minWeight)(costFn).runWith(Sink.seq)
@@ -75,18 +77,14 @@ class FlowGroupedWeightedSpec extends StreamSpec("""
     }
 
     "fail during stream initialization when minWeight is negative" in {
-      val ex = the[IllegalArgumentException] thrownBy Source(1 to 5)
-          .groupedWeighted(-1)(_ => 1L)
-          .to(Sink.collection)
-          .run()
+      val ex =
+        the[IllegalArgumentException] thrownBy Source(1 to 5).groupedWeighted(-1)(_ => 1L).to(Sink.collection).run()
       ex.getMessage should be("requirement failed: minWeight must be greater than 0")
     }
 
     "fail during stream initialization when minWeight is 0" in {
-      val ex = the[IllegalArgumentException] thrownBy Source(1 to 5)
-          .groupedWeighted(0)(_ => 1L)
-          .to(Sink.collection)
-          .run()
+      val ex =
+        the[IllegalArgumentException] thrownBy Source(1 to 5).groupedWeighted(0)(_ => 1L).to(Sink.collection).run()
       ex.getMessage should be("requirement failed: minWeight must be greater than 0")
     }
 

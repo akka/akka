@@ -13,9 +13,7 @@ import akka.dispatch.AbstractBoundedNodeQueue
 import akka.stream._
 import akka.stream.stage.{ GraphStageLogic, GraphStageWithMaterializedValue, OutHandler, StageLogging }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object BoundedSourceQueueStage {
   sealed trait State
   case object NeedsActivation extends State
@@ -23,9 +21,7 @@ import akka.stream.stage.{ GraphStageLogic, GraphStageWithMaterializedValue, Out
   case class Done(result: QueueCompletionResult) extends State
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] final class BoundedSourceQueueStage[T](bufferSize: Int)
     extends GraphStageWithMaterializedValue[SourceShape[T], BoundedSourceQueue[T]] {
   import BoundedSourceQueueStage._

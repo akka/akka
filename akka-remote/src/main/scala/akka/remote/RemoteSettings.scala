@@ -21,9 +21,7 @@ final class RemoteSettings(val config: Config) {
 
   val WarnAboutDirectUse: Boolean = getBoolean("akka.remote.warn-about-direct-use")
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[akka] def untrustedMode: Boolean = Artery.UntrustedMode
 
   def configureDispatcher(props: Props): Props =

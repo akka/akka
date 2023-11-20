@@ -27,17 +27,15 @@ object ForkJoinPoolStarvationSpec {
   class SelfBusyActor extends Actor {
     self ! "tick"
 
-    override def receive = {
-      case "tick" =>
-        self ! "tick"
+    override def receive = { case "tick" =>
+      self ! "tick"
     }
   }
 
   class InnocentActor extends Actor {
 
-    override def receive = {
-      case "ping" =>
-        sender() ! "All fine"
+    override def receive = { case "ping" =>
+      sender() ! "All fine"
     }
   }
 

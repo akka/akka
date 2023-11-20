@@ -51,8 +51,8 @@ class FrequencySketchSpec extends AnyWordSpec with Matchers {
 
       // frequencies should be halved now (ignore value 500, the reset trigger)
       val frequencies2 = (1 to 499).map(i => i -> sketch.frequency(i.toString))
-      val halved1 = frequencies1.zip(frequencies2).foldLeft(0) {
-        case (correct, ((_, f1), (_, f2))) => if (f2 == (f1 / 2)) correct + 1 else correct
+      val halved1 = frequencies1.zip(frequencies2).foldLeft(0) { case (correct, ((_, f1), (_, f2))) =>
+        if (f2 == (f1 / 2)) correct + 1 else correct
       }
       // note: it's possible that the value that triggers the reset has a hash collision and this ends up
       // bumping the minimum value for another counter, so that the expected halved frequency is off-by-one
@@ -71,8 +71,8 @@ class FrequencySketchSpec extends AnyWordSpec with Matchers {
 
       // frequencies should be halved now (ignore value 1000, the reset trigger)
       val frequencies4 = (1 to 999).map(i => i -> sketch.frequency(i.toString))
-      val halved2 = frequencies3.zip(frequencies4).foldLeft(0) {
-        case (correct, ((_, f3), (_, f4))) => if (f4 == (f3 / 2)) correct + 1 else correct
+      val halved2 = frequencies3.zip(frequencies4).foldLeft(0) { case (correct, ((_, f3), (_, f4))) =>
+        if (f4 == (f3 / 2)) correct + 1 else correct
       }
       // note: it's possible that the value that triggers the reset has a hash collision and this ends up
       // bumping the minimum value for another counter, so that the expected halved frequency is off-by-one
@@ -296,8 +296,8 @@ class FrequencySketchSpec extends AnyWordSpec with Matchers {
 
       // frequencies should be halved now (ignore value 500, the reset trigger)
       val frequencies2 = (1 to 499).map(i => i -> sketch.frequency(i.toString))
-      val halved1 = frequencies1.zip(frequencies2).foldLeft(0) {
-        case (correct, ((_, f1), (_, f2))) => if (f2 == (f1 / 2)) correct + 1 else correct
+      val halved1 = frequencies1.zip(frequencies2).foldLeft(0) { case (correct, ((_, f1), (_, f2))) =>
+        if (f2 == (f1 / 2)) correct + 1 else correct
       }
       // note: it's possible that the value that triggers the reset has a hash collision and this ends up
       // bumping the minimum value for another counter, so that the expected halved frequency is off-by-one
@@ -316,8 +316,8 @@ class FrequencySketchSpec extends AnyWordSpec with Matchers {
 
       // frequencies should be halved now (ignore value 1000, the reset trigger)
       val frequencies4 = (1 to 999).map(i => i -> sketch.frequency(i.toString))
-      val halved2 = frequencies3.zip(frequencies4).foldLeft(0) {
-        case (correct, ((_, f3), (_, f4))) => if (f4 == (f3 / 2)) correct + 1 else correct
+      val halved2 = frequencies3.zip(frequencies4).foldLeft(0) { case (correct, ((_, f3), (_, f4))) =>
+        if (f4 == (f3 / 2)) correct + 1 else correct
       }
       // note: it's possible that the value that triggers the reset has a hash collision and this ends up
       // bumping the minimum value for another counter, so that the expected halved frequency is off-by-one

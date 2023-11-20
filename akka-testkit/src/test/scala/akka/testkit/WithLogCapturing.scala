@@ -12,9 +12,7 @@ import akka.actor.ActorSystem
 import akka.event.Logging
 import akka.event.Logging._
 
-/**
- * Mixin this trait to a test to make log lines appear only when the test failed.
- */
+/** Mixin this trait to a test to make log lines appear only when the test failed. */
 trait WithLogCapturing extends SuiteMixin { this: TestSuite =>
   implicit def system: ActorSystem
 

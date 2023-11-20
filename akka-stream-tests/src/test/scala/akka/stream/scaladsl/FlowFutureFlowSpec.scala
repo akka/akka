@@ -19,9 +19,9 @@ class FlowFutureFlowSpec extends StreamSpec {
     case x        => x
   }
 
-  //this stage's behaviour in case of an 'early' downstream cancellation is governed by an attribute
-  //so we run all tests cases using both modes of the attributes.
-  //please notice most of the cases don't exhibit any difference in behaviour between the two modes
+  // this stage's behaviour in case of an 'early' downstream cancellation is governed by an attribute
+  // so we run all tests cases using both modes of the attributes.
+  // please notice most of the cases don't exhibit any difference in behaviour between the two modes
   for {
     (att, name) <- List(
       (Attributes.NestedMaterializationCancellationPolicy.EagerCancellation, "EagerCancellation"),
@@ -110,8 +110,8 @@ class FlowFutureFlowSpec extends StreamSpec {
           .viaMat {
             Flow.futureFlow {
               Future.successful {
-                Flow[Int].recover {
-                  case TE("fail on 5") => 99
+                Flow[Int].recover { case TE("fail on 5") =>
+                  99
                 }
               }
             }
@@ -138,8 +138,8 @@ class FlowFutureFlowSpec extends StreamSpec {
         fSeq.value should be(empty)
 
         prFlow.success {
-          Flow[Int].recover {
-            case TE("fail on 5") => 99
+          Flow[Int].recover { case TE("fail on 5") =>
+            99
           }
         }
 
@@ -192,8 +192,8 @@ class FlowFutureFlowSpec extends StreamSpec {
             Flow.futureFlow {
               Future.successful {
                 Flow[Int]
-                  .recover {
-                    case TE("not today my friend") => 99
+                  .recover { case TE("not today my friend") =>
+                    99
                   }
                   .concat(src10())
               }
@@ -224,8 +224,8 @@ class FlowFutureFlowSpec extends StreamSpec {
 
         prFlow.success {
           Flow[Int]
-            .recover {
-              case TE("not today my friend") => 99
+            .recover { case TE("not today my friend") =>
+              99
             }
             .concat(src10())
         }
@@ -516,11 +516,10 @@ class FlowFutureFlowSpec extends StreamSpec {
 
   "NestedMaterializationCancellationPolicy" must {
     "default to false" in {
-      val fl = Flow.fromMaterializer {
-        case (_, attributes) =>
-          val att = attributes.mandatoryAttribute[Attributes.NestedMaterializationCancellationPolicy]
-          att.propagateToNestedMaterialization should be(false)
-          Flow[Any]
+      val fl = Flow.fromMaterializer { case (_, attributes) =>
+        val att = attributes.mandatoryAttribute[Attributes.NestedMaterializationCancellationPolicy]
+        att.propagateToNestedMaterialization should be(false)
+        Flow[Any]
       }
       Source.empty.via(fl).runWith(Sink.headOption).futureValue should be(empty)
     }

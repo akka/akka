@@ -9,9 +9,7 @@ import scala.concurrent.duration.FiniteDuration
 import akka.persistence.fsm.PersistentFSM.PersistentFSMSnapshot
 import akka.persistence.typed.SnapshotAdapter
 
-/**
- * Helper functions for migration from PersistentFSM to Persistence Typed
- */
+/** Helper functions for migration from PersistentFSM to Persistence Typed */
 object PersistentFSMMigration {
 
   /**

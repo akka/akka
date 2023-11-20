@@ -56,9 +56,7 @@ trait BehaviorTestKit[T] {
    */
   def runAsk[Res](f: ActorRef[Res] => T): ReplyInbox[Res]
 
-  /**
-   * The same as [[runAsk]] but only for requests that result in a response of type [[akka.pattern.StatusReply]].
-   */
+  /** The same as [[runAsk]] but only for requests that result in a response of type [[akka.pattern.StatusReply]]. */
   def runAskWithStatus[Res](f: ActorRef[StatusReply[Res]] => T): StatusReplyInbox[Res]
 
   // FIXME it is weird that this is public but it is used in BehaviorSpec, could we avoid that?
@@ -77,24 +75,16 @@ trait BehaviorTestKit[T] {
    */
   def childInbox[U](name: String): TestInbox[U]
 
-  /**
-   * Get the child inbox for the child ActorRef, or fail if there is no such child.
-   */
+  /** Get the child inbox for the child ActorRef, or fail if there is no such child. */
   def childInbox[U](child: ActorRef[U]): TestInbox[U]
 
-  /**
-   * Get the [[akka.actor.typed.Behavior]] testkit for the given child [[akka.actor.typed.ActorRef]].
-   */
+  /** Get the [[akka.actor.typed.Behavior]] testkit for the given child [[akka.actor.typed.ActorRef]]. */
   def childTestKit[U](child: ActorRef[U]): BehaviorTestKit[U]
 
-  /**
-   * The self inbox contains messages the behavior sent to `context.self`
-   */
+  /** The self inbox contains messages the behavior sent to `context.self` */
   def selfInbox(): TestInbox[T]
 
-  /**
-   * The self reference of the actor living inside this testkit.
-   */
+  /** The self reference of the actor living inside this testkit. */
   def ref: ActorRef[T] = selfInbox().ref
 
   /**
@@ -103,9 +93,7 @@ trait BehaviorTestKit[T] {
    */
   def retrieveAllEffects(): immutable.Seq[Effect]
 
-  /**
-   * Returns if there have been any effects.
-   */
+  /** Returns if there have been any effects. */
   def hasEffects(): Boolean
 
   /**
@@ -120,14 +108,10 @@ trait BehaviorTestKit[T] {
    */
   def expectEffectType[E <: Effect](implicit classTag: ClassTag[E]): E
 
-  /**
-   * Asserts that the oldest effect matches the given partial function.
-   */
+  /** Asserts that the oldest effect matches the given partial function. */
   def expectEffectPF[R](f: PartialFunction[Effect, R]): R
 
-  /**
-   * The current behavior, can change any time `run` is called
-   */
+  /** The current behavior, can change any time `run` is called */
   def currentBehavior: Behavior[T]
 
   /**
@@ -137,38 +121,24 @@ trait BehaviorTestKit[T] {
    */
   def returnedBehavior: Behavior[T]
 
-  /**
-   * Is the current behavior alive or stopped
-   */
+  /** Is the current behavior alive or stopped */
   def isAlive: Boolean
 
-  /**
-   * Send the message to the behavior and record any [[Effect]]s
-   */
+  /** Send the message to the behavior and record any [[Effect]]s */
   def run(message: T): Unit
 
-  /**
-   * Send the first message in the selfInbox to the behavior and run it, recording [[Effect]]s.
-   */
+  /** Send the first message in the selfInbox to the behavior and run it, recording [[Effect]]s. */
   def runOne(): Unit
 
-  /**
-   * Send the signal to the behavior and record any [[Effect]]s
-   */
+  /** Send the signal to the behavior and record any [[Effect]]s */
   def signal(signal: Signal): Unit
 
-  /**
-   * Returns all the [[CapturedLogEvent]] issued by this behavior(s)
-   */
+  /** Returns all the [[CapturedLogEvent]] issued by this behavior(s) */
   def logEntries(): immutable.Seq[CapturedLogEvent]
 
-  /**
-   * Clear the log entries
-   */
+  /** Clear the log entries */
   def clearLog(): Unit
 
-  /**
-   * The receptionist inbox contains messages sent to `system.receptionist`
-   */
+  /** The receptionist inbox contains messages sent to `system.receptionist` */
   def receptionistInbox(): TestInbox[Receptionist.Command]
 }

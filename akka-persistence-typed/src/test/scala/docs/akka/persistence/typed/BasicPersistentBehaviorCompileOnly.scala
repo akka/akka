@@ -34,7 +34,7 @@ object BasicPersistentBehaviorCompileOnly {
   import akka.persistence.typed.scaladsl.RetentionCriteria
 
   object FirstExample {
-    //#command
+    // #command
     sealed trait Command
     final case class Add(data: String) extends Command
     case object Clear extends Command
@@ -42,13 +42,13 @@ object BasicPersistentBehaviorCompileOnly {
     sealed trait Event
     final case class Added(data: String) extends Event
     case object Cleared extends Event
-    //#command
+    // #command
 
-    //#state
+    // #state
     final case class State(history: List[String] = Nil)
-    //#state
+    // #state
 
-    //#command-handler
+    // #command-handler
     import akka.persistence.typed.scaladsl.Effect
 
     val commandHandler: (State, Command) => Effect[Event, State] = { (state, command) =>
@@ -57,9 +57,9 @@ object BasicPersistentBehaviorCompileOnly {
         case Clear     => Effect.persist(Cleared)
       }
     }
-    //#command-handler
+    // #command-handler
 
-    //#effects
+    // #effects
     def onCommand(subscriber: ActorRef[State], state: State, command: Command): Effect[Event, State] = {
       command match {
         case Add(data) =>
@@ -68,29 +68,29 @@ object BasicPersistentBehaviorCompileOnly {
           Effect.persist(Cleared).thenRun((newState: State) => subscriber ! newState).thenStop()
       }
     }
-    //#effects
+    // #effects
 
-    //#event-handler
+    // #event-handler
     val eventHandler: (State, Event) => State = { (state, event) =>
       event match {
         case Added(data) => state.copy((data :: state.history).take(5))
         case Cleared     => State(Nil)
       }
     }
-    //#event-handler
+    // #event-handler
 
-    //#behavior
+    // #behavior
     def apply(id: String): Behavior[Command] =
       EventSourcedBehavior[Command, Event, State](
         persistenceId = PersistenceId.ofUniqueId(id),
         emptyState = State(Nil),
         commandHandler = commandHandler,
         eventHandler = eventHandler)
-    //#behavior
+    // #behavior
 
   }
 
-  //#structure
+  // #structure
   object MyPersistentBehavior {
     sealed trait Command
     sealed trait Event
@@ -103,53 +103,52 @@ object BasicPersistentBehaviorCompileOnly {
         commandHandler = (state, cmd) => throw new NotImplementedError("TODO: process the command & return an Effect"),
         eventHandler = (state, evt) => throw new NotImplementedError("TODO: process the event return the next state"))
   }
-  //#structure
+  // #structure
 
   import MyPersistentBehavior._
 
   object RecoveryBehavior {
     def apply(persistenceId: PersistenceId): Behavior[Command] =
-      //#recovery
+      // #recovery
       EventSourcedBehavior[Command, Event, State](
         persistenceId = persistenceId,
         emptyState = State(),
         commandHandler = (state, cmd) => throw new NotImplementedError("TODO: process the command & return an Effect"),
         eventHandler = (state, evt) => throw new NotImplementedError("TODO: process the event return the next state"))
-        .receiveSignal {
-          case (state, RecoveryCompleted) =>
-            throw new NotImplementedError("TODO: add some end-of-recovery side-effect here")
+        .receiveSignal { case (state, RecoveryCompleted) =>
+          throw new NotImplementedError("TODO: add some end-of-recovery side-effect here")
         }
-    //#recovery
+    // #recovery
   }
 
   object RecoveryDisabledBehavior {
     def apply(): Behavior[Command] =
-      //#recovery-disabled
+      // #recovery-disabled
       EventSourcedBehavior[Command, Event, State](
         persistenceId = PersistenceId.ofUniqueId("abc"),
         emptyState = State(),
         commandHandler = (state, cmd) => throw new NotImplementedError("TODO: process the command & return an Effect"),
         eventHandler = (state, evt) => throw new NotImplementedError("TODO: process the event return the next state"))
         .withRecovery(Recovery.disabled)
-    //#recovery-disabled
+    // #recovery-disabled
   }
 
   object TaggingBehavior {
     def apply(): Behavior[Command] =
-      //#tagging
+      // #tagging
       EventSourcedBehavior[Command, Event, State](
         persistenceId = PersistenceId.ofUniqueId("abc"),
         emptyState = State(),
         commandHandler = (state, cmd) => throw new NotImplementedError("TODO: process the command & return an Effect"),
         eventHandler = (state, evt) => throw new NotImplementedError("TODO: process the event return the next state"))
         .withTagger(_ => Set("tag1", "tag2"))
-    //#tagging
+    // #tagging
   }
 
   object TaggingBehavior2 {
     sealed trait OrderCompleted extends Event
 
-    //#tagging-query
+    // #tagging-query
     val NumberOfEntityGroups = 10
 
     def tagEvent(entityId: String, event: Event): Set[String] = {
@@ -168,29 +167,30 @@ object BasicPersistentBehaviorCompileOnly {
         eventHandler = (state, evt) => throw new NotImplementedError("TODO: process the event return the next state"))
         .withTagger(event => tagEvent(entityId, event))
     }
-    //#tagging-query
+    // #tagging-query
   }
 
   object WrapBehavior {
     def apply(): Behavior[Command] =
-      //#wrapPersistentBehavior
+      // #wrapPersistentBehavior
       Behaviors.setup[Command] { context =>
         EventSourcedBehavior[Command, Event, State](
           persistenceId = PersistenceId.ofUniqueId("abc"),
           emptyState = State(),
-          commandHandler = (state, cmd) => throw new NotImplementedError("TODO: process the command & return an Effect"),
+          commandHandler =
+            (state, cmd) => throw new NotImplementedError("TODO: process the command & return an Effect"),
           eventHandler = (state, evt) => throw new NotImplementedError("TODO: process the event return the next state"))
           .snapshotWhen((state, _, _) => {
             context.log.info2("Snapshot actor {} => state: {}", context.self.path.name, state)
             true
           })
       }
-    //#wrapPersistentBehavior
+    // #wrapPersistentBehavior
   }
 
   object Supervision {
     def apply(): Behavior[Command] =
-      //#supervision
+      // #supervision
       EventSourcedBehavior[Command, Event, State](
         persistenceId = PersistenceId.ofUniqueId("abc"),
         emptyState = State(),
@@ -198,7 +198,7 @@ object BasicPersistentBehaviorCompileOnly {
         eventHandler = (state, evt) => throw new NotImplementedError("TODO: process the event return the next state"))
         .onPersistFailure(
           SupervisorStrategy.restartWithBackoff(minBackoff = 10.seconds, maxBackoff = 60.seconds, randomFactor = 0.1))
-    //#supervision
+    // #supervision
   }
 
   object BehaviorWithContext {
@@ -215,8 +215,8 @@ object BasicPersistentBehaviorCompileOnly {
             context.log.info("Got command {}", cmd)
             Effect.none
           },
-          eventHandler = {
-            case (state, _) => state
+          eventHandler = { case (state, _) =>
+            state
           })
       }
     // #actor-context
@@ -224,7 +224,7 @@ object BasicPersistentBehaviorCompileOnly {
 
   final case class BookingCompleted(orderNr: String) extends Event
 
-  //#snapshottingEveryN
+  // #snapshottingEveryN
 
   EventSourcedBehavior[Command, Event, State](
     persistenceId = PersistenceId.ofUniqueId("abc"),
@@ -232,9 +232,9 @@ object BasicPersistentBehaviorCompileOnly {
     commandHandler = (state, cmd) => throw new NotImplementedError("TODO: process the command & return an Effect"),
     eventHandler = (state, evt) => throw new NotImplementedError("TODO: process the event return the next state"))
     .withRetention(RetentionCriteria.snapshotEvery(numberOfEvents = 1000, keepNSnapshots = 2))
-  //#snapshottingEveryN
+  // #snapshottingEveryN
 
-  //#snapshottingPredicate
+  // #snapshottingPredicate
   EventSourcedBehavior[Command, Event, State](
     persistenceId = PersistenceId.ofUniqueId("abc"),
     emptyState = State(),
@@ -244,9 +244,9 @@ object BasicPersistentBehaviorCompileOnly {
       case (state, BookingCompleted(_), sequenceNumber) => true
       case (state, event, sequenceNumber)               => false
     }
-  //#snapshottingPredicate
+  // #snapshottingPredicate
 
-  //#snapshotSelection
+  // #snapshotSelection
   import akka.persistence.typed.SnapshotSelectionCriteria
 
   EventSourcedBehavior[Command, Event, State](
@@ -255,9 +255,9 @@ object BasicPersistentBehaviorCompileOnly {
     commandHandler = (state, cmd) => throw new NotImplementedError("TODO: process the command & return an Effect"),
     eventHandler = (state, evt) => throw new NotImplementedError("TODO: process the event return the next state"))
     .withRecovery(Recovery.withSnapshotSelectionCriteria(SnapshotSelectionCriteria.none))
-  //#snapshotSelection
+  // #snapshotSelection
 
-  //#retentionCriteria
+  // #retentionCriteria
 
   import akka.persistence.typed.scaladsl.Effect
 
@@ -265,15 +265,16 @@ object BasicPersistentBehaviorCompileOnly {
     persistenceId = PersistenceId.ofUniqueId("abc"),
     emptyState = State(),
     commandHandler = (state, cmd) => throw new NotImplementedError("TODO: process the command & return an Effect"),
-    eventHandler = (state, evt) => state) // do something based on a particular state
+    eventHandler = (state, evt) => state
+  ) // do something based on a particular state
     .snapshotWhen {
       case (state, BookingCompleted(_), sequenceNumber) => true
       case (state, event, sequenceNumber)               => false
     }
     .withRetention(RetentionCriteria.snapshotEvery(numberOfEvents = 100, keepNSnapshots = 2))
-  //#retentionCriteria
+  // #retentionCriteria
 
-  //#snapshotAndEventDeletes
+  // #snapshotAndEventDeletes
 
   EventSourcedBehavior[Command, Event, State](
     persistenceId = PersistenceId.ofUniqueId("abc"),
@@ -286,9 +287,9 @@ object BasicPersistentBehaviorCompileOnly {
       case (state, _: DeleteSnapshotsFailed) => // react to failure
       case (state, _: DeleteEventsFailed)    => // react to failure
     }
-  //#snapshotAndEventDeletes
+  // #snapshotAndEventDeletes
 
-  //#retentionCriteriaWithSignals
+  // #retentionCriteriaWithSignals
 
   EventSourcedBehavior[Command, Event, State](
     persistenceId = PersistenceId.ofUniqueId("abc"),
@@ -300,27 +301,27 @@ object BasicPersistentBehaviorCompileOnly {
       case (state, _: SnapshotFailed)        => // react to failure
       case (state, _: DeleteSnapshotsFailed) => // react to failure
     }
-  //#retentionCriteriaWithSignals
+  // #retentionCriteriaWithSignals
 
-  //#event-wrapper
+  // #event-wrapper
   case class Wrapper[T](event: T)
   class WrapperEventAdapter[T] extends EventAdapter[T, Wrapper[T]] {
     override def toJournal(e: T): Wrapper[T] = Wrapper(e)
     override def fromJournal(p: Wrapper[T], manifest: String): EventSeq[T] = EventSeq.single(p.event)
     override def manifest(event: T): String = ""
   }
-  //#event-wrapper
+  // #event-wrapper
 
-  //#install-event-adapter
+  // #install-event-adapter
   EventSourcedBehavior[Command, Event, State](
     persistenceId = PersistenceId.ofUniqueId("abc"),
     emptyState = State(),
     commandHandler = (state, cmd) => throw new NotImplementedError("TODO: process the command & return an Effect"),
     eventHandler = (state, evt) => throw new NotImplementedError("TODO: process the event return the next state"))
     .eventAdapter(new WrapperEventAdapter[Event])
-    //#install-event-adapter
-    //#custom-stash-buffer
+    // #install-event-adapter
+    // #custom-stash-buffer
     .withStashCapacity(100)
-  //#custom-stash-buffer
+  // #custom-stash-buffer
 
 }

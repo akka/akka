@@ -38,9 +38,7 @@ object Settings extends ExtensionId[SettingsImpl] with ExtensionIdProvider {
   override def createExtension(system: ExtendedActorSystem) =
     new SettingsImpl(system.settings.config)
 
-  /**
-   * Java API: retrieve the Settings extension for the given system.
-   */
+  /** Java API: retrieve the Settings extension for the given system. */
   override def get(system: ActorSystem): SettingsImpl = super.get(system)
   override def get(system: ClassicActorSystemProvider): SettingsImpl = super.get(system)
 }
@@ -61,15 +59,14 @@ object SettingsExtensionDocSpec {
     //#config
     """
 
-  //#extension-usage-actor
+  // #extension-usage-actor
 
   class MyActor extends Actor {
     val settings = Settings(context.system)
     val connection = connect(settings.DbUri, settings.CircuitBreakerTimeout)
 
-    //#extension-usage-actor
-    def receive = {
-      case someMessage =>
+    // #extension-usage-actor
+    def receive = { case someMessage =>
     }
 
     def connect(dbUri: String, circuitBreakerTimeout: Duration) = {
@@ -82,10 +79,10 @@ object SettingsExtensionDocSpec {
 class SettingsExtensionDocSpec extends AkkaSpec(SettingsExtensionDocSpec.config) {
 
   "demonstrate how to create application specific settings extension in Scala" in {
-    //#extension-usage
+    // #extension-usage
     val dbUri = Settings(system).DbUri
     val circuitBreakerTimeout = Settings(system).CircuitBreakerTimeout
-    //#extension-usage
+    // #extension-usage
   }
 
 }

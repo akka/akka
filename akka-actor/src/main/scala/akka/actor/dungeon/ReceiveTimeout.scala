@@ -48,7 +48,7 @@ private[akka] trait ReceiveTimeout { this: ActorCell =>
   }
 
   private def rescheduleReceiveTimeout(f: FiniteDuration): Unit = {
-    receiveTimeoutData._2.cancel() //Cancel any ongoing future
+    receiveTimeoutData._2.cancel() // Cancel any ongoing future
     val task = system.scheduler.scheduleOnce(f, self, akka.actor.ReceiveTimeout)(this.dispatcher)
     receiveTimeoutData = (f, task)
   }

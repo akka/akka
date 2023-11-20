@@ -23,12 +23,14 @@ object ClusterHeartbeatSenderSpec {
   }
 }
 
-class ClusterHeartbeatSenderSpec extends AkkaSpec("""
+class ClusterHeartbeatSenderSpec
+    extends AkkaSpec("""
     akka.loglevel = DEBUG
     akka.actor.provider = cluster 
     akka.cluster.failure-detector.heartbeat-interval = 0.2s
     akka.remote.artery.canonical.port = 0
-  """.stripMargin) with ImplicitSender {
+  """.stripMargin)
+    with ImplicitSender {
 
   "ClusterHeartBeatSender" must {
     "increment heart beat sequence nr" in {
@@ -36,8 +38,8 @@ class ClusterHeartbeatSenderSpec extends AkkaSpec("""
       val underTest = system.actorOf(Props(new TestClusterHeartBeatSender(probe)))
       underTest ! CurrentClusterState()
       underTest ! MemberUp(
-        Member(UniqueAddress(Address("akka", system.name), 1L), Set("dc-default"), Version.Zero)
-          .copy(status = MemberStatus.Up))
+        Member(UniqueAddress(Address("akka", system.name), 1L), Set("dc-default"), Version.Zero).copy(status =
+          MemberStatus.Up))
 
       probe.expectMsgType[Heartbeat].sequenceNr shouldEqual 1
       probe.expectMsgType[Heartbeat].sequenceNr shouldEqual 2

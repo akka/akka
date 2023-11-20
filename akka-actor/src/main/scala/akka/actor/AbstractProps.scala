@@ -13,28 +13,21 @@ import scala.annotation.varargs
 import akka.japi.Creator
 import akka.util.Reflect
 
-/**
- *
- * Java API: Factory for Props instances.
- */
+/** Java API: Factory for Props instances. */
 private[akka] trait AbstractProps {
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   private[akka] def validate(clazz: Class[_]): Unit = {
     if (Modifier.isAbstract(clazz.getModifiers)) {
       throw new IllegalArgumentException(s"Actor class [${clazz.getName}] must not be abstract")
     } else if (!classOf[Actor].isAssignableFrom(clazz) &&
-               !classOf[IndirectActorProducer].isAssignableFrom(clazz)) {
+      !classOf[IndirectActorProducer].isAssignableFrom(clazz)) {
       throw new IllegalArgumentException(
         s"Actor class [${clazz.getName}] must be subClass of akka.actor.Actor or akka.actor.IndirectActorProducer.")
     }
   }
 
-  /**
-   * Java API: create a Props given a class and its constructor arguments.
-   */
+  /** Java API: create a Props given a class and its constructor arguments. */
   @varargs
   def create(clazz: Class[_], args: AnyRef*): Props =
     new Props(deploy = Props.defaultDeploy, clazz = clazz, args = args.toList)
@@ -71,9 +64,7 @@ private[akka] trait AbstractProps {
     create(classOf[CreatorConsumer], actorClass, creator)
   }
 
-  /**
-   * Create new Props from the given [[akka.japi.Creator]] with the type set to the given actorClass.
-   */
+  /** Create new Props from the given [[akka.japi.Creator]] with the type set to the given actorClass. */
   def create[T <: Actor](actorClass: Class[T], creator: Creator[T]): Props = {
     checkCreatorClosingOver(creator.getClass)
     create(classOf[CreatorConsumer], actorClass, creator)

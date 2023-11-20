@@ -52,9 +52,8 @@ object ShardedDaemonProcessSpec {
     def apply(id: Int, probe: ActorRef[Any]): Behavior[Command] = Behaviors.setup { ctx =>
       probe ! Started(id, ctx.self)
 
-      Behaviors.receiveMessage {
-        case Stop =>
-          Behaviors.stopped
+      Behaviors.receiveMessage { case Stop =>
+        Behaviors.stopped
       }
     }
 
@@ -74,9 +73,11 @@ class ShardedDaemonProcessSpec
     "have a single node cluster running first" in {
       val probe = createTestProbe()
       Cluster(system).manager ! Join(Cluster(system).selfMember.address)
-      probe.awaitAssert({
-        Cluster(system).selfMember.status == MemberStatus.Up
-      }, 3.seconds)
+      probe.awaitAssert(
+        {
+          Cluster(system).selfMember.status == MemberStatus.Up
+        },
+        3.seconds)
     }
 
     "start N actors with unique ids" in {
@@ -113,9 +114,11 @@ class ShardedDaemonProcessSpec
     "have a single node cluster running first" in {
       val probe = createTestProbe()
       Cluster(system).manager ! Join(Cluster(system).selfMember.address)
-      probe.awaitAssert({
-        Cluster(system).selfMember.status == MemberStatus.Up
-      }, 3.seconds)
+      probe.awaitAssert(
+        {
+          Cluster(system).selfMember.status == MemberStatus.Up
+        },
+        3.seconds)
     }
 
     "send keep alive messages to original id scheme when revision is 0" in {

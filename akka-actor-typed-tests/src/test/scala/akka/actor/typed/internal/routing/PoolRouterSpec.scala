@@ -16,10 +16,9 @@ object PoolRouterSpec {
 
     final case class WhichDispatcher(replyTo: ActorRef[String])
 
-    def apply(): Behavior[WhichDispatcher] = Behaviors.receiveMessage {
-      case WhichDispatcher(replyTo) =>
-        replyTo ! Thread.currentThread.getName
-        Behaviors.same
+    def apply(): Behavior[WhichDispatcher] = Behaviors.receiveMessage { case WhichDispatcher(replyTo) =>
+      replyTo ! Thread.currentThread.getName
+      Behaviors.same
     }
   }
 }

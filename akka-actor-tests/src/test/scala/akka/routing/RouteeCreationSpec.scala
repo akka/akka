@@ -34,12 +34,12 @@ class RouteeCreationSpec extends AkkaSpec {
       val N = 100
       system.actorOf(RoundRobinPool(N).props(Props(new Actor {
         context.parent ! "one"
-        def receive = {
-          case "one" => testActor.forward("two")
+        def receive = { case "one" =>
+          testActor.forward("two")
         }
       })))
-      val gotit = receiveWhile(messages = N) {
-        case "two" => lastSender.toString
+      val gotit = receiveWhile(messages = N) { case "two" =>
+        lastSender.toString
       }
       expectNoMessage(100.millis)
       if (gotit.size != N) {

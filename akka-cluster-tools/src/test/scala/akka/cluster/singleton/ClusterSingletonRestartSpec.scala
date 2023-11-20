@@ -16,8 +16,7 @@ import akka.testkit.AkkaSpec
 import akka.testkit.TestActors
 import akka.testkit.TestProbe
 
-class ClusterSingletonRestartSpec
-    extends AkkaSpec("""
+class ClusterSingletonRestartSpec extends AkkaSpec("""
   akka.loglevel = INFO
   akka.actor.provider = akka.cluster.ClusterActorRefProvider
   akka.cluster.downing-provider-class = akka.cluster.testkit.AutoDowning
@@ -75,9 +74,11 @@ class ClusterSingletonRestartSpec
         val sys1port = Cluster(sys1).selfAddress.port.get
 
         val sys3Config =
-          ConfigFactory.parseString(s"""
+          ConfigFactory
+            .parseString(s"""
             akka.remote.artery.canonical.port=$sys1port
-            """).withFallback(system.settings.config)
+            """)
+            .withFallback(system.settings.config)
 
         ActorSystem(system.name, sys3Config)
       }

@@ -25,20 +25,19 @@ class StreamTcpDocSpec extends AkkaSpec {
 
   "simple server connection" in {
     {
-      //#echo-server-simple-bind
+      // #echo-server-simple-bind
       val binding: Future[ServerBinding] =
         Tcp(system).bind("127.0.0.1", 8888).to(Sink.ignore).run()
 
       binding.map { b =>
-        b.unbind().onComplete {
-          case _ => // ...
+        b.unbind().onComplete { case _ => // ...
         }
       }
-      //#echo-server-simple-bind
+      // #echo-server-simple-bind
     }
     {
       val (host, port) = SocketUtil.temporaryServerHostnameAndPort()
-      //#echo-server-simple-handle
+      // #echo-server-simple-handle
       import akka.stream.scaladsl.Framing
 
       val connections: Source[IncomingConnection, Future[ServerBinding]] =
@@ -54,7 +53,7 @@ class StreamTcpDocSpec extends AkkaSpec {
 
         connection.handleWith(echo)
       }
-      //#echo-server-simple-handle
+      // #echo-server-simple-handle
     }
   }
 
@@ -66,7 +65,7 @@ class StreamTcpDocSpec extends AkkaSpec {
 
     import akka.stream.scaladsl.Framing
     val binding =
-      //#welcome-banner-chat-server
+      // #welcome-banner-chat-server
       connections
         .to(Sink.foreach { connection =>
           // server logic, parses incoming commands
@@ -79,11 +78,11 @@ class StreamTcpDocSpec extends AkkaSpec {
           val serverLogic = Flow[ByteString]
             .via(Framing.delimiter(ByteString("\n"), maximumFrameLength = 256, allowTruncation = true))
             .map(_.utf8String)
-            //#welcome-banner-chat-server
+            // #welcome-banner-chat-server
             .map { command =>
               serverProbe.ref ! command; command
             }
-            //#welcome-banner-chat-server
+            // #welcome-banner-chat-server
             .via(commandParser)
             // merge in the initial banner after parser
             .merge(welcome)
@@ -93,7 +92,7 @@ class StreamTcpDocSpec extends AkkaSpec {
           connection.handleWith(serverLogic)
         })
         .run()
-    //#welcome-banner-chat-server
+    // #welcome-banner-chat-server
 
     // make sure server is started before we connect
     binding.futureValue
@@ -110,14 +109,14 @@ class StreamTcpDocSpec extends AkkaSpec {
 
     {
       // just for docs, never actually used
-      //#repl-client
+      // #repl-client
       val connection = Tcp(system).outgoingConnection("127.0.0.1", 8888)
-      //#repl-client
+      // #repl-client
     }
 
     {
       val connection = Tcp(system).outgoingConnection(localhost)
-      //#repl-client
+      // #repl-client
 
       val replParser =
         Flow[String].takeWhile(_ != "q").concat(Source.single("BYE")).map(elem => ByteString(s"$elem\n"))
@@ -130,7 +129,7 @@ class StreamTcpDocSpec extends AkkaSpec {
         .via(replParser)
 
       val connected = connection.join(repl).run()
-      //#repl-client
+      // #repl-client
 
       // make sure we have a connection or fail already here
       connected.futureValue

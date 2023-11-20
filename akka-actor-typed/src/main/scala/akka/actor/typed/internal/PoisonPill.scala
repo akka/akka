@@ -19,9 +19,7 @@ import akka.annotation.InternalApi
  */
 @InternalApi private[akka] sealed abstract class PoisonPill extends Signal
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] case object PoisonPill extends PoisonPill {
   def instance: PoisonPill = this
 }

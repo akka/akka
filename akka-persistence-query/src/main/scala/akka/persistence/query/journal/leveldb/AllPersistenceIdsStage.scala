@@ -17,9 +17,7 @@ import akka.stream.stage.GraphStageLogic
 import akka.stream.stage.OutHandler
 import akka.stream.stage.TimerGraphStageLogicWithLogging
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 final private[akka] class AllPersistenceIdsStage(liveQuery: Boolean, writeJournalPluginId: String, mat: Materializer)
     extends GraphStage[SourceShape[String]] {

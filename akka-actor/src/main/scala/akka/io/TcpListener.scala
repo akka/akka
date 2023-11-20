@@ -15,9 +15,7 @@ import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
 import akka.io.SelectionHandler._
 import akka.io.Tcp._
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[io] object TcpListener {
 
   final case class RegisterIncoming(channel: SocketChannel)
@@ -30,9 +28,7 @@ private[io] object TcpListener {
 
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[io] class TcpListener(
     selectorRouter: ActorRef,
     tcp: TcpExt,
@@ -85,10 +81,9 @@ private[io] class TcpListener(
 
   override def supervisorStrategy = SelectionHandler.connectionSupervisorStrategy
 
-  def receive: Receive = {
-    case registration: ChannelRegistration =>
-      bindCommander ! Bound(channel.socket.getLocalSocketAddress.asInstanceOf[InetSocketAddress])
-      context.become(bound(registration))
+  def receive: Receive = { case registration: ChannelRegistration =>
+    bindCommander ! Bound(channel.socket.getLocalSocketAddress.asInstanceOf[InetSocketAddress])
+    context.become(bound(registration))
   }
 
   def bound(registration: ChannelRegistration): Receive = {
@@ -115,11 +110,10 @@ private[io] class TcpListener(
 
       context.become(unregistering(sender()))
   }
-  def unregistering(requester: ActorRef): Receive = {
-    case Unbound =>
-      requester ! Unbound
-      log.debug("Unbound endpoint {}, stopping listener", localAddress)
-      context.stop(self)
+  def unregistering(requester: ActorRef): Receive = { case Unbound =>
+    requester ! Unbound
+    log.debug("Unbound endpoint {}, stopping listener", localAddress)
+    context.stop(self)
   }
 
   @tailrec final def acceptAllPending(registration: ChannelRegistration, limit: Int): Int = {

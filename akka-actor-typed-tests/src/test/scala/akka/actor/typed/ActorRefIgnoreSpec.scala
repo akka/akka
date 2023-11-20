@@ -26,11 +26,10 @@ class ActorRefIgnoreSpec extends ScalaTestWithActorTestKit() with AnyWordSpecLik
   // messages it received so far
   val askMeActorBehavior: Behavior[Request] = {
     def internalBehavior(counter: Int): Behavior[Request] =
-      Behaviors.receiveMessage[Request] {
-        case Request(replyTo) =>
-          val newCounter = counter + 1
-          replyTo ! newCounter
-          internalBehavior(newCounter)
+      Behaviors.receiveMessage[Request] { case Request(replyTo) =>
+        val newCounter = counter + 1
+        replyTo ! newCounter
+        internalBehavior(newCounter)
       }
 
     internalBehavior(0)

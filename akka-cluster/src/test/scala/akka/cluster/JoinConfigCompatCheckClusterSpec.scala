@@ -52,24 +52,32 @@ class JoinConfigCompatCheckClusterSpec extends AkkaSpec {
 
   "JoinConfigCompatCheckCluster" must {
     "be valid when no downing-provider" in {
-      val oldConfig = ConfigFactory.parseString("""
+      val oldConfig = ConfigFactory
+        .parseString("""
         akka.cluster.downing-provider-class = ""
-        """).withFallback(system.settings.config)
-      val newConfig = ConfigFactory.parseString("""
+        """)
+        .withFallback(system.settings.config)
+      val newConfig = ConfigFactory
+        .parseString("""
         akka.cluster.downing-provider-class = ""
-        """).withFallback(system.settings.config)
+        """)
+        .withFallback(system.settings.config)
       checkInitJoin(oldConfig, newConfig) should ===(Valid)
     }
 
     "be valid when same downing-provider" in {
       val oldConfig =
-        ConfigFactory.parseString("""
+        ConfigFactory
+          .parseString("""
         akka.cluster.downing-provider-class = "akka.cluster.sbr.SplitBrainResolverProvider"
-        """).withFallback(system.settings.config)
+        """)
+          .withFallback(system.settings.config)
       val newConfig =
-        ConfigFactory.parseString("""
+        ConfigFactory
+          .parseString("""
         akka.cluster.downing-provider-class = "akka.cluster.sbr.SplitBrainResolverProvider"
-        """).withFallback(system.settings.config)
+        """)
+          .withFallback(system.settings.config)
       checkInitJoin(oldConfig, newConfig) should ===(Valid)
     }
 
@@ -81,35 +89,45 @@ class JoinConfigCompatCheckClusterSpec extends AkkaSpec {
         """)
           .withFallback(system.settings.config)
       val newConfig =
-        ConfigFactory.parseString("""
+        ConfigFactory
+          .parseString("""
         akka.cluster.downing-provider-class = "akka.cluster.sbr.SplitBrainResolverProvider"
-        """).withFallback(system.settings.config)
+        """)
+          .withFallback(system.settings.config)
       checkInitJoin(oldConfig, newConfig) should ===(Valid)
     }
 
     "be invalid when different downing-provider" in {
       val oldConfig =
-        ConfigFactory.parseString("""
+        ConfigFactory
+          .parseString("""
         akka.cluster.downing-provider-class = "akka.cluster.testkit.AutoDowning"
-        """).withFallback(system.settings.config)
+        """)
+          .withFallback(system.settings.config)
       val newConfig =
-        ConfigFactory.parseString("""
+        ConfigFactory
+          .parseString("""
         akka.cluster.downing-provider-class = "akka.cluster.sbr.SplitBrainResolverProvider"
-        """).withFallback(system.settings.config)
+        """)
+          .withFallback(system.settings.config)
       checkInitJoin(oldConfig, newConfig).getClass should ===(classOf[Invalid])
     }
 
     "be invalid when different sbr strategy" in {
       val oldConfig =
-        ConfigFactory.parseString("""
+        ConfigFactory
+          .parseString("""
         akka.cluster.downing-provider-class = "akka.cluster.sbr.SplitBrainResolverProvider"
         akka.cluster.split-brain-resolver.active-strategy = keep-majority
-        """).withFallback(system.settings.config)
+        """)
+          .withFallback(system.settings.config)
       val newConfig =
-        ConfigFactory.parseString("""
+        ConfigFactory
+          .parseString("""
         akka.cluster.downing-provider-class = "akka.cluster.sbr.SplitBrainResolverProvider"
         akka.cluster.split-brain-resolver.active-strategy = keep-oldest
-        """).withFallback(system.settings.config)
+        """)
+          .withFallback(system.settings.config)
       checkInitJoin(oldConfig, newConfig).getClass should ===(classOf[Invalid])
       checkInitJoinAck(oldConfig, newConfig).getClass should ===(classOf[Invalid])
     }

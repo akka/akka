@@ -35,10 +35,13 @@ object AskSpec {
   final case class ProxyReply(s: String) extends Proxy
 }
 
-class AskSpec extends ScalaTestWithActorTestKit("""
+class AskSpec
+    extends ScalaTestWithActorTestKit("""
     akka.loglevel=DEBUG
     akka.actor.debug.event-stream = on
-    """) with AnyWordSpecLike with LogCapturing {
+    """)
+    with AnyWordSpecLike
+    with LogCapturing {
 
   import AskSpec._
 
@@ -199,8 +202,8 @@ class AskSpec extends ScalaTestWithActorTestKit("""
         val ex = new RuntimeException("not good!")
 
         class LegacyActor extends akka.actor.Actor {
-          def receive = {
-            case Ping(respondTo) => respondTo ! akka.actor.Status.Failure(ex)
+          def receive = { case Ping(respondTo) =>
+            respondTo ! akka.actor.Status.Failure(ex)
           }
         }
 

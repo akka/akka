@@ -22,9 +22,7 @@ import akka.annotation.InternalApi
 import akka.util.JavaDurationConverters._
 import akka.util.Timeout
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] final class EffectfulActorContext[T](
     system: ActorSystemStub,
     path: ActorPath,
@@ -60,8 +58,8 @@ import akka.util.Timeout
     val scalaMapResponse = { (result: Try[Res]) =>
       result
         .map(applyToResponse(_, null))
-        .recover {
-          case NonFatal(ex) => applyToResponse(null.asInstanceOf[Res], ex)
+        .recover { case NonFatal(ex) =>
+          applyToResponse(null.asInstanceOf[Res], ex)
         }
         .get
     }
@@ -182,14 +180,13 @@ import akka.util.Timeout
     override def cancelAll(): Unit = activeTimers.foreach(cancel)
 
     private def sendAction(key: Any): () => Unit = () => {
-      activeTimers.get(key).foreach {
-        case Effect.TimerScheduled(_, msg, _, mode, _) =>
-          mode match {
-            case Effect.TimerScheduled.SingleMode =>
-              activeTimers -= key
-            case _ =>
-          }
-          self ! msg
+      activeTimers.get(key).foreach { case Effect.TimerScheduled(_, msg, _, mode, _) =>
+        mode match {
+          case Effect.TimerScheduled.SingleMode =>
+            activeTimers -= key
+          case _ =>
+        }
+        self ! msg
       }
 
     }

@@ -136,7 +136,7 @@ class ChainedBufferSpec extends StreamSpec {
           (1 to numEnqueues).foreach(chainedBuffer.enqueue)
 
           // sum of 1 .. numEnqueues
-          val allSum = (numEnqueues * (numEnqueues + 1) / 2)
+          val allSum = numEnqueues * (numEnqueues + 1) / 2
 
           if (numEnqueues < headCapacity) {
             head.isFull shouldBe false

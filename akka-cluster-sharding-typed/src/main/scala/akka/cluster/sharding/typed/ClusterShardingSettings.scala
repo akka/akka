@@ -85,7 +85,8 @@ object ClusterShardingSettings {
         rebalanceInterval = settings.tuningParameters.rebalanceInterval,
         snapshotAfter = settings.tuningParameters.snapshotAfter,
         keepNrOfBatches = settings.tuningParameters.keepNrOfBatches,
-        leastShardAllocationRebalanceThreshold = settings.tuningParameters.leastShardAllocationRebalanceThreshold, // TODO extract it a bit
+        leastShardAllocationRebalanceThreshold =
+          settings.tuningParameters.leastShardAllocationRebalanceThreshold, // TODO extract it a bit
         leastShardAllocationMaxSimultaneousRebalance =
           settings.tuningParameters.leastShardAllocationMaxSimultaneousRebalance,
         waitingForStateTimeout = settings.tuningParameters.waitingForStateTimeout,
@@ -115,14 +116,10 @@ object ClusterShardingSettings {
 
   sealed trait StateStoreMode { def name: String }
 
-  /**
-   * Java API
-   */
+  /** Java API */
   def stateStoreModePersistence(): StateStoreMode = StateStoreModePersistence
 
-  /**
-   * Java API
-   */
+  /** Java API */
   def stateStoreModeDdata(): StateStoreMode = StateStoreModePersistence
 
   object StateStoreMode {
@@ -139,14 +136,10 @@ object ClusterShardingSettings {
 
   case object StateStoreModeDData extends StateStoreMode { override def name = "ddata" }
 
-  /**
-   * Java API
-   */
+  /** Java API */
   def rememberEntitiesStoreModeEventSourced(): RememberEntitiesStoreMode = RememberEntitiesStoreModeEventSourced
 
-  /**
-   * Java API
-   */
+  /** Java API */
   def rememberEntitiesStoreModeDdata(): RememberEntitiesStoreMode = RememberEntitiesStoreModeDData
 
   sealed trait RememberEntitiesStoreMode { def name: String }
@@ -165,9 +158,7 @@ object ClusterShardingSettings {
   }
   case object RememberEntitiesStoreModeDData extends RememberEntitiesStoreMode { override def name = "ddata" }
 
-  /**
-   * API MAY CHANGE: Settings for passivation strategies may change after additional testing and feedback.
-   */
+  /** API MAY CHANGE: Settings for passivation strategies may change after additional testing and feedback. */
   @ApiMayChange
   final class PassivationStrategySettings private (
       val idleEntitySettings: Option[PassivationStrategySettings.IdleSettings],
@@ -260,9 +251,7 @@ object ClusterShardingSettings {
         oldSettingUsed)
   }
 
-  /**
-   * API MAY CHANGE: Settings for passivation strategies may change after additional testing and feedback.
-   */
+  /** API MAY CHANGE: Settings for passivation strategies may change after additional testing and feedback. */
   @ApiMayChange
   object PassivationStrategySettings {
     import ClassicShardingSettings.{ PassivationStrategySettings => ClassicPassivationStrategySettings }
@@ -680,7 +669,8 @@ object ClusterShardingSettings {
         rebalanceInterval = classic.rebalanceInterval,
         snapshotAfter = classic.snapshotAfter,
         keepNrOfBatches = classic.keepNrOfBatches,
-        leastShardAllocationRebalanceThreshold = classic.leastShardAllocationRebalanceThreshold, // TODO extract it a bit
+        leastShardAllocationRebalanceThreshold =
+          classic.leastShardAllocationRebalanceThreshold, // TODO extract it a bit
         leastShardAllocationMaxSimultaneousRebalance = classic.leastShardAllocationMaxSimultaneousRebalance,
         waitingForStateTimeout = classic.waitingForStateTimeout,
         updatingStateTimeout = classic.updatingStateTimeout,
@@ -999,9 +989,7 @@ final class ClusterShardingSettings(
   def withPassivateIdleEntityAfter(duration: java.time.Duration): ClusterShardingSettings =
     copy(passivationStrategySettings = passivationStrategySettings.withOldIdleStrategy(duration.asScala))
 
-  /**
-   * API MAY CHANGE: Settings for passivation strategies may change after additional testing and feedback.
-   */
+  /** API MAY CHANGE: Settings for passivation strategies may change after additional testing and feedback. */
   @ApiMayChange
   def withPassivationStrategy(settings: ClusterShardingSettings.PassivationStrategySettings): ClusterShardingSettings =
     copy(passivationStrategySettings = settings)

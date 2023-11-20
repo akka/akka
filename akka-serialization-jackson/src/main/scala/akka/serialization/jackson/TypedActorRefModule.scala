@@ -17,23 +17,17 @@ import akka.actor.typed.ActorRefResolver
 import akka.actor.typed.scaladsl.adapter._
 import akka.annotation.InternalApi
 
-/**
- * INTERNAL API: Adds support for serializing and deserializing [[akka.actor.typed.ActorRef]].
- */
+/** INTERNAL API: Adds support for serializing and deserializing [[akka.actor.typed.ActorRef]]. */
 @InternalApi private[akka] trait TypedActorRefModule extends JacksonModule {
   addSerializer(classOf[ActorRef[_]], () => TypedActorRefSerializer.instance, () => TypedActorRefDeserializer.instance)
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object TypedActorRefSerializer {
   val instance: TypedActorRefSerializer = new TypedActorRefSerializer
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] class TypedActorRefSerializer
     extends StdScalarSerializer[ActorRef[_]](classOf[ActorRef[_]])
     with ActorSystemAccess {
@@ -43,16 +37,12 @@ import akka.annotation.InternalApi
   }
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object TypedActorRefDeserializer {
   val instance: TypedActorRefDeserializer = new TypedActorRefDeserializer
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] class TypedActorRefDeserializer
     extends StdScalarDeserializer[ActorRef[_]](classOf[ActorRef[_]])
     with ActorSystemAccess {

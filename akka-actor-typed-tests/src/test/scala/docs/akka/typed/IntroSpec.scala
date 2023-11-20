@@ -23,23 +23,23 @@ import java.nio.charset.StandardCharsets
 
 object IntroSpec {
 
-  //#hello-world-actor
+  // #hello-world-actor
   object HelloWorld {
     final case class Greet(whom: String, replyTo: ActorRef[Greeted])
     final case class Greeted(whom: String, from: ActorRef[Greet])
 
     def apply(): Behavior[Greet] = Behaviors.receive { (context, message) =>
       context.log.info("Hello {}!", message.whom)
-      //#hello-world-actor
+      // #hello-world-actor
       println(s"Hello ${message.whom}!")
-      //#hello-world-actor
+      // #hello-world-actor
       message.replyTo ! Greeted(message.whom, context.self)
       Behaviors.same
     }
   }
-  //#hello-world-actor
+  // #hello-world-actor
 
-  //#hello-world-bot
+  // #hello-world-bot
   object HelloWorldBot {
 
     def apply(max: Int): Behavior[HelloWorld.Greeted] = {
@@ -50,9 +50,9 @@ object IntroSpec {
       Behaviors.receive { (context, message) =>
         val n = greetingCounter + 1
         context.log.info2("Greeting {} for {}", n, message.whom)
-        //#hello-world-bot
+        // #hello-world-bot
         println(s"Greeting $n for ${message.whom}")
-        //#hello-world-bot
+        // #hello-world-bot
         if (n == max) {
           Behaviors.stopped
         } else {
@@ -61,9 +61,9 @@ object IntroSpec {
         }
       }
   }
-  //#hello-world-bot
+  // #hello-world-bot
 
-  //#hello-world-main
+  // #hello-world-main
   object HelloWorldMain {
 
     final case class SayHello(name: String)
@@ -79,7 +79,7 @@ object IntroSpec {
         }
       }
 
-    //#hello-world-main
+    // #hello-world-main
     def main(args: Array[String]): Unit = {
       val system: ActorSystem[HelloWorldMain.SayHello] =
         ActorSystem(HelloWorldMain(), "hello")
@@ -87,16 +87,16 @@ object IntroSpec {
       system ! HelloWorldMain.SayHello("World")
       system ! HelloWorldMain.SayHello("Akka")
     }
-    //#hello-world-main
+    // #hello-world-main
   }
-  //#hello-world-main
+  // #hello-world-main
 
   object CustomDispatchersExample {
     object HelloWorldMain {
 
       final case class SayHello(name: String)
 
-      //#hello-world-main-with-dispatchers
+      // #hello-world-main-with-dispatchers
       def apply(): Behavior[SayHello] =
         Behaviors.setup { context =>
           val dispatcherPath = "akka.actor.default-blocking-io-dispatcher"
@@ -111,21 +111,21 @@ object IntroSpec {
             Behaviors.same
           }
         }
-      //#hello-world-main-with-dispatchers
+      // #hello-world-main-with-dispatchers
     }
   }
 
-  //#chatroom-protocol
-  //#chatroom-behavior
+  // #chatroom-protocol
+  // #chatroom-behavior
   object ChatRoom {
-    //#chatroom-behavior
+    // #chatroom-behavior
     sealed trait RoomCommand
     final case class GetSession(screenName: String, replyTo: ActorRef[SessionEvent]) extends RoomCommand
-    //#chatroom-protocol
-    //#chatroom-behavior
+    // #chatroom-protocol
+    // #chatroom-behavior
     private final case class PublishSessionMessage(screenName: String, message: String) extends RoomCommand
-    //#chatroom-behavior
-    //#chatroom-protocol
+    // #chatroom-behavior
+    // #chatroom-protocol
 
     sealed trait SessionEvent
     final case class SessionGranted(handle: ActorRef[PostMessage]) extends SessionEvent
@@ -135,8 +135,8 @@ object IntroSpec {
     sealed trait SessionCommand
     final case class PostMessage(message: String) extends SessionCommand
     private final case class NotifyClient(message: MessagePosted) extends SessionCommand
-    //#chatroom-protocol
-    //#chatroom-behavior
+    // #chatroom-protocol
+    // #chatroom-behavior
 
     def apply(): Behavior[RoomCommand] =
       chatRoom(List.empty)
@@ -172,24 +172,24 @@ object IntroSpec {
           client ! message
           Behaviors.same
       }
-    //#chatroom-protocol
+    // #chatroom-protocol
   }
-  //#chatroom-behavior
-  //#chatroom-protocol
+  // #chatroom-behavior
+  // #chatroom-protocol
 
-  //#chatroom-gabbler
+  // #chatroom-gabbler
   object Gabbler {
     import ChatRoom._
 
     def apply(): Behavior[SessionEvent] =
       Behaviors.setup { context =>
         Behaviors.receiveMessage {
-          //#chatroom-gabbler
+          // #chatroom-gabbler
           // We document that the compiler warns about the missing handler for `SessionDenied`
           case SessionDenied(reason) =>
             context.log.info("cannot start chat room session: {}", reason)
             Behaviors.stopped
-          //#chatroom-gabbler
+          // #chatroom-gabbler
           case SessionGranted(handle) =>
             handle ! PostMessage("Hello World!")
             Behaviors.same
@@ -199,9 +199,9 @@ object IntroSpec {
         }
       }
   }
-  //#chatroom-gabbler
+  // #chatroom-gabbler
 
-  //#chatroom-main
+  // #chatroom-main
   object Main {
     def apply(): Behavior[NotUsed] =
       Behaviors.setup { context =>
@@ -210,9 +210,8 @@ object IntroSpec {
         context.watch(gabblerRef)
         chatRoom ! ChatRoom.GetSession("ol’ Gabbler", gabblerRef)
 
-        Behaviors.receiveSignal {
-          case (_, Terminated(_)) =>
-            Behaviors.stopped
+        Behaviors.receiveSignal { case (_, Terminated(_)) =>
+          Behaviors.stopped
         }
       }
 
@@ -221,7 +220,7 @@ object IntroSpec {
     }
 
   }
-  //#chatroom-main
+  // #chatroom-main
 
 }
 
@@ -231,7 +230,7 @@ class IntroSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogC
 
   "Intro sample" must {
     "say hello" in {
-      //#hello-world
+      // #hello-world
 
       val system: ActorSystem[HelloWorldMain.SayHello] =
         ActorSystem(HelloWorldMain(), "hello")
@@ -239,7 +238,7 @@ class IntroSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogC
       system ! HelloWorldMain.SayHello("World")
       system ! HelloWorldMain.SayHello("Akka")
 
-      //#hello-world
+      // #hello-world
 
       Thread.sleep(500) // it will not fail if too short
       ActorTestKit.shutdown(system)

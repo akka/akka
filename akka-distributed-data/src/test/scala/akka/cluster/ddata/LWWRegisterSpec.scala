@@ -19,10 +19,9 @@ class LWWRegisterSpec extends AnyWordSpec with Matchers {
 
   "A LWWRegister" must {
     "use latest of successive assignments" in {
-      val r = (1 to 100).foldLeft(LWWRegister(node1, 0, defaultClock[Int])) {
-        case (r, n) =>
-          r.value should be(n - 1)
-          r.withValue(node1, n, defaultClock[Int])
+      val r = (1 to 100).foldLeft(LWWRegister(node1, 0, defaultClock[Int])) { case (r, n) =>
+        r.value should be(n - 1)
+        r.withValue(node1, n, defaultClock[Int])
       }
       r.value should be(100)
     }
@@ -59,12 +58,11 @@ class LWWRegisterSpec extends AnyWordSpec with Matchers {
     "use monotonically increasing defaultClock" in {
       implicit val node = SelfUniqueAddress(node1)
 
-      (1 to 100).foldLeft(LWWRegister.create(0)) {
-        case (r, n) =>
-          r.value should be(n - 1)
-          val r2 = r.withValueOf(n)
-          r2.timestamp should be > r.timestamp
-          r2
+      (1 to 100).foldLeft(LWWRegister.create(0)) { case (r, n) =>
+        r.value should be(n - 1)
+        val r2 = r.withValueOf(n)
+        r2.timestamp should be > r.timestamp
+        r2
       }
     }
 
@@ -92,12 +90,11 @@ class LWWRegisterSpec extends AnyWordSpec with Matchers {
 
     "can be used as first-write-wins-register" in {
       import LWWRegister.reverseClock
-      val r = (1 to 100).foldLeft(LWWRegister(node1, 0, reverseClock[Int])) {
-        case (r, n) =>
-          r.value should be(0)
-          val newRegister = r.merge(r.withValue(node1, n, reverseClock[Int]))
-          newRegister should be(r)
-          newRegister
+      val r = (1 to 100).foldLeft(LWWRegister(node1, 0, reverseClock[Int])) { case (r, n) =>
+        r.value should be(0)
+        val newRegister = r.merge(r.withValue(node1, n, reverseClock[Int]))
+        newRegister should be(r)
+        newRegister
       }
       r.value should be(0)
     }

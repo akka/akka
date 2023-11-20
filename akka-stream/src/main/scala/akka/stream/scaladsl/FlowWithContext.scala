@@ -12,17 +12,13 @@ import akka.stream._
 
 object FlowWithContext {
 
-  /**
-   * Creates an "empty" FlowWithContext that passes elements through with their context unchanged.
-   */
+  /** Creates an "empty" FlowWithContext that passes elements through with their context unchanged. */
   def apply[In, Ctx]: FlowWithContext[In, Ctx, In, Ctx, akka.NotUsed] = {
     val under = Flow[(In, Ctx)]
     new FlowWithContext[In, Ctx, In, Ctx, akka.NotUsed](under)
   }
 
-  /**
-   * Creates a FlowWithContext from a regular flow that operates on a tuple of `(data, context)` elements.
-   */
+  /** Creates a FlowWithContext from a regular flow that operates on a tuple of `(data, context)` elements. */
   def fromTuples[In, CtxIn, Out, CtxOut, Mat](
       flow: Flow[(In, CtxIn), (Out, CtxOut), Mat]): FlowWithContext[In, CtxIn, Out, CtxOut, Mat] =
     new FlowWithContext(flow)
@@ -35,7 +31,6 @@ object FlowWithContext {
  * operations.
  *
  * An "empty" flow can be created by calling `FlowWithContext[Ctx, T]`.
- *
  */
 final class FlowWithContext[-In, -CtxIn, +Out, +CtxOut, +Mat](delegate: Flow[(In, CtxIn), (Out, CtxOut), Mat])
     extends GraphDelegate(delegate)
@@ -89,8 +84,9 @@ final class FlowWithContext[-In, -CtxIn, +Out, +CtxOut, +Mat](delegate: Flow[(In
       javadsl.Flow
         .create[Pair[JIn, JCtxIn]]()
         .map(_.toScala)
-        .viaMat(delegate.map {
-          case (first, second) =>
+        .viaMat(
+          delegate.map { case (first, second) =>
             Pair[JOut, JCtxOut](first, second)
-        }.asJava, javadsl.Keep.right[NotUsed, JMat]))
+          }.asJava,
+          javadsl.Keep.right[NotUsed, JMat]))
 }

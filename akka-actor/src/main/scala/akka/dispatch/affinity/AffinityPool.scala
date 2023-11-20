@@ -170,7 +170,6 @@ private[akka] class AffinityPool(
    * due to an exception being thrown in user code, the worker is
    * responsible for adding one more worker to compensate for its
    * own termination
-   *
    */
   private def onWorkerExit(w: AffinityPoolWorker, abruptTermination: Boolean): Unit =
     bookKeepingLock.withGuard {
@@ -292,9 +291,7 @@ private[akka] class AffinityPool(
   }
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 @ApiMayChange
 private[akka] final class AffinityPoolConfigurator(config: Config, prerequisites: DispatcherPrerequisites)
@@ -314,21 +311,19 @@ private[akka] final class AffinityPoolConfigurator(config: Config, prerequisites
   private val queueSelectorFactory: QueueSelectorFactory =
     prerequisites.dynamicAccess
       .createInstanceFor[QueueSelectorFactory](queueSelectorFactoryFQCN, immutable.Seq(classOf[Config] -> config))
-      .recover {
-        case _ =>
-          throw new IllegalArgumentException(
-            s"Cannot instantiate QueueSelectorFactory(queueSelector = $queueSelectorFactoryFQCN), make sure it has an accessible constructor which accepts a Config parameter")
+      .recover { case _ =>
+        throw new IllegalArgumentException(
+          s"Cannot instantiate QueueSelectorFactory(queueSelector = $queueSelectorFactoryFQCN), make sure it has an accessible constructor which accepts a Config parameter")
       }
       .get
 
   private val rejectionHandlerFactoryFCQN = config.getString("rejection-handler")
   private val rejectionHandlerFactory = prerequisites.dynamicAccess
     .createInstanceFor[RejectionHandlerFactory](rejectionHandlerFactoryFCQN, Nil)
-    .recover {
-      case exception =>
-        throw new IllegalArgumentException(
-          s"Cannot instantiate RejectionHandlerFactory(rejection-handler = $rejectionHandlerFactoryFCQN), make sure it has an accessible empty constructor",
-          exception)
+    .recover { case exception =>
+      throw new IllegalArgumentException(
+        s"Cannot instantiate RejectionHandlerFactory(rejection-handler = $rejectionHandlerFactoryFCQN), make sure it has an accessible empty constructor",
+        exception)
     }
     .get
 
@@ -380,9 +375,7 @@ trait QueueSelector {
   def getQueue(command: Runnable, queues: Int): Int
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 @ApiMayChange
 private[akka] final class ThrowOnOverflowRejectionHandler extends RejectionHandlerFactory with RejectionHandler {
@@ -391,9 +384,7 @@ private[akka] final class ThrowOnOverflowRejectionHandler extends RejectionHandl
   override def create(): RejectionHandler = this
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 @ApiMayChange
 private[akka] final class FairDistributionHashCache(val config: Config) extends QueueSelectorFactory {
@@ -410,7 +401,7 @@ private[akka] final class FairDistributionHashCache(val config: Config) extends 
       override def toString: String =
         s"FairDistributionHashCache(fairDistributionThreshold = $fairDistributionThreshold)"
       private[this] final def improve(h: Int): Int =
-        0x7FFFFFFF & (reverseBytes(h * 0x9e3775cd) * 0x9e3775cd) // `sbhash`: In memory of Phil Bagwell.
+        0x7fffffff & (reverseBytes(h * 0x9e3775cd) * 0x9e3775cd) // `sbhash`: In memory of Phil Bagwell.
       override final def getQueue(command: Runnable, queues: Int): Int = {
         val runnableHash = command.hashCode()
         if (fairDistributionThreshold == 0)

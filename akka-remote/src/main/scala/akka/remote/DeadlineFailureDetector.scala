@@ -29,8 +29,7 @@ import akka.util.Helpers.ConfigOps
  *   purposes. It is only used for measuring intervals (duration).
  */
 class DeadlineFailureDetector(val acceptableHeartbeatPause: FiniteDuration, val heartbeatInterval: FiniteDuration)(
-    implicit
-    clock: Clock)
+    implicit clock: Clock)
     extends FailureDetector {
 
   /**
@@ -46,7 +45,7 @@ class DeadlineFailureDetector(val acceptableHeartbeatPause: FiniteDuration, val 
   require(heartbeatInterval > Duration.Zero, "failure-detector.heartbeat-interval must be > 0 s")
 
   private val deadlineMillis = acceptableHeartbeatPause.toMillis + heartbeatInterval.toMillis
-  @volatile private var heartbeatTimestamp = 0L //not used until active (first heartbeat)
+  @volatile private var heartbeatTimestamp = 0L // not used until active (first heartbeat)
   @volatile private var active = false
 
   override def isAvailable: Boolean = isAvailable(clock())

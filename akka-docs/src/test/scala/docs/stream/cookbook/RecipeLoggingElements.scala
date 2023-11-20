@@ -20,11 +20,11 @@ class RecipeLoggingElements extends RecipeSpec {
 
       val mySource = Source(List("1", "2", "3"))
 
-      //#println-debug
+      // #println-debug
       val loggedSource = mySource.map { elem =>
         println(elem); elem
       }
-      //#println-debug
+      // #println-debug
 
       loggedSource.runWith(Sink.ignore)
       printProbe.expectMsgAllOf("1", "2", "3")
@@ -33,22 +33,22 @@ class RecipeLoggingElements extends RecipeSpec {
     val mySource = Source(List("1", "2", "3"))
     def analyse(s: String) = s
     "use log()" in {
-      //#log-custom
+      // #log-custom
       // customise log levels
       mySource
         .log("before-map")
         .withAttributes(Attributes
           .logLevels(onElement = Logging.WarningLevel, onFinish = Logging.InfoLevel, onFailure = Logging.DebugLevel))
         .map(analyse)
-      //#log-custom
+      // #log-custom
     }
 
     "use log() with custom adapter" in {
-      //#log-custom
+      // #log-custom
       // or provide custom logging adapter
       implicit val adapter: LoggingAdapter = Logging(system, "customLogger")
       mySource.log("custom")
-      //#log-custom
+      // #log-custom
 
       val loggedSource = mySource.log("custom")
       EventFilter.debug(start = "[custom] Element: ").intercept {
@@ -57,12 +57,12 @@ class RecipeLoggingElements extends RecipeSpec {
     }
 
     "use log() for error logging" in {
-      //#log-error
+      // #log-error
       Source(-5 to 5)
-        .map(1 / _) //throwing ArithmeticException: / by zero
+        .map(1 / _) // throwing ArithmeticException: / by zero
         .log("error logging")
         .runWith(Sink.ignore)
-      //#log-error
+      // #log-error
     }
   }
 

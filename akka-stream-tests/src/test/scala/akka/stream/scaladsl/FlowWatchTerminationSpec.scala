@@ -36,7 +36,7 @@ class FlowWatchTerminationSpec extends StreamSpec {
       val (p, future) = TestSource[Int]().watchTermination()(Keep.both).to(Sink.ignore).run()
       p.sendNext(1)
       p.sendError(ex)
-      whenReady(future.failed) { _ shouldBe (ex) }
+      whenReady(future.failed) { _ shouldBe ex }
     }
 
     "complete the future for an empty stream" in {

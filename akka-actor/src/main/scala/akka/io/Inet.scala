@@ -19,24 +19,16 @@ object Inet {
    */
   trait SocketOption {
 
-    /**
-     * Action to be taken for this option before bind() is called
-     */
+    /** Action to be taken for this option before bind() is called */
     def beforeDatagramBind(@unused ds: DatagramSocket): Unit = ()
 
-    /**
-     * Action to be taken for this option before bind() is called
-     */
+    /** Action to be taken for this option before bind() is called */
     def beforeServerSocketBind(@unused ss: ServerSocket): Unit = ()
 
-    /**
-     * Action to be taken for this option before calling connect()
-     */
+    /** Action to be taken for this option before calling connect() */
     def beforeConnect(@unused s: Socket): Unit = ()
 
-    /**
-     * Action to be taken for this option after connect returned.
-     */
+    /** Action to be taken for this option after connect returned. */
     def afterConnect(@unused s: Socket): Unit = ()
   }
 
@@ -48,31 +40,21 @@ object Inet {
 
   trait SocketOptionV2 extends SocketOption {
 
-    /**
-     * Action to be taken for this option after connect returned.
-     */
+    /** Action to be taken for this option after connect returned. */
     def afterBind(@unused s: DatagramSocket): Unit = ()
 
-    /**
-     * Action to be taken for this option after connect returned.
-     */
+    /** Action to be taken for this option after connect returned. */
     def afterBind(@unused s: ServerSocket): Unit = ()
 
-    /**
-     * Action to be taken for this option after connect returned.
-     */
+    /** Action to be taken for this option after connect returned. */
     def afterConnect(@unused s: DatagramSocket): Unit = ()
 
   }
 
-  /**
-   * Java API
-   */
+  /** Java API */
   abstract class AbstractSocketOptionV2 extends SocketOptionV2
 
-  /**
-   * DatagramChannel creation behavior.
-   */
+  /** DatagramChannel creation behavior. */
   class DatagramChannelCreator extends SocketOption {
 
     /**

@@ -28,9 +28,7 @@ import akka.util.Version
 import akka.util.ccompat._
 import akka.util.ccompat.JavaConverters._
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 @ccompatUsedUntil213
 private[akka] object ClusterMessageSerializer {
@@ -69,9 +67,7 @@ private[akka] object ClusterMessageSerializer {
   private final val BufferSize = 1024 * 4
 }
 
-/**
- * Protobuf serializer of cluster messages.
- */
+/** Protobuf serializer of cluster messages. */
 final class ClusterMessageSerializer(val system: ExtendedActorSystem)
     extends SerializerWithStringManifest
     with BaseSerializer {
@@ -358,13 +354,15 @@ final class ClusterMessageSerializer(val system: ExtendedActorSystem)
 
   private def uniqueAddressFromProto(uniqueAddress: cm.UniqueAddress): UniqueAddress = {
 
-    UniqueAddress(addressFromProto(uniqueAddress.getAddress), if (uniqueAddress.hasUid2) {
-      // new remote node join the two parts of the long uid back
-      (uniqueAddress.getUid2.toLong << 32) | (uniqueAddress.getUid & 0XFFFFFFFFL)
-    } else {
-      // old remote node
-      uniqueAddress.getUid.toLong
-    })
+    UniqueAddress(
+      addressFromProto(uniqueAddress.getAddress),
+      if (uniqueAddress.hasUid2) {
+        // new remote node join the two parts of the long uid back
+        (uniqueAddress.getUid2.toLong << 32) | (uniqueAddress.getUid & 0xffffffffL)
+      } else {
+        // old remote node
+        uniqueAddress.getUid.toLong
+      })
   }
 
   private val memberStatusToInt = scala.collection.immutable.HashMap[MemberStatus, Int](
@@ -465,22 +463,20 @@ final class ClusterMessageSerializer(val system: ExtendedActorSystem)
         .setAppVersionIndex(mapAppVersion(member.appVersion))
 
     def reachabilityToProto(reachability: Reachability): Iterable[cm.ObserverReachability.Builder] = {
-      reachability.versions.map {
-        case (observer, version) =>
-          val subjectReachability = reachability
-            .recordsFrom(observer)
-            .map(
-              r =>
-                cm.SubjectReachability
-                  .newBuilder()
-                  .setAddressIndex(mapUniqueAddress(r.subject))
-                  .setStatus(cm.ReachabilityStatus.forNumber(reachabilityStatusToInt(r.status)))
-                  .setVersion(r.version))
-          cm.ObserverReachability
-            .newBuilder()
-            .setAddressIndex(mapUniqueAddress(observer))
-            .setVersion(version)
-            .addAllSubjectReachability(subjectReachability.map(_.build).asJava)
+      reachability.versions.map { case (observer, version) =>
+        val subjectReachability = reachability
+          .recordsFrom(observer)
+          .map(r =>
+            cm.SubjectReachability
+              .newBuilder()
+              .setAddressIndex(mapUniqueAddress(r.subject))
+              .setStatus(cm.ReachabilityStatus.forNumber(reachabilityStatusToInt(r.status)))
+              .setVersion(r.version))
+        cm.ObserverReachability
+          .newBuilder()
+          .setAddressIndex(mapUniqueAddress(observer))
+          .setVersion(version)
+          .addAllSubjectReachability(subjectReachability.map(_.build).asJava)
       }
     }
 
@@ -507,9 +503,8 @@ final class ClusterMessageSerializer(val system: ExtendedActorSystem)
   }
 
   private def vectorClockToProto(version: VectorClock, hashMapping: Map[String, Int]): cm.VectorClock.Builder = {
-    val versions: Iterable[cm.VectorClock.Version.Builder] = version.versions.map {
-      case (n, t) =>
-        cm.VectorClock.Version.newBuilder().setHashIndex(mapWithErrorMessage(hashMapping, n, "hash")).setTimestamp(t)
+    val versions: Iterable[cm.VectorClock.Version.Builder] = version.versions.map { case (n, t) =>
+      cm.VectorClock.Version.newBuilder().setHashIndex(mapWithErrorMessage(hashMapping, n, "hash")).setTimestamp(t)
     }
     cm.VectorClock.newBuilder().setTimestamp(0).addAllVersions(versions.map(_.build).asJava)
   }

@@ -5,7 +5,7 @@
 package akka.testkit.javadsl
 
 import java.util.{ List => JList }
-import java.util.function.{ Supplier, Function => JFunction }
+import java.util.function.{ Function => JFunction, Supplier }
 
 import scala.annotation.nowarn
 import scala.annotation.varargs
@@ -36,15 +36,11 @@ import akka.util.ccompat.JavaConverters._
  *    are scaled using the `dilated` method, which uses the
  *    TestKitExtension.Settings.TestTimeFactor settable via akka.conf entry
  *    "akka.test.timefactor".
- *
- *
  */
 @nowarn("msg=deprecated")
 class TestKit(system: ActorSystem) {
 
-  /**
-   * All the Java APIs are delegated to TestProbe
-   */
+  /** All the Java APIs are delegated to TestProbe */
   private val tp: TestProbe = new TestProbe(system)
 
   /**
@@ -53,9 +49,7 @@ class TestKit(system: ActorSystem) {
    */
   def getTestActor: ActorRef = tp.testActor
 
-  /**
-   * Shorthand to get the testActor.
-   */
+  /** Shorthand to get the testActor. */
   def getRef: ActorRef = getTestActor
 
   def getSystem: ActorSystem = tp.system
@@ -68,19 +62,13 @@ class TestKit(system: ActorSystem) {
     }
   }
 
-  /**
-   * Java timeouts (durations) during tests with the configured
-   */
+  /** Java timeouts (durations) during tests with the configured */
   def dilated(duration: java.time.Duration): java.time.Duration = duration.asScala.dilated(getSystem).asJava
 
-  /**
-   * Query queue status.
-   */
+  /** Query queue status. */
   def msgAvailable: Boolean = tp.msgAvailable
 
-  /**
-   * Get the last sender of the TestProbe
-   */
+  /** Get the last sender of the TestProbe */
   def getLastSender: ActorRef = tp.lastSender
 
   /**
@@ -90,24 +78,16 @@ class TestKit(system: ActorSystem) {
    */
   def send(actor: ActorRef, msg: AnyRef): Unit = actor.tell(msg, tp.ref)
 
-  /**
-   * Forward this message as if in the TestActor's receive method with self.forward.
-   */
+  /** Forward this message as if in the TestActor's receive method with self.forward. */
   def forward(actor: ActorRef): Unit = actor.tell(tp.lastMessage.msg, tp.lastMessage.sender)
 
-  /**
-   * Send message to the sender of the last dequeued message.
-   */
+  /** Send message to the sender of the last dequeued message. */
   def reply(msg: AnyRef): Unit = tp.lastSender.tell(msg, tp.ref)
 
-  /**
-   * Have the testActor watch someone (i.e. `context.watch(...)`).
-   */
+  /** Have the testActor watch someone (i.e. `context.watch(...)`). */
   def watch(ref: ActorRef): ActorRef = tp.watch(ref)
 
-  /**
-   * Have the testActor stop watching someone (i.e. `context.unwatch(...)`).
-   */
+  /** Have the testActor stop watching someone (i.e. `context.unwatch(...)`). */
   def unwatch(ref: ActorRef): ActorRef = tp.unwatch(ref)
 
   /**
@@ -121,9 +101,7 @@ class TestKit(system: ActorSystem) {
     })
   }
 
-  /**
-   * Stop ignoring messages in the test actor.
-   */
+  /** Stop ignoring messages in the test actor. */
   def ignoreNoMsg(): Unit = tp.ignoreNoMsg()
 
   /**
@@ -284,9 +262,7 @@ class TestKit(system: ActorSystem) {
   def awaitAssert[A](max: java.time.Duration, interval: java.time.Duration, a: Supplier[A]): A =
     tp.awaitAssert(a.get, max.asScala, interval.asScala)
 
-  /**
-   * Same as `expectMsg(remainingOrDefault, obj)`, but correctly treating the timeFactor.
-   */
+  /** Same as `expectMsg(remainingOrDefault, obj)`, but correctly treating the timeFactor. */
   def expectMsgEquals[T](obj: T): T = tp.expectMsg(obj)
 
   /**
@@ -298,9 +274,7 @@ class TestKit(system: ActorSystem) {
    */
   def expectMsgEquals[T](max: java.time.Duration, obj: T): T = tp.expectMsg(max.asScala, obj)
 
-  /**
-   * Same as `expectMsg(remainingOrDefault, obj)`, but correctly treating the timeFactor.
-   */
+  /** Same as `expectMsg(remainingOrDefault, obj)`, but correctly treating the timeFactor. */
   def expectMsg[T](obj: T): T = tp.expectMsg(obj)
 
   /**
@@ -359,9 +333,7 @@ class TestKit(system: ActorSystem) {
   @nowarn("msg=deprecated")
   def expectMsgPF[T](max: java.time.Duration, hint: String, f: JFunction[Any, T]): T = expectMsgPF(max.asScala, hint, f)
 
-  /**
-   * Same as `expectMsgClass(remainingOrDefault, c)`, but correctly treating the timeFactor.
-   */
+  /** Same as `expectMsgClass(remainingOrDefault, c)`, but correctly treating the timeFactor. */
   def expectMsgClass[T](c: Class[T]): T = tp.expectMsgClass(c)
 
   /**
@@ -371,9 +343,7 @@ class TestKit(system: ActorSystem) {
    */
   def expectMsgClass[T](max: java.time.Duration, c: Class[T]): T = tp.expectMsgClass(max.asScala, c)
 
-  /**
-   * Same as `expectMsgAnyOf(remainingOrDefault, obj...)`, but correctly treating the timeFactor.
-   */
+  /** Same as `expectMsgAnyOf(remainingOrDefault, obj...)`, but correctly treating the timeFactor. */
   @varargs
   def expectMsgAnyOf[T](first: T, objs: T*): T = tp.expectMsgAnyOf((first +: objs): _*)
 
@@ -385,9 +355,7 @@ class TestKit(system: ActorSystem) {
   @varargs
   def expectMsgAnyOfWithin[T](max: java.time.Duration, objs: T*): T = tp.expectMsgAnyOf(max.asScala, objs: _*)
 
-  /**
-   * Same as `expectMsgAllOf(remainingOrDefault, obj...)`, but correctly treating the timeFactor.
-   */
+  /** Same as `expectMsgAllOf(remainingOrDefault, obj...)`, but correctly treating the timeFactor. */
   @varargs
   def expectMsgAllOf[T](objs: T*): JList[T] = tp.expectMsgAllOf(objs: _*).asJava
 
@@ -402,9 +370,7 @@ class TestKit(system: ActorSystem) {
   def expectMsgAllOfWithin[T](max: java.time.Duration, objs: T*): JList[T] =
     tp.expectMsgAllOf(max.asScala, objs: _*).asJava
 
-  /**
-   * Same as `expectMsgAnyClassOf(remainingOrDefault, obj...)`, but correctly treating the timeFactor.
-   */
+  /** Same as `expectMsgAnyClassOf(remainingOrDefault, obj...)`, but correctly treating the timeFactor. */
   @varargs
   def expectMsgAnyClassOf[T](objs: Class[_]*): T = tp.expectMsgAnyClassOf(objs: _*).asInstanceOf[T]
 
@@ -490,9 +456,7 @@ class TestKit(system: ActorSystem) {
   def fishForMessage(max: java.time.Duration, hint: String, f: JFunction[Any, Boolean]): Any =
     fishForMessage(max.asScala, hint, f)
 
-  /**
-   * Same as `fishForMessage`, but gets a different partial function and returns properly typed message.
-   */
+  /** Same as `fishForMessage`, but gets a different partial function and returns properly typed message. */
   @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.6.0")
   def fishForSpecificMessage[T](max: Duration, hint: String, f: JFunction[Any, T]): T = {
     tp.fishForSpecificMessage(max, hint)(new CachingPartialFunction[Any, T] {
@@ -501,9 +465,7 @@ class TestKit(system: ActorSystem) {
     })
   }
 
-  /**
-   * Same as `fishForMessage`, but gets a different partial function and returns properly typed message.
-   */
+  /** Same as `fishForMessage`, but gets a different partial function and returns properly typed message. */
   @nowarn("msg=deprecated")
   def fishForSpecificMessage[T](max: java.time.Duration, hint: String, f: JFunction[Any, T]): T =
     fishForSpecificMessage(max.asScala, hint, f)
@@ -515,9 +477,7 @@ class TestKit(system: ActorSystem) {
   def receiveN(n: Int): JList[AnyRef] =
     tp.receiveN(n).asJava
 
-  /**
-   * Receive N messages in a row before the given deadline.
-   */
+  /** Receive N messages in a row before the given deadline. */
   def receiveN(n: Int, max: java.time.Duration): JList[AnyRef] = tp.receiveN(n, max.asScala).asJava
 
   /**
@@ -538,7 +498,6 @@ class TestKit(system: ActorSystem) {
    *
    * One possible use of this method is for testing whether messages of
    * certain characteristics are generated at a certain rate:
-   *
    */
   def receiveWhile[T](
       max: java.time.Duration,
@@ -546,40 +505,30 @@ class TestKit(system: ActorSystem) {
       messages: Int,
       f: JFunction[AnyRef, T]): JList[T] = {
     tp.receiveWhile(max.asScala, idle.asScala, messages)(new CachingPartialFunction[AnyRef, T] {
-        @throws(classOf[Exception])
-        override def `match`(x: AnyRef): T = f.apply(x)
-      })
-      .asJava
+      @throws(classOf[Exception])
+      override def `match`(x: AnyRef): T = f.apply(x)
+    }).asJava
   }
 
   def receiveWhile[T](max: java.time.Duration, f: JFunction[AnyRef, T]): JList[T] = {
     tp.receiveWhile(max = max.asScala)(new CachingPartialFunction[AnyRef, T] {
-        @throws(classOf[Exception])
-        override def `match`(x: AnyRef): T = f.apply(x)
-      })
-      .asJava
+      @throws(classOf[Exception])
+      override def `match`(x: AnyRef): T = f.apply(x)
+    }).asJava
   }
 
-  /**
-   * Spawns an actor as a child of this test actor, and returns the child's ActorRef.
-   */
+  /** Spawns an actor as a child of this test actor, and returns the child's ActorRef. */
   def childActorOf(props: Props, name: String, supervisorStrategy: SupervisorStrategy) =
     tp.childActorOf(props, name, supervisorStrategy)
 
-  /**
-   * Spawns an actor as a child of this test actor with an auto-generated name, and returns the child's ActorRef.
-   */
+  /** Spawns an actor as a child of this test actor with an auto-generated name, and returns the child's ActorRef. */
   def childActorOf(props: Props, supervisorStrategy: SupervisorStrategy) =
     tp.childActorOf(props, supervisorStrategy)
 
-  /**
-   * Spawns an actor as a child of this test actor with a stopping supervisor strategy, and returns the child's ActorRef.
-   */
+  /** Spawns an actor as a child of this test actor with a stopping supervisor strategy, and returns the child's ActorRef. */
   def childActorOf(props: Props, name: String) = tp.childActorOf(props, name)
 
-  /**
-   * Spawns an actor as a child of this test actor with an auto-generated name and stopping supervisor strategy, returning the child's ActorRef.
-   */
+  /** Spawns an actor as a child of this test actor with an auto-generated name and stopping supervisor strategy, returning the child's ActorRef. */
   def childActorOf(props: Props) = tp.childActorOf(props)
 
 }

@@ -17,7 +17,6 @@ import scala.reflect.ClassTag
  *
  * Note that toString of the ring nodes are used for the node
  * hash, i.e. make sure it is different for different nodes.
- *
  */
 class ConsistentHash[T: ClassTag] private (nodes: immutable.SortedMap[Int, T], val virtualNodesFactor: Int) {
 
@@ -40,9 +39,11 @@ class ConsistentHash[T: ClassTag] private (nodes: immutable.SortedMap[Int, T], v
    */
   def :+(node: T): ConsistentHash[T] = {
     val nodeHash = hashFor(node.toString)
-    new ConsistentHash(nodes ++ ((1 to virtualNodesFactor).map { r =>
-      (concatenateNodeHash(nodeHash, r) -> node)
-    }), virtualNodesFactor)
+    new ConsistentHash(
+      nodes ++ ((1 to virtualNodesFactor).map { r =>
+        concatenateNodeHash(nodeHash, r) -> node
+      }),
+      virtualNodesFactor)
   }
 
   /**
@@ -59,9 +60,11 @@ class ConsistentHash[T: ClassTag] private (nodes: immutable.SortedMap[Int, T], v
    */
   def :-(node: T): ConsistentHash[T] = {
     val nodeHash = hashFor(node.toString)
-    new ConsistentHash(nodes -- ((1 to virtualNodesFactor).map { r =>
-      concatenateNodeHash(nodeHash, r)
-    }), virtualNodesFactor)
+    new ConsistentHash(
+      nodes -- ((1 to virtualNodesFactor).map { r =>
+        concatenateNodeHash(nodeHash, r)
+      }),
+      virtualNodesFactor)
   }
 
   /**
@@ -104,9 +107,7 @@ class ConsistentHash[T: ClassTag] private (nodes: immutable.SortedMap[Int, T], v
     nodeRing(idx(Arrays.binarySearch(nodeHashRing, hashFor(key))))
   }
 
-  /**
-   * Is the node ring empty, i.e. no nodes added or all removed.
-   */
+  /** Is the node ring empty, i.e. no nodes added or all removed. */
   def isEmpty: Boolean = nodes.isEmpty
 
 }
@@ -119,13 +120,11 @@ object ConsistentHash {
         node <- nodes
         nodeHash = hashFor(node.toString)
         vnode <- 1 to virtualNodesFactor
-      } yield (concatenateNodeHash(nodeHash, vnode) -> node)),
+      } yield concatenateNodeHash(nodeHash, vnode) -> node),
       virtualNodesFactor)
   }
 
-  /**
-   * Java API: Factory method to create a ConsistentHash
-   */
+  /** Java API: Factory method to create a ConsistentHash */
   def create[T](nodes: java.lang.Iterable[T], virtualNodesFactor: Int): ConsistentHash[T] = {
     import akka.util.ccompat.JavaConverters._
     apply(nodes.asScala, virtualNodesFactor)(ClassTag(classOf[Any].asInstanceOf[Class[T]]))

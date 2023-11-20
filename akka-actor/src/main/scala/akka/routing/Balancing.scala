@@ -17,9 +17,7 @@ import akka.actor.SupervisorStrategy
 import akka.dispatch.BalancingDispatcherConfigurator
 import akka.dispatch.Dispatchers
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[akka] object BalancingRoutingLogic {
   def apply(): BalancingRoutingLogic = new BalancingRoutingLogic
 }
@@ -87,9 +85,7 @@ final case class BalancingPool(
 
   override def createRouter(system: ActorSystem): Router = new Router(BalancingRoutingLogic())
 
-  /**
-   * Setting the supervisor strategy to be used for the “head” Router actor.
-   */
+  /** Setting the supervisor strategy to be used for the “head” Router actor. */
   def withSupervisorStrategy(strategy: SupervisorStrategy): BalancingPool = copy(supervisorStrategy = strategy)
 
   /**
@@ -100,9 +96,7 @@ final case class BalancingPool(
 
   def nrOfInstances(sys: ActorSystem) = this.nrOfInstances
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   override private[akka] def newRoutee(routeeProps: Props, context: ActorContext): Routee = {
 
     val rawDeployPath = context.self.path.elements.drop(1).mkString("/", "/", "")
@@ -144,7 +138,7 @@ final case class BalancingPool(
       other match {
         case p: Pool =>
           if ((this.supervisorStrategy eq Pool.defaultSupervisorStrategy)
-              && (p.supervisorStrategy ne Pool.defaultSupervisorStrategy))
+            && (p.supervisorStrategy ne Pool.defaultSupervisorStrategy))
             this.withSupervisorStrategy(p.supervisorStrategy)
           else this
 
@@ -152,9 +146,7 @@ final case class BalancingPool(
       }
     }
 
-  /**
-   * Resizer cannot be used together with BalancingPool
-   */
+  /** Resizer cannot be used together with BalancingPool */
   override val resizer: Option[Resizer] = None
 
 }

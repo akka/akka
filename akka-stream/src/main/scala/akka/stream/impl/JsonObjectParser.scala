@@ -10,9 +10,7 @@ import akka.annotation.InternalApi
 import akka.stream.scaladsl.Framing.FramingException
 import akka.util.ByteString
 
-/**
- * INTERNAL API: Use [[akka.stream.scaladsl.JsonFraming]] instead.
- */
+/** INTERNAL API: Use [[akka.stream.scaladsl.JsonFraming]] instead. */
 @InternalApi private[akka] object JsonObjectParser {
 
   final val SquareBraceStart = '['.toByte
@@ -53,7 +51,8 @@ import akka.util.ByteString
   private[this] var buffer: Array[Byte] = Array.empty
 
   private[this] var pos = 0 // latest position of pointer while scanning for json object end
-  private[this] var start = 0 // number of chars to drop from the front of the bytestring before emitting (skip whitespace etc)
+  private[this] var start =
+    0 // number of chars to drop from the front of the bytestring before emitting (skip whitespace etc)
   private[this] var depth = 0 // counter of object-nesting depth, once hits 0 an object should be emitted
 
   private[this] var completedObject = false

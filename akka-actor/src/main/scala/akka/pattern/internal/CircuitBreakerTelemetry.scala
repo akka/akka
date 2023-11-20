@@ -23,19 +23,13 @@ import akka.util.ccompat.JavaConverters._
 @InternalStableApi
 trait CircuitBreakerTelemetry {
 
-  /**
-   * Invoked when the circuit breaker transitions to the open state.
-   */
+  /** Invoked when the circuit breaker transitions to the open state. */
   def onOpen(): Unit
 
-  /**
-   * Invoked when the circuit breaker transitions to the close state.
-   */
+  /** Invoked when the circuit breaker transitions to the close state. */
   def onClose(): Unit
 
-  /**
-   * Invoked when the circuit breaker transitions to the half-open state after reset timeout.
-   */
+  /** Invoked when the circuit breaker transitions to the half-open state after reset timeout. */
   def onHalfOpen(): Unit
 
   /**
@@ -74,9 +68,7 @@ trait CircuitBreakerTelemetry {
   def stopped(): Unit
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object CircuitBreakerTelemetryProvider {
   def start(breakerId: String, system: ExtendedActorSystem): CircuitBreakerTelemetry = {
     val configPath = "akka.circuit-breaker.telemetry.implementations"
@@ -106,9 +98,7 @@ trait CircuitBreakerTelemetry {
   }
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object CircuitBreakerNoopTelemetry extends CircuitBreakerTelemetry {
   override def onOpen(): Unit = ()
 
@@ -127,9 +117,7 @@ trait CircuitBreakerTelemetry {
   override def stopped(): Unit = ()
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] class CircuitBreakerEnsembleTelemetry(
     telemetryFqcns: Seq[String],
     breakerId: String,

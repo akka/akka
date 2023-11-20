@@ -16,8 +16,7 @@ object SnapshotDecodeFailureSpec {
       case Cmd(payload)            => persist(payload)(_ => saveSnapshot(payload))
       case SaveSnapshotSuccess(md) => probe ! md.sequenceNr
     }
-    def receiveRecover = {
-      case _ =>
+    def receiveRecover = { case _ =>
     }
   }
 
@@ -25,8 +24,7 @@ object SnapshotDecodeFailureSpec {
       extends NamedPersistentActor(name)
       with ActorLogging {
 
-    def receiveCommand = {
-      case _ =>
+    def receiveCommand = { case _ =>
     }
     def receiveRecover = {
       case SnapshotOffer(_, _) => throw new Exception("kanbudong")

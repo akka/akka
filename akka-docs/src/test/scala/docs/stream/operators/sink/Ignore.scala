@@ -17,12 +17,12 @@ object Ignore {
   implicit val system: ActorSystem = ???
 
   def ignoreExample(): Unit = {
-    //#ignore
+    // #ignore
     val lines: Source[String, NotUsed] = readLinesFromFile()
     val databaseIds: Source[UUID, NotUsed] =
       lines.mapAsync(1)(line => saveLineToDatabase(line))
     databaseIds.mapAsync(1)(uuid => writeIdToFile(uuid)).runWith(Sink.ignore)
-    //#ignore
+    // #ignore
   }
 
   private def readLinesFromFile(): Source[String, NotUsed] =

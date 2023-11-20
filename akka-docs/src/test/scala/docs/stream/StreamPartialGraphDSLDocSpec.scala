@@ -18,7 +18,7 @@ class StreamPartialGraphDSLDocSpec extends AkkaSpec {
   implicit val ec: ExecutionContext = system.dispatcher
 
   "build with open ports" in {
-    //#simple-partial-graph-dsl
+    // #simple-partial-graph-dsl
     val pickMaxOfThree = GraphDSL.create() { implicit b =>
       import GraphDSL.Implicits._
 
@@ -46,11 +46,11 @@ class StreamPartialGraphDSLDocSpec extends AkkaSpec {
 
     val max: Future[Int] = g.run()
     Await.result(max, 300.millis) should equal(3)
-    //#simple-partial-graph-dsl
+    // #simple-partial-graph-dsl
   }
 
   "build source from partial graph" in {
-    //#source-from-partial-graph-dsl
+    // #source-from-partial-graph-dsl
     val pairs = Source.fromGraph(GraphDSL.create() { implicit b =>
       import GraphDSL.Implicits._
 
@@ -67,12 +67,12 @@ class StreamPartialGraphDSLDocSpec extends AkkaSpec {
     })
 
     val firstPair: Future[(Int, Int)] = pairs.runWith(Sink.head)
-    //#source-from-partial-graph-dsl
+    // #source-from-partial-graph-dsl
     Await.result(firstPair, 300.millis) should equal(1 -> 2)
   }
 
   "build flow from partial graph" in {
-    //#flow-from-partial-graph-dsl
+    // #flow-from-partial-graph-dsl
     val pairUpWithToString =
       Flow.fromGraph(GraphDSL.create() { implicit b =>
         import GraphDSL.Implicits._
@@ -89,7 +89,7 @@ class StreamPartialGraphDSLDocSpec extends AkkaSpec {
         FlowShape(broadcast.in, zip.out)
       })
 
-    //#flow-from-partial-graph-dsl
+    // #flow-from-partial-graph-dsl
 
     // format: OFF
     val (_, matSink: Future[(Int, String)]) =
@@ -102,26 +102,26 @@ class StreamPartialGraphDSLDocSpec extends AkkaSpec {
   }
 
   "combine sources with simplified API" in {
-    //#source-combine
+    // #source-combine
     val sourceOne = Source(List(1))
     val sourceTwo = Source(List(2))
     val merged = Source.combine(sourceOne, sourceTwo)(Merge(_))
 
     val mergedResult: Future[Int] = merged.runWith(Sink.fold(0)(_ + _))
-    //#source-combine
+    // #source-combine
     Await.result(mergedResult, 300.millis) should equal(3)
   }
 
   "combine sinks with simplified API" in {
     val actorRef: ActorRef = testActor
-    //#sink-combine
+    // #sink-combine
     val sendRemotely = Sink.actorRef(actorRef, "Done", _ => "Failed")
     val localProcessing = Sink.foreach[Int](_ => /* do something useful */ ())
 
     val sink = Sink.combine(sendRemotely, localProcessing)(Broadcast[Int](_))
 
     Source(List(0, 1, 2)).runWith(sink)
-    //#sink-combine
+    // #sink-combine
     expectMsg(0)
     expectMsg(1)
     expectMsg(2)

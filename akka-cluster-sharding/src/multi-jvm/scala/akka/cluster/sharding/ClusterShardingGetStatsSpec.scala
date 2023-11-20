@@ -21,8 +21,8 @@ object ClusterShardingGetStatsSpec {
 
   val numberOfShards = 3
 
-  val extractEntityId: ShardRegion.ExtractEntityId = {
-    case msg @ PingPongActor.Ping(id) => (id.toString, msg)
+  val extractEntityId: ShardRegion.ExtractEntityId = { case msg @ PingPongActor.Ping(id) =>
+    (id.toString, msg)
   }
   val extractShardId: ShardRegion.ExtractShardId = {
     case PingPongActor.Ping(id) => (id % numberOfShards).toString
@@ -30,8 +30,7 @@ object ClusterShardingGetStatsSpec {
   }
 }
 
-object ClusterShardingGetStatsSpecConfig
-    extends MultiNodeClusterShardingConfig(additionalConfig = """
+object ClusterShardingGetStatsSpecConfig extends MultiNodeClusterShardingConfig(additionalConfig = """
         akka.log-dead-letters-during-shutdown = off
         akka.cluster.sharding.updating-state-timeout = 2s
         akka.cluster.sharding.waiting-for-state-timeout = 2s
@@ -123,8 +122,8 @@ abstract class ClusterShardingGetStatsSpec extends MultiNodeClusterShardingSpec(
             // trigger starting of 2 entities on first and second node
             // but leave third node without entities
             List(1, 2, 4, 6).foreach(n => region.tell(PingPongActor.Ping(n), pingProbe.ref))
-            pingProbe.receiveWhile(messages = 4) {
-              case PingPongActor.Pong => ()
+            pingProbe.receiveWhile(messages = 4) { case PingPongActor.Pong =>
+              ()
             }
           }
         }
@@ -170,8 +169,8 @@ abstract class ClusterShardingGetStatsSpec extends MultiNodeClusterShardingSpec(
             val pingProbe = TestProbe()
             // make sure we have the 4 entities still alive across the fewer nodes
             List(1, 2, 4, 6).foreach(n => region.tell(PingPongActor.Ping(n), pingProbe.ref))
-            pingProbe.receiveWhile(messages = 4) {
-              case PingPongActor.Pong => ()
+            pingProbe.receiveWhile(messages = 4) { case PingPongActor.Pong =>
+              ()
             }
           }
         }

@@ -8,9 +8,7 @@ import java.util.{ AbstractQueue, Comparator, Iterator, PriorityQueue }
 import java.util.concurrent.PriorityBlockingQueue
 import java.util.concurrent.atomic.AtomicLong
 
-/**
- * PriorityQueueStabilizer wraps a priority queue so that it respects FIFO for elements of equal priority.
- */
+/** PriorityQueueStabilizer wraps a priority queue so that it respects FIFO for elements of equal priority. */
 trait PriorityQueueStabilizer[E <: AnyRef] extends AbstractQueue[E] {
   val backingQueue: AbstractQueue[PriorityQueueStabilizer.WrappedElement[E]]
   val seqNum = new AtomicLong(0)

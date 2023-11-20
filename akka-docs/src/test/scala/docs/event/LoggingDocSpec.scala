@@ -9,7 +9,7 @@ import akka.testkit.AkkaSpec
 
 object LoggingDocSpec {
 
-  //#my-actor
+  // #my-actor
   import akka.event.Logging
 
   class MyActor extends Actor {
@@ -25,7 +25,7 @@ object LoggingDocSpec {
       case x      => log.warning("Received unknown message: {}", x)
     }
   }
-  //#my-actor
+  // #my-actor
 
   import akka.event.Logging
 
@@ -34,7 +34,7 @@ object LoggingDocSpec {
     def receive = {
 
       case _ => {
-        //#mdc
+        // #mdc
         val mdc = Map("requestId" -> 1234, "visitorId" -> 5678)
         log.mdc(mdc)
 
@@ -42,12 +42,12 @@ object LoggingDocSpec {
         log.info("Starting new request")
 
         log.clearMDC()
-        //#mdc
+        // #mdc
       }
     }
   }
 
-  //#mdc-actor
+  // #mdc-actor
   import Logging.MDC
 
   final case class Req(work: String, visitorId: Int)
@@ -72,9 +72,9 @@ object LoggingDocSpec {
     }
   }
 
-  //#mdc-actor
+  // #mdc-actor
 
-  //#my-event-listener
+  // #my-event-listener
   import akka.event.Logging.Debug
   import akka.event.Logging.Error
   import akka.event.Logging.Info
@@ -91,9 +91,9 @@ object LoggingDocSpec {
       case Debug(logSource, logClass, message)        => // ...
     }
   }
-  //#my-event-listener
+  // #my-event-listener
 
-  //#my-source
+  // #my-source
   import akka.actor.ActorSystem
   import akka.event.LogSource
 
@@ -110,22 +110,22 @@ object LoggingDocSpec {
 
     val log = Logging(system, this)
   }
-  //#my-source
+  // #my-source
 
   object Listeners {
     def println(s: Any) = ()
 
-    //#deadletters
+    // #deadletters
     import akka.actor.{ Actor, DeadLetter, Props }
 
     class DeadLetterListener extends Actor {
-      def receive = {
-        case d: DeadLetter => println(d)
+      def receive = { case d: DeadLetter =>
+        println(d)
       }
     }
-    //#deadletters
+    // #deadletters
 
-    //#superclass-subscription-eventstream
+    // #superclass-subscription-eventstream
     abstract class AllKindsOfMusic { def artist: String }
     case class Jazz(artist: String) extends AllKindsOfMusic
     case class Electronic(artist: String) extends AllKindsOfMusic
@@ -136,7 +136,7 @@ object LoggingDocSpec {
         case m: Electronic => println(s"${self.path.name} is listening to: ${m.artist}")
       }
     }
-    //#superclass-subscription-eventstream
+    // #superclass-subscription-eventstream
   }
 
 }
@@ -162,16 +162,16 @@ class LoggingDocSpec extends AkkaSpec {
 
   "allow registration to dead letters" in {
     import LoggingDocSpec.Listeners._
-    //#deadletters
+    // #deadletters
 
     val listener = system.actorOf(Props[DeadLetterListener]())
     system.eventStream.subscribe(listener, classOf[DeadLetter])
-    //#deadletters
+    // #deadletters
   }
 
   "demonstrate superclass subscriptions on eventStream" in {
     import LoggingDocSpec.Listeners._
-    //#superclass-subscription-eventstream
+    // #superclass-subscription-eventstream
 
     val jazzListener = system.actorOf(Props[Listener]())
     val musicListener = system.actorOf(Props[Listener]())
@@ -183,29 +183,29 @@ class LoggingDocSpec extends AkkaSpec {
 
     // jazzListener and musicListener will be notified about Jazz:
     system.eventStream.publish(Jazz("Sonny Rollins"))
-    //#superclass-subscription-eventstream
+    // #superclass-subscription-eventstream
   }
 
   "allow registration to suppressed dead letters" in {
     import akka.actor.Props
     val listener = system.actorOf(Props[MyActor]())
 
-    //#suppressed-deadletters
+    // #suppressed-deadletters
     import akka.actor.SuppressedDeadLetter
     system.eventStream.subscribe(listener, classOf[SuppressedDeadLetter])
-    //#suppressed-deadletters
+    // #suppressed-deadletters
 
-    //#all-deadletters
+    // #all-deadletters
     import akka.actor.AllDeadLetters
     system.eventStream.subscribe(listener, classOf[AllDeadLetters])
-    //#all-deadletters
+    // #all-deadletters
   }
 
   "demonstrate logging more arguments" in {
-    //#array
+    // #array
     val args = Array("The", "brown", "fox", "jumps", 42)
     system.log.debug("five parameters: {}, {}, {}, {}, {}", args)
-    //#array
+    // #array
   }
 
 }

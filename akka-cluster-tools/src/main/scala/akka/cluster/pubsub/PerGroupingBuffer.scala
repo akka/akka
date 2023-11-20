@@ -30,8 +30,8 @@ private[pubsub] trait PerGroupingBuffer {
   }
 
   private def forwardMessages(messages: MessageBuffer, recipient: ActorRef): Unit = {
-    messages.foreach {
-      case (message, originalSender) => recipient.tell(message, originalSender)
+    messages.foreach { case (message, originalSender) =>
+      recipient.tell(message, originalSender)
     }
   }
 

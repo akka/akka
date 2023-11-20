@@ -76,25 +76,22 @@ object OrElseSpec {
 
     def ping(counters: Map[String, Int]): Behavior[Ping] = {
 
-      val ping1: PartialFunction[Ping, Behavior[Ping]] = {
-        case Ping1(replyTo: ActorRef[Pong]) =>
-          val newCounters = counters.updated("ping1", counters.getOrElse("ping1", 0) + 1)
-          replyTo ! Pong(newCounters("ping1"))
-          ping(newCounters)
+      val ping1: PartialFunction[Ping, Behavior[Ping]] = { case Ping1(replyTo: ActorRef[Pong]) =>
+        val newCounters = counters.updated("ping1", counters.getOrElse("ping1", 0) + 1)
+        replyTo ! Pong(newCounters("ping1"))
+        ping(newCounters)
       }
 
-      val ping2: PartialFunction[Ping, Behavior[Ping]] = {
-        case Ping2(replyTo: ActorRef[Pong]) =>
-          val newCounters = counters.updated("ping2", counters.getOrElse("ping2", 0) + 1)
-          replyTo ! Pong(newCounters("ping2"))
-          ping(newCounters)
+      val ping2: PartialFunction[Ping, Behavior[Ping]] = { case Ping2(replyTo: ActorRef[Pong]) =>
+        val newCounters = counters.updated("ping2", counters.getOrElse("ping2", 0) + 1)
+        replyTo ! Pong(newCounters("ping2"))
+        ping(newCounters)
       }
 
-      val ping3: PartialFunction[Ping, Behavior[Ping]] = {
-        case Ping3(replyTo: ActorRef[Pong]) =>
-          val newCounters = counters.updated("ping3", counters.getOrElse("ping3", 0) + 1)
-          replyTo ! Pong(newCounters("ping3"))
-          ping(newCounters)
+      val ping3: PartialFunction[Ping, Behavior[Ping]] = { case Ping3(replyTo: ActorRef[Pong]) =>
+        val newCounters = counters.updated("ping3", counters.getOrElse("ping3", 0) + 1)
+        replyTo ! Pong(newCounters("ping3"))
+        ping(newCounters)
       }
 
       val pingHandlers: List[PartialFunction[Ping, Behavior[Ping]]] = ping1 :: ping2 :: ping3 :: Nil
@@ -150,14 +147,13 @@ object OrElseSpec {
       }
     }
 
-    def ping1(count: Int): Behavior[Ping] = Behaviors.receiveMessagePartial {
-      case Ping1(replyTo: ActorRef[Pong]) =>
-        val newCount = count + 1
-        replyTo ! Pong(newCount)
-        // note that this is nice since it doesn't have to know anything about the shared
-        // state (counters Map) as in the other examples, and it can switch to it's own
-        // new behavior
-        ping1(newCount)
+    def ping1(count: Int): Behavior[Ping] = Behaviors.receiveMessagePartial { case Ping1(replyTo: ActorRef[Pong]) =>
+      val newCount = count + 1
+      replyTo ! Pong(newCount)
+      // note that this is nice since it doesn't have to know anything about the shared
+      // state (counters Map) as in the other examples, and it can switch to it's own
+      // new behavior
+      ping1(newCount)
     }
 
     def ping2(count: Int): Behavior[Ping] = Behaviors.receiveMessage {
@@ -168,11 +164,10 @@ object OrElseSpec {
       case _ => Behaviors.unhandled
     }
 
-    def ping3(count: Int): Behavior[Ping] = Behaviors.receiveMessagePartial {
-      case Ping3(replyTo: ActorRef[Pong]) =>
-        val newCount = count + 1
-        replyTo ! Pong(newCount)
-        ping3(newCount)
+    def ping3(count: Int): Behavior[Ping] = Behaviors.receiveMessagePartial { case Ping3(replyTo: ActorRef[Pong]) =>
+      val newCount = count + 1
+      replyTo ! Pong(newCount)
+      ping3(newCount)
     }
 
     def ping(): Behavior[Ping] = {

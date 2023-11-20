@@ -171,8 +171,8 @@ abstract class ClusterShardingRememberEntitiesPerfSpec
         println(f"Average throughput: ${throughputs.sum / NrIterations}%,.0f msg/s")
         println("Combined latency figures:")
         println(s"total ${fullHistogram.getTotalCount} max ${fullHistogram.getMaxValue} ${percentiles
-          .map(p => s"$p% ${fullHistogram.getValueAtPercentile(p)}ms")
-          .mkString(" ")}")
+            .map(p => s"$p% ${fullHistogram.getValueAtPercentile(p)}ms")
+            .mkString(" ")}")
         recording.endAndDump(Paths.get("target", s"${name.replace(" ", "-")}.jfr"))
       }
       enterBarrier(s"after-start-stop-${testRun}")
@@ -226,13 +226,15 @@ abstract class ClusterShardingRememberEntitiesPerfSpec
           }
         }
 
-        awaitAssert({
-          val probe = TestProbe()
-          region.tell(GetShardRegionState, probe.ref)
-          val stats = probe.expectMsgType[CurrentShardRegionState]
-          stats.shards.head.shardId shouldEqual "0"
-          stats.shards.head.entityIds.toList.sorted shouldEqual List("0") // the init entity
-        }, 2.seconds)
+        awaitAssert(
+          {
+            val probe = TestProbe()
+            region.tell(GetShardRegionState, probe.ref)
+            val stats = probe.expectMsgType[CurrentShardRegionState]
+            stats.shards.head.shardId shouldEqual "0"
+            stats.shards.head.entityIds.toList.sorted shouldEqual List("0") // the init entity
+          },
+          2.seconds)
 
         numberOfMessages
       }

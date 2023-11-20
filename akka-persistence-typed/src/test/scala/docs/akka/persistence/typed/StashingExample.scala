@@ -14,7 +14,7 @@ import akka.persistence.typed.scaladsl.EventSourcedBehavior
 
 object StashingExample {
 
-  //#stashing
+  // #stashing
   object TaskManager {
 
     sealed trait Command
@@ -81,5 +81,5 @@ object StashingExample {
       }
     }
   }
-  //#stashing
+  // #stashing
 }

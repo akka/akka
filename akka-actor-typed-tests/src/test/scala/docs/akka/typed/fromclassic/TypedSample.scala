@@ -15,7 +15,7 @@ import akka.actor.typed.scaladsl.Behaviors
 
 object TypedSample {
 
-  //#hello-world-actor
+  // #hello-world-actor
   object HelloWorld {
     final case class Greet(whom: String, replyTo: ActorRef[Greeted])
     final case class Greeted(whom: String, from: ActorRef[Greet])
@@ -33,9 +33,9 @@ object TypedSample {
       this
     }
   }
-  //#hello-world-actor
+  // #hello-world-actor
 
-  //#children
+  // #children
   object Parent {
     sealed trait Command
     case class DelegateToChild(name: String, message: Child.Command) extends Command
@@ -66,7 +66,7 @@ object TypedSample {
       updated(Map.empty)
     }
   }
-  //#children
+  // #children
 
   object Child {
     sealed trait Command

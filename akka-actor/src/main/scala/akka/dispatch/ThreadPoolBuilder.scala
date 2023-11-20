@@ -51,23 +51,17 @@ object ThreadPoolConfig {
   def reusableQueue(queueFactory: QueueFactory): QueueFactory = reusableQueue(queueFactory())
 }
 
-/**
- * Function0 without the fun stuff (mostly for the sake of the Java API side of things)
- */
+/** Function0 without the fun stuff (mostly for the sake of the Java API side of things) */
 trait ExecutorServiceFactory {
   def createExecutorService: ExecutorService
 }
 
-/**
- * Generic way to specify an ExecutorService to a Dispatcher, create it with the given name if desired
- */
+/** Generic way to specify an ExecutorService to a Dispatcher, create it with the given name if desired */
 trait ExecutorServiceFactoryProvider {
   def createExecutorServiceFactory(id: String, threadFactory: ThreadFactory): ExecutorServiceFactory
 }
 
-/**
- * A small configuration DSL to create ThreadPoolExecutors that can be provided as an ExecutorServiceFactoryProvider to Dispatcher
- */
+/** A small configuration DSL to create ThreadPoolExecutors that can be provided as an ExecutorServiceFactoryProvider to Dispatcher */
 final case class ThreadPoolConfig(
     allowCorePoolTimeout: Boolean = ThreadPoolConfig.defaultAllowCoreThreadTimeout,
     corePoolSize: Int = ThreadPoolConfig.defaultCorePoolSize,
@@ -103,9 +97,7 @@ final case class ThreadPoolConfig(
   }
 }
 
-/**
- * A DSL to configure and create a MessageDispatcher with a ThreadPoolExecutor
- */
+/** A DSL to configure and create a MessageDispatcher with a ThreadPoolExecutor */
 final case class ThreadPoolConfigBuilder(config: ThreadPoolConfig) {
   import ThreadPoolConfig._
 
@@ -209,9 +201,7 @@ final case class MonitorableThreadFactory(
   }
 }
 
-/**
- * As the name says
- */
+/** As the name says */
 trait ExecutorServiceDelegate extends ExecutorService {
 
   def executor: ExecutorService

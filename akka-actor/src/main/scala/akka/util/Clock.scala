@@ -20,9 +20,7 @@ import akka.actor.ExtensionIdProvider
 import akka.actor.Scheduler
 import akka.annotation.InternalApi
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object Clock extends ExtensionId[Clock] with ExtensionIdProvider {
   override def get(system: ActorSystem): Clock = super.get(system)
 
@@ -39,18 +37,14 @@ import akka.annotation.InternalApi
   }
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] trait Clock extends Extension {
   def currentTime(): Long
 
   def earlierTime(duration: FiniteDuration): Long
 }
 
-/**
- * INTERNAL API: Clock backed by `System.nanoTime`.
- */
+/** INTERNAL API: Clock backed by `System.nanoTime`. */
 @InternalApi private[akka] final class NanoClock extends Clock {
   override def currentTime(): Long = System.nanoTime()
 

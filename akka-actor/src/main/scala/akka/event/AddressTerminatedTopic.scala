@@ -35,9 +35,7 @@ private[akka] object AddressTerminatedTopic extends ExtensionId[AddressTerminate
     new AddressTerminatedTopic
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[akka] final class AddressTerminatedTopic extends Extension {
 
   private val subscribers = new AtomicReference[Set[ActorRef]](Set.empty[ActorRef])

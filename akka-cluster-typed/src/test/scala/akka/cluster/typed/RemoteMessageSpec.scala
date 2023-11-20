@@ -66,10 +66,12 @@ class RemoteMessageSpec extends AkkaSpec(RemoteMessageSpec.config) {
           ActorRefResolver(typedSystem2).resolveActorRef[Ping](remoteRefStr)
 
         val pongPromise = Promise[Done]()
-        val recipient = system2.spawn(Behaviors.receive[String] { (_, _) =>
-          pongPromise.success(Done)
-          Behaviors.stopped
-        }, "recipient")
+        val recipient = system2.spawn(
+          Behaviors.receive[String] { (_, _) =>
+            pongPromise.success(Done)
+            Behaviors.stopped
+          },
+          "recipient")
         remoteRef ! Ping(recipient)
 
         pingPromise.future.futureValue should ===(Done)

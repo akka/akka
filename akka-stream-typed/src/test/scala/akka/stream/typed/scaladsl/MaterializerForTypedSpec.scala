@@ -39,11 +39,10 @@ class MaterializerForTypedSpec extends ScalaTestWithActorTestKit with AnyWordSpe
       val actor = testKit.spawn(Behaviors.setup[String] { context =>
         val materializerForActor = Materializer(context)
 
-        Behaviors.receiveMessagePartial[String] {
-          case "run" =>
-            val f = Source.single("hello").runWith(Sink.head)(materializerForActor)
-            f.onComplete(probe.ref ! _)(system.executionContext)
-            Behaviors.same
+        Behaviors.receiveMessagePartial[String] { case "run" =>
+          val f = Source.single("hello").runWith(Sink.head)(materializerForActor)
+          f.onComplete(probe.ref ! _)(system.executionContext)
+          Behaviors.same
         }
       })
       actor ! "run"

@@ -30,9 +30,7 @@ import akka.util.JavaDurationConverters._
 import akka.util.OptionVal
 import akka.util.Timeout
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object ActorContextImpl {
 
   // single context for logging as there are a few things that are initialized
@@ -81,9 +79,7 @@ import akka.util.Timeout
 
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] trait ActorContextImpl[T]
     extends TypedActorContext[T]
     with javadsl.ActorContext[T]
@@ -220,7 +216,7 @@ import akka.util.Timeout
   override def ask[Req, Res](target: RecipientRef[Req], createRequest: ActorRef[Res] => Req)(
       mapResponse: Try[Res] => T)(implicit responseTimeout: Timeout, classTag: ClassTag[Res]): Unit = {
     import akka.actor.typed.scaladsl.AskPattern._
-    pipeToSelf((target.ask(createRequest))(responseTimeout, system.scheduler))(mapResponse)
+    pipeToSelf(target.ask(createRequest)(responseTimeout, system.scheduler))(mapResponse)
   }
 
   override def askWithStatus[Req, Res](target: RecipientRef[Req], createRequest: ActorRef[StatusReply[Res]] => Req)(
@@ -229,7 +225,7 @@ import akka.util.Timeout
       case Success(StatusReply.Success(t: Res)) => mapResponse(Success(t))
       case Success(StatusReply.Error(why))      => mapResponse(Failure(why))
       case fail: Failure[_]                     => mapResponse(fail.asInstanceOf[Failure[Res]])
-      case _                                    => throw new RuntimeException() // won't happen, compiler exhaustiveness check pleaser
+      case _ => throw new RuntimeException() // won't happen, compiler exhaustiveness check pleaser
     }
 
   // Java API impl
@@ -263,7 +259,7 @@ import akka.util.Timeout
           case StatusReply.Success(value: Res) => applyToResponse(value, null)
           case StatusReply.Error(why)          => applyToResponse(null.asInstanceOf[Res], why)
           case null                            => applyToResponse(null.asInstanceOf[Res], failure)
-          case _                               => throw new RuntimeException() // won't happen, compiler exhaustiveness check pleaser
+          case _ => throw new RuntimeException() // won't happen, compiler exhaustiveness check pleaser
         })
   }
 
@@ -322,14 +318,10 @@ import akka.util.Timeout
     ref.asInstanceOf[ActorRef[U]]
   }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[akka] def messageAdapters: List[(Class[_], Any => T)] = _messageAdapters
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[akka] def setCurrentActorThread(): Unit = {
     _currentActorThread match {
       case OptionVal.Some(t) =>
@@ -341,16 +333,12 @@ import akka.util.Timeout
     }
   }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[akka] def clearCurrentActorThread(): Unit = {
     _currentActorThread = OptionVal.None
   }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[akka] def checkCurrentActorThread(): Unit = {
     val callerThread = Thread.currentThread()
     _currentActorThread match {

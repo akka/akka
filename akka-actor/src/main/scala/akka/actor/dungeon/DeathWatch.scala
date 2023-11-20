@@ -29,12 +29,15 @@ private[akka] trait DeathWatch { this: ActorCell =>
           maintainAddressTerminatedSubscription(a) {
             a.sendSystemMessage(Watch(a, self)) // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
             updateWatching(a, None)
-          } else
+          }
+        else
           checkWatchingSame(a, None)
       }
       a
     case unexpected =>
-      throw new IllegalArgumentException(s"ActorRef is not internal: $unexpected") // will not happen, for exhaustiveness check
+      throw new IllegalArgumentException(
+        s"ActorRef is not internal: $unexpected"
+      ) // will not happen, for exhaustiveness check
   }
 
   override final def watchWith(subject: ActorRef, msg: Any): ActorRef = subject match {
@@ -44,12 +47,15 @@ private[akka] trait DeathWatch { this: ActorCell =>
           maintainAddressTerminatedSubscription(a) {
             a.sendSystemMessage(Watch(a, self)) // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
             updateWatching(a, Some(msg))
-          } else
+          }
+        else
           checkWatchingSame(a, Some(msg))
       }
       a
     case unexpected =>
-      throw new IllegalArgumentException(s"ActorRef is not internal: $unexpected") // will not happen, for exhaustiveness check
+      throw new IllegalArgumentException(
+        s"ActorRef is not internal: $unexpected"
+      ) // will not happen, for exhaustiveness check
   }
 
   override final def unwatch(subject: ActorRef): ActorRef = subject match {
@@ -63,7 +69,9 @@ private[akka] trait DeathWatch { this: ActorCell =>
       terminatedQueued -= a
       a
     case unexpected =>
-      throw new IllegalArgumentException(s"ActorRef is not internal: $unexpected") // will not happen, for exhaustiveness check
+      throw new IllegalArgumentException(
+        s"ActorRef is not internal: $unexpected"
+      ) // will not happen, for exhaustiveness check
   }
 
   protected def receivedTerminated(t: Terminated): Unit =

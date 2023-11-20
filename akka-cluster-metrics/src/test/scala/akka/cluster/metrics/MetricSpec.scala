@@ -250,14 +250,13 @@ class MetricValuesSpec extends AkkaSpec(MetricsConfig.defaultEnabled) with Metri
   val nodes: Seq[NodeMetrics] = {
     (1 to 100).foldLeft(List(node1, node2)) { (nodes, _) =>
       nodes.map { n =>
-        n.copy(
-          metrics = collector
-            .sample()
-            .metrics
-            .flatMap(latest =>
-              n.metrics.collect {
-                case streaming if latest.sameAs(streaming) => streaming :+ latest
-              }))
+        n.copy(metrics = collector
+          .sample()
+          .metrics
+          .flatMap(latest =>
+            n.metrics.collect {
+              case streaming if latest.sameAs(streaming) => streaming :+ latest
+            }))
       }
     }
   }

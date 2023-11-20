@@ -35,20 +35,14 @@ object UdpConnected extends ExtensionId[UdpConnectedExt] with ExtensionIdProvide
 
   override def createExtension(system: ExtendedActorSystem): UdpConnectedExt = new UdpConnectedExt(system)
 
-  /**
-   * Java API: retrieve the UdpConnected extension for the given system.
-   */
+  /** Java API: retrieve the UdpConnected extension for the given system. */
   override def get(system: ActorSystem): UdpConnectedExt = super.get(system)
   override def get(system: ClassicActorSystemProvider): UdpConnectedExt = super.get(system)
 
-  /**
-   * The common interface for [[Command]] and [[Event]].
-   */
+  /** The common interface for [[Command]] and [[Event]]. */
   sealed trait Message
 
-  /**
-   * The common type of all commands supported by the UDP implementation.
-   */
+  /** The common type of all commands supported by the UDP implementation. */
   trait Command extends SelectionHandler.HasFailureMessage with Message {
     def failureMessage = CommandFailed(this)
   }
@@ -122,9 +116,7 @@ object UdpConnected extends ExtensionId[UdpConnectedExt] with ExtensionIdProvide
    */
   case object ResumeReading extends Command
 
-  /**
-   * The common type of all events emitted by the UDP implementation.
-   */
+  /** The common type of all events emitted by the UDP implementation. */
   trait Event extends Message
 
   /**
@@ -168,18 +160,14 @@ class UdpConnectedExt(system: ExtendedActorSystem) extends IO.Extension {
       name = "IO-UDP-CONN")
   }
 
-  /**
-   * Java API: retrieve the UDP manager actor’s reference.
-   */
+  /** Java API: retrieve the UDP manager actor’s reference. */
   def getManager: ActorRef = manager
 
   val bufferPool: BufferPool = new DirectByteBufferPool(settings.DirectBufferSize, settings.MaxDirectBufferPoolSize)
 
 }
 
-/**
- * Java API: factory methods for the message types used when communicating with the UdpConnected service.
- */
+/** Java API: factory methods for the message types used when communicating with the UdpConnected service. */
 object UdpConnectedMessage {
   import UdpConnected._
   import language.implicitConversions
@@ -196,15 +184,11 @@ object UdpConnectedMessage {
       localAddress: InetSocketAddress,
       options: JIterable[SocketOption]): Command = Connect(handler, remoteAddress, Some(localAddress), options)
 
-  /**
-   * Connect without specifying the `localAddress`.
-   */
+  /** Connect without specifying the `localAddress`. */
   def connect(handler: ActorRef, remoteAddress: InetSocketAddress, options: JIterable[SocketOption]): Command =
     Connect(handler, remoteAddress, None, options)
 
-  /**
-   * Connect without specifying the `localAddress` or `options`.
-   */
+  /** Connect without specifying the `localAddress` or `options`. */
   def connect(handler: ActorRef, remoteAddress: InetSocketAddress): Command = Connect(handler, remoteAddress, None, Nil)
 
   /**
@@ -217,9 +201,7 @@ object UdpConnectedMessage {
    */
   def send(data: ByteString, ack: AnyRef): Command = Send(data, ack)
 
-  /**
-   * Send without requesting acknowledgment.
-   */
+  /** Send without requesting acknowledgment. */
   def send(data: ByteString): Command = Send(data)
 
   /**

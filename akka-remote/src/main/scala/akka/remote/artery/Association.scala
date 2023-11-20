@@ -62,9 +62,7 @@ import akka.util.Unsafe
 import akka.util.WildcardIndex
 import akka.util.ccompat._
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[remote] object Association {
   sealed trait QueueWrapper extends SendQueue.ProducerApi[OutboundEnvelope] {
     def queue: Queue[OutboundEnvelope]
@@ -154,7 +152,8 @@ private[remote] class Association(
 
   override def settings = transport.settings
   private def advancedSettings = transport.settings.Advanced
-  private val deathWatchNotificationFlushEnabled = advancedSettings.DeathWatchNotificationFlushTimeout > Duration.Zero && transport.provider.settings.HasCluster
+  private val deathWatchNotificationFlushEnabled =
+    advancedSettings.DeathWatchNotificationFlushTimeout > Duration.Zero && transport.provider.settings.HasCluster
 
   private val restartCounter =
     new RestartCounter(advancedSettings.OutboundMaxRestarts, advancedSettings.OutboundRestartTimeout)
@@ -185,7 +184,8 @@ private[remote] class Association(
       DisabledQueueWrapper
 
   (0 until outboundLanes).foreach { i =>
-    queues(OrdinaryQueueIndex + i) = QueueWrapperImpl(createQueue(queueSize, OrdinaryQueueIndex + i)) // ordinary messages stream
+    queues(OrdinaryQueueIndex + i) =
+      QueueWrapperImpl(createQueue(queueSize, OrdinaryQueueIndex + i)) // ordinary messages stream
   }
   @volatile private[this] var queuesVisibility = false
 
@@ -248,9 +248,7 @@ private[remote] class Association(
 
   override def localAddress: UniqueAddress = transport.localAddress
 
-  /**
-   * Holds reference to shared state of Association - *access only via helper methods*
-   */
+  /** Holds reference to shared state of Association - *access only via helper methods* */
   @volatile
   @nowarn("msg=never used")
   private[artery] var _sharedStateDoNotCallMeDirectly: AssociationState = AssociationState()
@@ -266,9 +264,7 @@ private[remote] class Association(
   private[artery] def swapState(oldState: AssociationState, newState: AssociationState): Boolean =
     Unsafe.instance.compareAndSwapObject(this, AbstractAssociation.sharedStateOffset, oldState, newState)
 
-  /**
-   * @return Reference to current shared state
-   */
+  /** @return Reference to current shared state */
   def associationState: AssociationState =
     Unsafe.instance.getObjectVolatile(this, AbstractAssociation.sharedStateOffset).asInstanceOf[AssociationState]
 
@@ -594,9 +590,7 @@ private[remote] class Association(
 
   }
 
-  /**
-   * After calling this no messages can be sent with this Association instance
-   */
+  /** After calling this no messages can be sent with this Association instance */
   def removedAfterQuarantined(): Unit = {
     if (!isRemovedAfterQuarantined()) {
       flightRecorder.transportRemoveQuarantined(remoteAddress)
@@ -639,15 +633,14 @@ private[remote] class Association(
 
   private def abortQuarantined(): Unit = {
     cancelIdleTimer()
-    streamMatValues.get.foreach {
-      case (queueIndex, OutboundStreamMatValues(killSwitch, _, _)) =>
-        killSwitch match {
-          case OptionVal.Some(k) =>
-            setStopReason(queueIndex, OutboundStreamStopQuarantinedSignal)
-            clearStreamKillSwitch(queueIndex, k)
-            k.abort(OutboundStreamStopQuarantinedSignal)
-          case _ => // already aborted
-        }
+    streamMatValues.get.foreach { case (queueIndex, OutboundStreamMatValues(killSwitch, _, _)) =>
+      killSwitch match {
+        case OptionVal.Some(k) =>
+          setStopReason(queueIndex, OutboundStreamStopQuarantinedSignal)
+          clearStreamKillSwitch(queueIndex, k)
+          k.abort(OutboundStreamStopQuarantinedSignal)
+        case _ => // already aborted
+      }
     }
   }
 
@@ -680,34 +673,33 @@ private[remote] class Association(
                   abortQuarantined() // quarantine ignored due to unknown UID, have to stop this task anyway
             }
           } else if (lastUsedDurationNanos >= StopIdleOutboundAfter.toNanos) {
-            streamMatValues.get.foreach {
-              case (queueIndex, OutboundStreamMatValues(streamKillSwitch, _, stopping)) =>
-                if (isStreamActive(queueIndex) && stopping.isEmpty) {
-                  if (queueIndex != ControlQueueIndex) {
-                    streamKillSwitch match {
-                      case OptionVal.Some(k) =>
-                        // for non-control streams we can stop the entire stream
-                        log.info("Stopping idle outbound stream [{}] to [{}]", queueIndex, remoteAddress)
-                        flightRecorder.transportStopIdleOutbound(remoteAddress, queueIndex)
-                        setStopReason(queueIndex, OutboundStreamStopIdleSignal)
-                        clearStreamKillSwitch(queueIndex, k)
-                        k.abort(OutboundStreamStopIdleSignal)
-                      case _ => // already aborted
-                    }
+            streamMatValues.get.foreach { case (queueIndex, OutboundStreamMatValues(streamKillSwitch, _, stopping)) =>
+              if (isStreamActive(queueIndex) && stopping.isEmpty) {
+                if (queueIndex != ControlQueueIndex) {
+                  streamKillSwitch match {
+                    case OptionVal.Some(k) =>
+                      // for non-control streams we can stop the entire stream
+                      log.info("Stopping idle outbound stream [{}] to [{}]", queueIndex, remoteAddress)
+                      flightRecorder.transportStopIdleOutbound(remoteAddress, queueIndex)
+                      setStopReason(queueIndex, OutboundStreamStopIdleSignal)
+                      clearStreamKillSwitch(queueIndex, k)
+                      k.abort(OutboundStreamStopIdleSignal)
+                    case _ => // already aborted
+                  }
 
-                  } else {
-                    // only stop the transport parts of the stream because SystemMessageDelivery stage has
-                    // state (seqno) and system messages might be sent at the same time
-                    associationState.controlIdleKillSwitch match {
-                      case OptionVal.Some(killSwitch) =>
-                        log.info("Stopping idle outbound control stream to [{}]", remoteAddress)
-                        flightRecorder.transportStopIdleOutbound(remoteAddress, queueIndex)
-                        setControlIdleKillSwitch(OptionVal.None)
-                        killSwitch.abort(OutboundStreamStopIdleSignal)
-                      case _ => // already stopped
-                    }
+                } else {
+                  // only stop the transport parts of the stream because SystemMessageDelivery stage has
+                  // state (seqno) and system messages might be sent at the same time
+                  associationState.controlIdleKillSwitch match {
+                    case OptionVal.Some(killSwitch) =>
+                      log.info("Stopping idle outbound control stream to [{}]", remoteAddress)
+                      flightRecorder.transportStopIdleOutbound(remoteAddress, queueIndex)
+                      setControlIdleKillSwitch(OptionVal.None)
+                      killSwitch.abort(OutboundStreamStopIdleSignal)
+                    case _ => // already stopped
                   }
                 }
+              }
             }
           }
         }(transport.system.dispatcher)
@@ -822,7 +814,7 @@ private[remote] class Association(
           .fromGraph(new SendQueue[OutboundEnvelope](sendToDeadLetters))
           .via(streamKillSwitch.flow)
           .viaMat(transport.outboundTestFlow(this))(Keep.both)
-          .toMat(transport.outbound(this))({ case ((a, b), (c, d)) => (a, b, c, d) }) // "keep all, exploded"
+          .toMat(transport.outbound(this)) { case ((a, b), (c, d)) => (a, b, c, d) } // "keep all, exploded"
           .run()(materializer)
 
       queueValue.inject(wrapper.queue)
@@ -856,8 +848,8 @@ private[remote] class Association(
         .watchTermination()(Keep.both)
         // recover to avoid error logging by MergeHub
         .recoverWithRetries(-1, { case _: Throwable => Source.empty })
-        .mapMaterializedValue {
-          case ((q, c), w) => (q, c, w)
+        .mapMaterializedValue { case ((q, c), w) =>
+          (q, c, w)
         }
 
       val (mergeHub, transportSinkCompleted) = MergeHub
@@ -887,10 +879,9 @@ private[remote] class Association(
 
       val allCompleted = Future.sequence(laneCompletedValues).flatMap(_ => transportSinkCompleted)
 
-      queueValues.zip(wrappers).zipWithIndex.foreach {
-        case ((q, w), i) =>
-          q.inject(w.queue)
-          queues(OrdinaryQueueIndex + i) = q // replace with the materialized value, still same underlying queue
+      queueValues.zip(wrappers).zipWithIndex.foreach { case ((q, w), i) =>
+        q.inject(w.queue)
+        queues(OrdinaryQueueIndex + i) = q // replace with the materialized value, still same underlying queue
       }
       queuesVisibility = true // volatile write for visibility of the queues array
 
@@ -1059,9 +1050,14 @@ private[remote] class Association(
       streamKillSwitch: SharedKillSwitch,
       completed: Future[Done]): Unit = {
     implicit val ec = materializer.executionContext
-    updateStreamMatValues(streamId, OutboundStreamMatValues(OptionVal.Some(streamKillSwitch), completed.recover {
-      case _ => Done
-    }, stopping = OptionVal.None))
+    updateStreamMatValues(
+      streamId,
+      OutboundStreamMatValues(
+        OptionVal.Some(streamKillSwitch),
+        completed.recover { case _ =>
+          Done
+        },
+        stopping = OptionVal.None))
   }
 
   @tailrec private def updateStreamMatValues(streamId: Int, values: OutboundStreamMatValues): Unit = {
@@ -1109,8 +1105,8 @@ private[remote] class Association(
   def streamsCompleted: Future[Done] = {
     implicit val ec = materializer.executionContext
     Future
-      .sequence(streamMatValues.get().values.map {
-        case OutboundStreamMatValues(_, done, _) => done
+      .sequence(streamMatValues.get().values.map { case OutboundStreamMatValues(_, done, _) =>
+        done
       })
       .map(_ => Done)
   }
@@ -1120,16 +1116,12 @@ private[remote] class Association(
 
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[remote] class AssociationRegistry(createAssociation: Address => Association) {
   private[this] val associationsByAddress = new AtomicReference[Map[Address, Association]](Map.empty)
   private[this] val associationsByUid = new AtomicReference[ImmutableLongMap[Association]](ImmutableLongMap.empty)
 
-  /**
-   * @throws ShuttingDown if called while the transport is shutting down
-   */
+  /** @throws ShuttingDown if called while the transport is shutting down */
   @tailrec final def association(remoteAddress: Address): Association = {
     val currentMap = associationsByAddress.get
     currentMap.get(remoteAddress) match {
@@ -1148,9 +1140,7 @@ private[remote] class AssociationRegistry(createAssociation: Address => Associat
   def association(uid: Long): OptionVal[Association] =
     associationsByUid.get.get(uid)
 
-  /**
-   * @throws ShuttingDown if called while the transport is shutting down
-   */
+  /** @throws ShuttingDown if called while the transport is shutting down */
   @tailrec final def setUID(peer: UniqueAddress): Association = {
     // Don't create a new association via this method. It's supposed to exist unless it was removed after quarantined.
     val a = association(peer.address)
@@ -1186,17 +1176,16 @@ private[remote] class AssociationRegistry(createAssociation: Address => Associat
     val now = System.nanoTime()
     val afterNanos = after.toNanos
     val currentMap = associationsByAddress.get
-    val remove = currentMap.foldLeft(Map.empty[Address, Association]) {
-      case (acc, (address, association)) =>
-        val state = association.associationState
-        if ((now - state.lastUsedTimestamp.get) >= afterNanos) {
-          state.uniqueRemoteAddressState() match {
-            case AssociationState.UidQuarantined | AssociationState.UidUnknown => acc.updated(address, association)
-            case AssociationState.UidKnown                                     => acc
-          }
-        } else {
-          acc
+    val remove = currentMap.foldLeft(Map.empty[Address, Association]) { case (acc, (address, association)) =>
+      val state = association.associationState
+      if ((now - state.lastUsedTimestamp.get) >= afterNanos) {
+        state.uniqueRemoteAddressState() match {
+          case AssociationState.UidQuarantined | AssociationState.UidUnknown => acc.updated(address, association)
+          case AssociationState.UidKnown                                     => acc
         }
+      } else {
+        acc
+      }
     }
     if (remove.nonEmpty) {
       val newMap = currentMap -- remove.keysIterator
@@ -1211,18 +1200,17 @@ private[remote] class AssociationRegistry(createAssociation: Address => Associat
     val now = System.nanoTime()
     val afterNanos = after.toNanos
     val currentMap = associationsByUid.get
-    val remove = currentMap.keysIterator.foldLeft(Map.empty[Long, Association]) {
-      case (acc, uid) =>
-        val association = currentMap.get(uid).get
-        val state = association.associationState
-        if ((now - state.lastUsedTimestamp.get) >= afterNanos) {
-          state.uniqueRemoteAddressState() match {
-            case AssociationState.UidQuarantined | AssociationState.UidUnknown => acc.updated(uid, association)
-            case AssociationState.UidKnown                                     => acc
-          }
-        } else {
-          acc
+    val remove = currentMap.keysIterator.foldLeft(Map.empty[Long, Association]) { case (acc, uid) =>
+      val association = currentMap.get(uid).get
+      val state = association.associationState
+      if ((now - state.lastUsedTimestamp.get) >= afterNanos) {
+        state.uniqueRemoteAddressState() match {
+          case AssociationState.UidQuarantined | AssociationState.UidUnknown => acc.updated(uid, association)
+          case AssociationState.UidKnown                                     => acc
         }
+      } else {
+        acc
+      }
     }
     if (remove.nonEmpty) {
       val newMap = remove.keysIterator.foldLeft(currentMap)((acc, uid) => acc.remove(uid))

@@ -10,9 +10,7 @@ import java.util.function.LongUnaryOperator
 import akka.annotation.ApiMayChange
 import akka.annotation.InternalApi
 
-/**
- * A time source.
- */
+/** A time source. */
 @ApiMayChange
 trait WallClock {
   def currentTimeMillis(): Long
@@ -27,9 +25,7 @@ object WallClock {
   val AlwaysIncreasingClock: WallClock = new AlwaysIncreasingClock()
 }
 
-/**
- * INTERNAL API: Always increasing wall clock time.
- */
+/** INTERNAL API: Always increasing wall clock time. */
 @InternalApi
 private[akka] final class AlwaysIncreasingClock() extends AtomicLong with WallClock {
 

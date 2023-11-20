@@ -34,27 +34,22 @@ final case class Metric private[metrics] (name: String, value: Number, average: 
    */
   def :+(latest: Metric): Metric =
     if (this.sameAs(latest)) average match {
-      case Some(avg)                        => copy(value = latest.value, average = Some(avg :+ latest.value.doubleValue))
+      case Some(avg) => copy(value = latest.value, average = Some(avg :+ latest.value.doubleValue))
       case None if latest.average.isDefined => copy(value = latest.value, average = latest.average)
       case _                                => copy(value = latest.value)
-    } else this
+    }
+    else this
 
-  /**
-   * The numerical value of the average, if defined, otherwise the latest value
-   */
+  /** The numerical value of the average, if defined, otherwise the latest value */
   def smoothValue: Double = average match {
     case Some(avg) => avg.value
     case None      => value.doubleValue
   }
 
-  /**
-   * @return true if this value is smoothed
-   */
+  /** @return true if this value is smoothed */
   def isSmooth: Boolean = average.isDefined
 
-  /**
-   * Returns true if <code>that</code> is tracking the same metric as this.
-   */
+  /** Returns true if <code>that</code> is tracking the same metric as this. */
   def sameAs(that: Metric): Boolean = name == that.name
 
   override def hashCode = name.##
@@ -65,9 +60,7 @@ final case class Metric private[metrics] (name: String, value: Number, average: 
 
 }
 
-/**
- * Factory for creating valid Metric instances.
- */
+/** Factory for creating valid Metric instances. */
 object Metric extends MetricNumericConverter {
 
   /**
@@ -256,9 +249,7 @@ private[metrics] trait MetricNumericConverter {
     case Right(b) => !(b < 0.0 || b.isNaN || b.isInfinite)
   }
 
-  /**
-   * May involve rounding or truncation.
-   */
+  /** May involve rounding or truncation. */
   def convertNumber(from: Any): Either[Long, Double] = from match {
     case n: Int        => Left(n)
     case n: Long       => Left(n)
@@ -284,9 +275,7 @@ private[metrics] trait MetricNumericConverter {
 @SerialVersionUID(1L)
 final case class NodeMetrics(address: Address, timestamp: Long, metrics: Set[Metric] = Set.empty[Metric]) {
 
-  /**
-   * Returns the most recent data.
-   */
+  /** Returns the most recent data. */
   def merge(that: NodeMetrics): NodeMetrics = {
     require(address == that.address, s"merge only allowed for same address, [$address] != [$that.address]")
     if (timestamp >= that.timestamp) this // that is older
@@ -296,9 +285,7 @@ final case class NodeMetrics(address: Address, timestamp: Long, metrics: Set[Met
     }
   }
 
-  /**
-   * Returns the most recent data with [[EWMA]] averaging.
-   */
+  /** Returns the most recent data with [[EWMA]] averaging. */
   def update(that: NodeMetrics): NodeMetrics = {
     require(address == that.address, s"update only allowed for same address, [$address] != [$that.address]")
     // Apply sample ordering.
@@ -320,16 +307,12 @@ final case class NodeMetrics(address: Address, timestamp: Long, metrics: Set[Met
 
   def metric(key: String): Option[Metric] = metrics.collectFirst { case m if m.name == key => m }
 
-  /**
-   * Java API
-   */
+  /** Java API */
   @nowarn("msg=deprecated")
   def getMetrics: java.lang.Iterable[Metric] =
     scala.collection.JavaConverters.asJavaIterableConverter(metrics).asJava
 
-  /**
-   * Returns true if <code>that</code> address is the same as this
-   */
+  /** Returns true if <code>that</code> address is the same as this */
   def sameAs(that: NodeMetrics): Boolean = address == that.address
 
   override def hashCode = address.##
@@ -340,9 +323,7 @@ final case class NodeMetrics(address: Address, timestamp: Long, metrics: Set[Met
 
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[metrics] object MetricsGossip {
   val empty = MetricsGossip(Set.empty[NodeMetrics])
 }
@@ -355,37 +336,27 @@ private[metrics] object MetricsGossip {
 @SerialVersionUID(1L)
 private[metrics] final case class MetricsGossip(nodes: Set[NodeMetrics]) {
 
-  /**
-   * Removes nodes if their correlating node ring members are not [[akka.cluster.MemberStatus]] `Up`.
-   */
+  /** Removes nodes if their correlating node ring members are not [[akka.cluster.MemberStatus]] `Up`. */
   def remove(node: Address): MetricsGossip = copy(nodes = nodes.filterNot(_.address == node))
 
-  /**
-   * Only the nodes that are in the `includeNodes` Set.
-   */
+  /** Only the nodes that are in the `includeNodes` Set. */
   def filter(includeNodes: Set[Address]): MetricsGossip =
     copy(nodes = nodes.filter { includeNodes contains _.address })
 
-  /**
-   * Adds new remote [[NodeMetrics]] and merges existing from a remote gossip.
-   */
+  /** Adds new remote [[NodeMetrics]] and merges existing from a remote gossip. */
   def merge(otherGossip: MetricsGossip): MetricsGossip =
     otherGossip.nodes.foldLeft(this) { (gossip, nodeMetrics) =>
       gossip :+ nodeMetrics
     }
 
-  /**
-   * Adds new local [[NodeMetrics]], or merges an existing.
-   */
+  /** Adds new local [[NodeMetrics]], or merges an existing. */
   def :+(newNodeMetrics: NodeMetrics): MetricsGossip = nodeMetricsFor(newNodeMetrics.address) match {
     case Some(existingNodeMetrics) =>
       copy(nodes = nodes - existingNodeMetrics + (existingNodeMetrics.update(newNodeMetrics)))
     case None => copy(nodes = nodes + newNodeMetrics)
   }
 
-  /**
-   * Returns [[NodeMetrics]] for a node if exists.
-   */
+  /** Returns [[NodeMetrics]] for a node if exists. */
   def nodeMetricsFor(address: Address): Option[NodeMetrics] = nodes.find { n =>
     n.address == address
   }

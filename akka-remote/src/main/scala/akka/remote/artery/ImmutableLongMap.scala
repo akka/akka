@@ -12,9 +12,7 @@ import scala.reflect.ClassTag
 import akka.util.HashCode
 import akka.util.OptionVal
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[akka] object ImmutableLongMap {
   def empty[A >: Null](implicit t: ClassTag[A]): ImmutableLongMap[A] =
     new ImmutableLongMap(Array.emptyLongArray, Array.empty)
@@ -31,18 +29,14 @@ private[akka] class ImmutableLongMap[A >: Null] private (private val keys: Array
 
   val size: Int = keys.length
 
-  /**
-   * Worst case `O(log n)`, allocation free.
-   */
+  /** Worst case `O(log n)`, allocation free. */
   def get(key: Long): OptionVal[A] = {
     val i = Arrays.binarySearch(keys, key)
     if (i >= 0) OptionVal(values(i))
     else OptionVal.None
   }
 
-  /**
-   * Worst case `O(log n)`, allocation free.
-   */
+  /** Worst case `O(log n)`, allocation free. */
   def contains(key: Long): Boolean = {
     Arrays.binarySearch(keys, key) >= 0
   }
@@ -101,9 +95,7 @@ private[akka] class ImmutableLongMap[A >: Null] private (private val keys: Array
       this
   }
 
-  /**
-   * All keys
-   */
+  /** All keys */
   def keysIterator: Iterator[Long] =
     keys.iterator
 

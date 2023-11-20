@@ -10,9 +10,7 @@ object GSet {
   def apply(): GSet[Any] = _empty
   private[akka] def apply[A](set: Set[A]): GSet[A] = new GSet(set)(None)
 
-  /**
-   * Java API
-   */
+  /** Java API */
   def create[A](): GSet[A] = empty[A]
 
   // unapply from case class
@@ -39,9 +37,7 @@ final case class GSet[A] private (elements: Set[A])(override val delta: Option[G
   type T = GSet[A]
   type D = GSet[A]
 
-  /**
-   * Java API
-   */
+  /** Java API */
   def getElements(): java.util.Set[A] = {
     import akka.util.ccompat.JavaConverters._
     elements.asJava
@@ -53,14 +49,10 @@ final case class GSet[A] private (elements: Set[A])(override val delta: Option[G
 
   def size: Int = elements.size
 
-  /**
-   * Adds an element to the set
-   */
+  /** Adds an element to the set */
   def +(element: A): GSet[A] = add(element)
 
-  /**
-   * Adds an element to the set
-   */
+  /** Adds an element to the set */
   def add(element: A): GSet[A] = {
     val newDelta = delta match {
       case Some(e) => Some(new GSet(e.elements + element)(None))

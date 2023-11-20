@@ -14,7 +14,9 @@ import akka.persistence.testkit.scaladsl.EventSourcedBehaviorTestKitSpec.TestCou
 import akka.persistence.typed.PersistenceId
 
 class EventSourcedBehaviorNoSnapshotTestKitSpec
-    extends ScalaTestWithActorTestKit(ConfigFactory.parseString("""
+    extends ScalaTestWithActorTestKit(
+      ConfigFactory
+        .parseString("""
     akka.persistence.testkit.events.serialize = off
     akka.persistence.testkit.snapshots.serialize = off
     """).withFallback(PersistenceTestKitPlugin.config))

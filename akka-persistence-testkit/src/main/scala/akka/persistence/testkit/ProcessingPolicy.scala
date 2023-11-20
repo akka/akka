@@ -30,15 +30,11 @@ trait ProcessingPolicy[U] {
 
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 object ProcessingPolicy {
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi
   private[testkit] trait DefaultPolicies[U] {
 
@@ -102,37 +98,36 @@ object ProcessingPolicy {
         returnNonTrigger: => ProcessingResult,
         cond: (String, U) => Boolean,
         onLimitExceed: => Unit)
-        extends ReturnAfterNextNCond(returnOnTrigger, returnNonTrigger, new Function2[String, U, Boolean] {
+        extends ReturnAfterNextNCond(
+          returnOnTrigger,
+          returnNonTrigger,
+          new Function2[String, U, Boolean] {
 
-          var counter = 0
+            var counter = 0
 
-          override def apply(persistenceId: String, v1: U): Boolean = {
-            val intRes = cond(persistenceId, v1)
-            if (intRes && counter < numberToCount) {
-              counter += 1
-              if (counter == numberToCount) onLimitExceed
-              intRes
-            } else {
-              false
+            override def apply(persistenceId: String, v1: U): Boolean = {
+              val intRes = cond(persistenceId, v1)
+              if (intRes && counter < numberToCount) {
+                counter += 1
+                if (counter == numberToCount) onLimitExceed
+                intRes
+              } else {
+                false
+              }
             }
-          }
-        })
+          })
 
   }
 
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 sealed trait ProcessingResult
 
 sealed abstract class ProcessingSuccess extends ProcessingResult
 
-/**
- * Emulates successful processing of some operation.
- */
+/** Emulates successful processing of some operation. */
 case object ProcessingSuccess extends ProcessingSuccess {
 
   def getInstance(): ProcessingSuccess = this
@@ -180,9 +175,7 @@ object Reject {
 
 }
 
-/**
- * Emulates exception thrown by the storage on the attempt to perform some operation.
- */
+/** Emulates exception thrown by the storage on the attempt to perform some operation. */
 final case class StorageFailure(error: Throwable = ExpectedFailure) extends ProcessingFailure {
 
   def getError(): Throwable = error

@@ -24,9 +24,7 @@ private[stream] final case class SinkRefImpl[In](initialPartnerRef: ActorRef) ex
     Sink.fromGraph(new SinkRefStageImpl[In](OptionVal.Some(initialPartnerRef))).mapMaterializedValue(_ => NotUsed)
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[stream] object SinkRefStageImpl {
   private sealed trait ActorRefStage { def ref: ActorRef }
 }
@@ -224,7 +222,9 @@ private[stream] final class SinkRefStageImpl[In] private[akka] (val initialPartn
           case OptionVal.Some(ref) =>
             ref ! StreamRefsProtocol.RemoteStreamFailure(ex.getMessage)
             finishedWithAwaitingPartnerTermination = OptionVal(Failure(ex))
-            setKeepGoing(true) // we will terminate once partner ref has Terminated (to avoid racing Terminated with completion message)
+            setKeepGoing(
+              true
+            ) // we will terminate once partner ref has Terminated (to avoid racing Terminated with completion message)
 
           case _ =>
             completedBeforeRemoteConnected = OptionVal(scala.util.Failure(ex))
@@ -240,7 +240,9 @@ private[stream] final class SinkRefStageImpl[In] private[akka] (val initialPartn
           case OptionVal.Some(ref) =>
             ref ! StreamRefsProtocol.RemoteStreamCompleted(remoteCumulativeDemandConsumed)
             finishedWithAwaitingPartnerTermination = OptionVal(Success(Done))
-            setKeepGoing(true) // we will terminate once partner ref has Terminated (to avoid racing Terminated with completion message)
+            setKeepGoing(
+              true
+            ) // we will terminate once partner ref has Terminated (to avoid racing Terminated with completion message)
           case _ =>
             completedBeforeRemoteConnected = OptionVal(scala.util.Success(Done))
             // not terminating on purpose, since other side may subscribe still and then we want to complete it
@@ -264,13 +266,17 @@ private[stream] final class SinkRefStageImpl[In] private[akka] (val initialPartn
                 ex)
               partner ! StreamRefsProtocol.RemoteStreamFailure(ex.getMessage)
               finishedWithAwaitingPartnerTermination = OptionVal(Failure(ex))
-              setKeepGoing(true) // we will terminate once partner ref has Terminated (to avoid racing Terminated with completion message)
+              setKeepGoing(
+                true
+              ) // we will terminate once partner ref has Terminated (to avoid racing Terminated with completion message)
 
             case OptionVal.Some(scala.util.Success(Done)) =>
               log.warning("[{}] Stream already completed before remote side materialized, failing now.", stageActorName)
               partner ! StreamRefsProtocol.RemoteStreamCompleted(remoteCumulativeDemandConsumed)
               finishedWithAwaitingPartnerTermination = OptionVal(Success(Done))
-              setKeepGoing(true) // we will terminate once partner ref has Terminated (to avoid racing Terminated with completion message)
+              setKeepGoing(
+                true
+              ) // we will terminate once partner ref has Terminated (to avoid racing Terminated with completion message)
 
             case _ =>
               if (partner != getPartnerRef) {

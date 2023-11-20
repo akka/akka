@@ -40,8 +40,8 @@ object SupervisorHierarchySpec {
    */
   class CountDownActor(countDown: CountDownLatch, override val supervisorStrategy: SupervisorStrategy) extends Actor {
 
-    def receive = {
-      case p: Props => sender() ! context.actorOf(p)
+    def receive = { case p: Props =>
+      sender() ! context.actorOf(p)
     }
     // test relies on keeping children around during restart
     override def preRestart(cause: Throwable, msg: Option[Any]): Unit = {}
@@ -170,7 +170,7 @@ object SupervisorHierarchySpec {
           val sizes = s / kids
           var rest = s % kids
           val propsTemplate = Props.empty.withDispatcher("hierarchy")
-          (1 to kids).iterator.map { (id) =>
+          (1 to kids).iterator.map { id =>
             val kidSize = if (rest > 0) {
               rest -= 1; sizes + 1
             } else sizes
@@ -238,15 +238,14 @@ object SupervisorHierarchySpec {
       val state = stateCache.get(self.path)
       log = state.log
       log :+= Event("restarted " + suspendCount + " " + cause, identityHashCode(this))
-      state.kids.foreach {
-        case (childPath, kidSize) =>
-          val name = childPath.name
-          if (context.child(name).isEmpty) {
-            listener ! Died(childPath)
-            val props =
-              Props(new Hierarchy(kidSize, breadth, listener, myLevel + 1, random)).withDispatcher("hierarchy")
-            context.watch(context.actorOf(props, name))
-          }
+      state.kids.foreach { case (childPath, kidSize) =>
+        val name = childPath.name
+        if (context.child(name).isEmpty) {
+          listener ! Died(childPath)
+          val props =
+            Props(new Hierarchy(kidSize, breadth, listener, myLevel + 1, random)).withDispatcher("hierarchy")
+          context.watch(context.actorOf(props, name))
+        }
       }
       if (context.children.size != state.kids.size) {
         abort("invariant violated: " + state.kids.size + " != " + context.children.size)
@@ -463,12 +462,11 @@ object SupervisorHierarchySpec {
     // number of Work packages to execute for the test
     startWith(Idle, size * 1000)
 
-    when(Idle) {
-      case this.Event(Init, _) =>
-        hierarchy = context.watch(
-          context.actorOf(Props(new Hierarchy(size, breadth, self, 0, random)).withDispatcher("hierarchy"), "head"))
-        startSingleTimer("phase", StateTimeout, 5 seconds)
-        goto(Init)
+    when(Idle) { case this.Event(Init, _) =>
+      hierarchy = context.watch(
+        context.actorOf(Props(new Hierarchy(size, breadth, self, 0, random)).withDispatcher("hierarchy"), "head"))
+      startSingleTimer("phase", StateTimeout, 5 seconds)
+      goto(Init)
     }
 
     when(Init) {
@@ -486,13 +484,12 @@ object SupervisorHierarchySpec {
         stop()
     }
 
-    onTransition {
-      case Init -> Stress =>
-        self ! Work
-        idleChildren = children
-        activeChildren = children
-        // set timeout for completion of the whole test (i.e. including Finishing and Stopping)
-        startSingleTimer("phase", StateTimeout, 90.seconds.dilated)
+    onTransition { case Init -> Stress =>
+      self ! Work
+      idleChildren = children
+      activeChildren = children
+      // set timeout for completion of the whole test (i.e. including Finishing and Stopping)
+      startSingleTimer("phase", StateTimeout, 90.seconds.dilated)
     }
 
     val workSchedule = 50.millis
@@ -558,8 +555,8 @@ object SupervisorHierarchySpec {
         goto(Failed)
     }
 
-    onTransition {
-      case Stress -> Finishing => ignoreFailConstr = true
+    onTransition { case Stress -> Finishing =>
+      ignoreFailConstr = true
     }
 
     when(Finishing) {
@@ -572,11 +569,10 @@ object SupervisorHierarchySpec {
         if (pingChildren.isEmpty) goto(LastPing) else stay()
     }
 
-    onTransition {
-      case _ -> LastPing =>
-        idleChildren.foreach(_ ! "ping")
-        pingChildren ++= idleChildren
-        idleChildren = Vector.empty
+    onTransition { case _ -> LastPing =>
+      idleChildren.foreach(_ ! "ping")
+      pingChildren ++= idleChildren
+      idleChildren = Vector.empty
     }
 
     when(LastPing) {
@@ -589,10 +585,9 @@ object SupervisorHierarchySpec {
         if (pingChildren.isEmpty) goto(Stopping) else stay()
     }
 
-    onTransition {
-      case _ -> Stopping =>
-        ignoreNotResumedLogs = false
-        hierarchy ! PingOfDeath
+    onTransition { case _ -> Stopping =>
+      ignoreNotResumedLogs = false
+      hierarchy ! PingOfDeath
     }
 
     when(Stopping, stateTimeout = 5.seconds.dilated) {
@@ -704,10 +699,9 @@ object SupervisorHierarchySpec {
         case (origin, ErrorLog("dump", _))                               => getErrors(origin, 1)
         case (origin, ErrorLog(msg, _)) if msg.startsWith("not resumed") => getErrorsUp(origin)
       }
-      val merged = errors.sortBy(_._1.toString).flatMap {
-        case (ref, ErrorLog(msg, log)) =>
-          println("Error: " + ref + " " + msg)
-          log.map(l => (l.time, ref, l.identity, l.msg.toString))
+      val merged = errors.sortBy(_._1.toString).flatMap { case (ref, ErrorLog(msg, log)) =>
+        println("Error: " + ref + " " + msg)
+        log.map(l => (l.time, ref, l.identity, l.msg.toString))
       }
       println("random seed: " + randomSeed)
       merged.sorted.distinct.foreach(println)
@@ -821,14 +815,16 @@ class SupervisorHierarchySpec extends AkkaSpec(SupervisorHierarchySpec.config) w
 
     "suspend children while failing" taggedAs LongRunningTest in {
       val latch = TestLatch()
-      val slowResumer = system.actorOf(Props(new Actor {
-        override def supervisorStrategy = OneForOneStrategy() {
-          case _ => Await.ready(latch, 4.seconds.dilated); SupervisorStrategy.Resume
-        }
-        def receive = {
-          case "spawn" => sender() ! context.actorOf(Props[Resumer]())
-        }
-      }), "slowResumer")
+      val slowResumer = system.actorOf(
+        Props(new Actor {
+          override def supervisorStrategy = OneForOneStrategy() { case _ =>
+            Await.ready(latch, 4.seconds.dilated); SupervisorStrategy.Resume
+          }
+          def receive = { case "spawn" =>
+            sender() ! context.actorOf(Props[Resumer]())
+          }
+        }),
+        "slowResumer")
       slowResumer ! "spawn"
       val boss = expectMsgType[ActorRef]
       boss ! "spawn"
@@ -861,33 +857,34 @@ class SupervisorHierarchySpec extends AkkaSpec(SupervisorHierarchySpec.config) w
         val failResumer =
           system.actorOf(
             Props(new Actor {
-              override def supervisorStrategy = OneForOneStrategy() {
-                case _: ActorInitializationException =>
-                  if (createAttempt.get % 2 == 0) SupervisorStrategy.Resume else SupervisorStrategy.Restart
+              override def supervisorStrategy = OneForOneStrategy() { case _: ActorInitializationException =>
+                if (createAttempt.get % 2 == 0) SupervisorStrategy.Resume else SupervisorStrategy.Restart
               }
 
-              val child = context.actorOf(Props(new Actor {
-                val ca = createAttempt.incrementAndGet()
+              val child = context.actorOf(
+                Props(new Actor {
+                  val ca = createAttempt.incrementAndGet()
 
-                if (ca <= 6 && ca % 3 == 0)
-                  context.actorOf(Props(new Actor { override def receive = { case _ => } }), "workingChild")
+                  if (ca <= 6 && ca % 3 == 0)
+                    context.actorOf(Props(new Actor { override def receive = { case _ => } }), "workingChild")
 
-                if (ca < 6) {
-                  throw new IllegalArgumentException("OH NO!")
-                }
-                override def preStart() = {
-                  preStartCalled.incrementAndGet()
-                }
-                override def postRestart(reason: Throwable) = {
-                  postRestartCalled.incrementAndGet()
-                }
-                override def receive = {
-                  case m => sender() ! m
-                }
-              }), "failChild")
+                  if (ca < 6) {
+                    throw new IllegalArgumentException("OH NO!")
+                  }
+                  override def preStart() = {
+                    preStartCalled.incrementAndGet()
+                  }
+                  override def postRestart(reason: Throwable) = {
+                    postRestartCalled.incrementAndGet()
+                  }
+                  override def receive = { case m =>
+                    sender() ! m
+                  }
+                }),
+                "failChild")
 
-              override def receive = {
-                case m => child.forward(m)
+              override def receive = { case m =>
+                child.forward(m)
               }
             }),
             "failResumer")

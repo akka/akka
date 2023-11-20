@@ -155,12 +155,14 @@ abstract class UnreachableNodeJoinsAgainSpec extends MultiNodeClusterSpec(Unreac
       runOn(victim) {
         val victimAddress = system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
         val freshConfig =
-          ConfigFactory.parseString(s"""
+          ConfigFactory
+            .parseString(s"""
                 akka.remote.artery.canonical {
                   hostname = ${victimAddress.host.get}
                   port = ${victimAddress.port.get}
                 }
-               """).withFallback(system.settings.config)
+               """)
+            .withFallback(system.settings.config)
 
         Await.ready(system.whenTerminated, 10 seconds)
 

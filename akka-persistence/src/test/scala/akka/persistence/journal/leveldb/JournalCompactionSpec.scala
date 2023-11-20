@@ -185,8 +185,8 @@ object JournalCompactionSpec {
 
     import EventLogger._
 
-    override def receiveRecover: Receive = {
-      case Event(seqNr, _) => log.info("Recovered event {}", seqNr)
+    override def receiveRecover: Receive = { case Event(seqNr, _) =>
+      log.info("Recovered event {}", seqNr)
     }
 
     override def receiveCommand: Receive = {

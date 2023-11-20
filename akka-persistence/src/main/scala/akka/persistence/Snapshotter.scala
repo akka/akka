@@ -7,22 +7,16 @@ package akka.persistence
 import akka.actor._
 import akka.persistence.SnapshotProtocol._
 
-/**
- * Snapshot API on top of the internal snapshot protocol.
- */
+/** Snapshot API on top of the internal snapshot protocol. */
 trait Snapshotter extends Actor {
 
   /** Snapshot store plugin actor. */
   private[persistence] def snapshotStore: ActorRef
 
-  /**
-   * Snapshotter id.
-   */
+  /** Snapshotter id. */
   def snapshotterId: String
 
-  /**
-   * Sequence number to use when taking a snapshot.
-   */
+  /** Sequence number to use when taking a snapshot. */
   def snapshotSequenceNr: Long
 
   /**

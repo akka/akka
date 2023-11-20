@@ -50,7 +50,7 @@ class StatsAggregator(expectedResults: Int, replyTo: ActorRef) extends Actor {
 
 // not used, only for documentation
 abstract class StatsService2 extends Actor {
-  //#router-lookup-in-code
+  // #router-lookup-in-code
   import akka.cluster.routing.{ ClusterRouterGroup, ClusterRouterGroupSettings }
   import akka.routing.ConsistentHashingGroup
 
@@ -63,12 +63,12 @@ abstract class StatsService2 extends Actor {
         allowLocalRoutees = true,
         useRoles = Set("compute"))).props(),
     name = "workerRouter2")
-  //#router-lookup-in-code
+  // #router-lookup-in-code
 }
 
 // not used, only for documentation
 abstract class StatsService3 extends Actor {
-  //#router-deploy-in-code
+  // #router-deploy-in-code
   import akka.cluster.routing.{ ClusterRouterPool, ClusterRouterPoolSettings }
   import akka.routing.ConsistentHashingPool
 
@@ -78,5 +78,5 @@ abstract class StatsService3 extends Actor {
       ClusterRouterPoolSettings(totalInstances = 100, maxInstancesPerNode = 3, allowLocalRoutees = false))
       .props(Props[StatsWorker]()),
     name = "workerRouter3")
-  //#router-deploy-in-code
+  // #router-deploy-in-code
 }

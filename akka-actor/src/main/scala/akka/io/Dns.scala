@@ -96,10 +96,12 @@ object Dns extends ExtensionId[DnsExt] with ExtensionIdProvider {
 
     @deprecated("Use cached(DnsProtocol.Resolve)", "2.6.0")
     def apply(newProtocol: DnsProtocol.Resolved): Resolved = {
-      Resolved(newProtocol.name, newProtocol.records.collect {
-        case r: ARecord    => r.ip
-        case r: AAAARecord => r.ip
-      })
+      Resolved(
+        newProtocol.name,
+        newProtocol.records.collect {
+          case r: ARecord    => r.ip
+          case r: AAAARecord => r.ip
+        })
     }
   }
 
@@ -142,9 +144,7 @@ object Dns extends ExtensionId[DnsExt] with ExtensionIdProvider {
 
   override def createExtension(system: ExtendedActorSystem): DnsExt = new DnsExt(system)
 
-  /**
-   * Java API: retrieve the Udp extension for the given system.
-   */
+  /** Java API: retrieve the Udp extension for the given system. */
   override def get(system: ActorSystem): DnsExt = super.get(system)
   override def get(system: ClassicActorSystemProvider): DnsExt = super.get(system)
 }
@@ -204,9 +204,7 @@ class DnsExt private[akka] (val system: ExtendedActorSystem, resolverName: Strin
 
   class Settings private[DnsExt] (config: Config, resolverName: String) {
 
-    /**
-     * Load the default resolver
-     */
+    /** Load the default resolver */
     def this(config: Config) = this(config, config.getString("resolver"))
 
     val Dispatcher: String = config.getString("dispatcher")
@@ -240,15 +238,11 @@ class DnsExt private[akka] (val system: ExtendedActorSystem, resolverName: Strin
 
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 object IpVersionSelector {
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi
   def getInetAddress(ipv4: Option[Inet4Address], ipv6: Option[Inet6Address]): Option[InetAddress] =
     System.getProperty("java.net.preferIPv6Addresses") match {

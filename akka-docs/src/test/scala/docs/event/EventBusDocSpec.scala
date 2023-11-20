@@ -11,7 +11,7 @@ import akka.testkit.TestProbe
 
 object EventBusDocSpec {
 
-  //#lookup-bus
+  // #lookup-bus
   import akka.event.EventBus
   import akka.event.LookupClassification
 
@@ -46,9 +46,9 @@ object EventBusDocSpec {
 
   }
 
-  //#lookup-bus
+  // #lookup-bus
 
-  //#subchannel-bus
+  // #subchannel-bus
   import akka.util.Subclassification
 
   class StartsWithSubclassification extends Subclassification[String] {
@@ -84,9 +84,9 @@ object EventBusDocSpec {
       subscriber ! event.payload
     }
   }
-  //#subchannel-bus
+  // #subchannel-bus
 
-  //#scanning-bus
+  // #scanning-bus
   import akka.event.ScanningClassification
 
   /**
@@ -118,9 +118,9 @@ object EventBusDocSpec {
       subscriber ! event
     }
   }
-  //#scanning-bus
+  // #scanning-bus
 
-  //#actor-bus
+  // #actor-bus
   import akka.event.ActorEventBus
   import akka.event.ManagedActorClassification
   import akka.event.ActorClassifier
@@ -140,7 +140,7 @@ object EventBusDocSpec {
     // used internally (i.e. the expected number of different classifiers)
     override protected def mapSize: Int = 128
   }
-  //#actor-bus
+  // #actor-bus
 
 }
 
@@ -148,17 +148,17 @@ class EventBusDocSpec extends AkkaSpec {
   import EventBusDocSpec._
 
   "demonstrate LookupClassification" in {
-    //#lookup-bus-test
+    // #lookup-bus-test
     val lookupBus = new LookupBusImpl
     lookupBus.subscribe(testActor, "greetings")
     lookupBus.publish(MsgEnvelope("time", System.currentTimeMillis()))
     lookupBus.publish(MsgEnvelope("greetings", "hello"))
     expectMsg("hello")
-    //#lookup-bus-test
+    // #lookup-bus-test
   }
 
   "demonstrate SubchannelClassification" in {
-    //#subchannel-bus-test
+    // #subchannel-bus-test
     val subchannelBus = new SubchannelBusImpl
     subchannelBus.subscribe(testActor, "abc")
     subchannelBus.publish(MsgEnvelope("xyzabc", "x"))
@@ -167,11 +167,11 @@ class EventBusDocSpec extends AkkaSpec {
     expectMsg("c")
     subchannelBus.publish(MsgEnvelope("abcdef", "d"))
     expectMsg("d")
-    //#subchannel-bus-test
+    // #subchannel-bus-test
   }
 
   "demonstrate ScanningClassification" in {
-    //#scanning-bus-test
+    // #scanning-bus-test
     val scanningBus = new ScanningBusImpl
     scanningBus.subscribe(testActor, 3)
     scanningBus.publish("xyzabc")
@@ -179,11 +179,11 @@ class EventBusDocSpec extends AkkaSpec {
     expectMsg("ab")
     scanningBus.publish("abc")
     expectMsg("abc")
-    //#scanning-bus-test
+    // #scanning-bus-test
   }
 
   "demonstrate ManagedActorClassification" in {
-    //#actor-bus-test
+    // #actor-bus-test
     val observer1 = TestProbe().ref
     val observer2 = TestProbe().ref
     val probe1 = TestProbe()
@@ -200,6 +200,6 @@ class EventBusDocSpec extends AkkaSpec {
     actorBus.publish(Notification(observer2, 101))
     probe2.expectMsg(Notification(observer2, 101))
     probe1.expectNoMessage(500.millis)
-    //#actor-bus-test
+    // #actor-bus-test
   }
 }

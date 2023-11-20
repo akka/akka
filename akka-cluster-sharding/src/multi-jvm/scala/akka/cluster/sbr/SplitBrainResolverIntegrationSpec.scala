@@ -446,10 +446,15 @@ class SplitBrainResolverIntegrationSpec
     Scenario(keepOldestConfig, 3, 3, KeepSide1),
     Scenario(keepOldestConfig, 1, 1, KeepSide1),
     Scenario(keepOldestConfig, 1, 2, KeepSide2), // because down-if-alone
-    Scenario(keepMajorityConfig, 3, 2, KeepAll, {
-      case `node1` | `node2` | `node3` => "dcA"
-      case _                           => "dcB"
-    }),
+    Scenario(
+      keepMajorityConfig,
+      3,
+      2,
+      KeepAll,
+      {
+        case `node1` | `node2` | `node3` => "dcA"
+        case _                           => "dcB"
+      }),
     Scenario(downAllConfig, 1, 2, ShutdownBoth),
     Scenario(leaseMajorityConfig, 4, 5, KeepSide2))
 
@@ -460,7 +465,7 @@ class SplitBrainResolverIntegrationSpec
         // temporarily disabled for aeron-udp in multi-node: https://github.com/akka/akka/pull/30706/
         val arteryConfig = system.settings.config.getConfig("akka.remote.artery")
         if (arteryConfig.getInt("canonical.port") == 6000 &&
-            arteryConfig.getString("transport") == "aeron-udp") {
+          arteryConfig.getString("transport") == "aeron-udp") {
           pending
         }
         DisposableSys(scenario).verify()

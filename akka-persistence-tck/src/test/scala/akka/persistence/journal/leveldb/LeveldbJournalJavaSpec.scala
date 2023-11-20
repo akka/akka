@@ -8,11 +8,10 @@ import akka.persistence.{ PersistenceSpec, PluginCleanup }
 import akka.persistence.journal.JournalSpec
 
 class LeveldbJournalJavaSpec
-    extends JournalSpec(
-      config = PersistenceSpec.config(
-        "leveldb",
-        "LeveldbJournalJavaSpec",
-        extraConfig = Some("""
+    extends JournalSpec(config = PersistenceSpec.config(
+      "leveldb",
+      "LeveldbJournalJavaSpec",
+      extraConfig = Some("""
         akka.persistence.journal.leveldb.native = off
         akka.actor.allow-java-serialization = off
         akka.actor.warn-about-java-serializer-usage = on

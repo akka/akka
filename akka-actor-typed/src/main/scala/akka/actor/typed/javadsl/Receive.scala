@@ -28,7 +28,6 @@ abstract class Receive[T] extends ExtensibleBehavior[T] {
    *  * returning `stopped` will terminate this Behavior
    *  * returning `same` designates to reuse the current Behavior
    *  * returning `unhandled` keeps the same Behavior and signals that the message was not yet handled
-   *
    */
   @throws(classOf[Exception])
   def receiveMessage(msg: T): Behavior[T]

@@ -31,13 +31,15 @@ object RemoteDeployNotAllowedSpec {
     }
     """)
 
-  def configWithRemoteDeployment(otherSystemPort: Int) = ConfigFactory.parseString(s"""
+  def configWithRemoteDeployment(otherSystemPort: Int) = ConfigFactory
+    .parseString(s"""
       akka.actor.deployment {
         "/*" {
           remote = "akka://sampleActorSystem@127.0.0.1:$otherSystemPort"
         }
       }
-    """).withFallback(config)
+    """)
+    .withFallback(config)
 }
 
 class RemoteDeployNotAllowedSpec
@@ -61,9 +63,11 @@ class RemoteDeployNotAllowedSpec
           case SpawnChild(name) =>
             // this should throw
             try {
-              ctx.spawn(Behaviors.setup[AnyRef] { _ =>
-                Behaviors.empty
-              }, name)
+              ctx.spawn(
+                Behaviors.setup[AnyRef] { _ =>
+                  Behaviors.empty
+                },
+                name)
             } catch {
               case ex: Exception => probe.ref ! ex
             }

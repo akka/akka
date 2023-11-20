@@ -60,9 +60,7 @@ import akka.dispatch.{
  */
 trait Stash extends UnrestrictedStash with RequiresMessageQueue[DequeBasedMessageQueueSemantics]
 
-/**
- * The `UnboundedStash` trait is a version of [[akka.actor.Stash]] that enforces an unbounded stash for you actor.
- */
+/** The `UnboundedStash` trait is a version of [[akka.actor.Stash]] that enforces an unbounded stash for you actor. */
 trait UnboundedStash extends UnrestrictedStash with RequiresMessageQueue[UnboundedDequeBasedMessageQueueSemantics]
 
 /**
@@ -266,9 +264,7 @@ private[akka] trait StashSupport {
   }
 }
 
-/**
- * Is thrown when the size of the Stash exceeds the capacity of the Stash
- */
+/** Is thrown when the size of the Stash exceeds the capacity of the Stash */
 class StashOverflowException(message: String, cause: Throwable = null)
     extends AkkaException(message, cause)
     with NoStackTrace

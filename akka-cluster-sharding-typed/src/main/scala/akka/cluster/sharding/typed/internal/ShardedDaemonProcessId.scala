@@ -8,9 +8,7 @@ import akka.annotation.InternalApi
 import akka.cluster.sharding.typed.ShardingEnvelope
 import akka.cluster.sharding.typed.ShardingMessageExtractor
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] object ShardedDaemonProcessId {
 
@@ -27,7 +25,11 @@ private[akka] object ShardedDaemonProcessId {
     id.split(Separator) match {
       case Array(rev, count, n) => DecodedId(rev.toLong, count.toInt, n.toInt)
       case Array(n) =>
-        DecodedId(0L, initialNumberOfProcesses, n.toInt) // ping from old/supportsRescale=false node during rolling upgrade
+        DecodedId(
+          0L,
+          initialNumberOfProcesses,
+          n.toInt
+        ) // ping from old/supportsRescale=false node during rolling upgrade
       case _ => throw new IllegalArgumentException(s"Unexpected id for sharded daemon process: '$id'")
     }
 

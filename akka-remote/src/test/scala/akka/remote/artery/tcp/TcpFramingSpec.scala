@@ -15,9 +15,11 @@ import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
 import akka.util.ByteString
 
-class TcpFramingSpec extends AkkaSpec("""
+class TcpFramingSpec
+    extends AkkaSpec("""
     akka.stream.materializer.debug.fuzzing-mode = on
-  """) with ImplicitSender {
+  """)
+    with ImplicitSender {
   import TcpFraming.encodeFrameHeader
 
   private val framingFlow = Flow[ByteString].via(new TcpFraming)

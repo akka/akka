@@ -562,14 +562,18 @@ class HubSpec extends StreamSpec {
     }
 
     "be able to use as round-robin router" in {
-      val source = Source(0 until 10).runWith(PartitionHub.statefulSink(() => {
-        var n = 0L
+      val source = Source(0 until 10).runWith(
+        PartitionHub.statefulSink(
+          () => {
+            var n = 0L
 
-        (info, _) => {
-          n += 1
-          info.consumerIdByIdx((n % info.size).toInt)
-        }
-      }, startAfterNrOfConsumers = 2, bufferSize = 8))
+            (info, _) => {
+              n += 1
+              info.consumerIdByIdx((n % info.size).toInt)
+            }
+          },
+          startAfterNrOfConsumers = 2,
+          bufferSize = 8))
       val result1 = source.runWith(Sink.seq)
       val result2 = source.runWith(Sink.seq)
       result1.futureValue should ===(1 to 9 by 2)
@@ -577,21 +581,25 @@ class HubSpec extends StreamSpec {
     }
 
     "be able to use as sticky session router" in {
-      val source = Source(List("usr-1", "usr-2", "usr-1", "usr-3")).runWith(PartitionHub.statefulSink(() => {
-        var sessions = Map.empty[String, Long]
-        var n = 0L
+      val source = Source(List("usr-1", "usr-2", "usr-1", "usr-3")).runWith(
+        PartitionHub.statefulSink(
+          () => {
+            var sessions = Map.empty[String, Long]
+            var n = 0L
 
-        (info, elem) => {
-          sessions.get(elem) match {
-            case Some(id) if info.consumerIds.exists(_ == id) => id
-            case _ =>
-              n += 1
-              val id = info.consumerIdByIdx((n % info.size).toInt)
-              sessions = sessions.updated(elem, id)
-              id
-          }
-        }
-      }, startAfterNrOfConsumers = 2, bufferSize = 8))
+            (info, elem) => {
+              sessions.get(elem) match {
+                case Some(id) if info.consumerIds.exists(_ == id) => id
+                case _ =>
+                  n += 1
+                  val id = info.consumerIdByIdx((n % info.size).toInt)
+                  sessions = sessions.updated(elem, id)
+                  id
+              }
+            }
+          },
+          startAfterNrOfConsumers = 2,
+          bufferSize = 8))
       val result1 = source.runWith(Sink.seq)
       val result2 = source.runWith(Sink.seq)
       result1.futureValue should ===(List("usr-2"))

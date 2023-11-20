@@ -91,7 +91,7 @@ private[akka] class ClusterDeployer(_settings: ActorSystem.Settings, _pm: Dynami
     // user has not specified nr-of-instances
     val config2 =
       if (config.hasPath("cluster.enabled") && config.getBoolean("cluster.enabled") && !config.hasPath(
-            "nr-of-instances")) {
+          "nr-of-instances")) {
         val maxTotalNrOfInstances = config.withFallback(default).getInt("cluster.max-total-nr-of-instances")
         ConfigFactory.parseString("nr-of-instances=" + maxTotalNrOfInstances).withFallback(config)
       } else config
@@ -132,14 +132,10 @@ private[akka] class ClusterDeployer(_settings: ActorSystem.Settings, _pm: Dynami
 @SerialVersionUID(1L)
 abstract class ClusterScope extends Scope
 
-/**
- * Cluster aware scope of a [[akka.actor.Deploy]]
- */
+/** Cluster aware scope of a [[akka.actor.Deploy]] */
 case object ClusterScope extends ClusterScope {
 
-  /**
-   * Java API: get the singleton instance
-   */
+  /** Java API: get the singleton instance */
   def getInstance = this
 
   def withFallback(other: Scope): Scope = this

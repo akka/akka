@@ -18,9 +18,7 @@ import akka.cluster.sharding.ShardCoordinator.ActorSystemDependentAllocationStra
 import akka.cluster.sharding.ShardRegion.ShardId
 import akka.pattern.after
 
-/**
- * INTERNAL API: Common logic for the least shard allocation strategy implementations
- */
+/** INTERNAL API: Common logic for the least shard allocation strategy implementations */
 @InternalApi
 private[akka] abstract class AbstractLeastShardAllocationStrategy
     extends ActorSystemDependentAllocationStrategy

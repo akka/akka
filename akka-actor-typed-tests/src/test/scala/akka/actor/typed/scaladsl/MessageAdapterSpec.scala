@@ -69,10 +69,13 @@ class MessageAdapterSpec
 
       case class AnotherPong(selfName: String, threadName: String)
 
-      val pingPong = spawn(Behaviors.receive[Ping] { (context, message) =>
-        message.sender ! Pong(context.self.path.name, Thread.currentThread().getName)
-        Behaviors.same
-      }, "ping-pong", Props.empty.withDispatcherFromConfig("ping-pong-dispatcher"))
+      val pingPong = spawn(
+        Behaviors.receive[Ping] { (context, message) =>
+          message.sender ! Pong(context.self.path.name, Thread.currentThread().getName)
+          Behaviors.same
+        },
+        "ping-pong",
+        Props.empty.withDispatcherFromConfig("ping-pong-dispatcher"))
 
       val probe = TestProbe[AnotherPong]()
 
@@ -226,10 +229,9 @@ class MessageAdapterSpec
             probe.ref ! wrapped
             Behaviors.same
           }
-          .receiveSignal {
-            case (_, PostStop) =>
-              probe.ref ! "stopped"
-              Behaviors.same
+          .receiveSignal { case (_, PostStop) =>
+            probe.ref ! "stopped"
+            Behaviors.same
           }
       }
 
@@ -272,10 +274,9 @@ class MessageAdapterSpec
               }
               behv(count + 1)
             }
-            .receiveSignal {
-              case (_, PostStop) =>
-                probe.ref ! "stopped"
-                Behaviors.same
+            .receiveSignal { case (_, PostStop) =>
+              probe.ref ! "stopped"
+              Behaviors.same
             }
 
         behv(count = 1)

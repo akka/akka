@@ -22,7 +22,7 @@ import docs.akka.cluster.sharding.typed.AccountExampleWithEventHandlersInState.A
 //#testkit
 class AccountExampleDocSpec
     extends ScalaTestWithActorTestKit(EventSourcedBehaviorTestKit.config)
-    //#testkit
+    // #testkit
     with AnyWordSpecLike
     with BeforeAndAfterEach
     with LogCapturing {

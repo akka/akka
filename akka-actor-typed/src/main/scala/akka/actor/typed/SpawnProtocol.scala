@@ -25,9 +25,7 @@ import akka.annotation.DoNotInherit
  */
 object SpawnProtocol {
 
-  /**
-   * Not for user extension
-   */
+  /** Not for user extension */
   @DoNotInherit sealed trait Command
 
   /**
@@ -44,14 +42,10 @@ object SpawnProtocol {
   final case class Spawn[T](behavior: Behavior[T], name: String, props: Props, replyTo: ActorRef[ActorRef[T]])
       extends Command
 
-  /**
-   * Java API: returns a behavior that can be commanded to spawn arbitrary children.
-   */
+  /** Java API: returns a behavior that can be commanded to spawn arbitrary children. */
   def create(): Behavior[Command] = apply()
 
-  /**
-   * Scala API: returns a behavior that can be commanded to spawn arbitrary children.
-   */
+  /** Scala API: returns a behavior that can be commanded to spawn arbitrary children. */
   def apply(): Behavior[Command] =
     Behaviors.receive { (ctx, msg) =>
       msg match {

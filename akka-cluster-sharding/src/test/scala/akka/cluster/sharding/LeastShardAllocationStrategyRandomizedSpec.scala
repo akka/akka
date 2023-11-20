@@ -30,9 +30,8 @@ class LeastShardAllocationStrategyRandomizedSpec extends AkkaSpec("akka.loglevel
   @volatile var clusterMembers: SortedSet[Member] = SortedSet.empty
 
   def createAllocations(countPerRegion: Map[ActorRef, Int]): Map[ActorRef, immutable.IndexedSeq[ShardId]] = {
-    countPerRegion.map {
-      case (region, count) =>
-        region -> (1 to count).map(n => ("00" + n.toString).takeRight(3)).map(n => s"${region.path.name}-$n").toVector
+    countPerRegion.map { case (region, count) =>
+      region -> (1 to count).map(n => ("00" + n.toString).takeRight(3)).map(n => s"${region.path.name}-$n").toVector
     }
   }
 

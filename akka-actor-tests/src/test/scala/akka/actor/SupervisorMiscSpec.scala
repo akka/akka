@@ -66,11 +66,11 @@ class SupervisorMiscSpec extends AkkaSpec(SupervisorMiscSpec.config) with Defaul
         countDownLatch.await(10, TimeUnit.SECONDS)
 
         Seq("actor1" -> actor1, "actor2" -> actor2, "actor3" -> actor3, "actor4" -> actor4)
-          .map {
-            case (id, ref) => (id, ref ? "status")
+          .map { case (id, ref) =>
+            (id, ref ? "status")
           }
-          .foreach {
-            case (id, f) => (id, Await.result(f, timeout.duration)) should ===((id, "OK"))
+          .foreach { case (id, f) =>
+            (id, Await.result(f, timeout.duration)) should ===((id, "OK"))
           }
       }
     }
@@ -116,16 +116,15 @@ class SupervisorMiscSpec extends AkkaSpec(SupervisorMiscSpec.config) with Defaul
 
     "not be able to recreate child when old child is alive" in {
       val parent = system.actorOf(Props(new Actor {
-        def receive = {
-          case "engage" =>
-            try {
-              val kid = context.actorOf(Props.empty, "foo")
-              context.stop(kid)
-              context.actorOf(Props.empty, "foo")
-              testActor ! "red"
-            } catch {
-              case _: InvalidActorNameException => testActor ! "green"
-            }
+        def receive = { case "engage" =>
+          try {
+            val kid = context.actorOf(Props.empty, "foo")
+            context.stop(kid)
+            context.actorOf(Props.empty, "foo")
+            testActor ! "red"
+          } catch {
+            case _: InvalidActorNameException => testActor ! "green"
+          }
         }
       }))
       parent ! "engage"
@@ -155,11 +154,11 @@ class SupervisorMiscSpec extends AkkaSpec(SupervisorMiscSpec.config) with Defaul
 
     "have access to the failing child’s reference in supervisorStrategy" in {
       val parent = system.actorOf(Props(new Actor {
-        override val supervisorStrategy = OneForOneStrategy() {
-          case _: Exception => testActor ! sender(); SupervisorStrategy.Stop
+        override val supervisorStrategy = OneForOneStrategy() { case _: Exception =>
+          testActor ! sender(); SupervisorStrategy.Stop
         }
-        def receive = {
-          case "doit" => context.actorOf(Props.empty, "child") ! Kill
+        def receive = { case "doit" =>
+          context.actorOf(Props.empty, "child") ! Kill
         }
       }))
       EventFilter[ActorKilledException](occurrences = 1).intercept {

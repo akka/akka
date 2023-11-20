@@ -128,10 +128,9 @@ class SnapshotFailureRobustnessSpec
       try {
         system.actorOf(Props(classOf[LoadSnapshotTestPersistentActor], name, testActor))
         expectMsgType[Logging.Error].message.toString should startWith("Error loading snapshot")
-        expectMsgPF() {
-          case (SnapshotMetadata(`persistenceId`, 1, timestamp), state) =>
-            state should ===("blahonga")
-            timestamp should be > (0L)
+        expectMsgPF() { case (SnapshotMetadata(`persistenceId`, 1, timestamp), state) =>
+          state should ===("blahonga")
+          timestamp should be > 0L
         }
         expectMsg("kablama-2")
         expectMsg(RecoveryCompleted)
@@ -182,10 +181,9 @@ class SnapshotFailureRobustnessSpec
       p ! Cmd("hello")
       expectMsg(1)
       p ! DeleteSnapshot(1)
-      expectMsgPF() {
-        case DeleteSnapshotFailure(SnapshotMetadata(`persistenceId`, 1, _), cause) =>
-          // ok, expected failure
-          cause.getMessage should include("Failed to delete")
+      expectMsgPF() { case DeleteSnapshotFailure(SnapshotMetadata(`persistenceId`, 1, _), cause) =>
+        // ok, expected failure
+        cause.getMessage should include("Failed to delete")
       }
     }
     "receive failure message when bulk deleting snapshot fails" in {
@@ -198,10 +196,9 @@ class SnapshotFailureRobustnessSpec
       expectMsg(2)
       val criteria = SnapshotSelectionCriteria(maxSequenceNr = 10)
       p ! DeleteSnapshots(criteria)
-      expectMsgPF() {
-        case DeleteSnapshotsFailure(_, cause) =>
-          // ok, expected failure
-          cause.getMessage should include("Failed to delete")
+      expectMsgPF() { case DeleteSnapshotsFailure(_, cause) =>
+        // ok, expected failure
+        cause.getMessage should include("Failed to delete")
       }
     }
   }

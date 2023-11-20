@@ -104,11 +104,11 @@ private[akka] final class ArteryMessageSerializer(val system: ExtendedActorSyste
       case HandshakeRspManifest => deserializeWithFromAddress(bytes, HandshakeRsp.apply)
       case SystemMessageDeliveryNackManifest =>
         deserializeSystemMessageDeliveryAck(bytes, SystemMessageDelivery.Nack.apply)
-      case QuarantinedManifest                      => deserializeQuarantined(ArteryControlFormats.Quarantined.parseFrom(bytes))
-      case FlushManifest                            => Flush
-      case FlushAckManifest                         => deserializeFlushAck(bytes)
-      case ActorSystemTerminatingManifest           => deserializeWithFromAddress(bytes, ActorSystemTerminating.apply)
-      case ActorSystemTerminatingAckManifest        => deserializeWithFromAddress(bytes, ActorSystemTerminatingAck.apply)
+      case QuarantinedManifest            => deserializeQuarantined(ArteryControlFormats.Quarantined.parseFrom(bytes))
+      case FlushManifest                  => Flush
+      case FlushAckManifest               => deserializeFlushAck(bytes)
+      case ActorSystemTerminatingManifest => deserializeWithFromAddress(bytes, ActorSystemTerminating.apply)
+      case ActorSystemTerminatingAckManifest => deserializeWithFromAddress(bytes, ActorSystemTerminatingAck.apply)
       case ActorRefCompressionAdvertisementManifest => deserializeActorRefCompressionAdvertisement(bytes)
       case ActorRefCompressionAdvertisementAckManifest =>
         deserializeCompressionTableAdvertisementAck(bytes, ActorRefCompressionAdvertisementAck.apply)
@@ -158,9 +158,8 @@ private[akka] final class ArteryMessageSerializer(val system: ExtendedActorSyste
         .setOriginUid(adv.table.originUid)
         .setTableVersion(adv.table.version)
 
-    adv.table.dictionary.foreach {
-      case (key, value) =>
-        builder.addKeys(keySerializer(key)).addValues(value)
+    adv.table.dictionary.foreach { case (key, value) =>
+      builder.addKeys(keySerializer(key)).addValues(value)
     }
 
     builder.build

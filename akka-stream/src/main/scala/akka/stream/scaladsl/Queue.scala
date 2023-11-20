@@ -16,9 +16,7 @@ import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
 import akka.stream.QueueOfferResult
 
-/**
- * This trait allows to have a queue as a data source for some stream.
- */
+/** This trait allows to have a queue as a data source for some stream. */
 trait SourceQueue[T] {
 
   /**
@@ -47,9 +45,7 @@ trait SourceQueue[T] {
   def watchCompletion(): Future[Done]
 }
 
-/**
- * This trait adds completion support to [[SourceQueue]].
- */
+/** This trait adds completion support to [[SourceQueue]]. */
 trait SourceQueueWithComplete[T] extends SourceQueue[T] {
 
   /**
@@ -83,16 +79,12 @@ object SourceQueueWithComplete {
     // would have been better to add `asJava` in SourceQueueWithComplete trait, but not doing
     // that for backwards compatibility reasons
 
-    /**
-     * Converts the queue into a `javadsl.SourceQueueWithComplete`
-     */
+    /** Converts the queue into a `javadsl.SourceQueueWithComplete` */
     def asJava: akka.stream.javadsl.SourceQueueWithComplete[T] =
       SourceQueueWithComplete.asJava(queue)
   }
 
-  /**
-   * INTERNAL API: Converts the queue into a `javadsl.SourceQueueWithComplete`
-   */
+  /** INTERNAL API: Converts the queue into a `javadsl.SourceQueueWithComplete` */
   @InternalApi private[akka] def asJava[T](
       queue: SourceQueueWithComplete[T]): akka.stream.javadsl.SourceQueueWithComplete[T] =
     new akka.stream.javadsl.SourceQueueWithComplete[T] {
@@ -120,14 +112,10 @@ trait SinkQueue[T] {
   def pull(): Future[Option[T]]
 }
 
-/**
- * This trait adds cancel support to [[SinkQueue]].
- */
+/** This trait adds cancel support to [[SinkQueue]]. */
 trait SinkQueueWithCancel[T] extends SinkQueue[T] {
 
-  /**
-   * Cancels the stream. This method returns right away without waiting for actual finalizing the stream.
-   */
+  /** Cancels the stream. This method returns right away without waiting for actual finalizing the stream. */
   def cancel(): Unit
 }
 
@@ -140,9 +128,7 @@ object SinkQueueWithCancel {
       SinkQueueWithCancel.asJava(queue)
   }
 
-  /**
-   * INTERNAL API: Converts the queue into a `javadsl.SinkQueueWithCancel`
-   */
+  /** INTERNAL API: Converts the queue into a `javadsl.SinkQueueWithCancel` */
   @InternalApi private[akka] def asJava[T](queue: SinkQueueWithCancel[T]): akka.stream.javadsl.SinkQueueWithCancel[T] =
     new akka.stream.javadsl.SinkQueueWithCancel[T] {
       override def pull(): CompletionStage[Optional[T]] =

@@ -9,9 +9,7 @@ import scala.annotation.tailrec
 
 import akka.annotation.InternalApi
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object ImmutableIntMap {
   final val empty: ImmutableIntMap = new ImmutableIntMap(Array.emptyIntArray, 0)
 }
@@ -39,7 +37,8 @@ import akka.annotation.InternalApi
     @tailrec def find(lo: Int, hi: Int): Int =
       if (lo <= hi) {
         val lohi = lo + hi // Since we search in half the array we don't need to div by 2 to find the real index of key
-        val idx = lohi & ~1 // Since keys are in even slots, we get the key idx from lo+hi by removing the lowest bit if set (odd)
+        val idx =
+          lohi & ~1 // Since keys are in even slots, we get the key idx from lo+hi by removing the lowest bit if set (odd)
         val k = kvs(idx)
         if (k == key) idx
         else if (k < key) find((lohi >>> 1) + 1, hi)
@@ -58,7 +57,9 @@ import akka.annotation.InternalApi
     @tailrec def find(lo: Int, hi: Int): Int =
       if (lo <= hi) {
         val lohi = lo + hi // Since we search in half the array we don't need to div by 2 to find the real index of key
-        val k = kvs(lohi & ~1) // Since keys are in even slots, we get the key idx from lo+hi by removing the lowest bit if set (odd)
+        val k = kvs(
+          lohi & ~1
+        ) // Since keys are in even slots, we get the key idx from lo+hi by removing the lowest bit if set (odd)
         if (k == key)
           kvs(lohi | 1) // lohi, if odd, already points to the value-index, if even, we set the lowest bit to add 1
         else if (k < key) find((lohi >>> 1) + 1, hi)
@@ -68,9 +69,7 @@ import akka.annotation.InternalApi
     find(0, size - 1)
   }
 
-  /**
-   * Worst case `O(log n)`, allocation free.
-   */
+  /** Worst case `O(log n)`, allocation free. */
   final def contains(key: Int): Boolean = indexForKey(key) >= 0
 
   /**
@@ -131,9 +130,7 @@ import akka.annotation.InternalApi
     } else this
   }
 
-  /**
-   * All keys
-   */
+  /** All keys */
   final def keysIterator: Iterator[Int] =
     if (size < 1) Iterator.empty
     else Iterator.range(0, kvs.length - 1, 2).map(kvs.apply)

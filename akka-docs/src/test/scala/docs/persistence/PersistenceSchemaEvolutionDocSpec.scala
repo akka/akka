@@ -47,7 +47,7 @@ class PersistenceSchemaEvolutionDocSpec extends AnyWordSpec {
 
 class ProtobufReadOptional {
 
-  //#protobuf-read-optional-model
+  // #protobuf-read-optional-model
   sealed abstract class SeatType { def code: String }
   object SeatType {
     def fromString(s: String) = s match {
@@ -64,9 +64,9 @@ class ProtobufReadOptional {
   }
 
   case class SeatReserved(letter: String, row: Int, seatType: SeatType)
-  //#protobuf-read-optional-model
+  // #protobuf-read-optional-model
 
-  //#protobuf-read-optional
+  // #protobuf-read-optional
   /**
    * Example serializer impl which uses protocol buffers generated classes (proto.*)
    * to perform the to/from binary marshalling.
@@ -107,7 +107,7 @@ class ProtobufReadOptional {
       if (p.hasSeatType) SeatType.fromString(p.getSeatType) else SeatType.Unknown
 
   }
-  //#protobuf-read-optional
+  // #protobuf-read-optional
 }
 
 class ProtoBufRename {
@@ -127,7 +127,7 @@ class ProtoBufRename {
 }
 
 class RenamePlainJson {
-  //#rename-plain-json
+  // #rename-plain-json
   class JsonRenamedFieldAdapter extends EventAdapter {
     val marshaller = new ExampleJsonMarshaller
 
@@ -159,16 +159,16 @@ class RenamePlainJson {
     }
 
   }
-  //#rename-plain-json
+  // #rename-plain-json
 }
 
 object SimplestCustomSerializer {
 
-  //#simplest-custom-serializer-model
+  // #simplest-custom-serializer-model
   final case class Person(name: String, surname: String)
-  //#simplest-custom-serializer-model
+  // #simplest-custom-serializer-model
 
-  //#simplest-custom-serializer
+  // #simplest-custom-serializer
   /**
    * Simplest possible serializer, uses a string representation of the Person class.
    *
@@ -208,7 +208,7 @@ object SimplestCustomSerializer {
 
   }
 
-  //#simplest-custom-serializer
+  // #simplest-custom-serializer
 }
 
 class PersonSerializerSettingsBox {
@@ -268,7 +268,8 @@ class RemovedEventsAwareSerializer extends SerializerWithStringManifest {
   val utf8 = Charset.forName("UTF-8")
   override def identifier: Int = 8337
 
-  val SkipEventManifestsEvents = Set("docs.persistence.CustomerBlinked" // ...
+  val SkipEventManifestsEvents = Set(
+    "docs.persistence.CustomerBlinked" // ...
   )
 
   override def manifest(o: AnyRef): String = o.getClass.getName

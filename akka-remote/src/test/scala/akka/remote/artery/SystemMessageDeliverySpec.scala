@@ -37,7 +37,8 @@ object SystemMessageDeliverySpec {
 
   case class TestSysMsg(s: String) extends SystemMessageDelivery.AckedDeliveryMessage
 
-  val safe = ConfigFactory.parseString("""
+  val safe = ConfigFactory
+    .parseString("""
        akka.loglevel = INFO
        akka.remote.artery.advanced.stop-idle-outbound-after = 1000 ms
        akka.remote.artery.advanced.inject-handshake-interval = 500 ms
@@ -45,7 +46,8 @@ object SystemMessageDeliverySpec {
        akka.remote.artery.log-received-messages = on
        akka.remote.artery.log-sent-messages = on
        akka.stream.materializer.debug.fuzzing-mode = on
-    """).withFallback(ArterySpecSupport.defaultConfig)
+    """)
+    .withFallback(ArterySpecSupport.defaultConfig)
 
   val config =
     ConfigFactory.parseString("akka.remote.use-unsafe-remote-features-outside-cluster = on").withFallback(safe)

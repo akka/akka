@@ -79,8 +79,8 @@ class SharedLeveldbStore(cfg: Config) extends LeveldbStore {
         .map { highSeqNr =>
           ReplaySuccess(highSeqNr)
         }
-        .recover {
-          case e => ReplayFailure(e)
+        .recover { case e =>
+          ReplayFailure(e)
         }
         .pipeTo(replyTo)
   }

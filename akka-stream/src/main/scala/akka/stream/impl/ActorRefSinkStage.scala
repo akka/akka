@@ -10,9 +10,7 @@ import akka.stream.{ AbruptStageTerminationException, Attributes, Inlet, SinkSha
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, StageLogging }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 final private[akka] class ActorRefSinkStage[T](
     ref: ActorRef,
@@ -34,12 +32,12 @@ final private[akka] class ActorRefSinkStage[T](
       var completionSignalled = false
 
       override def preStart(): Unit = {
-        getStageActor({
+        getStageActor {
           case (_, Terminated(`ref`)) =>
             completeStage()
           case msg =>
             log.error("Unexpected message to stage actor {}", msg.getClass)
-        }).watch(ref)
+        }.watch(ref)
         pull(in)
       }
 

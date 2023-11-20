@@ -48,11 +48,13 @@ object StreamTestKit {
     val c = sys.settings.config.getConfig("akka.stream.testkit")
     val timeout = c.getDuration("all-stages-stopped-timeout", MILLISECONDS).millis
     probe.within(timeout) {
-      try probe.awaitAssert {
-        supervisor.tell(StreamSupervisor.GetChildren, probe.ref)
-        val children = probe.expectMsgType[StreamSupervisor.Children].children
-        assert(children.isEmpty, s"expected no StreamSupervisor children, but got [${children.mkString(", ")}]")
-      } catch {
+      try
+        probe.awaitAssert {
+          supervisor.tell(StreamSupervisor.GetChildren, probe.ref)
+          val children = probe.expectMsgType[StreamSupervisor.Children].children
+          assert(children.isEmpty, s"expected no StreamSupervisor children, but got [${children.mkString(", ")}]")
+        }
+      catch {
         case ex: Throwable =>
           import sys.dispatcher
           printDebugDump(supervisor)

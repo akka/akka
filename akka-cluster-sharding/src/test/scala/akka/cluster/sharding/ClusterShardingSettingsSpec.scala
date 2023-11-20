@@ -757,8 +757,8 @@ class ClusterShardingSettingsSpec extends AnyWordSpec with Matchers {
               .withFilter(
                 ClusterShardingSettings.PassivationStrategySettings.AdmissionSettings.FrequencySketchSettings.defaults))
             .withReplacementPolicy(
-              ClusterShardingSettings.PassivationStrategySettings.LeastRecentlyUsedSettings.defaults.withSegmented(
-                proportions = List(0.2, 0.8)))
+              ClusterShardingSettings.PassivationStrategySettings.LeastRecentlyUsedSettings.defaults
+                .withSegmented(proportions = List(0.2, 0.8)))
             .withIdleEntityPassivation(timeout = 42.minutes))
         .passivationStrategy shouldBe ClusterShardingSettings.CompositePassivationStrategy(
         limit = 42000,
@@ -799,8 +799,9 @@ class ClusterShardingSettingsSpec extends AnyWordSpec with Matchers {
 
     "disable automatic passivation if idle timeout is set to zero (via factory method)" in {
       defaultSettings
-        .withPassivationStrategy(ClusterShardingSettings.PassivationStrategySettings.defaults.withIdleEntityPassivation(
-          timeout = Duration.Zero))
+        .withPassivationStrategy(
+          ClusterShardingSettings.PassivationStrategySettings.defaults.withIdleEntityPassivation(timeout =
+            Duration.Zero))
         .passivationStrategy shouldBe ClusterShardingSettings.NoPassivationStrategy
     }
 

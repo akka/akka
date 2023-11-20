@@ -21,9 +21,7 @@ import akka.util.OptionVal
  */
 final case class CapturedLogEvent(level: Level, message: String, cause: Option[Throwable], marker: Option[Marker]) {
 
-  /**
-   * Constructor for Java API
-   */
+  /** Constructor for Java API */
   def this(
       level: Level,
       message: String,
@@ -32,27 +30,19 @@ final case class CapturedLogEvent(level: Level, message: String, cause: Option[T
       mdc: java.util.Map[String, Any]) =
     this(level, message, errorCause.asScala, marker.asScala)
 
-  /**
-   * Constructor for Java API
-   */
+  /** Constructor for Java API */
   def this(level: Level, message: String) =
     this(level, message, Option.empty, Option.empty)
 
-  /**
-   * Constructor for Java API
-   */
+  /** Constructor for Java API */
   def this(level: Level, message: String, errorCause: Throwable) =
     this(level, message, Some(errorCause), Option.empty[Marker])
 
-  /**
-   * Constructor for Java API
-   */
+  /** Constructor for Java API */
   def this(level: Level, message: String, marker: Marker) =
     this(level, message, Option.empty[Throwable], Some(marker))
 
-  /**
-   * Constructor for Java API
-   */
+  /** Constructor for Java API */
   def this(level: Level, message: String, errorCause: Throwable, marker: Marker) =
     this(level, message, Some(errorCause), Some(marker))
 
@@ -63,9 +53,7 @@ final case class CapturedLogEvent(level: Level, message: String, cause: Option[T
 
 object CapturedLogEvent {
 
-  /**
-   * Helper method to convert [[OptionVal]] to [[Option]]
-   */
+  /** Helper method to convert [[OptionVal]] to [[Option]] */
   private def toOption[A](optionVal: OptionVal[A]): Option[A] = optionVal match {
     case OptionVal.Some(x) => Some(x)
     case _                 => None

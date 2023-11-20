@@ -15,7 +15,8 @@ import akka.testkit._
 
 object ClusterDeathWatchNotificationSpec {
 
-  val config = ConfigFactory.parseString("""
+  val config = ConfigFactory
+    .parseString("""
     akka {
         loglevel = INFO
         actor {
@@ -23,7 +24,8 @@ object ClusterDeathWatchNotificationSpec {
         }
     }
     akka.remote.artery.canonical.port = 0
-    """).withFallback(ArterySpecSupport.defaultConfig)
+    """)
+    .withFallback(ArterySpecSupport.defaultConfig)
 
   object Sender {
     def props(receiver: ActorRef, sendOnStop: Vector[String]): Props =
@@ -31,8 +33,8 @@ object ClusterDeathWatchNotificationSpec {
   }
 
   class Sender(receiver: ActorRef, sendOnStop: Vector[String]) extends Actor {
-    override def receive: Receive = {
-      case msg => sender() ! msg
+    override def receive: Receive = { case msg =>
+      sender() ! msg
     }
 
     override def postStop(): Unit = {

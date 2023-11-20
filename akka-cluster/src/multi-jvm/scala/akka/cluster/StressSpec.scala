@@ -135,8 +135,8 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
     val numberOfNodesJoiningToOneNode = getInt("nr-of-nodes-joining-to-one") * nFactor
     // remaining will join to seed nodes
     val numberOfNodesJoiningToSeedNodes = (totalNumberOfNodes - numberOfSeedNodes -
-    numberOfNodesJoiningToSeedNodesInitially - numberOfNodesJoiningOneByOneSmall -
-    numberOfNodesJoiningOneByOneLarge - numberOfNodesJoiningToOneNode)
+      numberOfNodesJoiningToSeedNodesInitially - numberOfNodesJoiningOneByOneSmall -
+      numberOfNodesJoiningOneByOneLarge - numberOfNodesJoiningToOneNode)
       .requiring(_ >= 0, s"too many configured nr-of-nodes-joining-*, total should be <= ${totalNumberOfNodes}")
     val numberOfNodesLeavingOneByOneSmall = getInt("nr-of-nodes-leaving-one-by-one-small") * nFactor
     val numberOfNodesLeavingOneByOneLarge = getInt("nr-of-nodes-leaving-one-by-one-large") * nFactor
@@ -270,10 +270,9 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
   class ClusterResultHistory extends Actor with ActorLogging {
     var history = Vector.empty[AggregatedClusterResult]
 
-    def receive = {
-      case result: AggregatedClusterResult =>
-        history :+= result
-        log.info("Cluster result history\n" + formatHistory)
+    def receive = { case result: AggregatedClusterResult =>
+      history :+= result
+      log.info("Cluster result history\n" + formatHistory)
     }
 
     def formatHistory: String =
@@ -385,9 +384,7 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
     }
   }
 
-  /**
-   * Used for remote death watch testing
-   */
+  /** Used for remote death watch testing */
   class Watchee extends Actor {
     def receive = Actor.emptyBehavior
   }

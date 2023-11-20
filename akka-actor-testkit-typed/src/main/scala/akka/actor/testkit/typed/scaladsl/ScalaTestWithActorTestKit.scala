@@ -43,25 +43,17 @@ abstract class ScalaTestWithActorTestKit(testKit: ActorTestKit)
    */
   def this() = this(ActorTestKit(ActorTestKitBase.testNameFromCallStack()))
 
-  /**
-   * Use a custom [[akka.actor.typed.ActorSystem]] for the actor system.
-   */
+  /** Use a custom [[akka.actor.typed.ActorSystem]] for the actor system. */
   def this(system: ActorSystem[_]) = this(ActorTestKit(system))
 
-  /**
-   * Use a custom config for the actor system.
-   */
+  /** Use a custom config for the actor system. */
   def this(config: String) =
     this(ActorTestKit(ActorTestKitBase.testNameFromCallStack(), ConfigFactory.parseString(config)))
 
-  /**
-   * Use a custom config for the actor system.
-   */
+  /** Use a custom config for the actor system. */
   def this(config: Config) = this(ActorTestKit(ActorTestKitBase.testNameFromCallStack(), config))
 
-  /**
-   * Use a custom config for the actor system, and a custom [[akka.actor.testkit.typed.TestKitSettings]].
-   */
+  /** Use a custom config for the actor system, and a custom [[akka.actor.testkit.typed.TestKitSettings]]. */
   def this(config: Config, settings: TestKitSettings) =
     this(ActorTestKit(ActorTestKitBase.testNameFromCallStack(), config, settings))
 

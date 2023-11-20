@@ -371,13 +371,16 @@ class UnfoldResourceAsyncSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
     "close resource when stream is quickly cancelled reproducer 2" in {
       val closed = Promise[Done]()
       Source
-        .unfoldResourceAsync[String, Iterator[String]]({ () =>
-          Future(Iterator("a", "b", "c"))
-        }, { m =>
-          Future(if (m.hasNext) Some(m.next()) else None)
-        }, { _ =>
-          closed.success(Done).future
-        })
+        .unfoldResourceAsync[String, Iterator[String]](
+          { () =>
+            Future(Iterator("a", "b", "c"))
+          },
+          { m =>
+            Future(if (m.hasNext) Some(m.next()) else None)
+          },
+          { _ =>
+            closed.success(Done).future
+          })
         .map(m => println(s"Elem=> $m"))
         .runWith(Sink.cancelled)
 
@@ -388,10 +391,13 @@ class UnfoldResourceAsyncSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
       val closeProbe = TestProbe()
       val probe = TestSubscriber.probe[Unit]()
       Source
-        .unfoldResourceAsync[Unit, Unit](() => Future.successful(()), _ => Future.failed(TE("read failed")), { _ =>
-          closeProbe.ref ! "closed"
-          Future.successful(Done)
-        })
+        .unfoldResourceAsync[Unit, Unit](
+          () => Future.successful(()),
+          _ => Future.failed(TE("read failed")),
+          { _ =>
+            closeProbe.ref ! "closed"
+            Future.successful(Done)
+          })
         .runWith(Sink.fromSubscriber(probe))
       probe.ensureSubscription()
       probe.request(1L)
@@ -403,10 +409,13 @@ class UnfoldResourceAsyncSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
       val closeProbe = TestProbe()
       val probe = TestSubscriber.probe[Unit]()
       Source
-        .unfoldResourceAsync[Unit, Unit](() => Future.successful(()), _ => throw TE("read failed"), { _ =>
-          closeProbe.ref ! "closed"
-          Future.successful(Done)
-        })
+        .unfoldResourceAsync[Unit, Unit](
+          () => Future.successful(()),
+          _ => throw TE("read failed"),
+          { _ =>
+            closeProbe.ref ! "closed"
+            Future.successful(Done)
+          })
         .runWith(Sink.fromSubscriber(probe))
       probe.ensureSubscription()
       probe.request(1L)

@@ -39,14 +39,13 @@ object LeastShardAllocationStrategySpec {
       allocationStrategy: ShardAllocationStrategy,
       allocations: Map[ActorRef, immutable.IndexedSeq[ShardId]],
       rebalance: Set[ShardId]): Map[ActorRef, immutable.IndexedSeq[ShardId]] = {
-    val allocationsAfterRemoval = allocations.map {
-      case (region, shards) => region -> shards.filterNot(rebalance)
+    val allocationsAfterRemoval = allocations.map { case (region, shards) =>
+      region -> shards.filterNot(rebalance)
     }
 
-    rebalance.toList.sorted.foldLeft(allocationsAfterRemoval) {
-      case (acc, shard) =>
-        val region = allocationStrategy.allocateShard(DummyActorRef, shard, acc).value.get.get
-        acc.updated(region, acc(region) :+ shard)
+    rebalance.toList.sorted.foldLeft(allocationsAfterRemoval) { case (acc, shard) =>
+      val region = allocationStrategy.allocateShard(DummyActorRef, shard, acc).value.get.get
+      acc.updated(region, acc(region) :+ shard)
     }
   }
 
@@ -256,7 +255,9 @@ class LeastShardAllocationStrategySpec extends AkkaSpec {
           fakeRegionC, // newest version, up
           fakeRegionD, // most shards, up
           fakeLocalRegion, // old app version
-          fakeRegionA)) // leaving
+          fakeRegionA
+        )
+      ) // leaving
     }
 
     "not rebalance when rolling update in progress" in {

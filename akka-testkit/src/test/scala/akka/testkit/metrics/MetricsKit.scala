@@ -66,9 +66,7 @@ private[akka] trait MetricsKit extends MetricsKitOps {
     configureConsoleReporter()
   }
 
-  /**
-   * Schedule metric reports execution iterval. Should not be used multiple times
-   */
+  /** Schedule metric reports execution iterval. Should not be used multiple times */
   def scheduleMetricReports(every: FiniteDuration): Unit = {
     reporters.foreach { _.start(every.toMillis, TimeUnit.MILLISECONDS) }
   }
@@ -143,9 +141,7 @@ private[akka] trait MetricsKit extends MetricsKitOps {
     registry.removeMatching(matching)
   }
 
-  /**
-   * MUST be called after all tests have finished.
-   */
+  /** MUST be called after all tests have finished. */
   def shutdownMetrics(): Unit = {
     reporters.foreach { _.stop() }
   }

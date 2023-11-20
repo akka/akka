@@ -130,7 +130,7 @@ class FlowMergeSpec extends BaseTwoStreamsSetup {
     }
 
     "works in number example for mergePreferred" in {
-      //#mergePreferred
+      // #mergePreferred
       import akka.stream.scaladsl.{ Sink, Source }
 
       val sourceA = Source(List(1, 2, 3, 4))
@@ -141,11 +141,11 @@ class FlowMergeSpec extends BaseTwoStreamsSetup {
 
       sourceA.mergePreferred(sourceB, true).runWith(Sink.foreach(println))
       // prints 10, 1, ... since both sources have their first element ready and the right source is preferred
-      //#mergePreferred
+      // #mergePreferred
     }
 
     "works in number example for mergePrioritized" in {
-      //#mergePrioritized
+      // #mergePrioritized
       import akka.stream.scaladsl.{ Sink, Source }
 
       val sourceA = Source(List(1, 2, 3, 4))
@@ -155,11 +155,11 @@ class FlowMergeSpec extends BaseTwoStreamsSetup {
       // prints e.g. 1, 10, 2, 3, 4, 20, 30, 40 since both sources have their first element ready and the left source
       // has higher priority – if both sources have elements ready, sourceA has a 99% chance of being picked next
       // while sourceB has a 1% chance
-      //#mergePrioritized
+      // #mergePrioritized
     }
 
     "works in number example for mergePrioritizedN" in {
-      //#mergePrioritizedN
+      // #mergePrioritizedN
       import akka.stream.scaladsl.{ Sink, Source }
 
       val sourceA = Source(List(1, 2, 3, 4))
@@ -172,28 +172,28 @@ class FlowMergeSpec extends BaseTwoStreamsSetup {
       // prints e.g. 1, 100, 2, 3, 4, 10, 20, 30, 40, 200, 300, 400  since both sources have their first element ready and
       // the left sourceA has higher priority - if both sources have elements ready, sourceA has a 99% chance of being picked next
       // while sourceB has a 0.99% chance and sourceC has a 0.01% chance
-      //#mergePrioritizedN
+      // #mergePrioritizedN
     }
 
     "works in number example for merge sorted" in {
-      //#merge-sorted
+      // #merge-sorted
       import akka.stream.scaladsl.{ Sink, Source }
 
       val sourceA = Source(List(1, 3, 5, 7))
       val sourceB = Source(List(2, 4, 6, 8))
 
       sourceA.mergeSorted(sourceB).runWith(Sink.foreach(println))
-      //prints 1, 2, 3, 4, 5, 6, 7, 8
+      // prints 1, 2, 3, 4, 5, 6, 7, 8
 
       val sourceC = Source(List(20, 1, 1, 1))
 
       sourceA.mergeSorted(sourceC).runWith(Sink.foreach(println))
-      //prints 1, 3, 5, 7, 20, 1, 1, 1
-      //#merge-sorted
+      // prints 1, 3, 5, 7, 20, 1, 1, 1
+      // #merge-sorted
     }
 
     "works in number example for merge" in {
-      //#merge
+      // #merge
       import akka.stream.scaladsl.{ Sink, Source }
 
       val sourceA = Source(List(1, 2, 3, 4))
@@ -201,7 +201,7 @@ class FlowMergeSpec extends BaseTwoStreamsSetup {
 
       sourceA.merge(sourceB).runWith(Sink.foreach(println))
       // merging is not deterministic, can for example print 1, 2, 3, 4, 10, 20, 30, 40
-      //#merge
+      // #merge
     }
   }
 }

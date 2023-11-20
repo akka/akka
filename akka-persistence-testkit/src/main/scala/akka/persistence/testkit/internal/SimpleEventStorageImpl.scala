@@ -8,9 +8,7 @@ import akka.annotation.InternalApi
 import akka.persistence._
 import akka.persistence.testkit.EventStorage
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[testkit] class SimpleEventStorageImpl extends EventStorage {
 

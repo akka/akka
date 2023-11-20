@@ -23,9 +23,7 @@ import akka.util.JavaDurationConverters._
 import akka.util.Timeout
 import akka.util.ccompat.JavaConverters._
 
-/**
- * Internal API
- */
+/** Internal API */
 @InternalApi
 private[akka] object ClusterShardingHealthCheckSettings {
   def apply(config: Config): ClusterShardingHealthCheckSettings =
@@ -49,9 +47,7 @@ private object ClusterShardingHealthCheck {
   val Success = Future.successful(true)
 }
 
-/**
- * INTERNAL API (ctr)
- */
+/** INTERNAL API (ctr) */
 final class ClusterShardingHealthCheck private[akka] (
     system: ActorSystem,
     settings: ClusterShardingHealthCheckSettings,
@@ -82,7 +78,7 @@ final class ClusterShardingHealthCheck private[akka] (
     if (settings.names.isEmpty || registered) {
       ClusterShardingHealthCheck.Success
     } else if (startedTimestamp != 0L && System
-                 .currentTimeMillis() > startedTimestamp + settings.disableAfter.toMillis) {
+        .currentTimeMillis() > startedTimestamp + settings.disableAfter.toMillis) {
       ClusterShardingHealthCheck.Success
     } else {
       if (startedTimestamp == 0 && isMemberUp())
@@ -110,14 +106,11 @@ final class ClusterShardingHealthCheck private[akka] (
           }
           allRegistered
         }
-        .recover {
-          case _: AskTimeoutException =>
-            if (log.isDebugEnabled) {
-              log.debug(
-                "Shard regions [{}] did not respond in time. Failing health check.",
-                settings.names.mkString(","))
-            }
-            false
+        .recover { case _: AskTimeoutException =>
+          if (log.isDebugEnabled) {
+            log.debug("Shard regions [{}] did not respond in time. Failing health check.", settings.names.mkString(","))
+          }
+          false
         }
     }
   }

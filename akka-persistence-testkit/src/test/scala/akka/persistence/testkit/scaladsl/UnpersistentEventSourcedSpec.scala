@@ -48,10 +48,9 @@ object UnpersistentEventSourcedSpec {
           emptyState = initialState,
           commandHandler = applyCommand(_, _, context),
           eventHandler = applyEvent(_, _))
-          .receiveSignal {
-            case (state, RecoveryCompleted) =>
-              context.log.debug2("Recovered state for id [{}] is [{}]", id, state)
-              recoveryDone ! Done
+          .receiveSignal { case (state, RecoveryCompleted) =>
+            context.log.debug2("Recovered state for id [{}] is [{}]", id, state)
+            recoveryDone ! Done
           }
           .snapshotWhen {
             case (_, SnapshotMade, _) => true
@@ -71,7 +70,7 @@ object UnpersistentEventSourcedSpec {
           .thenRun { newState =>
             state.notifyAfter.keysIterator
               .filter { at =>
-                (at <= newState.nextNotifyAt) && !(newState.notifyAfter.isDefinedAt(at))
+                (at <= newState.nextNotifyAt) && !newState.notifyAfter.isDefinedAt(at)
               }
               .foreach { at =>
                 state.notifyAfter(at) ! Done
@@ -317,14 +316,15 @@ class UnpersistentEventSourcedSpec extends AnyWordSpec with Matchers {
           case x             => x
         }
 
-      UnpersistentBehavior.fromEventSourced[Command, Event, State](behavior, Some(initialState -> randomStartingOffset)) {
-        (testkit, eventProbe, snapshotProbe) =>
-          val replyTo = TestInbox[Long]()
+      UnpersistentBehavior.fromEventSourced[Command, Event, State](
+        behavior,
+        Some(initialState -> randomStartingOffset)) { (testkit, eventProbe, snapshotProbe) =>
+        val replyTo = TestInbox[Long]()
 
-          testkit.run(GetSequenceNumber(replyTo.ref))
-          eventProbe.drain() shouldBe empty
-          snapshotProbe.drain() shouldBe empty
-          replyTo.expectMessage(randomStartingOffset)
+        testkit.run(GetSequenceNumber(replyTo.ref))
+        eventProbe.drain() shouldBe empty
+        snapshotProbe.drain() shouldBe empty
+        replyTo.expectMessage(randomStartingOffset)
       }
     }
   }

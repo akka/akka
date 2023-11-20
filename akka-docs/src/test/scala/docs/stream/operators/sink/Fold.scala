@@ -13,11 +13,11 @@ object Fold {
   implicit val system: ActorSystem = ???
   implicit val ec: ExecutionContextExecutor = system.dispatcher
   def foldExample: Future[Unit] = {
-    //#fold
+    // #fold
     val source = Source(1 to 100)
     val result: Future[Int] = source.runWith(Sink.fold(0)((acc, element) => acc + element))
     result.map(println)
-    //5050
-    //#fold
+    // 5050
+    // #fold
   }
 }

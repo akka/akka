@@ -38,9 +38,7 @@ import akka.util.ErrorMessages
 import akka.util.OptionVal
 import akka.util.unused
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] object RemoteActorRefProvider {
 
@@ -62,25 +60,22 @@ private[akka] object RemoteActorRefProvider {
 
     startWith(Uninitialized, None)
 
-    when(Uninitialized) {
-      case Event(i: Internals, _) =>
-        systemGuardian ! RegisterTerminationHook
-        goto(Idle).using(Some(i))
+    when(Uninitialized) { case Event(i: Internals, _) =>
+      systemGuardian ! RegisterTerminationHook
+      goto(Idle).using(Some(i))
     }
 
-    when(Idle) {
-      case Event(TerminationHook, Some(internals)) =>
-        log.info("Shutting down remote daemon.")
-        internals.remoteDaemon ! TerminationHook
-        goto(WaitDaemonShutdown)
+    when(Idle) { case Event(TerminationHook, Some(internals)) =>
+      log.info("Shutting down remote daemon.")
+      internals.remoteDaemon ! TerminationHook
+      goto(WaitDaemonShutdown)
     }
 
     // TODO: state timeout
-    when(WaitDaemonShutdown) {
-      case Event(TerminationHookDone, Some(internals)) =>
-        log.info("Remote daemon shut down; proceeding with flushing remote transports.")
-        internals.transport.shutdown().pipeTo(self)
-        goto(WaitTransportShutdown)
+    when(WaitDaemonShutdown) { case Event(TerminationHookDone, Some(internals)) =>
+      log.info("Remote daemon shut down; proceeding with flushing remote transports.")
+      internals.transport.shutdown().pipeTo(self)
+      goto(WaitTransportShutdown)
     }
 
     when(WaitTransportShutdown) {
@@ -137,7 +132,6 @@ private[akka] object RemoteActorRefProvider {
  * Depending on this class is not supported, only the [[akka.actor.ActorRefProvider]] interface is supported.
  *
  * Remote ActorRefProvider. Starts up actor on remote node and creates a RemoteActorRef representing it.
- *
  */
 private[akka] class RemoteActorRefProvider(
     val systemName: String,
@@ -153,7 +147,8 @@ private[akka] class RemoteActorRefProvider(
 
   val remoteSettings: RemoteSettings = new RemoteSettings(settings.config)
 
-  private[akka] final val hasClusterOrUseUnsafe = settings.HasCluster || remoteSettings.UseUnsafeRemoteFeaturesWithoutCluster
+  private[akka] final val hasClusterOrUseUnsafe =
+    settings.HasCluster || remoteSettings.UseUnsafeRemoteFeaturesWithoutCluster
 
   private val warnOnUnsafeRemote =
     !settings.HasCluster &&
@@ -241,7 +236,8 @@ private[akka] class RemoteActorRefProvider(
           case ArterySettings.AeronUpd => new ArteryAeronUdpTransport(system, this)
           case ArterySettings.Tcp      => new ArteryTcpTransport(system, this, tlsEnabled = false)
           case ArterySettings.TlsTcp   => new ArteryTcpTransport(system, this, tlsEnabled = true)
-        } else
+        }
+        else
           throw new IllegalArgumentException(
             "Classic remoting has been removed in Akka 2.8.0. Use default Artery remoting instead."))
     _internals = internals
@@ -329,14 +325,16 @@ private[akka] class RemoteActorRefProvider(
     if (warnOnUnsafeRemote) log.warning(message)
     else log.debug(message)
 
-  /** Logs if deathwatch message is intentionally dropped. To disable
+  /**
+   * Logs if deathwatch message is intentionally dropped. To disable
    * warnings set `akka.remote.warn-unsafe-watch-outside-cluster` to `off`
    * or use Akka Cluster.
    */
   private[akka] def warnIfUnsafeDeathwatchWithoutCluster(watchee: ActorRef, watcher: ActorRef, action: String): Unit =
     warnOnUnsafe(s"Dropped remote $action: disabled for [$watcher -> $watchee]")
 
-  /** If `warnOnUnsafeRemote`, this logs a warning if `actorOf` falls back to `LocalActorRef`
+  /**
+   * If `warnOnUnsafeRemote`, this logs a warning if `actorOf` falls back to `LocalActorRef`
    * versus creating a `RemoteActorRef`. Override to log a more granular reason if using
    * `RemoteActorRefProvider` as a superclass.
    */
@@ -400,7 +398,8 @@ private[akka] class RemoteActorRefProvider(
             case "user" | "system" => deployer.lookup(elems.drop(1))
             case "remote"          => lookupRemotes(elems)
             case _                 => None
-          } else None
+          }
+        else None
 
       val deployment = {
         deploy.toList ::: lookup.toList match {
@@ -555,9 +554,7 @@ private[akka] class RemoteActorRefProvider(
       }
   }
 
-  /**
-   * Using (checking out) actor on a specific node.
-   */
+  /** Using (checking out) actor on a specific node. */
   def useActorOnNode(ref: ActorRef, props: Props, deploy: Deploy, supervisor: ActorRef): Unit =
     remoteDeploymentWatcher match {
       case Some(watcher) =>
@@ -687,9 +684,7 @@ private[akka] class RemoteActorRef private[akka] (
       remote.system.deadLetters.tell(message, sender)
   }
 
-  /**
-   * Determine if a watch/unwatch message must be handled by the remoteWatcher actor, or sent to this remote ref
-   */
+  /** Determine if a watch/unwatch message must be handled by the remoteWatcher actor, or sent to this remote ref */
   def isWatchIntercepted(watchee: ActorRef, watcher: ActorRef): Boolean = {
     // If watchee != this then watcher should == this. This is a reverse watch, and it is not intercepted
     // If watchee == this, only the watches from remoteWatcher are sent on the wire, on behalf of other watchers
@@ -698,7 +693,7 @@ private[akka] class RemoteActorRef private[akka] (
 
   def sendSystemMessage(message: SystemMessage): Unit =
     try {
-      //send to remote, unless watch message is intercepted by the remoteWatcher
+      // send to remote, unless watch message is intercepted by the remoteWatcher
       message match {
         case Watch(watchee, watcher) =>
           if (isWatchIntercepted(watchee, watcher))
@@ -708,7 +703,7 @@ private[akka] class RemoteActorRef private[akka] (
           else
             provider.warnIfUnsafeDeathwatchWithoutCluster(watchee, watcher, "Watch")
 
-        //Unwatch has a different signature, need to pattern match arguments against InternalActorRef
+        // Unwatch has a different signature, need to pattern match arguments against InternalActorRef
         case Unwatch(watchee: InternalActorRef, watcher: InternalActorRef) =>
           if (isWatchIntercepted(watchee, watcher))
             provider.remoteWatcher.foreach(_ ! RemoteWatcher.UnwatchRemote(watchee, watcher))

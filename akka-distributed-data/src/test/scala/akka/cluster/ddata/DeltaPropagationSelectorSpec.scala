@@ -21,9 +21,12 @@ object DeltaPropagationSelectorSpec {
       extends DeltaPropagationSelector {
     override val gossipIntervalDivisor = 5
     override def createDeltaPropagation(deltas: Map[KeyId, (ReplicatedData, Long, Long)]): DeltaPropagation =
-      DeltaPropagation(selfUniqueAddress, false, deltas.map {
-        case (key, (d, fromSeqNr, toSeqNr)) => (key, Delta(DataEnvelope(d), fromSeqNr, toSeqNr))
-      })
+      DeltaPropagation(
+        selfUniqueAddress,
+        false,
+        deltas.map { case (key, (d, fromSeqNr, toSeqNr)) =>
+          (key, Delta(DataEnvelope(d), fromSeqNr, toSeqNr))
+        })
     override def maxDeltaSize: Int = 10
   }
 

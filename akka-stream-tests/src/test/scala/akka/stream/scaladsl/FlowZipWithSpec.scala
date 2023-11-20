@@ -101,7 +101,7 @@ class FlowZipWithSpec extends BaseTwoStreamsSetup {
     }
 
     "work in fruits example" in {
-      //#zip-with
+      // #zip-with
       val sourceCount = Source(List("one", "two", "three"))
       val sourceFruits = Source(List("apple", "orange", "banana"))
 
@@ -111,7 +111,7 @@ class FlowZipWithSpec extends BaseTwoStreamsSetup {
         }
         .runWith(Sink.foreach(println))
       // this will print 'one apple', 'two orange', 'three banana'
-      //#zip-with
+      // #zip-with
     }
   }
 

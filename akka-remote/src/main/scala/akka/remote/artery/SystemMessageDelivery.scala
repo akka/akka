@@ -35,9 +35,7 @@ import akka.stream.stage.TimerGraphStageLogic
 import akka.util.OptionVal
 import akka.util.PrettyDuration.PrettyPrintableDuration
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[remote] object SystemMessageDelivery {
   final case class SystemMessageEnvelope(message: AnyRef, seqNo: Long, ackReplyTo: UniqueAddress) extends ArteryMessage
   final case class Ack(seqNo: Long, from: UniqueAddress) extends Reply
@@ -67,9 +65,7 @@ import akka.util.PrettyDuration.PrettyPrintableDuration
 
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[remote] class SystemMessageDelivery(
     outboundContext: OutboundContext,
     deadLetters: ActorRef,
@@ -184,7 +180,7 @@ import akka.util.PrettyDuration.PrettyPrintableDuration
 
       @tailrec private def clearUnacknowledged(ackedSeqNo: Long): Unit = {
         if (!unacknowledged.isEmpty &&
-            unacknowledged.peek().message.asInstanceOf[SystemMessageEnvelope].seqNo <= ackedSeqNo) {
+          unacknowledged.peek().message.asInstanceOf[SystemMessageEnvelope].seqNo <= ackedSeqNo) {
           unacknowledged.removeFirst()
           if (unacknowledged.isEmpty)
             cancelTimer(resendInterval)
@@ -313,16 +309,12 @@ import akka.util.PrettyDuration.PrettyPrintableDuration
     }
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object SystemMessageAcker {
   val MaxNegativeAcknowledgementLogging = 1000
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[remote] class SystemMessageAcker(inboundContext: InboundContext)
     extends GraphStage[FlowShape[InboundEnvelope, InboundEnvelope]] {
   import SystemMessageAcker._

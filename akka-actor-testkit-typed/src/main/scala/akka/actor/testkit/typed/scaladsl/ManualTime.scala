@@ -20,9 +20,7 @@ import akka.actor.typed.internal.adapter.SchedulerAdapter
  */
 object ManualTime {
 
-  /**
-   * Config needed to use the `ExplicitlyTriggeredScheduler`
-   */
+  /** Config needed to use the `ExplicitlyTriggeredScheduler` */
   val config: Config =
     ConfigFactory.parseString("""akka.scheduler.implementation = "akka.testkit.ExplicitlyTriggeredScheduler"""")
 
@@ -47,9 +45,7 @@ object ManualTime {
 
 }
 
-/**
- * Not for user instantiation, see [[ManualTime#apply]]
- */
+/** Not for user instantiation, see [[ManualTime#apply]] */
 final class ManualTime(delegate: akka.testkit.ExplicitlyTriggeredScheduler) {
 
   /**

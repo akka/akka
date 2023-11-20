@@ -31,8 +31,10 @@ import akka.stream.testkit.Utils.TE
 import akka.testkit._
 import akka.testkit.WithLogCapturing
 
-class CancellationStrategySpec extends StreamSpec("""akka.loglevel = DEBUG
-       akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]""") with WithLogCapturing {
+class CancellationStrategySpec
+    extends StreamSpec("""akka.loglevel = DEBUG
+       akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]""")
+    with WithLogCapturing {
   "CancellationStrategyAttribute" should {
     "support strategies" should {
       "CompleteStage" should {

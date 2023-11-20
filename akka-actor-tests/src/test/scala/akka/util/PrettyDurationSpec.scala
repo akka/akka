@@ -28,11 +28,10 @@ class PrettyDurationSpec extends AnyWordSpec with Matchers {
 
   "PrettyDuration" should {
 
-    cases.foreach {
-      case (d, expectedValue) =>
-        s"print $d nanos as $expectedValue" in {
-          d.pretty should ===(expectedValue)
-        }
+    cases.foreach { case (d, expectedValue) =>
+      s"print $d nanos as $expectedValue" in {
+        d.pretty should ===(expectedValue)
+      }
     }
 
     "work with infinity" in {

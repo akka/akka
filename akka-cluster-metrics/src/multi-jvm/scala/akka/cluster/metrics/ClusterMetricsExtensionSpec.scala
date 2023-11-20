@@ -108,10 +108,10 @@ abstract class ClusterMetricsEnabledSpec
       enterBarrier("cluster-started")
       awaitAssert(clusterView.members.count(_.status == MemberStatus.Up) should ===(roles.size))
       // TODO ensure same contract
-      //awaitAssert(clusterView.clusterMetrics.size should ===(roles.size))
+      // awaitAssert(clusterView.clusterMetrics.size should ===(roles.size))
       awaitAssert(metricsView.clusterMetrics.size should ===(roles.size))
       val collector = MetricsCollector(cluster.system)
-      collector.sample().metrics.size should be > (3)
+      collector.sample().metrics.size should be > 3
       enterBarrier("after")
     }
     "reflect the correct number of node metrics in cluster view" in within(30 seconds) {
@@ -122,7 +122,7 @@ abstract class ClusterMetricsEnabledSpec
       runOn(node2, node3, node4, node5) {
         markNodeAsUnavailable(node1)
         // TODO ensure same contract
-        //awaitAssert(clusterView.clusterMetrics.size should ===(roles.size - 1))
+        // awaitAssert(clusterView.clusterMetrics.size should ===(roles.size - 1))
         awaitAssert(metricsView.clusterMetrics.size should ===(roles.size - 1))
       }
       enterBarrier("finished")
@@ -146,12 +146,12 @@ abstract class ClusterMetricsDisabledSpec
     "not collect metrics, not publish metrics events, and not gossip metrics" in {
       awaitClusterUp(roles: _*)
       // TODO ensure same contract
-      //clusterView.clusterMetrics.size should ===(0)
+      // clusterView.clusterMetrics.size should ===(0)
       metricsView.clusterMetrics.size should ===(0)
       ClusterMetricsExtension(system).subscribe(testActor)
       expectNoMessage()
       // TODO ensure same contract
-      //clusterView.clusterMetrics.size should ===(0)
+      // clusterView.clusterMetrics.size should ===(0)
       metricsView.clusterMetrics.size should ===(0)
       enterBarrier("after")
     }

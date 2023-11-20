@@ -23,9 +23,7 @@ import akka.persistence.typed.state.internal.InternalProtocol.RecoveryTimeout
 import akka.persistence.typed.state.scaladsl.DurableStateBehavior
 import akka.util.OptionVal
 
-/**
- * INTERNAL API: Carry state for the `DurableStateBehavior` implementation behaviors.
- */
+/** INTERNAL API: Carry state for the `DurableStateBehavior` implementation behaviors. */
 @InternalApi
 private[akka] final class BehaviorSetup[C, S](
     val context: ActorContext[InternalProtocol],
@@ -106,9 +104,7 @@ private[akka] final class BehaviorSetup[C, S](
 
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] object PersistenceMdc {
   // format: OFF

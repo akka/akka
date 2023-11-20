@@ -39,9 +39,8 @@ class PrimitiveStateSpec
       eventHandler = (state, event) => {
         probe.tell("eventHandler:" + state + ":" + event)
         state + event
-      }).receiveSignal {
-      case (n, RecoveryCompleted) =>
-        probe.tell("onRecoveryCompleted:" + n)
+      }).receiveSignal { case (n, RecoveryCompleted) =>
+      probe.tell("onRecoveryCompleted:" + n)
     }
 
   "A typed persistent actor with primitive state" must {

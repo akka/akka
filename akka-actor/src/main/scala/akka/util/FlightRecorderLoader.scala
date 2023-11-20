@@ -9,9 +9,7 @@ import scala.util.{ Failure, Success }
 import akka.actor.{ ClassicActorSystemProvider, ExtendedActorSystem }
 import akka.annotation.InternalApi
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] object FlightRecorderLoader {
   def load[T: ClassTag](casp: ClassicActorSystemProvider, fqcn: String, fallback: T): T = {

@@ -418,8 +418,8 @@ class GraphDSLCompileSpec extends StreamSpec {
 
     "support mapMaterializedValue" in {
       val anOp = op[String, String]
-      val anOpWithMappedMatVal = anOp.mapMaterializedValue {
-        case NotUsed => (NotUsed, NotUsed)
+      val anOpWithMappedMatVal = anOp.mapMaterializedValue { case NotUsed =>
+        (NotUsed, NotUsed)
       }
       val g = Source.empty[String].viaMat(anOpWithMappedMatVal)(Keep.right).to(Sink.cancelled)
       val matVal = g.run()

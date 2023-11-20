@@ -10,9 +10,7 @@ import scala.concurrent.Future
 
 import akka.persistence.query.scaladsl.ReadJournal
 
-/**
- * [[EventsBySliceQuery]] that is using a timestamp based offset should also implement this query.
- */
+/** [[EventsBySliceQuery]] that is using a timestamp based offset should also implement this query. */
 trait EventTimestampQuery extends ReadJournal {
 
   def timestampOf(persistenceId: String, sequenceNr: Long): Future[Option[Instant]]

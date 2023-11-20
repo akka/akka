@@ -132,7 +132,6 @@ abstract class ShardedDaemonProcess {
    * @param stopMessage             If defined: sent to the actors when they need to stop because of a rebalance across the nodes of the cluster,
    *                                rescale or cluster shutdown.
    * @param shardAllocationStrategy If defined: used by entities to control the shard allocation
-   *
    */
   @ApiMayChange
   def initWithContext[T](

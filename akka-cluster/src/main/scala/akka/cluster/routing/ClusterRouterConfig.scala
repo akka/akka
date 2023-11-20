@@ -50,7 +50,7 @@ object ClusterRouterGroupSettings {
       routeesPaths = immutableSeq(config.getStringList("routees.paths")),
       allowLocalRoutees = config.getBoolean("cluster.allow-local-routees"),
       useRoles = config.getStringList("cluster.use-roles").asScala.toSet ++ ClusterRouterSettingsBase.useRoleOption(
-          config.getString("cluster.use-role")))
+        config.getString("cluster.use-role")))
 
   def apply(
       totalInstances: Int,
@@ -63,9 +63,7 @@ object ClusterRouterGroupSettings {
     Some((settings.totalInstances, settings.routeesPaths, settings.allowLocalRoutees, settings.useRoles))
 }
 
-/**
- * `totalInstances` of cluster router must be > 0
- */
+/** `totalInstances` of cluster router must be > 0 */
 @SerialVersionUID(1L)
 final class ClusterRouterGroupSettings(
     val totalInstances: Int,
@@ -107,9 +105,7 @@ final class ClusterRouterGroupSettings(
   override def toString: String =
     s"ClusterRouterGroupSettings($totalInstances,$routeesPaths,$allowLocalRoutees,$useRoles)"
 
-  /**
-   * Java API
-   */
+  /** Java API */
   def this(
       totalInstances: Int,
       routeesPaths: java.lang.Iterable[String],
@@ -134,9 +130,7 @@ final class ClusterRouterGroupSettings(
   def withUseRoles(useRoles: String*): ClusterRouterGroupSettings =
     new ClusterRouterGroupSettings(totalInstances, routeesPaths, allowLocalRoutees, useRoles.toSet)
 
-  /**
-   * Java API
-   */
+  /** Java API */
   def withUseRoles(useRoles: java.util.Set[String]): ClusterRouterGroupSettings =
     new ClusterRouterGroupSettings(totalInstances, routeesPaths, allowLocalRoutees, useRoles.asScala.toSet)
 }
@@ -165,7 +159,7 @@ object ClusterRouterPoolSettings {
       maxInstancesPerNode = config.getInt("cluster.max-nr-of-instances-per-node"),
       allowLocalRoutees = config.getBoolean("cluster.allow-local-routees"),
       useRoles = config.getStringList("cluster.use-roles").asScala.toSet ++ ClusterRouterSettingsBase.useRoleOption(
-          config.getString("cluster.use-role")))
+        config.getString("cluster.use-role")))
 
   def unapply(settings: ClusterRouterPoolSettings): Option[(Int, Int, Boolean, Set[String])] =
     Some((settings.totalInstances, settings.maxInstancesPerNode, settings.allowLocalRoutees, settings.useRoles))
@@ -217,9 +211,7 @@ final class ClusterRouterPoolSettings(
   override def toString: String =
     s"ClusterRouterPoolSettings($totalInstances,$maxInstancesPerNode,$allowLocalRoutees,$useRoles)"
 
-  /**
-   * Java API
-   */
+  /** Java API */
   def this(totalInstances: Int, maxInstancesPerNode: Int, allowLocalRoutees: Boolean, useRoles: java.util.Set[String]) =
     this(totalInstances, maxInstancesPerNode, allowLocalRoutees, useRoles.asScala.toSet)
 
@@ -233,16 +225,12 @@ final class ClusterRouterPoolSettings(
   def withUseRoles(useRoles: String*): ClusterRouterPoolSettings =
     new ClusterRouterPoolSettings(totalInstances, maxInstancesPerNode, allowLocalRoutees, useRoles.toSet)
 
-  /**
-   * Java API
-   */
+  /** Java API */
   def withUseRoles(useRoles: java.util.Set[String]): ClusterRouterPoolSettings =
     new ClusterRouterPoolSettings(totalInstances, maxInstancesPerNode, allowLocalRoutees, useRoles.asScala.toSet)
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[akka] object ClusterRouterSettingsBase {
   def useRoleOption(role: String): Option[String] = role match {
     case null | "" => None
@@ -262,9 +250,7 @@ private[akka] object ClusterRouterSettingsBase {
     }
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[akka] trait ClusterRouterSettingsBase {
   def totalInstances: Int
   def allowLocalRoutees: Boolean
@@ -295,9 +281,7 @@ final case class ClusterRouterGroup(local: Group, settings: ClusterRouterGroupSe
       settings.routeesPaths
     } else Nil
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   override private[akka] def createRouterActor(): RouterActor = new ClusterRouterGroupActor(settings)
 
   override def withFallback(other: RouterConfig): RouterConfig = other match {
@@ -326,9 +310,7 @@ final case class ClusterRouterPool(local: Pool, settings: ClusterRouterPoolSetti
 
   @transient private val childNameCounter = new AtomicInteger
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   override private[akka] def newRoutee(routeeProps: Props, context: ActorContext): Routee = {
     val name = "c" + childNameCounter.incrementAndGet
     val ref = context
@@ -337,9 +319,7 @@ final case class ClusterRouterPool(local: Pool, settings: ClusterRouterPoolSetti
     ActorRefRoutee(ref)
   }
 
-  /**
-   * Initial number of routee instances
-   */
+  /** Initial number of routee instances */
   override def nrOfInstances(sys: ActorSystem): Int =
     if (settings.allowLocalRoutees && settings.useRoles.nonEmpty) {
       if (settings.useRoles.subsetOf(Cluster(sys).selfRoles)) {
@@ -351,9 +331,7 @@ final case class ClusterRouterPool(local: Pool, settings: ClusterRouterPoolSetti
 
   override def resizer: Option[Resizer] = local.resizer
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   override private[akka] def createRouterActor(): RouterActor =
     new ClusterRouterPoolActor(local.supervisorStrategy, settings)
 
@@ -370,9 +348,7 @@ final case class ClusterRouterPool(local: Pool, settings: ClusterRouterPoolSetti
 
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[akka] trait ClusterRouterConfigBase extends RouterConfig {
   def local: RouterConfig
   def settings: ClusterRouterSettingsBase
@@ -387,9 +363,7 @@ private[akka] trait ClusterRouterConfigBase extends RouterConfig {
     msg.isInstanceOf[ClusterDomainEvent] || msg.isInstanceOf[CurrentClusterState] || super.isManagementMessage(msg)
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[akka] class ClusterRouterPoolActor(
     supervisorStrategy: SupervisorStrategy,
     val settings: ClusterRouterPoolSettings)
@@ -398,9 +372,7 @@ private[akka] class ClusterRouterPoolActor(
 
   override def receive = clusterReceive.orElse(super.receive)
 
-  /**
-   * Adds routees based on totalInstances and maxInstancesPerNode settings
-   */
+  /** Adds routees based on totalInstances and maxInstancesPerNode settings */
   override def addRoutees(): Unit = {
     @tailrec
     def doAddRoutees(): Unit = selectDeploymentTarget match {
@@ -442,9 +414,7 @@ private[akka] class ClusterRouterPoolActor(
 
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[akka] class ClusterRouterGroupActor(val settings: ClusterRouterGroupSettings)
     extends RouterActor
     with ClusterRouterActor {
@@ -463,9 +433,7 @@ private[akka] class ClusterRouterGroupActor(val settings: ClusterRouterGroupSett
     else
       Map.empty
 
-  /**
-   * Adds routees based on totalInstances and maxInstancesPerNode settings
-   */
+  /** Adds routees based on totalInstances and maxInstancesPerNode settings */
   override def addRoutees(): Unit = {
     @tailrec
     def doAddRoutees(): Unit = selectDeploymentTarget match {
@@ -553,14 +521,12 @@ private[akka] trait ClusterRouterActor { this: RouterActor =>
       nodes
   }
 
-  /**
-   * Fills in self address for local ActorRef
-   */
+  /** Fills in self address for local ActorRef */
   def fullAddress(routee: Routee): Address = {
     val address = routee match {
       case ActorRefRoutee(ref)       => ref.path.address
       case ActorSelectionRoutee(sel) => sel.anchor.path.address
-      case unknown                   => throw new IllegalArgumentException(s"Unsupported routee type: ${unknown.getClass}")
+      case unknown => throw new IllegalArgumentException(s"Unsupported routee type: ${unknown.getClass}")
     }
     address match {
       case Address(_, _, None, None) => cluster.selfAddress
@@ -568,9 +534,7 @@ private[akka] trait ClusterRouterActor { this: RouterActor =>
     }
   }
 
-  /**
-   * Adds routees based on settings
-   */
+  /** Adds routees based on settings */
   def addRoutees(): Unit
 
   def addMember(member: Member): Unit = {

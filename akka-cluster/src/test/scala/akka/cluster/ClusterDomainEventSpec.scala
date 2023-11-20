@@ -48,8 +48,8 @@ class ClusterDomainEventSpec extends AnyWordSpec with Matchers with BeforeAndAft
   }
 
   private[cluster] def converge(gossip: Gossip): (Gossip, Set[UniqueAddress]) =
-    gossip.members.foldLeft((gossip, Set.empty[UniqueAddress])) {
-      case ((gs, as), m) => (gs.seen(m.uniqueAddress), as + m.uniqueAddress)
+    gossip.members.foldLeft((gossip, Set.empty[UniqueAddress])) { case ((gs, as), m) =>
+      (gs.seen(m.uniqueAddress), as + m.uniqueAddress)
     }
 
   private def state(g: Gossip): MembershipState =

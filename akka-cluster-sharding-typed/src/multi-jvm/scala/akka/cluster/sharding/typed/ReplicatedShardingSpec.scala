@@ -36,13 +36,16 @@ object ReplicatedShardingSpec extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
 
-  commonConfig(ConfigFactory.parseString("""
+  commonConfig(
+    ConfigFactory
+      .parseString("""
     akka.loglevel = DEBUG
     akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
     // for the proxy plugin
     akka.actor.allow-java-serialization = on 
     akka.actor.warn-about-java-serializer-usage = off
-      """).withFallback(MultiNodeClusterSpec.clusterConfig))
+      """)
+      .withFallback(MultiNodeClusterSpec.clusterConfig))
 
   nodeConfig(first)(ConfigFactory.parseString("""
     akka.persistence.journal.plugin = "akka.persistence.journal.proxy"
@@ -99,11 +102,13 @@ object ReplicatedShardingSpec extends MultiNodeConfig {
 
     def provider(): ReplicatedEntityProvider[Command] = {
       ReplicatedEntityProvider[Command]("TestRES", AllReplicas) { (entityTypeKey, replicaId) =>
-        ReplicatedEntity(replicaId, Entity(entityTypeKey) { entityContext =>
-          Behaviors.setup { ctx =>
-            TestRES(ReplicationId.fromString(entityContext.entityId), ctx)
-          }
-        })
+        ReplicatedEntity(
+          replicaId,
+          Entity(entityTypeKey) { entityContext =>
+            Behaviors.setup { ctx =>
+              TestRES(ReplicationId.fromString(entityContext.entityId), ctx)
+            }
+          })
       }.withDirectReplication(true) // this is required as we don't have a shared read journal
     }
   }
@@ -143,18 +148,17 @@ abstract class ReplicatedShardingSpec
         val entityRefs = replicatedSharding.entityRefsFor("id1")
         val probe = TestProbe[Done]()
         entityRefs.size shouldEqual 2
-        entityRefs.foreach {
-          case (replica, ref) => ref ! StoreMe(s"from first to ${replica.id}", probe.ref)
+        entityRefs.foreach { case (replica, ref) =>
+          ref ! StoreMe(s"from first to ${replica.id}", probe.ref)
         }
         probe.expectMessage(Done)
         probe.expectMessage(Done)
 
         eventually {
-          entityRefs.foreach {
-            case (_, ref) =>
-              val probe = TestProbe[State]()
-              ref ! GetState(probe.ref)
-              probe.expectMessageType[State].all.toSet shouldEqual Set(s"from first to R1", s"from first to R2")
+          entityRefs.foreach { case (_, ref) =>
+            val probe = TestProbe[State]()
+            ref ! GetState(probe.ref)
+            probe.expectMessageType[State].all.toSet shouldEqual Set(s"from first to R1", s"from first to R2")
           }
         }
       }
@@ -171,8 +175,8 @@ abstract class ReplicatedShardingSpec
       runOn(second) {
         val entityRefs = replicatedSharding.entityRefsFor("id2")
         val probe = TestProbe[Done]()
-        entityRefs.foreach {
-          case (replica, ref) => ref ! StoreMe(s"from first to ${replica.id}", probe.ref)
+        entityRefs.foreach { case (replica, ref) =>
+          ref ! StoreMe(s"from first to ${replica.id}", probe.ref)
         }
         probe.expectMessage(Done)
         probe.expectMessage(Done)

@@ -11,7 +11,7 @@ object Grouped {
 
     implicit val system: ActorSystem = ActorSystem()
 
-    //#grouped
+    // #grouped
     Source(1 to 7).grouped(3).runForeach(println)
     // Vector(1, 2, 3)
     // Vector(4, 5, 6)
@@ -21,7 +21,7 @@ object Grouped {
     // 6   (= 1 + 2 + 3)
     // 15  (= 4 + 5 + 6)
     // 7   (= 7)
-    //#grouped
+    // #grouped
   }
 
 }

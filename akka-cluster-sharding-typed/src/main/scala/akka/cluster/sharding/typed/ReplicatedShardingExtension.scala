@@ -27,9 +27,7 @@ object ReplicatedShardingExtension extends ExtensionId[ReplicatedShardingExtensi
 
 }
 
-/**
- * Not for user extension.
- */
+/** Not for user extension. */
 @DoNotInherit
 trait ReplicatedShardingExtension extends Extension {
 
@@ -61,13 +59,9 @@ trait ReplicatedShardingExtension extends Extension {
 @DoNotInherit
 trait ReplicatedSharding[M] {
 
-  /**
-   * Scala API: Returns the entity ref for each replica for user defined routing/replica selection
-   */
+  /** Scala API: Returns the entity ref for each replica for user defined routing/replica selection */
   def entityRefsFor(entityId: String): Map[ReplicaId, EntityRef[M]]
 
-  /**
-   * Java API: Returns the entity ref for each replica for user defined routing/replica selection
-   */
+  /** Java API: Returns the entity ref for each replica for user defined routing/replica selection */
   def getEntityRefsFor(entityId: String): JMap[ReplicaId, javadsl.EntityRef[M]]
 }

@@ -16,9 +16,7 @@ import akka.util.Timeout
 
 object TestKitSettings {
 
-  /**
-   * Reads configuration settings from `akka.actor.testkit.typed` section.
-   */
+  /** Reads configuration settings from `akka.actor.testkit.typed` section. */
   def apply(system: ActorSystem[_]): TestKitSettings =
     Ext(system).settings
 
@@ -29,9 +27,7 @@ object TestKitSettings {
   def apply(config: Config): TestKitSettings =
     new TestKitSettings(config)
 
-  /**
-   * Java API: Reads configuration settings from `akka.actor.testkit.typed` section.
-   */
+  /** Java API: Reads configuration settings from `akka.actor.testkit.typed` section. */
   def create(system: ActorSystem[_]): TestKitSettings =
     apply(system)
 
@@ -77,15 +73,11 @@ final class TestKitSettings(val config: Config) {
   /** Dilated with `TestTimeFactor`. */
   val FilterLeeway: FiniteDuration = dilated(config.getMillisDuration("filter-leeway"))
 
-  /**
-   * Scala API: Scale the `duration` with the configured `TestTimeFactor`
-   */
+  /** Scala API: Scale the `duration` with the configured `TestTimeFactor` */
   def dilated(duration: FiniteDuration): FiniteDuration =
     Duration.fromNanos((duration.toNanos * TestTimeFactor + 0.5).toLong)
 
-  /**
-   * Java API: Scale the `duration` with the configured `TestTimeFactor`
-   */
+  /** Java API: Scale the `duration` with the configured `TestTimeFactor` */
   def dilated(duration: java.time.Duration): java.time.Duration =
     dilated(duration.asScala).asJava
 }

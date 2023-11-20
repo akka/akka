@@ -18,14 +18,10 @@ import akka.annotation.DoNotInherit
 @DoNotInherit
 sealed trait DurableStateChange[A] {
 
-  /**
-   * The persistence id of the origin entity.
-   */
+  /** The persistence id of the origin entity. */
   def persistenceId: String
 
-  /**
-   * The offset that can be used in next `changes` or `currentChanges` query.
-   */
+  /** The offset that can be used in next `changes` or `currentChanges` query. */
   def offset: Offset
 }
 
@@ -36,7 +32,6 @@ object UpdatedDurableState {
 }
 
 /**
- *
  * @param persistenceId The persistence id of the origin entity.
  * @param revision The revision number from the origin entity.
  * @param value The object value.
@@ -60,7 +55,6 @@ object DeletedDurableState {
 }
 
 /**
- *
  * @param persistenceId The persistence id of the origin entity.
  * @param revision The revision number from the origin entity.
  * @param offset The offset that can be used in next `changes` or `currentChanges` query.

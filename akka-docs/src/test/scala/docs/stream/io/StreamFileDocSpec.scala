@@ -27,45 +27,45 @@ class StreamFileDocSpec extends AkkaSpec(UnboundedMailboxConfig) {
   override def afterTermination() = Files.delete(file)
 
   {
-    //#file-source
+    // #file-source
     import akka.stream.scaladsl._
-    //#file-source
+    // #file-source
     Thread.sleep(0) // needs a statement here for valid syntax and to avoid "unused" warnings
   }
 
   {
-    //#file-source
+    // #file-source
     val file = Paths.get("example.csv")
-    //#file-source
+    // #file-source
   }
 
   {
-    //#file-sink
+    // #file-sink
     val file = Paths.get("greeting.txt")
-    //#file-sink
+    // #file-sink
   }
 
   "read data from a file" in {
-    //#file-source
-    def handle(b: ByteString): Unit //#file-source
+    // #file-source
+    def handle(b: ByteString): Unit // #file-source
     = ()
 
-    //#file-source
+    // #file-source
 
     val foreach: Future[IOResult] = FileIO.fromPath(file).to(Sink.ignore).run()
-    //#file-source
+    // #file-source
   }
 
   "configure dispatcher in code" in {
-    //#custom-dispatcher-code
+    // #custom-dispatcher-code
     FileIO.fromPath(file).withAttributes(ActorAttributes.dispatcher("custom-blocking-io-dispatcher"))
-    //#custom-dispatcher-code
+    // #custom-dispatcher-code
   }
 
   "write data into a file" in {
-    //#file-sink
+    // #file-sink
     val text = Source.single("Hello Akka Stream!")
     val result: Future[IOResult] = text.map(t => ByteString(t)).runWith(FileIO.toPath(file))
-    //#file-sink
+    // #file-sink
   }
 }

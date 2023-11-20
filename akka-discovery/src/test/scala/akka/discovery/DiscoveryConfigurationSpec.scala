@@ -33,7 +33,8 @@ class DiscoveryConfigurationSpec extends AnyWordSpec with Matchers {
 
       val sys = ActorSystem(
         "DiscoveryConfigurationSpec",
-        ConfigFactory.parseString(s"""
+        ConfigFactory
+          .parseString(s"""
             akka.discovery {
               method = akka-mock-inside
 
@@ -41,7 +42,8 @@ class DiscoveryConfigurationSpec extends AnyWordSpec with Matchers {
                 class = $className
               }
             }
-        """).withFallback(ConfigFactory.load()))
+        """)
+          .withFallback(ConfigFactory.load()))
 
       try Discovery(sys).discovery.getClass.getCanonicalName should ===(className)
       finally TestKit.shutdownActorSystem(sys)
@@ -53,7 +55,8 @@ class DiscoveryConfigurationSpec extends AnyWordSpec with Matchers {
 
       val sys = ActorSystem(
         "DiscoveryConfigurationSpec",
-        ConfigFactory.parseString(s"""
+        ConfigFactory
+          .parseString(s"""
             akka.discovery {
               method = mock1
 
@@ -64,7 +67,8 @@ class DiscoveryConfigurationSpec extends AnyWordSpec with Matchers {
                 class = $className2
               }
             }
-        """).withFallback(ConfigFactory.load()))
+        """)
+          .withFallback(ConfigFactory.load()))
 
       try {
         Discovery(sys).discovery.getClass.getCanonicalName should ===(className1)
@@ -78,7 +82,8 @@ class DiscoveryConfigurationSpec extends AnyWordSpec with Matchers {
 
       val sys = ActorSystem(
         "DiscoveryConfigurationSpec",
-        ConfigFactory.parseString(s"""
+        ConfigFactory
+          .parseString(s"""
             akka.discovery {
               method = mock1
 
@@ -89,7 +94,8 @@ class DiscoveryConfigurationSpec extends AnyWordSpec with Matchers {
                 class = $className2
               }
             }
-        """).withFallback(ConfigFactory.load()))
+        """)
+          .withFallback(ConfigFactory.load()))
 
       try {
         (Discovery(sys).loadServiceDiscovery("mock2") should be)
@@ -104,14 +110,16 @@ class DiscoveryConfigurationSpec extends AnyWordSpec with Matchers {
 
       val sys = ActorSystem(
         "DiscoveryConfigurationSpec",
-        ConfigFactory.parseString(s"""
+        ConfigFactory
+          .parseString(s"""
             akka.discovery {
               method = "mock1"
                mock1 {
                 class = $className
               }
             }
-        """).withFallback(ConfigFactory.load()))
+        """)
+          .withFallback(ConfigFactory.load()))
 
       try {
         an[DiscoveryException] should be thrownBy Discovery(sys).discovery
@@ -123,11 +131,13 @@ class DiscoveryConfigurationSpec extends AnyWordSpec with Matchers {
 
       val sys = ActorSystem(
         "DiscoveryConfigurationSpec",
-        ConfigFactory.parseString(s"""
+        ConfigFactory
+          .parseString(s"""
             akka.discovery {
               method = "$className"
             }
-        """).withFallback(ConfigFactory.load()))
+        """)
+          .withFallback(ConfigFactory.load()))
 
       try {
         an[IllegalArgumentException] should be thrownBy Discovery(sys).discovery

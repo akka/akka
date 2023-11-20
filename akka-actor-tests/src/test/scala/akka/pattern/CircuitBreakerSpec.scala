@@ -350,7 +350,7 @@ class CircuitBreakerSpec extends AkkaSpec("""
       breaker().currentFailureCount should ===(0)
       intercept[TestException] {
         val ct = Thread.currentThread() // Ensure that the thunk is executed in the tests thread
-        breaker().withSyncCircuitBreaker({ if (Thread.currentThread() eq ct) throwException else "fail" })
+        breaker().withSyncCircuitBreaker { if (Thread.currentThread() eq ct) throwException else "fail" }
       }
       breaker().currentFailureCount should ===(1)
       breaker().withSyncCircuitBreaker(sayHi)
@@ -363,7 +363,7 @@ class CircuitBreakerSpec extends AkkaSpec("""
         breaker().currentFailureCount should ===(0)
         intercept[TestException] {
           val ct = Thread.currentThread() // Ensure that the thunk is executed in the tests thread
-          breaker().withSyncCircuitBreaker({ if (Thread.currentThread() eq ct) throwException else "fail" })
+          breaker().withSyncCircuitBreaker { if (Thread.currentThread() eq ct) throwException else "fail" }
         }
         breaker().currentFailureCount should ===(1)
 
@@ -386,7 +386,7 @@ class CircuitBreakerSpec extends AkkaSpec("""
       breaker().currentFailureCount should ===(0)
       intercept[TestException] {
         val ct = Thread.currentThread() // Ensure that the thunk is executed in the tests thread
-        breaker().withSyncCircuitBreaker({ if (Thread.currentThread() eq ct) throwException else "fail" })
+        breaker().withSyncCircuitBreaker { if (Thread.currentThread() eq ct) throwException else "fail" }
       }
       breaker().currentFailureCount should ===(1)
       breaker().succeed()

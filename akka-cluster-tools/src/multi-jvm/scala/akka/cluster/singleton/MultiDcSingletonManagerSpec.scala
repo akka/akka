@@ -53,9 +53,8 @@ class MultiDcSingleton extends Actor with ActorLogging {
 
   val cluster = Cluster(context.system)
 
-  override def receive: Receive = {
-    case Ping =>
-      sender() ! Pong(cluster.settings.SelfDataCenter, cluster.selfAddress, cluster.selfRoles)
+  override def receive: Receive = { case Ping =>
+    sender() ! Pong(cluster.settings.SelfDataCenter, cluster.selfAddress, cluster.selfRoles)
   }
 }
 object MultiDcSingleton {

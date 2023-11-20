@@ -19,7 +19,7 @@ object Split {
 
     implicit val system: ActorSystem = ActorSystem()
 
-    //#splitWhen
+    // #splitWhen
     Source(1 to 100)
       .throttle(1, 100.millis)
       .map(elem => (elem, Instant.now()))
@@ -28,14 +28,13 @@ object Split {
         // keep track of time bucket (one per second)
         var currentTimeBucket = LocalDateTime.ofInstant(Instant.ofEpochMilli(0), ZoneOffset.UTC)
 
-        {
-          case (elem, timestamp) =>
-            val time = LocalDateTime.ofInstant(timestamp, ZoneOffset.UTC)
-            val bucket = time.withNano(0)
-            val newBucket = bucket != currentTimeBucket
-            if (newBucket)
-              currentTimeBucket = bucket
-            List((elem, newBucket))
+        { case (elem, timestamp) =>
+          val time = LocalDateTime.ofInstant(timestamp, ZoneOffset.UTC)
+          val bucket = time.withNano(0)
+          val newBucket = bucket != currentTimeBucket
+          if (newBucket)
+            currentTimeBucket = bucket
+          List((elem, newBucket))
         }
       })
       .splitWhen(_._2) // split when time bucket changes
@@ -54,7 +53,7 @@ object Split {
     // 10
     // 10
     // 7
-    //#splitWhen
+    // #splitWhen
   }
 
   def splitAfterExample(args: Array[String]): Unit = {
@@ -62,7 +61,7 @@ object Split {
 
     implicit val system: ActorSystem = ActorSystem()
 
-    //#splitAfter
+    // #splitAfter
     Source(1 to 100)
       .throttle(1, 100.millis)
       .map(elem => (elem, Instant.now()))
@@ -95,7 +94,7 @@ object Split {
     // 6
     // note that the very last element is never included due to sliding,
     // but that would not be problem for an infinite stream
-    //#splitAfter
+    // #splitAfter
   }
 
 }

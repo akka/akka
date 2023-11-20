@@ -19,24 +19,18 @@ import akka.stream.SinkRef
 import akka.stream.SourceRef
 import akka.stream.StreamRefResolver
 
-/**
- * INTERNAL API: Adds support for serializing and deserializing [[akka.stream.SourceRef]] and [[akka.stream.SinkRef]].
- */
+/** INTERNAL API: Adds support for serializing and deserializing [[akka.stream.SourceRef]] and [[akka.stream.SinkRef]]. */
 @InternalApi private[akka] trait StreamRefModule extends JacksonModule {
   addSerializer(classOf[SourceRef[_]], () => SourceRefSerializer.instance, () => SourceRefDeserializer.instance)
   addSerializer(classOf[SinkRef[_]], () => SinkRefSerializer.instance, () => SinkRefDeserializer.instance)
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object SourceRefSerializer {
   val instance: SourceRefSerializer = new SourceRefSerializer
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] class SourceRefSerializer
     extends StdScalarSerializer[SourceRef[_]](classOf[SourceRef[_]])
     with ActorSystemAccess {
@@ -48,16 +42,12 @@ import akka.stream.StreamRefResolver
   }
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object SourceRefDeserializer {
   val instance: SourceRefDeserializer = new SourceRefDeserializer
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] class SourceRefDeserializer
     extends StdScalarDeserializer[SourceRef[_]](classOf[SourceRef[_]])
     with ActorSystemAccess {
@@ -71,16 +61,12 @@ import akka.stream.StreamRefResolver
   }
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object SinkRefSerializer {
   val instance: SinkRefSerializer = new SinkRefSerializer
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] class SinkRefSerializer
     extends StdScalarSerializer[SinkRef[_]](classOf[SinkRef[_]])
     with ActorSystemAccess {
@@ -92,16 +78,12 @@ import akka.stream.StreamRefResolver
   }
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object SinkRefDeserializer {
   val instance: SinkRefDeserializer = new SinkRefDeserializer
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] class SinkRefDeserializer
     extends StdScalarDeserializer[SinkRef[_]](classOf[SinkRef[_]])
     with ActorSystemAccess {

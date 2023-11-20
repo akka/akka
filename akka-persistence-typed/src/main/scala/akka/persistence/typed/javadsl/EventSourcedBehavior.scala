@@ -23,9 +23,7 @@ abstract class EventSourcedBehavior[Command, Event, State] private[akka] (
     onPersistFailure: Optional[BackoffSupervisorStrategy])
     extends DeferredBehavior[Command] {
 
-  /**
-   * @param persistenceId stable unique identifier for the event sourced behavior
-   */
+  /** @param persistenceId stable unique identifier for the event sourced behavior */
   def this(persistenceId: PersistenceId) = {
     this(persistenceId, Optional.empty[BackoffSupervisorStrategy])
   }
@@ -91,33 +89,23 @@ abstract class EventSourcedBehavior[Command, Event, State] private[akka] (
    */
   protected def signalHandler(): SignalHandler[State] = SignalHandler.empty[State]
 
-  /**
-   * @return A new, mutable signal handler builder
-   */
+  /** @return A new, mutable signal handler builder */
   protected final def newSignalHandlerBuilder(): SignalHandlerBuilder[State] =
     SignalHandlerBuilder.builder[State]
 
-  /**
-   * @return A new, mutable, command handler builder
-   */
+  /** @return A new, mutable, command handler builder */
   protected def newCommandHandlerBuilder(): CommandHandlerBuilder[Command, Event, State] = {
     CommandHandlerBuilder.builder[Command, Event, State]()
   }
 
-  /**
-   * @return A new, mutable, event handler builder
-   */
+  /** @return A new, mutable, event handler builder */
   protected final def newEventHandlerBuilder(): EventHandlerBuilder[State, Event] =
     EventHandlerBuilder.builder[State, Event]()
 
-  /**
-   * Override and define the journal plugin id that this actor should use instead of the default.
-   */
+  /** Override and define the journal plugin id that this actor should use instead of the default. */
   def journalPluginId: String = ""
 
-  /**
-   * Override and define the snapshot store plugin id that this actor should use instead of the default.
-   */
+  /** Override and define the snapshot store plugin id that this actor should use instead of the default. */
   def snapshotPluginId: String = ""
 
   /**
@@ -189,15 +177,11 @@ abstract class EventSourcedBehavior[Command, Event, State] private[akka] (
    */
   def snapshotAdapter(): SnapshotAdapter[State] = NoOpSnapshotAdapter.instance[State]
 
-  /**
-   * INTERNAL API: DeferredBehavior init, not for user extension
-   */
+  /** INTERNAL API: DeferredBehavior init, not for user extension */
   @InternalApi override def apply(context: typed.TypedActorContext[Command]): Behavior[Command] =
     createEventSourcedBehavior()
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[akka] final def createEventSourcedBehavior()
       : scaladsl.EventSourcedBehavior[Command, Event, State] = {
     val snapshotWhen: (State, Event, Long) => Boolean = (state, event, seqNr) => shouldSnapshot(state, event, seqNr)
@@ -245,9 +229,7 @@ abstract class EventSourcedBehavior[Command, Event, State] private[akka] (
 
   }
 
-  /**
-   * The last sequence number that was persisted, can only be called from inside the handlers of an `EventSourcedBehavior`
-   */
+  /** The last sequence number that was persisted, can only be called from inside the handlers of an `EventSourcedBehavior` */
   final def lastSequenceNumber(ctx: ActorContext[_]): Long = {
     scaladsl.EventSourcedBehavior.lastSequenceNumber(ctx.asScala)
   }
@@ -290,9 +272,7 @@ abstract class EventSourcedBehaviorWithEnforcedReplies[Command, Event, State](
    */
   override protected def commandHandler(): CommandHandlerWithReply[Command, Event, State]
 
-  /**
-   * @return A new, mutable, command handler builder
-   */
+  /** @return A new, mutable, command handler builder */
   protected def newCommandHandlerWithReplyBuilder(): CommandHandlerWithReplyBuilder[Command, Event, State] = {
     CommandHandlerWithReplyBuilder.builder[Command, Event, State]()
   }

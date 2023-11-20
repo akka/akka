@@ -14,16 +14,12 @@ import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.scaladsl.{ Keep, Source }
 import akka.stream.stage._
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object LazySource {
   def apply[T, M](sourceFactory: () => Source[T, M]) = new LazySource[T, M](sourceFactory)
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] final class LazySource[T, M](sourceFactory: () => Source[T, M])
     extends GraphStageWithMaterializedValue[SourceShape[T], Future[M]] {
   val out = Outlet[T]("LazySource.out")
@@ -41,26 +37,29 @@ import akka.stream.stage._
       }
 
       override def onPull(): Unit = {
-        val source = try {
-          sourceFactory()
-        } catch {
-          case NonFatal(ex) =>
-            matPromise.tryFailure(ex)
-            throw ex
-        }
+        val source =
+          try {
+            sourceFactory()
+          } catch {
+            case NonFatal(ex) =>
+              matPromise.tryFailure(ex)
+              throw ex
+          }
         val subSink = new SubSinkInlet[T]("LazySource")
         subSink.pull()
 
-        setHandler(out, new OutHandler {
-          override def onPull(): Unit = {
-            subSink.pull()
-          }
+        setHandler(
+          out,
+          new OutHandler {
+            override def onPull(): Unit = {
+              subSink.pull()
+            }
 
-          override def onDownstreamFinish(cause: Throwable): Unit = {
-            subSink.cancel(cause)
-            completeStage()
-          }
-        })
+            override def onDownstreamFinish(cause: Throwable): Unit = {
+              subSink.cancel(cause)
+              completeStage()
+            }
+          })
 
         subSink.setHandler(new InHandler {
           override def onPush(): Unit = {

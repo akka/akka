@@ -26,9 +26,7 @@ object RemoteNodeRestartDeathWatchConfig extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
 
-  commonConfig(
-    debugConfig(on = false)
-      .withFallback(ConfigFactory.parseString("""
+  commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString("""
       akka.loglevel = INFO
       akka.remote.use-unsafe-remote-features-outside-cluster = on
     """)))
@@ -103,9 +101,11 @@ abstract class RemoteNodeRestartDeathWatchSpec extends RemotingMultiNodeSpec(Rem
 
         val freshSystem = ActorSystem(
           system.name,
-          ConfigFactory.parseString(s"""
+          ConfigFactory
+            .parseString(s"""
           akka.remote.artery.canonical.port = ${address.port.get}
-          """).withFallback(system.settings.config))
+          """)
+            .withFallback(system.settings.config))
         freshSystem.actorOf(Props[Subject](), "subject")
 
         Await.ready(freshSystem.whenTerminated, 30.seconds)

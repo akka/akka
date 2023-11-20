@@ -21,9 +21,7 @@ import akka.remote.artery.LruBoundedCache
 import akka.util.Unsafe
 import akka.util.unused
 
-/**
- * INTERNAL API: Thread local cache per actor system
- */
+/** INTERNAL API: Thread local cache per actor system */
 private[akka] object ActorRefResolveThreadLocalCache
     extends ExtensionId[ActorRefResolveThreadLocalCache]
     with ExtensionIdProvider {
@@ -37,9 +35,7 @@ private[akka] object ActorRefResolveThreadLocalCache
     new ActorRefResolveThreadLocalCache(system)
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[akka] class ActorRefResolveThreadLocalCache(val system: ExtendedActorSystem) extends Extension {
 
   private val provider = system.provider match {
@@ -59,9 +55,7 @@ private[akka] class ActorRefResolveThreadLocalCache(val system: ExtendedActorSys
 
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[akka] final class ActorRefResolveCache(provider: RemoteActorRefProvider)
     extends AbstractActorRefResolveCache[ActorRef] {
 
@@ -69,9 +63,7 @@ private[akka] final class ActorRefResolveCache(provider: RemoteActorRefProvider)
     provider.internalResolveActorRef(k)
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[akka] abstract class AbstractActorRefResolveCache[R <: ActorRef: ClassTag]
     extends LruBoundedCache[String, R](capacity = 1024, evictAgeThreshold = 600) {
 

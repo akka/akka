@@ -28,9 +28,7 @@ import akka.util.unused
 @InternalApi
 private[akka] object DurableStateBehaviorImpl {
 
-  /**
-   * Used by DurableStateBehaviorTestKit to retrieve the `persistenceId`.
-   */
+  /** Used by DurableStateBehaviorTestKit to retrieve the `persistenceId`. */
   final case class GetPersistenceId(replyTo: ActorRef[PersistenceId]) extends Signal
 
   /**
@@ -120,7 +118,7 @@ private[akka] final case class DurableStateBehaviorImpl[Command, State](
               val innerMsg = msg match {
                 case RecoveryPermitter.RecoveryPermitGranted => InternalProtocol.RecoveryPermitGranted
                 case internal: InternalProtocol              => internal // such as RecoveryTimeout
-                case cmd                                     => InternalProtocol.IncomingCommand(cmd.asInstanceOf[Command])
+                case cmd => InternalProtocol.IncomingCommand(cmd.asInstanceOf[Command])
               }
               target(ctx, innerMsg)
             }

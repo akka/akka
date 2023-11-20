@@ -76,9 +76,7 @@ private[akka] final class FunctionRef[-T](override val path: ActorPath, send: (T
     this(new ActorSystemStub("StubbedActorContext"), name, currentBehaviorProvider)
   }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[akka] val selfInbox = new TestInboxImpl[T](path)
 
   override val self = selfInbox.ref
@@ -160,9 +158,7 @@ private[akka] final class FunctionRef[-T](override val path: ActorPath, send: (T
   // TODO allow overriding of this
   override def executionContext: ExecutionContextExecutor = system.executionContext
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[akka] def internalSpawnMessageAdapter[U](f: U => T, name: String): ActorRef[U] = {
 
     val n = if (name != "") s"${childName.next()}-$name" else childName.next()
@@ -170,12 +166,14 @@ private[akka] final class FunctionRef[-T](override val path: ActorPath, send: (T
     val i = new BehaviorTestKitImpl[U](system, p, BehaviorImpl.ignore)
     _children += p.name -> i
 
-    new FunctionRef[U](p, (message, _) => {
-      val m = f(message);
-      if (m != null) {
-        selfInbox.ref ! m; i.selfInbox().ref ! message
-      }
-    })
+    new FunctionRef[U](
+      p,
+      (message, _) => {
+        val m = f(message);
+        if (m != null) {
+          selfInbox.ref ! m; i.selfInbox().ref ! message
+        }
+      })
   }
 
   /**
@@ -198,9 +196,7 @@ private[akka] final class FunctionRef[-T](override val path: ActorPath, send: (T
     btk.as
   }
 
-  /**
-   * Retrieve the inbox representing the child actor with the given name.
-   */
+  /** Retrieve the inbox representing the child actor with the given name. */
   def childInbox[U](name: String): Option[TestInboxImpl[U]] = _children.get(name).map(_.context.selfInbox.as[U])
 
   /**
@@ -264,23 +260,17 @@ private[akka] final class FunctionRef[-T](override val path: ActorPath, send: (T
     }
   }
 
-  /**
-   * Clear the log entries.
-   */
+  /** Clear the log entries. */
   def clearLog(): Unit =
     substituteLoggerFactory.getEventQueue.clear()
 
   override private[akka] def onUnhandled(msg: T): Unit =
     unhandled = msg :: unhandled
 
-  /**
-   * Messages that are marked as unhandled.
-   */
+  /** Messages that are marked as unhandled. */
   def unhandledMessages: List[T] = unhandled.reverse
 
-  /**
-   * Clear the list of captured unhandled messages.
-   */
+  /** Clear the list of captured unhandled messages. */
   def clearUnhandled(): Unit = unhandled = Nil
 
   override private[akka] def currentBehavior: Behavior[T] = currentBehaviorProvider()

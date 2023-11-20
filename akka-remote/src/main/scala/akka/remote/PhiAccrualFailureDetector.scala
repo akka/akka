@@ -60,14 +60,10 @@ class PhiAccrualFailureDetector(
     val minStdDeviation: FiniteDuration,
     val acceptableHeartbeatPause: FiniteDuration,
     val firstHeartbeatEstimate: FiniteDuration,
-    eventStream: Option[EventStream])(
-    implicit
-    clock: Clock)
+    eventStream: Option[EventStream])(implicit clock: Clock)
     extends FailureDetector {
 
-  /**
-   * Constructor without eventStream to support backwards compatibility
-   */
+  /** Constructor without eventStream to support backwards compatibility */
   def this(
       threshold: Double,
       maxSampleSize: Int,

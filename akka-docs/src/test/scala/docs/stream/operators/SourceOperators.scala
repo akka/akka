@@ -12,7 +12,7 @@ object SourceOperators {
   implicit val system: ActorSystem = ???
 
   def fromFuture(): Unit = {
-    //#sourceFromFuture
+    // #sourceFromFuture
 
     import akka.actor.ActorSystem
     import akka.stream.scaladsl._
@@ -23,12 +23,12 @@ object SourceOperators {
     val source: Source[Int, NotUsed] = Source.future(Future.successful(10))
     val sink: Sink[Int, Future[Done]] = Sink.foreach((i: Int) => println(i))
 
-    val done: Future[Done] = source.runWith(sink) //10
-    //#sourceFromFuture
+    val done: Future[Done] = source.runWith(sink) // 10
+    // #sourceFromFuture
   }
 
   def actorRef(): Unit = {
-    //#actorRef
+    // #actorRef
     import akka.Done
     import akka.actor.ActorRef
     import akka.stream.OverflowStrategy
@@ -36,10 +36,9 @@ object SourceOperators {
     import akka.stream.scaladsl._
 
     val source: Source[Any, ActorRef] = Source.actorRef(
-      completionMatcher = {
-        case Done =>
-          // complete stream immediately if we send it Done
-          CompletionStrategy.immediately
+      completionMatcher = { case Done =>
+        // complete stream immediately if we send it Done
+        CompletionStrategy.immediately
       },
       // never fail the stream because of a message
       failureMatcher = PartialFunction.empty,
@@ -52,11 +51,11 @@ object SourceOperators {
 
     // The stream completes successfully with the following message
     actorRef ! Done
-    //#actorRef
+    // #actorRef
   }
 
   def actorRefWithBackpressure(): Unit = {
-    //#actorRefWithBackpressure
+    // #actorRefWithBackpressure
 
     import akka.actor.Status.Success
     import akka.actor.ActorRef
@@ -68,8 +67,8 @@ object SourceOperators {
     val source: Source[String, ActorRef] = Source.actorRefWithBackpressure[String](
       ackMessage = "ack",
       // complete when we send akka.actor.status.Success
-      completionMatcher = {
-        case _: Success => CompletionStrategy.immediately
+      completionMatcher = { case _: Success =>
+        CompletionStrategy.immediately
       },
       // do not fail on any message
       failureMatcher = PartialFunction.empty)
@@ -82,11 +81,11 @@ object SourceOperators {
 
     // The stream completes successfully with the following message
     actorRef ! Success(())
-    //#actorRefWithBackpressure
+    // #actorRefWithBackpressure
   }
 
   def maybe(): Unit = {
-    //#maybe
+    // #maybe
     import akka.stream.scaladsl._
     import scala.concurrent.Promise
 
@@ -98,6 +97,6 @@ object SourceOperators {
     // a new Promise is returned when the stream is materialized
     val promise2 = source.run()
     promise2.success(Some(2)) // prints 2
-    //#maybe
+    // #maybe
   }
 }

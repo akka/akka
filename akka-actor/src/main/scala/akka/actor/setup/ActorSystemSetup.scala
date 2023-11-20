@@ -32,15 +32,11 @@ object ActorSystemSetup {
 
   val empty = new ActorSystemSetup(Map.empty)
 
-  /**
-   * Scala API: Create an [[ActorSystemSetup]] containing all the provided settings
-   */
+  /** Scala API: Create an [[ActorSystemSetup]] containing all the provided settings */
   def apply(settings: Setup*): ActorSystemSetup =
     new ActorSystemSetup(settings.map(s => s.getClass -> s).toMap)
 
-  /**
-   * Java API: Create an [[ActorSystemSetup]] containing all the provided settings
-   */
+  /** Java API: Create an [[ActorSystemSetup]] containing all the provided settings */
   @varargs
   def create(settings: Setup*): ActorSystemSetup = apply(settings: _*)
 }
@@ -53,16 +49,12 @@ object ActorSystemSetup {
  */
 final class ActorSystemSetup private[akka] (@InternalApi private[akka] val setups: Map[Class[_], AnyRef]) {
 
-  /**
-   * Java API: Extract a concrete [[Setup]] of type `T` if it is defined in the settings.
-   */
+  /** Java API: Extract a concrete [[Setup]] of type `T` if it is defined in the settings. */
   def get[T <: Setup](clazz: Class[T]): Optional[T] = {
     setups.get(clazz).map(_.asInstanceOf[T]).asJava
   }
 
-  /**
-   * Scala API: Extract a concrete [[Setup]] of type `T` if it is defined in the settings.
-   */
+  /** Scala API: Extract a concrete [[Setup]] of type `T` if it is defined in the settings. */
   def get[T <: Setup: ClassTag]: Option[T] = {
     val clazz = implicitly[ClassTag[T]].runtimeClass
     setups.get(clazz).map(_.asInstanceOf[T])

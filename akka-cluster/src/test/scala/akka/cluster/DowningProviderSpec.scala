@@ -39,7 +39,8 @@ class DummyDowningProvider(@unused system: ActorSystem) extends DowningProvider 
 
 class DowningProviderSpec extends AnyWordSpec with Matchers {
 
-  val baseConf = ConfigFactory.parseString("""
+  val baseConf = ConfigFactory
+    .parseString("""
       akka {
         loglevel = WARNING
         actor.provider = "cluster"
@@ -50,7 +51,8 @@ class DowningProviderSpec extends AnyWordSpec with Matchers {
           }
         }
       }
-    """).withFallback(ConfigFactory.load())
+    """)
+    .withFallback(ConfigFactory.load())
 
   "The downing provider mechanism" should {
 
@@ -63,9 +65,11 @@ class DowningProviderSpec extends AnyWordSpec with Matchers {
     "use the specified downing provider" in {
       val system = ActorSystem(
         "auto-downing",
-        ConfigFactory.parseString("""
+        ConfigFactory
+          .parseString("""
           akka.cluster.downing-provider-class="akka.cluster.DummyDowningProvider"
-        """).withFallback(baseConf))
+        """)
+          .withFallback(baseConf))
 
       Cluster(system).downingProvider shouldBe a[DummyDowningProvider]
       awaitCond(Cluster(system).downingProvider.asInstanceOf[DummyDowningProvider].actorPropsAccessed.get(), 3.seconds)
@@ -76,18 +80,20 @@ class DowningProviderSpec extends AnyWordSpec with Matchers {
       // race condition where the downing provider failure can be detected and trigger
       // graceful shutdown fast enough that creating the actor system throws on constructing
       // thread (or slow enough that we have time to try join the cluster before noticing)
-      val maybeSystem = try {
-        Some(
-          ActorSystem(
-            "auto-downing",
-            ConfigFactory.parseString("""
+      val maybeSystem =
+        try {
+          Some(
+            ActorSystem(
+              "auto-downing",
+              ConfigFactory
+                .parseString("""
           akka.cluster.downing-provider-class="akka.cluster.FailingDowningProvider"
         """).withFallback(baseConf)))
-      } catch {
-        case NonFatal(_) =>
-          // expected to sometimes happen
-          None
-      }
+        } catch {
+          case NonFatal(_) =>
+            // expected to sometimes happen
+            None
+        }
 
       maybeSystem.foreach { system =>
         val cluster = Cluster(system)

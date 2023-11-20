@@ -32,9 +32,7 @@ import akka.actor.typed.internal.InternalRecipientRef
 import akka.actor.typed.receptionist.Receptionist
 import akka.annotation.InternalApi
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @nowarn
 @InternalApi private[akka] final class ActorSystemStub(
     val name: String,
@@ -133,7 +131,7 @@ import akka.annotation.InternalApi
     // this is backward compatible with the old behaviour, hence it uses the loader used to load the test-kit
     // which is not necessarily the one used to load the tests...
     // hence this might not include reference config related to the actually executing test
-    //todo: might be better NOT to pass any class loader and let typesafeConfig rely on the contextClassLoader
+    // todo: might be better NOT to pass any class loader and let typesafeConfig rely on the contextClassLoader
     // (which is usually the system class loader)
     def defaultReference: Config = ConfigFactory.defaultReference(getClass.getClassLoader)
   }

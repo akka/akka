@@ -320,17 +320,18 @@ class FlowMapAsyncUnorderedSpec extends StreamSpec {
         val delay = 50000 // nanoseconds
         var count = 0
         @tailrec final override def run(): Unit = {
-          val cont = try {
-            val (promise, enqueued) = queue.take()
-            val wakeup = enqueued + delay
-            while (System.nanoTime() < wakeup) {}
-            counter.decrementAndGet()
-            promise.success(count)
-            count += 1
-            true
-          } catch {
-            case _: InterruptedException => false
-          }
+          val cont =
+            try {
+              val (promise, enqueued) = queue.take()
+              val wakeup = enqueued + delay
+              while (System.nanoTime() < wakeup) {}
+              counter.decrementAndGet()
+              promise.success(count)
+              count += 1
+              true
+            } catch {
+              case _: InterruptedException => false
+            }
           if (cont) run()
         }
       }

@@ -57,8 +57,8 @@ abstract class ClusterConsistentHashingGroupSpec
     }
 
     "send to same destinations from different nodes" taggedAs LongRunningTest in {
-      def hashMapping: ConsistentHashMapping = {
-        case s: String => s
+      def hashMapping: ConsistentHashMapping = { case s: String =>
+        s
       }
       val paths = List("/user/dest")
       val router = system.actorOf(

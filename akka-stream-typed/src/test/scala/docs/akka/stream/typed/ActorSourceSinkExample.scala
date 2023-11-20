@@ -24,15 +24,18 @@ object ActorSourceSinkExample {
     case object Complete extends Protocol
     case class Fail(ex: Exception) extends Protocol
 
-    val source: Source[Protocol, ActorRef[Protocol]] = ActorSource.actorRef[Protocol](completionMatcher = {
-      case Complete =>
-    }, failureMatcher = {
-      case Fail(ex) => ex
-    }, bufferSize = 8, overflowStrategy = OverflowStrategy.fail)
+    val source: Source[Protocol, ActorRef[Protocol]] = ActorSource.actorRef[Protocol](
+      completionMatcher = { case Complete =>
+      },
+      failureMatcher = { case Fail(ex) =>
+        ex
+      },
+      bufferSize = 8,
+      overflowStrategy = OverflowStrategy.fail)
 
     val ref = source
-      .collect {
-        case Message(msg) => msg
+      .collect { case Message(msg) =>
+        msg
       }
       .to(Sink.foreach(println))
       .run()
@@ -74,16 +77,16 @@ object ActorSourceSinkExample {
             ackTo = ackReceiver,
             ackMessage = Emitted,
             // complete when we send ReachedEnd
-            completionMatcher = {
-              case ReachedEnd => CompletionStrategy.draining
+            completionMatcher = { case ReachedEnd =>
+              CompletionStrategy.draining
             },
-            failureMatcher = {
-              case FailureOccured(ex) => ex
+            failureMatcher = { case FailureOccured(ex) =>
+              ex
             })
 
         val streamActor: ActorRef[Event] = source
-          .collect {
-            case Element(msg) => msg
+          .collect { case Element(msg) =>
+            msg
           }
           .to(Sink.foreach(println))
           .run()
@@ -166,7 +169,7 @@ object ActorSourceSinkExample {
       onInitMessage = (responseActorRef: ActorRef[Ack]) => Init(responseActorRef),
       ackMessage = Ack,
       onCompleteMessage = Complete,
-      onFailureMessage = (exception) => Fail(exception))
+      onFailureMessage = exception => Fail(exception))
 
     Source.single("msg1").runWith(sink)
     // #actor-sink-ref-with-backpressure

@@ -30,15 +30,13 @@ object RecoveryPermitterSpec {
       probe ! "postStop"
     }
 
-    override def receiveRecover: Receive = {
-      case RecoveryCompleted =>
-        probe ! RecoveryCompleted
-        if (throwFromRecoveryCompleted)
-          throw new TestExc
+    override def receiveRecover: Receive = { case RecoveryCompleted =>
+      probe ! RecoveryCompleted
+      if (throwFromRecoveryCompleted)
+        throw new TestExc
     }
-    override def receiveCommand: Receive = {
-      case "stop" =>
-        context.stop(self)
+    override def receiveCommand: Receive = { case "stop" =>
+      context.stop(self)
     }
   }
 

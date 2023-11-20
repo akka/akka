@@ -37,9 +37,7 @@ abstract class Lease(val settings: LeaseSettings) {
    */
   def acquire(leaseLostCallback: Option[Throwable] => Unit): Future[Boolean]
 
-  /**
-   * Release the lease so some other owner can acquire it.
-   */
+  /** Release the lease so some other owner can acquire it. */
   def release(): Future[Boolean]
 
   /**

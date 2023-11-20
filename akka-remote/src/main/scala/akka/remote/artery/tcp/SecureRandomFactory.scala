@@ -11,16 +11,12 @@ import com.typesafe.config.Config
 import akka.annotation.InternalApi
 import akka.event.MarkerLoggingAdapter
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object SecureRandomFactory {
 
   val GeneratorJdkSecureRandom = "SecureRandom"
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi
   // extracted as a method for testing
   private[tcp] def rngConfig(config: Config) = {

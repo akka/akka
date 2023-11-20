@@ -24,8 +24,7 @@ import akka.stream.scaladsl.Sink
 import akka.stream.testkit.scaladsl.TestSink
 
 object EventsByPersistenceIdTypedSpec {
-  val config = PersistenceTestKitPlugin.config.withFallback(
-    ConfigFactory.parseString("""
+  val config = PersistenceTestKitPlugin.config.withFallback(ConfigFactory.parseString("""
     akka.loglevel = DEBUG
     akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
     akka.persistence.testkit.events.serialize = off
@@ -96,7 +95,7 @@ class EventsByPersistenceIdTypedSpec
 
       val currentResult =
         queries.currentEventsByPersistenceIdTyped[String]("d", 0L, Long.MaxValue).runWith(Sink.seq).futureValue
-      currentResult should have size (4)
+      currentResult should have size 4
       currentResult.last should ===(envelope)
     }
   }

@@ -22,17 +22,17 @@ import akka.serialization.jackson.CborSerializable
  */
 object AccountExampleWithCommandHandlersInDurableState {
 
-  //#account-entity
+  // #account-entity
   object AccountEntity {
     // Command
-    //#reply-command
+    // #reply-command
     sealed trait Command extends CborSerializable
-    //#reply-command
+    // #reply-command
     final case class CreateAccount(replyTo: ActorRef[StatusReply[Done]]) extends Command
     final case class Deposit(amount: BigDecimal, replyTo: ActorRef[StatusReply[Done]]) extends Command
-    //#reply-command
+    // #reply-command
     final case class Withdraw(amount: BigDecimal, replyTo: ActorRef[StatusReply[Done]]) extends Command
-    //#reply-command
+    // #reply-command
     final case class GetBalance(replyTo: ActorRef[CurrentBalance]) extends Command
     final case class CloseAccount(replyTo: ActorRef[StatusReply[Done]]) extends Command
 
@@ -85,7 +85,7 @@ object AccountExampleWithCommandHandlersInDurableState {
         balance - amount >= Zero
       }
 
-      //#reply
+      // #reply
       private def deposit(cmd: Deposit) = {
         Effect.persist(copy(balance = balance + cmd.amount)).thenReply(cmd.replyTo)(_ => StatusReply.Ack)
       }
@@ -97,7 +97,7 @@ object AccountExampleWithCommandHandlersInDurableState {
           Effect.reply(cmd.replyTo)(
             StatusReply.Error(s"Insufficient balance ${balance} to be able to withdraw ${cmd.amount}"))
       }
-      //#reply
+      // #reply
 
     }
     case object ClosedAccount extends Account {
@@ -123,13 +123,13 @@ object AccountExampleWithCommandHandlersInDurableState {
     val TypeKey: EntityTypeKey[Command] =
       EntityTypeKey[Command]("Account")
 
-    //#withEnforcedReplies
+    // #withEnforcedReplies
     def apply(persistenceId: PersistenceId): Behavior[Command] = {
       DurableStateBehavior
         .withEnforcedReplies[Command, Account](persistenceId, EmptyAccount, (state, cmd) => state.applyCommand(cmd))
     }
-    //#withEnforcedReplies
+    // #withEnforcedReplies
   }
-  //#account-entity
+  // #account-entity
 
 }

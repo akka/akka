@@ -12,11 +12,11 @@ object Intersperse extends App {
 
   implicit val system: ActorSystem = ActorSystem()
 
-  //#intersperse
+  // #intersperse
   Source(1 to 4).map(_.toString).intersperse("[", ", ", "]").runWith(Sink.foreach(print))
   // prints
   // [1, 2, 3, 4]
-  //#intersperse
+  // #intersperse
 
   system.terminate()
 }

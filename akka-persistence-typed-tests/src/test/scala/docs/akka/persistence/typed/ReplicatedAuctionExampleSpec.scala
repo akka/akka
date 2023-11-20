@@ -32,12 +32,12 @@ import akka.serialization.jackson.CborSerializable
 
 object ReplicatedAuctionExampleSpec {
 
-  //#setup
+  // #setup
   object AuctionEntity {
 
-    //#setup
+    // #setup
 
-    //#commands
+    // #commands
     type MoneyAmount = Int
 
     case class Bid(bidder: String, offer: MoneyAmount, timestamp: Instant, originReplica: ReplicaId)
@@ -48,17 +48,17 @@ object ReplicatedAuctionExampleSpec {
     final case class GetHighestBid(replyTo: ActorRef[Bid]) extends Command
     final case class IsClosed(replyTo: ActorRef[Boolean]) extends Command
     private case object Close extends Command // Internal, should not be sent from the outside
-    //#commands
+    // #commands
 
-    //#events
+    // #events
     sealed trait Event extends CborSerializable
     final case class BidRegistered(bid: Bid) extends Event
     final case class AuctionFinished(atReplica: ReplicaId) extends Event
     final case class WinnerDecided(atReplica: ReplicaId, winningBid: Bid, highestCounterOffer: MoneyAmount)
         extends Event
-    //#events
+    // #events
 
-    //#phase
+    // #phase
     /**
      * The auction passes through several workflow phases.
      * First, in `Running` `OfferBid` commands are accepted.
@@ -78,15 +78,14 @@ object ReplicatedAuctionExampleSpec {
      * When the responsible DC has seen all `AuctionFinished` events from other DCs
      * all other events have also been propagated and it can persist `WinnerDecided` and
      * the auction is finally `Closed`.
-     *
      */
     sealed trait AuctionPhase
     case object Running extends AuctionPhase
     final case class Closing(finishedAtReplica: Set[ReplicaId]) extends AuctionPhase
     case object Closed extends AuctionPhase
-    //#phase
+    // #phase
 
-    //#state
+    // #state
     case class AuctionState(phase: AuctionPhase, highestBid: Bid, highestCounterOffer: MoneyAmount)
         extends CborSerializable {
 
@@ -113,7 +112,9 @@ object ReplicatedAuctionExampleSpec {
       def withNewHighestBid(bid: Bid): AuctionState = {
         require(phase != Closed)
         require(isHigherBid(bid, highestBid))
-        copy(highestBid = bid, highestCounterOffer = highestBid.offer // keep last highest bid around
+        copy(
+          highestBid = bid,
+          highestCounterOffer = highestBid.offer // keep last highest bid around
         )
       }
 
@@ -132,9 +133,9 @@ object ReplicatedAuctionExampleSpec {
         (first.offer == second.offer && first.timestamp.equals(second.timestamp) && first.originReplica.id
           .compareTo(second.originReplica.id) < 0)
     }
-    //#state
+    // #state
 
-    //#setup
+    // #setup
     def apply(
         replica: ReplicaId,
         name: String,
@@ -169,8 +170,8 @@ object ReplicatedAuctionExampleSpec {
         replicationContext.persistenceId,
         AuctionState(phase = Running, highestBid = initialBid, highestCounterOffer = initialBid.offer),
         commandHandler,
-        eventHandler).receiveSignal {
-        case (state, RecoveryCompleted) => recoveryCompleted(state)
+        eventHandler).receiveSignal { case (state, RecoveryCompleted) =>
+        recoveryCompleted(state)
       }
 
     private def recoveryCompleted(state: AuctionState): Unit = {
@@ -180,9 +181,9 @@ object ReplicatedAuctionExampleSpec {
       val millisUntilClosing = closingAt.toEpochMilli - replicationContext.currentTimeMillis()
       timers.startSingleTimer(Finish, millisUntilClosing.millis)
     }
-    //#setup
+    // #setup
 
-    //#command-handler
+    // #command-handler
     def commandHandler(state: AuctionState, command: Command): Effect[Event, AuctionState] = {
       state.phase match {
         case Closing(_) | Closed =>
@@ -230,9 +231,9 @@ object ReplicatedAuctionExampleSpec {
           }
       }
     }
-    //#command-handler
+    // #command-handler
 
-    //#event-handler
+    // #event-handler
     def eventHandler(state: AuctionState, event: Event): AuctionState = {
 
       val newState = state.applyEvent(event)
@@ -244,9 +245,9 @@ object ReplicatedAuctionExampleSpec {
 
     }
 
-    //#event-handler
+    // #event-handler
 
-    //#event-triggers
+    // #event-triggers
     private def eventTriggers(event: Event, newState: AuctionState): Unit = {
       event match {
         case finished: AuctionFinished =>
@@ -284,11 +285,11 @@ object ReplicatedAuctionExampleSpec {
           false
       })
     }
-    //#event-triggers
+    // #event-triggers
 
-    //#setup
+    // #setup
   }
-  //#setup
+  // #setup
 }
 
 class ReplicatedAuctionExampleSpec

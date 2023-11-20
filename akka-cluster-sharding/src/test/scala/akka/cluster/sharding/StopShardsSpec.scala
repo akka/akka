@@ -60,10 +60,9 @@ object StopShardsSpec {
 
   case class Pong(actorRef: ActorRef)
   class EntityActor extends Actor with ActorLogging {
-    override def receive: Receive = {
-      case _ =>
-        log.debug("ping")
-        sender() ! context.self
+    override def receive: Receive = { case _ =>
+      log.debug("ping")
+      sender() ! context.self
     }
   }
 }
@@ -93,10 +92,12 @@ class StopShardsSpec extends AkkaSpec(StopShardsSpec.config) with WithLogCapturi
       awaitAssert(Cluster(sysB).selfMember.status shouldEqual MemberStatus.Up, 3.seconds)
 
       // wait for all regions to be registered
-      pA.awaitAssert({
-        regionA.tell(GetCurrentRegions, pA.ref)
-        pA.expectMsgType[CurrentRegions].regions should have size (2)
-      }, 10.seconds)
+      pA.awaitAssert(
+        {
+          regionA.tell(GetCurrentRegions, pA.ref)
+          pA.expectMsgType[CurrentRegions].regions should have size 2
+        },
+        10.seconds)
     }
 
     "start entities in a few shards, then stop the shards" in {

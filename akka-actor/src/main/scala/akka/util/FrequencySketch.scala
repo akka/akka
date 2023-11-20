@@ -66,7 +66,7 @@ private[akka] object FrequencySketch {
  * INTERNAL API
  *
  * A frequency sketch for estimating the popularity of items. For implementing the TinyLFU cache admission policy.
-
+ *
  * This is a generalised frequency sketch with configurable depth (number of hash functions) and counter size.
  *
  * The matrix of counters is a two-dimensional array of longs, which each hold multiple counters depending on the
@@ -128,9 +128,7 @@ private[akka] final class FrequencySketch[A](
   private[this] val rowSizes = Array.ofDim[Int](depth)
   private[this] var updatedSize = 0
 
-  /**
-   * Get the current size of the sketch (the number of incremented counters).
-   */
+  /** Get the current size of the sketch (the number of incremented counters). */
   def size: Int = updatedSize
 
   /**
@@ -214,9 +212,7 @@ private[akka] final class FrequencySketch[A](
   def toDebugString: String = FrequencySketchUtil.debugString(matrix, rowWidth, slots, counterWidth, counterMask)
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] object FastFrequencySketch {
 
@@ -239,7 +235,7 @@ private[akka] object FastFrequencySketch {
  * INTERNAL API
  *
  * A faster implementation of the frequency sketch (around twice as fast).
-
+ *
  * This frequency sketch uses a fixed depth (number of hash functions) of 4 and a counter size of 4 bits (0-15),
  * so that constants can be used for improved efficiency. It also uses its own rehashing of item hash codes.
  *
@@ -255,17 +251,17 @@ private[akka] final class FastFrequencySketch[A](width: Int, resetSize: Int) {
 
   private final val Depth = 4
   private final val SlotShift = 4
-  private final val SlotMask = 0xF
+  private final val SlotMask = 0xf
   private final val CounterShift = 2
-  private final val CounterMask = 0xFL
+  private final val CounterMask = 0xfL
   private final val OddMask = 0x1111111111111111L
   private final val ResetMask = 0x7777777777777777L
 
   // seeds are large primes between 2^63 and 2^64
-  private final val Seed0 = 0xC3A5C85C97CB3127L
-  private final val Seed1 = 0xB492B66FBE98F273L
-  private final val Seed2 = 0x9AE16A3B2F90404FL
-  private final val Seed3 = 0xCBF29CE484222325L
+  private final val Seed0 = 0xc3a5c85c97cb3127L
+  private final val Seed1 = 0xb492b66fbe98f273L
+  private final val Seed2 = 0x9ae16a3b2f90404fL
+  private final val Seed3 = 0xcbf29ce484222325L
 
   private[this] val rowWidth = math.max(1, width >>> SlotShift)
   private[this] val indexMask = width - 1
@@ -348,15 +344,11 @@ private[akka] final class FastFrequencySketch[A](width: Int, resetSize: Int) {
     FrequencySketchUtil.debugString(matrix, rowWidth, slots = 16, counterWidth = 4, CounterMask)
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] object FrequencySketchUtil {
 
-  /**
-   * Create a pretty table with all the frequency sketch counters for debugging (smaller) sketches.
-   */
+  /** Create a pretty table with all the frequency sketch counters for debugging (smaller) sketches. */
   def debugString(
       matrix: Array[Array[Long]],
       rowWidth: Int,

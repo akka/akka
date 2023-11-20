@@ -16,9 +16,7 @@ import akka.actor.typed.internal.PropsImpl._
 import akka.annotation.InternalApi
 import akka.dispatch.Mailboxes
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object PropsAdapter {
 
   private final val TypedCreatorFunctionConsumerClazz = classOf[TypedCreatorFunctionConsumer]

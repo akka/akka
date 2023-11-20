@@ -22,8 +22,8 @@ class SupervisorTreeSpec extends AkkaSpec with ImplicitSender with DefaultTimeou
           val p = Props(new Actor {
             override val supervisorStrategy =
               OneForOneStrategy(maxNrOfRetries = 3, withinTimeRange = 1 second)(List(classOf[Exception]))
-            def receive = {
-              case p: Props => sender() ! context.actorOf(p)
+            def receive = { case p: Props =>
+              sender() ! context.actorOf(p)
             }
             override def preRestart(cause: Throwable, msg: Option[Any]): Unit = { testActor ! self.path }
           })

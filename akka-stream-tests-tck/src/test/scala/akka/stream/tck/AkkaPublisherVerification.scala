@@ -38,6 +38,7 @@ abstract class AkkaPublisherVerification[T](val env: TestEnvironment, publisherS
 
   def iterable(elements: Long): immutable.Iterable[Int] =
     if (elements > Int.MaxValue)
-      new immutable.Iterable[Int] { override def iterator = Iterator.from(0) } else
+      new immutable.Iterable[Int] { override def iterator = Iterator.from(0) }
+    else
       0 until elements.toInt
 }

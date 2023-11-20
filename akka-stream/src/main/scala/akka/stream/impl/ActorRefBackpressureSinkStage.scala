@@ -13,9 +13,7 @@ import akka.stream.Attributes.InputBuffer
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.stage._
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] class ActorRefBackpressureSinkStage[In](
     ref: ActorRef,
     messageAdapter: ActorRef => In => Any,
@@ -53,7 +51,7 @@ import akka.stream.stage._
               if (buffer.size() == maxBuffer) tryPull(in)
               dequeueAndSend()
             }
-          case _ => //ignore all other messages
+          case _ => // ignore all other messages
         }
       }
 

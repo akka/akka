@@ -25,10 +25,9 @@ object ActorThreadSpec {
     final case class Msg(i: Int, replyTo: ActorRef[Int])
 
     def apply(): Behavior[Msg] =
-      Behaviors.receiveMessage {
-        case Msg(i, replyTo) =>
-          replyTo ! i
-          Behaviors.same
+      Behaviors.receiveMessage { case Msg(i, replyTo) =>
+        replyTo ! i
+        Behaviors.same
       }
   }
 
@@ -60,18 +59,17 @@ class ActorThreadSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike wit
     "detect illegal access to ActorContext from other thread when processing message" in {
       val probe = createTestProbe[UnsupportedOperationException]()
 
-      val ref = spawn(Behaviors.receive[CountDownLatch] {
-        case (context, latch) =>
-          Future {
-            try {
-              context.children
-            } catch {
-              case e: UnsupportedOperationException =>
-                probe.ref ! e
-            }
-          }(context.executionContext)
-          latch.await(5, TimeUnit.SECONDS)
-          Behaviors.same
+      val ref = spawn(Behaviors.receive[CountDownLatch] { case (context, latch) =>
+        Future {
+          try {
+            context.children
+          } catch {
+            case e: UnsupportedOperationException =>
+              probe.ref ! e
+          }
+        }(context.executionContext)
+        latch.await(5, TimeUnit.SECONDS)
+        Behaviors.same
       })
 
       val l = new CountDownLatch(1)
@@ -86,19 +84,18 @@ class ActorThreadSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike wit
     "detect illegal access to ActorContext from other thread after processing message" in {
       val probe = createTestProbe[UnsupportedOperationException]()
 
-      val ref = spawn(Behaviors.receive[CountDownLatch] {
-        case (context, latch) =>
-          Future {
-            try {
-              latch.await(5, TimeUnit.SECONDS)
-              context.children
-            } catch {
-              case e: UnsupportedOperationException =>
-                probe.ref ! e
-            }
-          }(context.executionContext)
+      val ref = spawn(Behaviors.receive[CountDownLatch] { case (context, latch) =>
+        Future {
+          try {
+            latch.await(5, TimeUnit.SECONDS)
+            context.children
+          } catch {
+            case e: UnsupportedOperationException =>
+              probe.ref ! e
+          }
+        }(context.executionContext)
 
-          Behaviors.stopped
+        Behaviors.stopped
       })
 
       val l = new CountDownLatch(1)
@@ -114,19 +111,18 @@ class ActorThreadSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike wit
     "detect illegal access from child" in {
       val probe = createTestProbe[UnsupportedOperationException]()
 
-      val ref = spawn(Behaviors.receive[String] {
-        case (context, _) =>
-          // really bad idea to define a child actor like this
-          context.spawnAnonymous(Behaviors.setup[String] { _ =>
-            try {
-              context.children
-            } catch {
-              case e: UnsupportedOperationException =>
-                probe.ref ! e
-            }
-            Behaviors.empty
-          })
-          Behaviors.same
+      val ref = spawn(Behaviors.receive[String] { case (context, _) =>
+        // really bad idea to define a child actor like this
+        context.spawnAnonymous(Behaviors.setup[String] { _ =>
+          try {
+            context.children
+          } catch {
+            case e: UnsupportedOperationException =>
+              probe.ref ! e
+          }
+          Behaviors.empty
+        })
+        Behaviors.same
       })
 
       ref ! "hello"

@@ -103,6 +103,6 @@ private[metrics] trait MetricsPrefix extends MetricSet {
   abstract override def getMetrics: util.Map[String, Metric] = {
     // does not have to be fast, is only called once during registering registry
     import akka.util.ccompat.JavaConverters._
-    (super.getMetrics.asScala.map { case (k, v) => (prefix / k).toString -> v }).asJava
+    super.getMetrics.asScala.map { case (k, v) => (prefix / k).toString -> v }.asJava
   }
 }

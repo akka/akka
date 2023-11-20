@@ -188,8 +188,8 @@ class FusedGraphsBenchmark {
         .buffer(10, OverflowStrategy.backpressure)
         .toMat(testSink)(Keep.right))
 
-    val broadcastZipFlow: Flow[MutableElement, MutableElement, NotUsed] = Flow.fromGraph(GraphDSL.create() {
-      implicit b =>
+    val broadcastZipFlow: Flow[MutableElement, MutableElement, NotUsed] =
+      Flow.fromGraph(GraphDSL.create() { implicit b =>
         import GraphDSL.Implicits._
 
         val bcast = b.add(Broadcast[MutableElement](2))
@@ -199,10 +199,10 @@ class FusedGraphsBenchmark {
         bcast ~> zip.in1
 
         FlowShape(bcast.in, zip.out.map(_._1).outlet)
-    })
+      })
 
-    val balanceMergeFlow: Flow[MutableElement, MutableElement, NotUsed] = Flow.fromGraph(GraphDSL.create() {
-      implicit b =>
+    val balanceMergeFlow: Flow[MutableElement, MutableElement, NotUsed] =
+      Flow.fromGraph(GraphDSL.create() { implicit b =>
         import GraphDSL.Implicits._
 
         val balance = b.add(Balance[MutableElement](2))
@@ -212,7 +212,7 @@ class FusedGraphsBenchmark {
         balance ~> merge
 
         FlowShape(balance.in, merge.out)
-    })
+      })
 
     broadcastZip = fuse(testSource.via(broadcastZipFlow).toMat(testSink)(Keep.right))
 

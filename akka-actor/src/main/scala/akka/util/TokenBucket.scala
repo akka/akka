@@ -4,9 +4,7 @@
 
 package akka.util
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[akka] abstract class TokenBucket(capacity: Long, nanosBetweenTokens: Long) {
   require(capacity >= 0, "Capacity must be non-negative.")
   require(nanosBetweenTokens > 0, "Time between tokens must be larger than zero nanoseconds.")
@@ -14,9 +12,7 @@ private[akka] abstract class TokenBucket(capacity: Long, nanosBetweenTokens: Lon
   private[this] var availableTokens: Long = _
   private[this] var lastUpdate: Long = _
 
-  /**
-   * This method must be called before the token bucket can be used.
-   */
+  /** This method must be called before the token bucket can be used. */
   def init(): Unit = {
     availableTokens = capacity
     lastUpdate = currentTime
@@ -81,9 +77,7 @@ private[akka] abstract class TokenBucket(capacity: Long, nanosBetweenTokens: Lon
 
 }
 
-/**
- * Default implementation of [[TokenBucket]] that uses `System.nanoTime` as the time source.
- */
+/** Default implementation of [[TokenBucket]] that uses `System.nanoTime` as the time source. */
 final class NanoTimeTokenBucket(_cap: Long, _period: Long) extends TokenBucket(_cap, _period) {
   override def currentTime: Long = System.nanoTime()
 }

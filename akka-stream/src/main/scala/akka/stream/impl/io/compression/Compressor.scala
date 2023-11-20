@@ -22,9 +22,7 @@ import akka.util.ByteString
    */
   def compress(input: ByteString): ByteString
 
-  /**
-   * Flushes any output data and returns the currently remaining compressed data.
-   */
+  /** Flushes any output data and returns the currently remaining compressed data. */
   def flush(): ByteString
 
   /**

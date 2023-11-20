@@ -37,15 +37,11 @@ import akka.stream.stage._
 import akka.util.OptionVal
 import akka.util.unused
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @SerialVersionUID(1L)
 private[remote] class OversizedPayloadException(msg: String) extends AkkaException(msg) with OnlyCauseStackTrace
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[remote] object Encoder {
   private[remote] trait OutboundCompressionAccess {
     def changeActorRefCompression(table: CompressionTable[ActorRef]): Future[Done]
@@ -54,9 +50,7 @@ private[remote] object Encoder {
   }
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[remote] class Encoder(
     uniqueLocalAddress: UniqueAddress,
     system: ExtendedActorSystem,
@@ -216,21 +210,15 @@ private[remote] class Encoder(
 
       override def onPull(): Unit = pull(in)
 
-      /**
-       * External call from ChangeOutboundCompression materialized value
-       */
+      /** External call from ChangeOutboundCompression materialized value */
       override def changeActorRefCompression(table: CompressionTable[ActorRef]): Future[Done] =
         changeActorRefCompressionCb.invokeWithFeedback(table)
 
-      /**
-       * External call from ChangeOutboundCompression materialized value
-       */
+      /** External call from ChangeOutboundCompression materialized value */
       override def changeClassManifestCompression(table: CompressionTable[String]): Future[Done] =
         changeClassManifestCompressionCb.invokeWithFeedback(table)
 
-      /**
-       * External call from ChangeOutboundCompression materialized value
-       */
+      /** External call from ChangeOutboundCompression materialized value */
       override def clearCompression(): Future[Done] =
         clearCompressionCb.invokeWithFeedback(())
 
@@ -241,9 +229,7 @@ private[remote] class Encoder(
   }
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[remote] object Decoder {
   private final case class RetryResolveRemoteDeployedRecipient(
       attemptsLeft: Int,
@@ -296,40 +282,28 @@ private[remote] object Decoder {
       p.success(compressions.currentOriginUids)
     }
 
-    /**
-     * External call from ChangeInboundCompression materialized value
-     */
+    /** External call from ChangeInboundCompression materialized value */
     override def closeCompressionFor(originUid: Long): Future[Done] =
       closeCompressionForCb.invokeWithFeedback(originUid)
 
-    /**
-     * External call from ChangeInboundCompression materialized value
-     */
+    /** External call from ChangeInboundCompression materialized value */
     override def confirmActorRefCompressionAdvertisementAck(ack: ActorRefCompressionAdvertisementAck): Future[Done] =
       confirmActorRefCompressionAdvertisementCb.invokeWithFeedback(ack)
 
-    /**
-     * External call from ChangeInboundCompression materialized value
-     */
+    /** External call from ChangeInboundCompression materialized value */
     override def confirmClassManifestCompressionAdvertisementAck(
         ack: ClassManifestCompressionAdvertisementAck): Future[Done] =
       confirmClassManifestCompressionAdvertisementCb.invokeWithFeedback(ack)
 
-    /**
-     * External call from ChangeInboundCompression materialized value
-     */
+    /** External call from ChangeInboundCompression materialized value */
     override def runNextActorRefAdvertisement(): Unit =
       runNextActorRefAdvertisementCb.invoke(())
 
-    /**
-     * External call from ChangeInboundCompression materialized value
-     */
+    /** External call from ChangeInboundCompression materialized value */
     override def runNextClassManifestAdvertisement(): Unit =
       runNextClassManifestAdvertisementCb.invoke(())
 
-    /**
-     * External call from ChangeInboundCompression materialized value
-     */
+    /** External call from ChangeInboundCompression materialized value */
     override def currentCompressionOriginUids: Future[Set[Long]] = {
       val p = Promise[Set[Long]]()
       currentCompressionOriginUidsCb.invoke(p)
@@ -343,9 +317,7 @@ private[remote] object Decoder {
 
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[remote] final class ActorRefResolveCacheWithAddress(
     provider: RemoteActorRefProvider,
     localAddress: UniqueAddress)
@@ -357,9 +329,7 @@ private[remote] final class ActorRefResolveCacheWithAddress(
   override protected def isKeyCacheable(k: String): Boolean = true
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[remote] class Decoder(
     inboundContext: InboundContext,
     system: ExtendedActorSystem,
@@ -424,44 +394,51 @@ private[remote] class Decoder(
           val originUid = headerBuilder.uid
           val association = inboundContext.association(originUid)
 
-          val recipient: OptionVal[InternalActorRef] = try headerBuilder.recipientActorRef(originUid) match {
-            case OptionVal.Some(ref) =>
-              OptionVal(ref.asInstanceOf[InternalActorRef])
-            case OptionVal.None if headerBuilder.recipientActorRefPath.isDefined =>
-              resolveRecipient(headerBuilder.recipientActorRefPath.get)
-            case _ =>
-              OptionVal.None
-          } catch {
-            case NonFatal(e) =>
-              // probably version mismatch due to restarted system
-              log.warning("Couldn't decompress sender from originUid [{}]. {}", originUid, e)
-              OptionVal.None
-          }
+          val recipient: OptionVal[InternalActorRef] =
+            try
+              headerBuilder.recipientActorRef(originUid) match {
+                case OptionVal.Some(ref) =>
+                  OptionVal(ref.asInstanceOf[InternalActorRef])
+                case OptionVal.None if headerBuilder.recipientActorRefPath.isDefined =>
+                  resolveRecipient(headerBuilder.recipientActorRefPath.get)
+                case _ =>
+                  OptionVal.None
+              }
+            catch {
+              case NonFatal(e) =>
+                // probably version mismatch due to restarted system
+                log.warning("Couldn't decompress sender from originUid [{}]. {}", originUid, e)
+                OptionVal.None
+            }
 
-          val sender: OptionVal[InternalActorRef] = try headerBuilder.senderActorRef(originUid) match {
-            case OptionVal.Some(ref) =>
-              OptionVal(ref.asInstanceOf[InternalActorRef])
-            case OptionVal.None if headerBuilder.senderActorRefPath.isDefined =>
-              OptionVal(actorRefResolver.resolve(headerBuilder.senderActorRefPath.get))
-            case _ =>
-              OptionVal.None
-          } catch {
-            case NonFatal(e) =>
-              // probably version mismatch due to restarted system
-              log.warning("Couldn't decompress sender from originUid [{}]. {}", originUid, e)
-              OptionVal.None
-          }
+          val sender: OptionVal[InternalActorRef] =
+            try
+              headerBuilder.senderActorRef(originUid) match {
+                case OptionVal.Some(ref) =>
+                  OptionVal(ref.asInstanceOf[InternalActorRef])
+                case OptionVal.None if headerBuilder.senderActorRefPath.isDefined =>
+                  OptionVal(actorRefResolver.resolve(headerBuilder.senderActorRefPath.get))
+                case _ =>
+                  OptionVal.None
+              }
+            catch {
+              case NonFatal(e) =>
+                // probably version mismatch due to restarted system
+                log.warning("Couldn't decompress sender from originUid [{}]. {}", originUid, e)
+                OptionVal.None
+            }
 
-          val classManifestOpt = try headerBuilder.manifest(originUid)
-          catch {
-            case NonFatal(e) =>
-              // probably version mismatch due to restarted system
-              log.warning("Couldn't decompress manifest from originUid [{}]. {}", originUid, e)
-              OptionVal.None
-          }
+          val classManifestOpt =
+            try headerBuilder.manifest(originUid)
+            catch {
+              case NonFatal(e) =>
+                // probably version mismatch due to restarted system
+                log.warning("Couldn't decompress manifest from originUid [{}]. {}", originUid, e)
+                OptionVal.None
+            }
 
           if ((recipient.isEmpty && headerBuilder.recipientActorRefPath.isEmpty && !headerBuilder.isNoRecipient) ||
-              (sender.isEmpty && headerBuilder.senderActorRefPath.isEmpty && !headerBuilder.isNoSender)) {
+            (sender.isEmpty && headerBuilder.senderActorRefPath.isEmpty && !headerBuilder.isNoSender)) {
             log.debug(
               "Dropping message for unknown recipient/sender. It was probably sent from system [{}] with compression " +
               "table [{}] built for previous incarnation of the destination system, or it was compressed with a table " +
@@ -631,9 +608,7 @@ private[remote] class Decoder(
 
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[remote] class Deserializer(
     @unused inboundContext: InboundContext,
     system: ExtendedActorSystem,

@@ -25,8 +25,9 @@ class FlowIdleInjectSpec extends StreamSpec("""
     "emit elements periodically after silent periods" in {
       val sourceWithIdleGap = Source(1 to 5) ++ Source(6 to 10).initialDelay(2.second)
 
-      Await.result(sourceWithIdleGap.keepAlive(0.6.seconds, () => 0).grouped(1000).runWith(Sink.head), 3.seconds) should ===(
-        List(1, 2, 3, 4, 5, 0, 0, 0, 6, 7, 8, 9, 10))
+      Await.result(
+        sourceWithIdleGap.keepAlive(0.6.seconds, () => 0).grouped(1000).runWith(Sink.head),
+        3.seconds) should ===(List(1, 2, 3, 4, 5, 0, 0, 0, 6, 7, 8, 9, 10))
     }
 
     "immediately pull upstream" in {

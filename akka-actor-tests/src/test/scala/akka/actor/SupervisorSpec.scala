@@ -75,13 +75,12 @@ object SupervisorSpec {
   }
 
   class Creator(target: ActorRef) extends Actor {
-    override val supervisorStrategy = OneForOneStrategy() {
-      case ex =>
-        target ! ((self, sender(), ex))
-        SupervisorStrategy.Stop
+    override val supervisorStrategy = OneForOneStrategy() { case ex =>
+      target ! ((self, sender(), ex))
+      SupervisorStrategy.Stop
     }
-    def receive = {
-      case p: Props => sender() ! context.actorOf(p)
+    def receive = { case p: Props =>
+      sender() ! context.actorOf(p)
     }
   }
 
@@ -197,7 +196,7 @@ class SupervisorSpec
 
   def kill(pingPongActor: ActorRef) = {
     val result = pingPongActor.?(DieReply)(DilatedTimeout)
-    expectMsg(Timeout, ExceptionMessage) //this is sent from PingPongActor's postRestart()
+    expectMsg(Timeout, ExceptionMessage) // this is sent from PingPongActor's postRestart()
     intercept[RuntimeException] { Await.result(result, DilatedTimeout) }
   }
 
@@ -218,7 +217,7 @@ class SupervisorSpec
     }
 
     "restart properly when same instance is returned" in {
-      val restarts = 3 //max number of restarts
+      val restarts = 3 // max number of restarts
 
       // can't be anonymous class due to https://github.com/akka/akka/issues/32128
       class ChildActor extends Actor {
@@ -259,8 +258,8 @@ class SupervisorSpec
         override val supervisorStrategy = OneForOneStrategy(maxNrOfRetries = restarts)(List(classOf[Exception]))
         val child = context.actorOf(Props(childInstance))
 
-        def receive = {
-          case msg => child.forward(msg)
+        def receive = { case msg =>
+          child.forward(msg)
         }
       }))
 
@@ -458,17 +457,20 @@ class SupervisorSpec
 
     "not lose system messages when a NonFatal exception occurs when processing a system message" in {
       val parent = system.actorOf(Props(new Actor {
-        override val supervisorStrategy = OneForOneStrategy()({
+        override val supervisorStrategy = OneForOneStrategy() {
           case e: IllegalStateException if e.getMessage == "OHNOES" => throw e
           case _                                                    => SupervisorStrategy.Restart
-        })
-        val child = context.watch(context.actorOf(Props(new Actor {
-          override def postRestart(reason: Throwable): Unit = testActor ! "child restarted"
-          def receive = {
-            case l: TestLatch => { Await.ready(l, 5 seconds); throw new IllegalStateException("OHNOES") }
-            case "test"       => sender() ! "child green"
-          }
-        }), "child"))
+        }
+        val child = context.watch(
+          context.actorOf(
+            Props(new Actor {
+              override def postRestart(reason: Throwable): Unit = testActor ! "child restarted"
+              def receive = {
+                case l: TestLatch => { Await.ready(l, 5 seconds); throw new IllegalStateException("OHNOES") }
+                case "test"       => sender() ! "child green"
+              }
+            }),
+            "child"))
 
         override def postRestart(reason: Throwable): Unit = testActor ! "parent restarted"
 
@@ -517,9 +519,8 @@ class SupervisorSpec
         top ! creator(testActor)
         val middle = expectMsgType[ActorRef]
         middle ! creator(testActor, fail = true)
-        expectMsgPF(hint = "ConfigurationException") {
-          case (_, _, ex: ConfigurationException) =>
-            ex.getCause should ===(failure)
+        expectMsgPF(hint = "ConfigurationException") { case (_, _, ex: ConfigurationException) =>
+          ex.getCause should ===(failure)
         }
       }
 
@@ -534,9 +535,8 @@ class SupervisorSpec
         top ! creator(testActor)
         val middle = expectMsgType[ActorRef]
         middle ! creator(testActor, fail = true).withRouter(RoundRobinPool(1))
-        expectMsgPF(hint = "ConfigurationException") {
-          case (_, _, ex: ConfigurationException) =>
-            ex.getCause should ===(failure)
+        expectMsgPF(hint = "ConfigurationException") { case (_, _, ex: ConfigurationException) =>
+          ex.getCause should ===(failure)
         }
       }
 
@@ -578,7 +578,7 @@ class SupervisorSpec
 
     val pingpong = child(supervisor, Props(new PingPongActor(testActor)))
 
-    //impossible to confirm if the restart window is infinite, so making sure maxNrOfRetries is respected correctly
+    // impossible to confirm if the restart window is infinite, so making sure maxNrOfRetries is respected correctly
     kill(pingpong)
     kill(pingpong)
     kill(pingpong)

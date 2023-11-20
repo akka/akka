@@ -11,9 +11,11 @@ import akka.stream.testkit.ScriptedTest
 import akka.stream.testkit.StreamSpec
 import akka.testkit.TestProbe
 
-class FlowWithContextLogSpec extends StreamSpec("""
+class FlowWithContextLogSpec
+    extends StreamSpec("""
      akka.loglevel = DEBUG # test verifies logging
-     """) with ScriptedTest {
+     """)
+    with ScriptedTest {
 
   val logProbe = {
     val p = TestProbe()
@@ -23,7 +25,7 @@ class FlowWithContextLogSpec extends StreamSpec("""
 
   "log() from FlowWithContextOps" must {
 
-    val supervisorPath = (SystemMaterializer(system).materializer).supervisor.path
+    val supervisorPath = SystemMaterializer(system).materializer.supervisor.path
     val LogSrc = s"akka.stream.Log($supervisorPath)"
     val LogClazz = classOf[Materializer]
 

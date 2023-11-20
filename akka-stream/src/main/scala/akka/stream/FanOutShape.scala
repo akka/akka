@@ -34,15 +34,11 @@ abstract class FanOutShape[-I] private (
 
   final def in: Inlet[I @uncheckedVariance] = _in
 
-  /**
-   * Not meant for overriding outside of Akka.
-   */
+  /** Not meant for overriding outside of Akka. */
   override def outlets: immutable.Seq[Outlet[_]] = _outlets
   final override def inlets: immutable.Seq[Inlet[I @uncheckedVariance]] = in :: Nil
 
-  /**
-   * Performance of subclass `UniformFanOutShape` relies on `_outlets` being a `Vector`, not a `List`.
-   */
+  /** Performance of subclass `UniformFanOutShape` relies on `_outlets` being a `Vector`, not a `List`. */
   private var _outlets: Vector[Outlet[_]] = Vector.empty
   protected def newOutlet[T](name: String): Outlet[T] = {
     val p = if (_registered.hasNext) _registered.next().asInstanceOf[Outlet[T]] else Outlet[T](s"${_name}.$name")

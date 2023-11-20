@@ -49,9 +49,7 @@ import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import akka.util.ccompat._
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @ccompatUsedUntil213
 private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _provider: RemoteActorRefProvider)
     extends ArteryTransport(_system, _provider) {
@@ -191,9 +189,8 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
           log.debug(s"onUnavailableImage from ${img.sourceIdentity} session ${img.sessionId}")
 
         // freeSessionBuffer in AeronSource FragmentAssembler
-        streamMatValues.get.valuesIterator.foreach {
-          case InboundStreamMatValues(resourceLife, _) =>
-            resourceLife.onUnavailableImage(img.sessionId)
+        streamMatValues.get.valuesIterator.foreach { case InboundStreamMatValues(resourceLife, _) =>
+          resourceLife.onUnavailableImage(img.sessionId)
         }
       }
     })
@@ -321,7 +318,7 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
 
   private def aeronSourceSpinningStrategy: Int =
     if (settings.Advanced.InboundLanes > 1 || // spinning was identified to be the cause of massive slowdowns with multiple lanes, see #21365
-        settings.Advanced.Aeron.IdleCpuLevel < 5) 0 // also don't spin for small IdleCpuLevels
+      settings.Advanced.Aeron.IdleCpuLevel < 5) 0 // also don't spin for small IdleCpuLevels
     else 50 * settings.Advanced.Aeron.IdleCpuLevel - 240
 
   override protected def bindInboundStreams(): (Int, Int) = {
@@ -356,7 +353,7 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
     val (resourceLife, ctrl, completed) =
       aeronSource(ControlStreamId, envelopeBufferPool, inboundChannel)
         .via(inboundFlow(settings, NoInboundCompressions))
-        .toMat(inboundControlSink)({ case (a, (c, d)) => (a, c, d) })
+        .toMat(inboundControlSink) { case (a, (c, d)) => (a, c, d) }
         .run()(controlMaterializer)
 
     attachControlMessageObserver(ctrl)
@@ -372,7 +369,7 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
       if (inboundLanes == 1) {
         aeronSource(OrdinaryStreamId, envelopeBufferPool, inboundChannel)
           .viaMat(inboundFlow(settings, _inboundCompressions))(Keep.both)
-          .toMat(inboundSink(envelopeBufferPool))({ case ((a, b), c) => (a, b, c) })
+          .toMat(inboundSink(envelopeBufferPool)) { case ((a, b), c) => (a, b, c) }
           .run()(materializer)
 
       } else {
@@ -391,9 +388,9 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
                 new FixedSizePartitionHub[InboundEnvelope](
                   inboundLanePartitioner,
                   inboundLanes,
-                  settings.Advanced.InboundHubBufferSize)))({
-              case ((a, b), c) => (a, b, c)
-            })
+                  settings.Advanced.InboundHubBufferSize))) { case ((a, b), c) =>
+              (a, b, c)
+            }
             .run()(materializer)
 
         val lane = inboundSink(envelopeBufferPool)
@@ -445,9 +442,13 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
       aeronSourceLifecycle: AeronSource.AeronLifecycle,
       completed: Future[Done]): Unit = {
     implicit val ec = materializer.executionContext
-    updateStreamMatValues(streamId, InboundStreamMatValues[AeronLifecycle](aeronSourceLifecycle, completed.recover {
-      case _ => Done
-    }))
+    updateStreamMatValues(
+      streamId,
+      InboundStreamMatValues[AeronLifecycle](
+        aeronSourceLifecycle,
+        completed.recover { case _ =>
+          Done
+        }))
   }
 
   override protected def shutdownTransport(): Future[Done] = {

@@ -17,9 +17,7 @@ import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
 import akka.util.OptionVal
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object TimerSchedulerImpl {
   final case class Timer[T](key: Any, msg: T, repeat: Boolean, generation: Int, task: Cancellable)
   sealed class TimerMsg(val key: Any, val generation: Int, val owner: AnyRef) {
@@ -70,7 +68,7 @@ import akka.util.OptionVal
     startTimerAtFixedRate(key, msg, initialDelay.asScala, interval.asScala)
 
   override final def startPeriodicTimer(key: Any, msg: T, interval: Duration): Unit = {
-    //this follows the deprecation note in the super class
+    // this follows the deprecation note in the super class
     startTimerWithFixedDelay(key, msg, interval.asScala)
   }
 
@@ -78,9 +76,7 @@ import akka.util.OptionVal
     startSingleTimer(key, msg, delay.asScala)
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] class TimerSchedulerImpl[T](ctx: ActorContext[T])
     extends scaladsl.TimerScheduler[T]
     with TimerSchedulerCrossDslSupport[T] {

@@ -155,12 +155,8 @@ private[persistence] object JournalProtocol {
 
 }
 
-/**
- * Reply message to a successful [[JournalProtocol.DeleteMessagesTo]] request.
- */
+/** Reply message to a successful [[JournalProtocol.DeleteMessagesTo]] request. */
 final case class DeleteMessagesSuccess(toSequenceNr: Long) extends JournalProtocol.Response
 
-/**
- * Reply message to a failed [[JournalProtocol.DeleteMessagesTo]] request.
- */
+/** Reply message to a failed [[JournalProtocol.DeleteMessagesTo]] request. */
 final case class DeleteMessagesFailure(cause: Throwable, toSequenceNr: Long) extends JournalProtocol.Response

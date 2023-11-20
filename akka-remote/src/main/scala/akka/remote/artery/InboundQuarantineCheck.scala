@@ -15,9 +15,7 @@ import akka.stream.Outlet
 import akka.stream.stage._
 import akka.util.OptionVal
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[remote] class InboundQuarantineCheck(inboundContext: InboundContext)
     extends GraphStage[FlowShape[InboundEnvelope, InboundEnvelope]] {
   val in: Inlet[InboundEnvelope] = Inlet("InboundQuarantineCheck.in")
@@ -43,7 +41,7 @@ private[remote] class InboundQuarantineCheck(inboundContext: InboundContext)
                   env.originUid)
               // avoid starting outbound stream for heartbeats
               if (!env.message.isInstanceOf[Quarantined] && !isHeartbeat(env.message) &&
-                  !association.associationState.isQuarantinedHarmless(env.originUid)) {
+                !association.associationState.isQuarantinedHarmless(env.originUid)) {
                 log.info("Sending Quarantined to [{}]", association.remoteAddress)
                 inboundContext.sendControl(
                   association.remoteAddress,

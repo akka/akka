@@ -30,15 +30,11 @@ import akka.util.unused
  */
 object Merge {
 
-  /**
-   * Create a new `Merge` operator with the specified output type.
-   */
+  /** Create a new `Merge` operator with the specified output type. */
   def create[T](inputPorts: Int): Graph[UniformFanInShape[T, T], NotUsed] =
     scaladsl.Merge(inputPorts)
 
-  /**
-   * Create a new `Merge` operator with the specified output type.
-   */
+  /** Create a new `Merge` operator with the specified output type. */
   def create[T](@unused clazz: Class[T], inputPorts: Int): Graph[UniformFanInShape[T, T], NotUsed] = create(inputPorts)
 
   /**
@@ -78,15 +74,11 @@ object Merge {
  */
 object MergePreferred {
 
-  /**
-   * Create a new `MergePreferred` operator with the specified output type.
-   */
+  /** Create a new `MergePreferred` operator with the specified output type. */
   def create[T](secondaryPorts: Int): Graph[scaladsl.MergePreferred.MergePreferredShape[T], NotUsed] =
     scaladsl.MergePreferred(secondaryPorts)
 
-  /**
-   * Create a new `MergePreferred` operator with the specified output type.
-   */
+  /** Create a new `MergePreferred` operator with the specified output type. */
   def create[T](
       @unused clazz: Class[T],
       secondaryPorts: Int): Graph[scaladsl.MergePreferred.MergePreferredShape[T], NotUsed] =
@@ -136,15 +128,11 @@ object MergePreferred {
  */
 object MergePrioritized {
 
-  /**
-   * Create a new `MergePrioritized` operator with the specified output type.
-   */
+  /** Create a new `MergePrioritized` operator with the specified output type. */
   def create[T](priorities: Array[Int]): Graph[UniformFanInShape[T, T], NotUsed] =
     scaladsl.MergePrioritized(priorities.toIndexedSeq)
 
-  /**
-   * Create a new `MergePrioritized` operator with the specified output type.
-   */
+  /** Create a new `MergePrioritized` operator with the specified output type. */
   def create[T](@unused clazz: Class[T], priorities: Array[Int]): Graph[UniformFanInShape[T, T], NotUsed] =
     create(priorities)
 
@@ -203,9 +191,7 @@ object Broadcast {
    */
   def create[T](outputCount: Int): Graph[UniformFanOutShape[T, T], NotUsed] = create(outputCount, eagerCancel = false)
 
-  /**
-   * Create a new `Broadcast` operator with the specified input type.
-   */
+  /** Create a new `Broadcast` operator with the specified input type. */
   def create[T](@unused clazz: Class[T], outputCount: Int): Graph[UniformFanOutShape[T, T], NotUsed] =
     create(outputCount)
 
@@ -477,15 +463,11 @@ object ZipWithN {
  */
 object Unzip {
 
-  /**
-   * Creates a new `Unzip` operator with the specified output types.
-   */
+  /** Creates a new `Unzip` operator with the specified output types. */
   def create[A, B](): Graph[FanOutShape2[A Pair B, A, B], NotUsed] =
     UnzipWith.create(ConstantFun.javaIdentityFunction[Pair[A, B]])
 
-  /**
-   * Creates a new `Unzip` operator with the specified output types.
-   */
+  /** Creates a new `Unzip` operator with the specified output types. */
   def create[A, B](@unused left: Class[A], @unused right: Class[B]): Graph[FanOutShape2[A Pair B, A, B], NotUsed] =
     create[A, B]()
 
@@ -506,25 +488,17 @@ object Unzip {
  */
 object Concat {
 
-  /**
-   * Create a new anonymous `Concat` operator with the specified input types.
-   */
+  /** Create a new anonymous `Concat` operator with the specified input types. */
   def create[T](): Graph[UniformFanInShape[T, T], NotUsed] = scaladsl.Concat[T]()
 
-  /**
-   * Create a new anonymous `Concat` operator with the specified input types.
-   */
+  /** Create a new anonymous `Concat` operator with the specified input types. */
   def create[T](inputCount: Int): Graph[UniformFanInShape[T, T], NotUsed] = scaladsl.Concat[T](inputCount)
 
-  /**
-   * Create a new anonymous `Concat` operator with the specified input types.
-   */
+  /** Create a new anonymous `Concat` operator with the specified input types. */
   def create[T](inputCount: Int, detachedInputs: Boolean): Graph[UniformFanInShape[T, T], NotUsed] =
     scaladsl.Concat[T](inputCount, detachedInputs)
 
-  /**
-   * Create a new anonymous `Concat` operator with the specified input types.
-   */
+  /** Create a new anonymous `Concat` operator with the specified input types. */
   def create[T](@unused clazz: Class[T]): Graph[UniformFanInShape[T, T], NotUsed] = create()
 
 }
@@ -621,12 +595,13 @@ object GraphDSL extends GraphCreate {
     }
     val sListH = gbuilder.delegate.add(graphs.get(0), toList)
     val sListT = graphs.subList(1, graphs.size()).asScala.map(g => gbuilder.delegate.add(g, combine)).asJava
-    val s = buildBlock(gbuilder, {
-      val newList = new util.ArrayList[IS]
-      newList.add(sListH)
-      newList.addAll(sListT)
-      newList
-    })
+    val s = buildBlock(
+      gbuilder, {
+        val newList = new util.ArrayList[IS]
+        newList.add(sListH)
+        newList.addAll(sListT)
+        newList
+      })
     new GenericGraph(s, gbuilder.delegate.result(s))
   }
 

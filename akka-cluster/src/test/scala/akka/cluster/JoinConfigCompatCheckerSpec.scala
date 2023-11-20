@@ -23,7 +23,8 @@ object JoinConfigCompatCheckerSpec {
      """)
 
   val configWithChecker: Config =
-    ConfigFactory.parseString("""
+    ConfigFactory
+      .parseString("""
       akka.cluster {
         config-compat-test = "test"
         sensitive.properties {
@@ -41,7 +42,8 @@ object JoinConfigCompatCheckerSpec {
           }
         }
       }
-    """).withFallback(baseConfig)
+    """)
+      .withFallback(baseConfig)
 }
 
 class JoinConfigCompatCheckerSpec extends AkkaSpec with ClusterTestKit {

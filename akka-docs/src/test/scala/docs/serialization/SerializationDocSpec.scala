@@ -4,26 +4,26 @@
 
 package docs.serialization {
 
-  //#imports
+  // #imports
   import akka.actor._
   import akka.actor.typed.scaladsl.Behaviors
   import akka.cluster.Cluster
   import akka.serialization._
 
-  //#imports
+  // #imports
 
   import akka.testkit._
   import com.typesafe.config.ConfigFactory
   import akka.actor.ExtendedActorSystem
   import java.nio.charset.StandardCharsets
 
-  //#marker-interface
+  // #marker-interface
   import akka.serialization.jackson.JsonSerializable
 
   final case class MyMessage(name: String, nr: Int) extends JsonSerializable
-  //#marker-interface
+  // #marker-interface
 
-  //#my-own-serializer
+  // #my-own-serializer
   class MyOwnSerializer extends Serializer {
 
     // If you need logging here, introduce a constructor that takes an ExtendedActorSystem.
@@ -42,23 +42,23 @@ package docs.serialization {
     // "toBinary" serializes the given object to an Array of Bytes
     def toBinary(obj: AnyRef): Array[Byte] = {
       // Put the code that serializes the object here
-      //#...
+      // #...
       Array[Byte]()
-      //#...
+      // #...
     }
 
     // "fromBinary" deserializes the given array,
     // using the type hint (if any, see "includeManifest" above)
     def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef = {
       // Put your code that deserializes here
-      //#...
+      // #...
       null
-      //#...
+      // #...
     }
   }
-  //#my-own-serializer
+  // #my-own-serializer
 
-  //#my-own-serializer2
+  // #my-own-serializer2
   class MyOwnSerializer2 extends SerializerWithStringManifest {
 
     val CustomerManifest = "customer"
@@ -99,7 +99,7 @@ package docs.serialization {
       }
     }
   }
-  //#my-own-serializer2
+  // #my-own-serializer2
 
   trait MyOwnSerializable
   final case class Customer(name: String) extends MyOwnSerializable
@@ -196,7 +196,7 @@ package docs.serialization {
     }
 
     "demonstrate the programmatic API" in {
-      //#programmatic
+      // #programmatic
       val system = ActorSystem("example")
 
       // Get the Serialization Extension
@@ -212,7 +212,7 @@ package docs.serialization {
 
       // Turn it back into an object
       val back = serialization.deserialize(bytes, serializerId, manifest).get
-      //#programmatic
+      // #programmatic
 
       // Voilá!
       back should be(original)
@@ -221,21 +221,21 @@ package docs.serialization {
     }
 
     def demonstrateTypedActorSystem(): Unit = {
-      //#programmatic-typed
+      // #programmatic-typed
       import akka.actor.typed.ActorSystem
 
       val system = ActorSystem(Behaviors.empty, "example")
 
       // Get the Serialization Extension
       val serialization = SerializationExtension(system)
-      //#programmatic-typed
+      // #programmatic-typed
     }
 
     def demonstrateSerializationOfActorRefs(): Unit = {
       val theActorRef: ActorRef = system.deadLetters
       val extendedSystem: ExtendedActorSystem = system.asInstanceOf[ExtendedActorSystem]
 
-      //#actorref-serializer
+      // #actorref-serializer
       // Serialize
       // (beneath toBinary)
       val serializedRef: String = Serialization.serializedActorPath(theActorRef)
@@ -246,18 +246,18 @@ package docs.serialization {
       // (beneath fromBinary)
       val deserializedRef = extendedSystem.provider.resolveActorRef(serializedRef)
       // Then use the ActorRef
-      //#actorref-serializer
+      // #actorref-serializer
     }
 
     def demonstrateSerializationOfActorRefs2(): Unit = {
       val theActorRef: ActorRef = system.deadLetters
 
-      //#external-address-default
+      // #external-address-default
       val selfAddress = Cluster(system).selfAddress
 
       val serializedRef: String =
         theActorRef.path.toSerializationFormatWithAddress(selfAddress)
-      //#external-address-default
+      // #external-address-default
     }
   }
 }

@@ -18,15 +18,11 @@ import akka.remote.artery.ArteryMessage
 import akka.remote.artery.ArteryTransport
 import akka.util.unused
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] object RemoteWatcher {
 
-  /**
-   * Factory method for `RemoteWatcher` [[akka.actor.Props]].
-   */
+  /** Factory method for `RemoteWatcher` [[akka.actor.Props]]. */
   def props(settings: RemoteSettings, failureDetector: FailureDetectorRegistry[Address]): Props =
     Props(
       new RemoteWatcher(
@@ -89,7 +85,6 @@ private[akka] object RemoteWatcher {
  *
  * For bi-directional watch between two nodes the same thing will be established in
  * both directions, but independent of each other.
- *
  */
 @InternalApi
 private[akka] class RemoteWatcher(
@@ -148,11 +143,10 @@ private[akka] class RemoteWatcher(
     // test purpose
     case Stats =>
       val watchSet = watching.iterator
-        .flatMap {
-          case (wee, wers) =>
-            wers.map { wer =>
-              wee -> wer
-            }
+        .flatMap { case (wee, wers) =>
+          wers.map { wer =>
+            wee -> wer
+          }
         }
         .toSet[(ActorRef, ActorRef)]
       sender() ! Stats(watching = watchSet.size, watchingNodes = watchingNodes.size)(watchSet, watchingNodes.toSet)
@@ -199,7 +193,8 @@ private[akka] class RemoteWatcher(
     }
   }
 
-  /** Returns true if either has cluster or `akka.remote.use-unsafe-remote-features-outside-cluster`
+  /**
+   * Returns true if either has cluster or `akka.remote.use-unsafe-remote-features-outside-cluster`
    * is enabled. Can be overridden when using RemoteWatcher as a superclass.
    */
   protected def shouldWatch(@unused watchee: InternalActorRef): Boolean = {
@@ -321,6 +316,8 @@ private[akka] class RemoteWatcher(
     } {
       val watcher = self.asInstanceOf[InternalActorRef]
       log.debug("Re-watch [{} -> {}]", watcher.path, watchee.path)
-      watchee.sendSystemMessage(Watch(watchee, watcher)) // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
+      watchee.sendSystemMessage(
+        Watch(watchee, watcher)
+      ) // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
     }
 }

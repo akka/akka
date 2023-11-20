@@ -4,7 +4,5 @@
 
 package akka.persistence.typed
 
-/**
- * Identifies a replica in Replicated Event Sourcing, could be a datacenter name or a logical identifier.
- */
+/** Identifies a replica in Replicated Event Sourcing, could be a datacenter name or a logical identifier. */
 final case class ReplicaId(id: String)

@@ -12,19 +12,22 @@ import akka.testkit.AkkaSpec
 class LeaseMajoritySpec extends AkkaSpec() with Eventually {
 
   val default = ConfigFactory
-    .parseString(
-      """
+    .parseString("""
     akka.cluster.split-brain-resolver.lease-majority.lease-implementation = "akka.coordination.lease.kubernetes" 
     """)
     .withFallback(ConfigFactory.load())
-  val blank = ConfigFactory.parseString("""
+  val blank = ConfigFactory
+    .parseString("""
     akka.cluster.split-brain-resolver.lease-majority {
       lease-name = " "
-    }""").withFallback(default)
-  val named = ConfigFactory.parseString("""
+    }""")
+    .withFallback(default)
+  val named = ConfigFactory
+    .parseString("""
      akka.cluster.split-brain-resolver.lease-majority {
        lease-name = "shopping-cart-akka-sbr"
-     }""").withFallback(default)
+     }""")
+    .withFallback(default)
 
   "Split Brain Resolver Lease Majority provider" must {
 

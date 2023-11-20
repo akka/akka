@@ -7,9 +7,7 @@ package akka.stream
 import akka.annotation.DoNotInherit
 import akka.event.LoggingAdapter
 
-/**
- * Not for user extension
- */
+/** Not for user extension */
 @DoNotInherit
 trait MaterializerLoggingProvider { this: Materializer =>
 

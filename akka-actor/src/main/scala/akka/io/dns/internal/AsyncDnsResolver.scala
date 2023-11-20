@@ -25,9 +25,7 @@ import akka.pattern.AskTimeoutException
 import akka.util.{ Helpers, Timeout }
 import akka.util.PrettyDuration._
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[io] final class AsyncDnsResolver(
     settings: DnsSettings,
@@ -97,11 +95,13 @@ private[io] final class AsyncDnsResolver(
                 case ipv6: Inet6Address => AAAARecord(name, Ttl.effectivelyForever, ipv6)
                 case unexpected         => throw new IllegalArgumentException(s"Unexpected address: $unexpected")
               }
-            }.fold(ex => { sender() ! Status.Failure(ex) }, record => {
-              val resolved = DnsProtocol.Resolved(name, record :: Nil)
-              cache.put(name -> mode, resolved, record.ttl)
-              sender() ! resolved
-            })
+            }.fold(
+              ex => { sender() ! Status.Failure(ex) },
+              record => {
+                val resolved = DnsProtocol.Resolved(name, record :: Nil)
+                cache.put(name -> mode, resolved, record.ttl)
+                sender() ! resolved
+              })
           } else if (resolvers.isEmpty) {
             sender() ! Status.Failure(failToResolve(name, nameServers))
           } else {
@@ -138,9 +138,7 @@ private[io] final class AsyncDnsResolver(
   }
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] object AsyncDnsResolver {
 
@@ -225,8 +223,8 @@ private[akka] object AsyncDnsResolver {
 
               (resolver ? DropRequest(question))
                 .mapTo[Dropped]
-                .recover {
-                  case _ => DidntDrop(question.id)
+                .recover { case _ =>
+                  DidntDrop(question.id)
                 }
                 .pipeTo(self)
           }(ExecutionContexts.parasitic)

@@ -8,9 +8,7 @@ import akka.NotUsed
 import akka.actor.typed._
 import akka.stream.scaladsl._
 
-/**
- * Collection of Sinks aimed at integrating with typed Actors.
- */
+/** Collection of Sinks aimed at integrating with typed Actors. */
 object ActorSink {
   import akka.actor.typed.scaladsl.adapter._
 

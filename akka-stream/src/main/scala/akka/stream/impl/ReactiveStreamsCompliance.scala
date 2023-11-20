@@ -11,9 +11,7 @@ import org.reactivestreams.{ Subscriber, Subscription }
 import akka.annotation.InternalApi
 import akka.stream.SubscriptionWithCancelException
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[stream] object ReactiveStreamsCompliance {
 
   final val CanNotSubscribeTheSameSubscriberMultipleTimes =
@@ -130,10 +128,12 @@ import akka.stream.SubscriptionWithCancelException
   final def tryCancel(subscription: Subscription, cause: Throwable): Unit = {
     if (subscription eq null)
       throw new IllegalStateException("Subscription must be not null on cancel() call, rule 1.3")
-    try subscription match {
-      case s: SubscriptionWithCancelException => s.cancel(cause)
-      case s                                  => s.cancel()
-    } catch {
+    try
+      subscription match {
+        case s: SubscriptionWithCancelException => s.cancel(cause)
+        case s                                  => s.cancel()
+      }
+    catch {
       case NonFatal(t) =>
         throw new SignalThrewException("It is illegal to throw exceptions from cancel(), rule 3.15", t)
     }

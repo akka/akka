@@ -65,9 +65,7 @@ class SimpleDnsCache extends Dns with PeriodicCacheCleanup with NoSerializationV
     else (now - nanoBase) / 1000000
   }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi
   private[akka] final def get(key: (String, RequestType)): Option[Resolved] = {
     cacheRef.get().get(key)
@@ -90,9 +88,7 @@ class SimpleDnsCache extends Dns with PeriodicCacheCleanup with NoSerializationV
 }
 object SimpleDnsCache {
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi
   private[io] class Cache[K, V](
       queue: immutable.SortedSet[ExpiryEntry[K]],
@@ -134,18 +130,14 @@ object SimpleDnsCache {
     def isValid(clock: Long): Boolean = clock < until
   }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi
   private[io] class ExpiryEntry[K](val name: K, val until: Long) extends Ordered[ExpiryEntry[K]] {
     def isValid(clock: Long): Boolean = clock < until
     override def compare(that: ExpiryEntry[K]): Int = -until.compareTo(that.until)
   }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi
   private[io] def expiryEntryOrdering[K]() = new Ordering[ExpiryEntry[K]] {
     override def compare(x: ExpiryEntry[K], y: ExpiryEntry[K]): Int = {

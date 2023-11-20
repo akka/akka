@@ -57,10 +57,9 @@ class StartStopActor1(context: ActorContext[String]) extends AbstractBehavior[St
       case "stop" => Behaviors.stopped
     }
 
-  override def onSignal: PartialFunction[Signal, Behavior[String]] = {
-    case PostStop =>
-      println("first stopped")
-      this
+  override def onSignal: PartialFunction[Signal, Behavior[String]] = { case PostStop =>
+    println("first stopped")
+    this
   }
 
 }
@@ -78,10 +77,9 @@ class StartStopActor2(context: ActorContext[String]) extends AbstractBehavior[St
     Behaviors.unhandled
   }
 
-  override def onSignal: PartialFunction[Signal, Behavior[String]] = {
-    case PostStop =>
-      println("second stopped")
-      this
+  override def onSignal: PartialFunction[Signal, Behavior[String]] = { case PostStop =>
+    println("second stopped")
+    this
   }
 
 }
@@ -165,17 +163,17 @@ class ActorHierarchyExperiments extends ScalaTestWithActorTestKit with AnyWordSp
     def context = this
 
     "start and stop actors" in {
-      //#start-stop-main
+      // #start-stop-main
       val first = context.spawn(StartStopActor1(), "first")
       first ! "stop"
-      //#start-stop-main
+      // #start-stop-main
     }
 
     "supervise actors" in {
-      //#supervise-main
+      // #supervise-main
       val supervisingActor = context.spawn(SupervisingActor(), "supervising-actor")
       supervisingActor ! "failChild"
-      //#supervise-main
+      // #supervise-main
       Thread.sleep(200) // allow for the println/logging to complete
     }
   }

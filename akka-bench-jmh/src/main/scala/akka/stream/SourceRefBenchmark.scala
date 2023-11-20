@@ -27,12 +27,14 @@ import akka.stream.scaladsl._
 @BenchmarkMode(Array(Mode.Throughput))
 class SourceRefBenchmark {
 
-  val config = ConfigFactory.parseString("""
+  val config = ConfigFactory
+    .parseString("""
       akka {
         log-config-on-start = off
         log-dead-letters-during-shutdown = off
         loglevel = "WARNING"
-      }""".stripMargin).withFallback(ConfigFactory.load())
+      }""".stripMargin)
+    .withFallback(ConfigFactory.load())
 
   implicit val system: ActorSystem = ActorSystem("test", config)
 

@@ -15,305 +15,191 @@ import akka.persistence.testkit.scaladsl.{ PersistenceTestKit => ScalaTestKit }
 import akka.util.JavaDurationConverters._
 import akka.util.ccompat.JavaConverters._
 
-/**
- * Class for testing persisted events in persistent actors.
- */
+/** Class for testing persisted events in persistent actors. */
 @ApiMayChange
 class PersistenceTestKit(scalaTestkit: ScalaTestKit) {
 
   def this(system: ActorSystem) = this(new ScalaTestKit(system))
 
-  /**
-   * Check that nothing has been saved in the storage.
-   */
+  /** Check that nothing has been saved in the storage. */
   def expectNothingPersisted(persistenceId: String): Unit = scalaTestkit.expectNothingPersisted(persistenceId)
 
-  /**
-   * Check for `max` time that nothing has been saved in the storage.
-   */
+  /** Check for `max` time that nothing has been saved in the storage. */
   def expectNothingPersisted(persistenceId: String, max: Duration): Unit =
     scalaTestkit.expectNothingPersisted(persistenceId, max.asScala)
 
-  /**
-   * Check that `event` has been saved in the storage.
-   */
+  /** Check that `event` has been saved in the storage. */
   def expectNextPersisted[A](persistenceId: String, event: A): A =
     scalaTestkit.expectNextPersisted(persistenceId, event)
 
-  /**
-   * Check for `max` time that `event` has been saved in the storage.
-   */
+  /** Check for `max` time that `event` has been saved in the storage. */
   def expectNextPersisted[A](persistenceId: String, event: A, max: Duration): A =
     scalaTestkit.expectNextPersisted(persistenceId, event, max.asScala)
 
-  /**
-   * Check that next persisted in storage for particular persistence id event has expected type.
-   */
+  /** Check that next persisted in storage for particular persistence id event has expected type. */
   def expectNextPersistedClass[A](persistenceId: String, cla: Class[A]): A =
     scalaTestkit.expectNextPersistedClass(persistenceId, cla)
 
-  /**
-   * Check for `max` time that next persisted in storage for particular persistence id event has expected type.
-   */
+  /** Check for `max` time that next persisted in storage for particular persistence id event has expected type. */
   def expectNextPersistedClass[A](persistenceId: String, cla: Class[A], max: Duration): A =
     scalaTestkit.expectNextPersistedClass(persistenceId, cla, max.asScala)
 
-  /**
-   * Fail next `n` write operations with the `cause` exception for particular persistence id.
-   */
+  /** Fail next `n` write operations with the `cause` exception for particular persistence id. */
   def failNextNPersisted(persistenceId: String, n: Int, cause: Throwable): Unit =
     scalaTestkit.failNextNPersisted(persistenceId, n, cause)
 
-  /**
-   * Fail next `n` write operations for particular persistence id.
-   */
+  /** Fail next `n` write operations for particular persistence id. */
   def failNextNPersisted(persistenceId: String, n: Int): Unit = failNextNPersisted(persistenceId, n, ExpectedFailure)
 
-  /**
-   * Fail next `n` write operations with the `cause` exception for any persistence id.
-   */
+  /** Fail next `n` write operations with the `cause` exception for any persistence id. */
   def failNextNPersisted(n: Int, cause: Throwable): Unit = scalaTestkit.failNextNPersisted(n, cause)
 
-  /**
-   * Fail next `n` write operations with default exception for any persistence id.
-   */
+  /** Fail next `n` write operations with default exception for any persistence id. */
   def failNextNPersisted(n: Int): Unit = failNextNPersisted(n, ExpectedFailure)
 
-  /**
-   * Fail next write operation with `cause` exception for particular persistence id.
-   */
+  /** Fail next write operation with `cause` exception for particular persistence id. */
   def failNextPersisted(persistenceId: String, cause: Throwable): Unit = failNextNPersisted(persistenceId, 1, cause)
 
-  /**
-   * Fail next write operation with default exception for particular persistence id.
-   */
+  /** Fail next write operation with default exception for particular persistence id. */
   def failNextPersisted(persistenceId: String): Unit = failNextNPersisted(persistenceId, 1)
 
-  /**
-   * Fail next write operation event with `cause` exception for any persistence id.
-   */
+  /** Fail next write operation event with `cause` exception for any persistence id. */
   def failNextPersisted(cause: Throwable): Unit = failNextNPersisted(1, cause)
 
-  /**
-   * Fail next write operation with default exception for any persistence id.
-   */
+  /** Fail next write operation with default exception for any persistence id. */
   def failNextPersisted(): Unit = failNextNPersisted(1)
 
-  /**
-   * Fail next read from storage (recovery) attempt with `cause` exception for any persistence id.
-   */
+  /** Fail next read from storage (recovery) attempt with `cause` exception for any persistence id. */
   def failNextRead(cause: Throwable): Unit = failNextNReads(1, cause)
 
-  /**
-   * Fail next read from storage (recovery) attempt with default exception for any persistence id.
-   */
+  /** Fail next read from storage (recovery) attempt with default exception for any persistence id. */
   def failNextRead(): Unit = failNextNReads(1)
 
-  /**
-   * Fail next read from storage (recovery) attempt with `cause` exception for particular persistence id.
-   */
+  /** Fail next read from storage (recovery) attempt with `cause` exception for particular persistence id. */
   def failNextRead(persistenceId: String, cause: Throwable): Unit = failNextNReads(persistenceId, 1, cause)
 
-  /**
-   * Fail next read from storage (recovery) attempt with default exception for any persistence id.
-   */
+  /** Fail next read from storage (recovery) attempt with default exception for any persistence id. */
   def failNextRead(persistenceId: String): Unit = failNextNReads(persistenceId, 1)
 
-  /**
-   * Fail next n read from storage (recovery) attempts with `cause` exception for any persistence id.
-   */
+  /** Fail next n read from storage (recovery) attempts with `cause` exception for any persistence id. */
   def failNextNReads(n: Int, cause: Throwable): Unit = scalaTestkit.failNextNReads(n, cause)
 
-  /**
-   * Fail next n read from storage (recovery) attempts with default exception for any persistence id.
-   */
+  /** Fail next n read from storage (recovery) attempts with default exception for any persistence id. */
   def failNextNReads(n: Int): Unit = failNextNReads(n, ExpectedFailure)
 
-  /**
-   * Fail next n read from storage (recovery) attempts with `cause` exception for particular persistence id.
-   */
+  /** Fail next n read from storage (recovery) attempts with `cause` exception for particular persistence id. */
   def failNextNReads(persistenceId: String, n: Int, cause: Throwable): Unit =
     scalaTestkit.failNextNReads(persistenceId, n, cause)
 
-  /**
-   * Fail next n read from storage (recovery) attempts with default exception for particular persistence id.
-   */
+  /** Fail next n read from storage (recovery) attempts with default exception for particular persistence id. */
   def failNextNReads(persistenceId: String, n: Int): Unit = failNextNReads(persistenceId, n, ExpectedFailure)
 
-  /**
-   * Fail next delete from storage attempt with `cause` exception for any persistence id.
-   */
+  /** Fail next delete from storage attempt with `cause` exception for any persistence id. */
   def failNextDelete(cause: Throwable): Unit = failNextNDeletes(1, cause)
 
-  /**
-   * Fail next delete from storage attempt with default exception for any persistence id.
-   */
+  /** Fail next delete from storage attempt with default exception for any persistence id. */
   def failNextDelete(): Unit = failNextNDeletes(1)
 
-  /**
-   * Fail next delete from storage attempt with `cause` exception for particular persistence id.
-   */
+  /** Fail next delete from storage attempt with `cause` exception for particular persistence id. */
   def failNextDelete(persistenceId: String, cause: Throwable): Unit = failNextNDeletes(persistenceId, 1, cause)
 
-  /**
-   * Fail next delete from storage attempt with default exception for particular persistence id.
-   */
+  /** Fail next delete from storage attempt with default exception for particular persistence id. */
   def failNextDelete(persistenceId: String): Unit = failNextNDeletes(persistenceId, 1)
 
-  /**
-   * Fail next n delete from storage attempts with `cause` exception for any persistence id.
-   */
+  /** Fail next n delete from storage attempts with `cause` exception for any persistence id. */
   def failNextNDeletes(n: Int, cause: Throwable): Unit = scalaTestkit.failNextNDeletes(n, cause)
 
-  /**
-   * Fail next n delete from storage attempts with default exception for any persistence id.
-   */
+  /** Fail next n delete from storage attempts with default exception for any persistence id. */
   def failNextNDeletes(n: Int): Unit = failNextNDeletes(n, ExpectedFailure)
 
-  /**
-   * Fail next n delete from storage attempts with `cause` exception for particular persistence id.
-   */
+  /** Fail next n delete from storage attempts with `cause` exception for particular persistence id. */
   def failNextNDeletes(persistenceId: String, n: Int, cause: Throwable): Unit =
     scalaTestkit.failNextNDeletes(persistenceId, n, cause)
 
-  /**
-   * Fail next n delete from storage attempts with default exception for particular persistence id.
-   */
+  /** Fail next n delete from storage attempts with default exception for particular persistence id. */
   def failNextNDeletes(persistenceId: String, n: Int): Unit = failNextNDeletes(persistenceId, n, ExpectedFailure)
 
-  /**
-   * Receive next n events from the storage.
-   */
+  /** Receive next n events from the storage. */
   def receivePersisted[A](persistenceId: String, n: Int, cla: Class[A]): JList[A] =
     scalaTestkit.receivePersisted(persistenceId, n, cla).asJava
 
-  /**
-   * Receive for `max` time next n events from the storage.
-   */
+  /** Receive for `max` time next n events from the storage. */
   def receivePersisted[A](persistenceId: String, n: Int, cla: Class[A], max: Duration): JList[A] =
     scalaTestkit.receivePersisted(persistenceId, n, cla, max.asScala).asJava
 
-  /**
-   * Reject next n save in storage operations for particular persistence id with `cause` exception.
-   */
+  /** Reject next n save in storage operations for particular persistence id with `cause` exception. */
   def rejectNextNPersisted(persistenceId: String, n: Int, cause: Throwable): Unit =
     scalaTestkit.rejectNextNPersisted(persistenceId, n, cause)
 
-  /**
-   * Reject next n save in storage operations for particular persistence id with default exception.
-   */
+  /** Reject next n save in storage operations for particular persistence id with default exception. */
   def rejectNextNPersisted(persistenceId: String, n: Int): Unit =
     rejectNextNPersisted(persistenceId, n, ExpectedRejection)
 
-  /**
-   * Reject next n save in storage operations for any persistence id with default exception.
-   */
+  /** Reject next n save in storage operations for any persistence id with default exception. */
   def rejectNextNPersisted(n: Int): Unit = rejectNextNPersisted(n, ExpectedRejection)
 
-  /**
-   * Reject next n save in storage operations for any persistence id with `cause` exception.
-   */
+  /** Reject next n save in storage operations for any persistence id with `cause` exception. */
   def rejectNextNPersisted(n: Int, cause: Throwable): Unit = scalaTestkit.rejectNextNPersisted(n, cause)
 
-  /**
-   * Reject next save in storage operation for particular persistence id with default exception.
-   */
+  /** Reject next save in storage operation for particular persistence id with default exception. */
   def rejectNextPersisted(persistenceId: String): Unit = rejectNextNPersisted(persistenceId, 1)
 
-  /**
-   * Reject next save in storage operation for particular persistence id with `cause` exception.
-   */
+  /** Reject next save in storage operation for particular persistence id with `cause` exception. */
   def rejectNextPersisted(persistenceId: String, cause: Throwable): Unit = rejectNextNPersisted(persistenceId, 1, cause)
 
-  /**
-   * Reject next save in storage operation for any persistence id with `cause` exception.
-   */
+  /** Reject next save in storage operation for any persistence id with `cause` exception. */
   def rejectNextPersisted(cause: Throwable): Unit = rejectNextNPersisted(1, cause)
 
-  /**
-   * Reject next save in storage operation for any persistence id with default exception.
-   */
+  /** Reject next save in storage operation for any persistence id with default exception. */
   def rejectNextPersisted(): Unit = rejectNextNPersisted(1)
 
-  /**
-   * Reject next read from storage operation for any persistence id with default exception.
-   */
+  /** Reject next read from storage operation for any persistence id with default exception. */
   def rejectNextRead(): Unit = rejectNextNReads(1)
 
-  /**
-   * Reject next read from storage operation for any persistence id with `cause` exception.
-   */
+  /** Reject next read from storage operation for any persistence id with `cause` exception. */
   def rejectNextRead(cause: Throwable): Unit = rejectNextNReads(1, cause)
 
-  /**
-   * Reject next n read from storage operations for any persistence id with default exception.
-   */
+  /** Reject next n read from storage operations for any persistence id with default exception. */
   def rejectNextNReads(n: Int): Unit = rejectNextNReads(n, ExpectedRejection)
 
-  /**
-   * Reject next n read from storage operations for any persistence id with `cause` exception.
-   */
+  /** Reject next n read from storage operations for any persistence id with `cause` exception. */
   def rejectNextNReads(n: Int, cause: Throwable): Unit = scalaTestkit.rejectNextNReads(n, cause)
 
-  /**
-   * Reject next read from storage operation for particular persistence id with default exception.
-   */
+  /** Reject next read from storage operation for particular persistence id with default exception. */
   def rejectNextRead(persistenceId: String): Unit = rejectNextNReads(persistenceId, 1)
 
-  /**
-   * Reject next read from storage operation for particular persistence id with `cause` exception.
-   */
+  /** Reject next read from storage operation for particular persistence id with `cause` exception. */
   def rejectNextRead(persistenceId: String, cause: Throwable): Unit = rejectNextNReads(persistenceId, 1, cause)
 
-  /**
-   * Reject next n read from storage operations for particular persistence id with default exception.
-   */
+  /** Reject next n read from storage operations for particular persistence id with default exception. */
   def rejectNextNReads(persistenceId: String, n: Int): Unit = rejectNextNReads(persistenceId, n, ExpectedRejection)
 
-  /**
-   * Reject next n read from storage operations for particular persistence id with `cause` exception.
-   */
+  /** Reject next n read from storage operations for particular persistence id with `cause` exception. */
   def rejectNextNReads(persistenceId: String, n: Int, cause: Throwable): Unit =
     scalaTestkit.rejectNextNReads(persistenceId, n, cause)
 
-  /**
-   * Reject next delete from storage operation for any persistence id with default exception.
-   */
+  /** Reject next delete from storage operation for any persistence id with default exception. */
   def rejectNextDelete(): Unit = rejectNextNDeletes(1)
 
-  /**
-   * Reject next delete from storage operation for any persistence id with `cause` exception.
-   */
+  /** Reject next delete from storage operation for any persistence id with `cause` exception. */
   def rejectNextDelete(cause: Throwable): Unit = rejectNextNDeletes(1, cause)
 
-  /**
-   * Reject next n delete from storage operations for any persistence id with default exception.
-   */
+  /** Reject next n delete from storage operations for any persistence id with default exception. */
   def rejectNextNDeletes(n: Int): Unit = rejectNextNDeletes(n, ExpectedRejection)
 
-  /**
-   * Reject next n delete from storage operations for any persistence id with `cause` exception.
-   */
+  /** Reject next n delete from storage operations for any persistence id with `cause` exception. */
   def rejectNextNDeletes(n: Int, cause: Throwable): Unit = scalaTestkit.rejectNextNDeletes(n, cause)
 
-  /**
-   * Reject next delete from storage operations for particular persistence id with default exception.
-   */
+  /** Reject next delete from storage operations for particular persistence id with default exception. */
   def rejectNextDelete(persistenceId: String): Unit = rejectNextNDeletes(persistenceId, 1)
 
-  /**
-   * Reject next delete from storage operations for particular persistence id with `cause` exception.
-   */
+  /** Reject next delete from storage operations for particular persistence id with `cause` exception. */
   def rejectNextDelete(persistenceId: String, cause: Throwable): Unit = rejectNextNDeletes(persistenceId, 1, cause)
 
-  /**
-   * Reject next n delete from storage operations for particular persistence id with default exception.
-   */
+  /** Reject next n delete from storage operations for particular persistence id with default exception. */
   def rejectNextNDeletes(persistenceId: String, n: Int): Unit = rejectNextNDeletes(persistenceId, n, ExpectedRejection)
 
-  /**
-   * Reject next n delete from storage operations for particular persistence id with `cause` exception.
-   */
+  /** Reject next n delete from storage operations for particular persistence id with `cause` exception. */
   def rejectNextNDeletes(persistenceId: String, n: Int, cause: Throwable): Unit =
     scalaTestkit.rejectNextNDeletes(persistenceId, n, cause)
 
@@ -345,15 +231,11 @@ class PersistenceTestKit(scalaTestkit: ScalaTestKit) {
    */
   def rejectNextNOps(n: Int, cause: Throwable): Unit = scalaTestkit.rejectNextNOps(n, cause)
 
-  /**
-   * Persist `events` into storage in order.
-   */
+  /** Persist `events` into storage in order. */
   def persistForRecovery(persistenceId: String, events: JList[Any]): Unit =
     scalaTestkit.persistForRecovery(persistenceId, events.asScala.toVector)
 
-  /**
-   * Retrieve all events saved in storage by persistence id.
-   */
+  /** Retrieve all events saved in storage by persistence id. */
   def persistedInStorage(persistenceId: String): JList[Any] = scalaTestkit.persistedInStorage(persistenceId).asJava
 
   /**
@@ -428,9 +310,7 @@ class PersistenceTestKit(scalaTestkit: ScalaTestKit) {
     this
   }
 
-  /**
-   * Returns default policy if it was changed by [[PersistenceTestKit.withPolicy()]].
-   */
+  /** Returns default policy if it was changed by [[PersistenceTestKit.withPolicy()]]. */
   def resetPolicy(): Unit = scalaTestkit.resetPolicy()
 
 }

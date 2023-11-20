@@ -42,7 +42,6 @@ object BidiFlow {
    *     |  +----------------------+  |
    *     +----------------------------+
    * }}}
-   *
    */
   def fromFlowsMat[I1, O1, I2, O2, M1, M2, M](
       flow1: Graph[FlowShape[I1, O1], M1],
@@ -67,7 +66,6 @@ object BidiFlow {
    *     |  +----------------------+  |
    *     +----------------------------+
    * }}}
-   *
    */
   def fromFlows[I1, O1, I2, O2, M1, M2](
       flow1: Graph[FlowShape[I1, O1], M1],
@@ -194,14 +192,10 @@ final class BidiFlow[I1, O1, I2, O2, Mat](delegate: scaladsl.BidiFlow[I1, O1, I2
   def join[Mat2, M](flow: Flow[O1, I2, Mat2], combine: function.Function2[Mat, Mat2, M]): Flow[I1, O2, M] =
     new Flow(delegate.joinMat(flow.asScala)(combinerToScala(combine)))
 
-  /**
-   * Turn this BidiFlow around by 180 degrees, logically flipping it upside down in a protocol stack.
-   */
+  /** Turn this BidiFlow around by 180 degrees, logically flipping it upside down in a protocol stack. */
   def reversed: BidiFlow[I2, O2, I1, O1, Mat] = new BidiFlow(delegate.reversed)
 
-  /**
-   * Transform only the materialized value of this BidiFlow, leaving all other properties as they were.
-   */
+  /** Transform only the materialized value of this BidiFlow, leaving all other properties as they were. */
   def mapMaterializedValue[Mat2](f: function.Function[Mat, Mat2]): BidiFlow[I1, O1, I2, O2, Mat2] =
     new BidiFlow(delegate.mapMaterializedValue(f.apply _))
 
@@ -224,15 +218,11 @@ final class BidiFlow[I1, O1, I2, O2, Mat](delegate: scaladsl.BidiFlow[I1, O1, I2
   override def addAttributes(attr: Attributes): BidiFlow[I1, O1, I2, O2, Mat] =
     new BidiFlow(delegate.addAttributes(attr))
 
-  /**
-   * Add a ``name`` attribute to this Flow.
-   */
+  /** Add a ``name`` attribute to this Flow. */
   override def named(name: String): BidiFlow[I1, O1, I2, O2, Mat] =
     new BidiFlow(delegate.named(name))
 
-  /**
-   * Put an asynchronous boundary around this `Flow`
-   */
+  /** Put an asynchronous boundary around this `Flow` */
   override def async: BidiFlow[I1, O1, I2, O2, Mat] =
     new BidiFlow(delegate.async)
 

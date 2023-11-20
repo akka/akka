@@ -13,10 +13,12 @@ import akka.testkit.ImplicitSender
 import akka.testkit.TestActors
 
 object HandshakeRetrySpec {
-  val commonConfig = ConfigFactory.parseString("""
+  val commonConfig = ConfigFactory
+    .parseString("""
      akka.remote.artery.advanced.handshake-timeout = 10s
      akka.remote.artery.advanced.aeron.image-liveness-timeout = 7s
-  """).withFallback(ArterySpecSupport.defaultConfig)
+  """)
+    .withFallback(ArterySpecSupport.defaultConfig)
 
 }
 

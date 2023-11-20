@@ -28,8 +28,8 @@ class LookupRemoteActorMultiJvmNode2 extends LookupRemoteActorSpec
 
 object LookupRemoteActorSpec {
   class SomeActor extends Actor {
-    def receive = {
-      case "identify" => sender() ! self
+    def receive = { case "identify" =>
+      sender() ! self
     }
   }
 }

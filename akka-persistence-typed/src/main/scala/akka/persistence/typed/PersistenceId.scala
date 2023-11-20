@@ -119,9 +119,7 @@ object PersistenceId {
   def of(entityTypeHint: String, entityId: String, separator: String): PersistenceId =
     apply(entityTypeHint, entityId, separator)
 
-  /**
-   * Constructs a [[PersistenceId]] with `id` as the full unique identifier.
-   */
+  /** Constructs a [[PersistenceId]] with `id` as the full unique identifier. */
   def ofUniqueId(id: String): PersistenceId =
     new PersistenceId(id)
 

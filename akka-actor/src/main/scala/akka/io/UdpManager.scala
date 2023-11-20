@@ -42,7 +42,6 @@ import akka.io.Udp._
  * message that the service is available. UDP datagrams can be sent by sending [[akka.io.Udp.Send]] messages to the
  * sender of SimpleSenderReady. All the datagrams will contain an ephemeral local port as sender and answers will be
  * discarded.
- *
  */
 private[io] class UdpManager(udp: UdpExt)
     extends SelectionHandler.SelectorBasedManager(udp.settings, udp.settings.NrOfSelectors) {
@@ -50,11 +49,11 @@ private[io] class UdpManager(udp: UdpExt)
   def receive = workerForCommandHandler {
     case b: Bind =>
       val commander = sender() // cache because we create a function that will run asynchly
-      (registry => Props(classOf[UdpListener], udp, registry, commander, b))
+      registry => Props(classOf[UdpListener], udp, registry, commander, b)
 
     case s: SimpleSender =>
       val commander = sender() // cache because we create a function that will run asynchly
-      (registry => Props(classOf[UdpSender], udp, registry, commander, s.options))
+      registry => Props(classOf[UdpSender], udp, registry, commander, s.options)
   }
 
 }

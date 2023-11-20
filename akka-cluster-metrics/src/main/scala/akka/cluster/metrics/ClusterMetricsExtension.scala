@@ -36,9 +36,7 @@ import akka.event.LoggingAdapter
  */
 class ClusterMetricsExtension(system: ExtendedActorSystem) extends Extension {
 
-  /**
-   * Metrics extension configuration.
-   */
+  /** Metrics extension configuration. */
   val settings = ClusterMetricsSettings(system.settings.config)
   import settings._
 
@@ -54,7 +52,7 @@ class ClusterMetricsExtension(system: ExtendedActorSystem) extends Extension {
     .getOrElse {
       val log: LoggingAdapter = Logging(system, classOf[ClusterMetricsExtension])
       log.error(s"Configured strategy provider ${SupervisorStrategyProvider} failed to load, using default ${classOf[
-        ClusterMetricsStrategy].getName}.")
+          ClusterMetricsStrategy].getName}.")
       new ClusterMetricsStrategy(SupervisorStrategyConfiguration)
     }
 
@@ -84,9 +82,7 @@ class ClusterMetricsExtension(system: ExtendedActorSystem) extends Extension {
 
 }
 
-/**
- * Cluster metrics extension provider.
- */
+/** Cluster metrics extension provider. */
 object ClusterMetricsExtension extends ExtensionId[ClusterMetricsExtension] with ExtensionIdProvider {
   override def lookup = ClusterMetricsExtension
   override def get(system: ActorSystem): ClusterMetricsExtension = super.get(system)

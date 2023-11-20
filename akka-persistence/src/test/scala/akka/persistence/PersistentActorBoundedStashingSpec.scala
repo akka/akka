@@ -27,18 +27,18 @@ object PersistentActorBoundedStashingSpec {
   class StashOverflowStrategyFromConfigPersistentActor(name: String) extends NamedPersistentActor(name) {
     var events: List[Any] = Nil
 
-    val updateState: Receive = {
-      case Evt(data) => events = data :: events
+    val updateState: Receive = { case Evt(data) =>
+      events = data :: events
     }
 
-    val commonBehavior: Receive = {
-      case GetState => sender() ! events.reverse
+    val commonBehavior: Receive = { case GetState =>
+      sender() ! events.reverse
     }
 
     def receiveRecover = updateState
 
-    override def receiveCommand: Receive = commonBehavior.orElse {
-      case Cmd(x: Any) => persist(Evt(x))(updateState)
+    override def receiveCommand: Receive = commonBehavior.orElse { case Cmd(x: Any) =>
+      persist(Evt(x))(updateState)
     }
   }
 
@@ -100,14 +100,14 @@ class ThrowExceptionStrategyPersistentActorBoundedStashingSpec
       persistentActor ! GetState
       expectMsg(Nil)
 
-      //barrier for stash
+      // barrier for stash
       persistentActor ! Cmd("a")
 
-      //internal stash overflow
+      // internal stash overflow
       (1 to (capacity + 1)).foreach(persistentActor ! Cmd(_))
 
-      //after PA stopped, all stashed messages forward to deadletters
-      //the message triggering the overflow is lost, so we get one less message than we sent
+      // after PA stopped, all stashed messages forward to deadletters
+      // the message triggering the overflow is lost, so we get one less message than we sent
       (1 to capacity).foreach(i => expectMsg(DeadLetter(Cmd(i), testActor, persistentActor)))
 
       // send another message to the now dead actor and make sure that it goes to dead letters
@@ -125,21 +125,21 @@ class DiscardStrategyPersistentActorBoundedStashingSpec
       awaitAssert(SteppingInmemJournal.getRef("persistence-bounded-stash"), 3.seconds)
       val journal = SteppingInmemJournal.getRef("persistence-bounded-stash")
 
-      //initial read highest
+      // initial read highest
       SteppingInmemJournal.step(journal)
 
       // make sure it's fully started first
       persistentActor ! GetState
       expectMsg(Nil)
 
-      //barrier for stash
+      // barrier for stash
       persistentActor ! Cmd("a")
 
-      //internal stash overflow after 10
+      // internal stash overflow after 10
       (1 to (2 * capacity)).foreach(persistentActor ! Cmd(_))
-      //so, 11 to 20 discard to deadletter
+      // so, 11 to 20 discard to deadletter
       ((1 + capacity) to (2 * capacity)).foreach(i => expectMsg(DeadLetter(Cmd(i), testActor, persistentActor)))
-      //allow "a" and 1 to 10 write complete
+      // allow "a" and 1 to 10 write complete
       (1 to (1 + capacity)).foreach(_ => SteppingInmemJournal.step(journal))
 
       persistentActor ! GetState
@@ -157,21 +157,21 @@ class ReplyToStrategyPersistentActorBoundedStashingSpec
       awaitAssert(SteppingInmemJournal.getRef("persistence-bounded-stash"), 3.seconds)
       val journal = SteppingInmemJournal.getRef("persistence-bounded-stash")
 
-      //initial read highest
+      // initial read highest
       SteppingInmemJournal.step(journal)
 
       // make sure it's fully started first
       persistentActor ! GetState
       expectMsg(Nil)
 
-      //barrier for stash
+      // barrier for stash
       persistentActor ! Cmd("a")
 
-      //internal stash overflow after 10
+      // internal stash overflow after 10
       (1 to (2 * capacity)).foreach(persistentActor ! Cmd(_))
-      //so, 11 to 20 reply to with "Reject" String
+      // so, 11 to 20 reply to with "Reject" String
       ((1 + capacity) to (2 * capacity)).foreach(_ => expectMsg("RejectToStash"))
-      //allow "a" and 1 to 10 write complete
+      // allow "a" and 1 to 10 write complete
       (1 to (1 + capacity)).foreach(_ => SteppingInmemJournal.step(journal))
 
       persistentActor ! GetState

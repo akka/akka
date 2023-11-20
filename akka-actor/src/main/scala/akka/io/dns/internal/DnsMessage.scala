@@ -13,9 +13,7 @@ import akka.annotation.InternalApi
 import akka.io.dns.ResourceRecord
 import akka.util.{ ByteString, ByteStringBuilder }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[internal] object OpCode extends Enumeration {
   val QUERY = Value(0)
@@ -23,9 +21,7 @@ private[internal] object OpCode extends Enumeration {
   val STATUS = Value(2)
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[internal] object ResponseCode extends Enumeration {
   val SUCCESS = Value(0)
@@ -36,9 +32,7 @@ private[internal] object ResponseCode extends Enumeration {
   val REFUSED = Value(5)
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[internal] case class MessageFlags(flags: Short) extends AnyVal {
   def isQuery: Boolean = (flags & 0x8000) == 0
@@ -72,9 +66,7 @@ private[internal] case class MessageFlags(flags: Short) extends AnyVal {
   }
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[internal] object MessageFlags {
   def apply(
@@ -96,9 +88,7 @@ private[internal] object MessageFlags {
   }
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[internal] case class Message(
     id: Short,
@@ -127,9 +117,7 @@ private[internal] case class Message(
   }
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[internal] object Message {
   def parse(msg: ByteString): Message = {

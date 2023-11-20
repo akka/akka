@@ -14,9 +14,7 @@ import akka.remote.ContainerFormats
 import akka.serialization.DisabledJavaSerializer
 import akka.serialization.SerializationExtension
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[akka] class ThrowableSupport(system: ExtendedActorSystem) {
 
   private lazy val serialization = SerializationExtension(system)

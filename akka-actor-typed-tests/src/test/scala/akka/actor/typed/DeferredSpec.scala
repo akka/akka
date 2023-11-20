@@ -58,10 +58,9 @@ class DeferredSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with L
           throw new RuntimeException("simulated exc from factory") with NoStackTrace
         })
         context.watch(child)
-        Behaviors.receive[Command]((_, _) => Behaviors.same).receiveSignal {
-          case (_, Terminated(`child`)) =>
-            probe.ref ! Pong
-            Behaviors.stopped
+        Behaviors.receive[Command]((_, _) => Behaviors.same).receiveSignal { case (_, Terminated(`child`)) =>
+          probe.ref ! Pong
+          Behaviors.stopped
         }
       }
       LoggingTestKit.error[ActorInitializationException].expect {
@@ -76,10 +75,9 @@ class DeferredSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with L
       val behv = Behaviors.setup[Command] { context =>
         val child = context.spawnAnonymous(Behaviors.setup[Command](_ => Behaviors.stopped))
         context.watch(child)
-        Behaviors.receive[Command]((_, _) => Behaviors.same).receiveSignal {
-          case (_, Terminated(`child`)) =>
-            probe.ref ! Pong
-            Behaviors.stopped
+        Behaviors.receive[Command]((_, _) => Behaviors.same).receiveSignal { case (_, Terminated(`child`)) =>
+          probe.ref ! Pong
+          Behaviors.stopped
         }
       }
       spawn(behv)
@@ -105,8 +103,8 @@ class DeferredSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with L
           probe.ref ! Started
           target(probe.ref)
         }
-        .transformMessages[Command] {
-          case m => m
+        .transformMessages[Command] { case m =>
+          m
         }
       probe.expectNoMessage() // not yet
       val ref = spawn(behv)
@@ -120,10 +118,12 @@ class DeferredSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with L
       // monitor is implemented with tap, so this is testing both
       val probe = TestProbe[Event]("evt")
       val monitorProbe = TestProbe[Command]("monitor")
-      val behv = Behaviors.monitor(monitorProbe.ref, Behaviors.setup[Command] { _ =>
-        probe.ref ! Started
-        target(probe.ref)
-      })
+      val behv = Behaviors.monitor(
+        monitorProbe.ref,
+        Behaviors.setup[Command] { _ =>
+          probe.ref ! Started
+          target(probe.ref)
+        })
       probe.expectNoMessage() // not yet
       val ref = spawn(behv)
       // it's supposed to be created immediately (not waiting for first message)

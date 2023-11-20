@@ -40,9 +40,7 @@ final class Version(val version: String) extends Comparable[Version] {
   @volatile private var numbers: Array[Int] = Array.emptyIntArray
   private var rest: String = ""
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[akka] def parse(): Version = {
     def parseLastPart(s: String): (Int, String) = {
       // for example 2, 2-SNAPSHOT or dynver 2+10-1234abcd

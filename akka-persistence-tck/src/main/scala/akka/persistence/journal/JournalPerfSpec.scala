@@ -61,11 +61,10 @@ object JournalPerfSpec {
         counter = 0
     }
 
-    override def receiveRecover: Receive = {
-      case Cmd(_, payload) =>
-        counter += 1
-        require(payload == counter, s"Expected to receive [$counter] yet got: [${payload}]")
-        if (counter == replyAfter) replyTo ! payload
+    override def receiveRecover: Receive = { case Cmd(_, payload) =>
+      counter += 1
+      require(payload == counter, s"Expected to receive [$counter] yet got: [${payload}]")
+      if (counter == replyAfter) replyTo ! payload
     }
 
   }
@@ -73,9 +72,7 @@ object JournalPerfSpec {
   case object ResetCounter
   case class Cmd(mode: String, payload: Int)
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[akka] class CmdSerializer extends SerializerWithStringManifest {
     override def identifier: Int = 293562
 

@@ -26,14 +26,14 @@ object LoggingDocExamples {
 
   def howToUse(): Unit = {
 
-    //#context-log
+    // #context-log
     Behaviors.receive[String] { (context, message) =>
       context.log.info("Received message: {}", message)
       Behaviors.same
     }
-    //#context-log
+    // #context-log
 
-    //#logger-name
+    // #logger-name
     Behaviors.setup[String] { context =>
       context.setLoggerName("com.myservice.BackendManager")
       context.log.info("Starting up")
@@ -43,9 +43,9 @@ object LoggingDocExamples {
         Behaviors.same
       }
     }
-    //#logger-name
+    // #logger-name
 
-    //#logger-factory
+    // #logger-factory
     val log = LoggerFactory.getLogger("com.myservice.BackendTask")
 
     Future {
@@ -55,21 +55,21 @@ object LoggingDocExamples {
       case Success(result) => log.info("Task completed: {}", result)
       case Failure(exc)    => log.error("Task failed", exc)
     }
-    //#logger-factory
+    // #logger-factory
 
   }
 
   def placeholders(): Unit = {
-    //#info2
+    // #info2
     import akka.actor.typed.scaladsl.LoggerOps
 
     Behaviors.receive[String] { (context, message) =>
       context.log.info2("{} received message: {}", context.self.path.name, message)
       Behaviors.same
     }
-    //#info2
+    // #info2
 
-    //#infoN
+    // #infoN
     import akka.actor.typed.scaladsl.LoggerOps
 
     Behaviors.receive[String] { (context, message) =>
@@ -80,23 +80,23 @@ object LoggingDocExamples {
         message.take(10))
       Behaviors.same
     }
-    //#infoN
+    // #infoN
 
   }
 
   def logMessages(): Unit = {
-    //#logMessages
+    // #logMessages
     import akka.actor.typed.LogOptions
     import org.slf4j.event.Level
 
     Behaviors.logMessages(LogOptions().withLevel(Level.TRACE), BackendManager())
-    //#logMessages
+    // #logMessages
   }
 
   def withMdc(): Unit = {
     val system: ActorSystem[_] = ???
 
-    //#withMdc
+    // #withMdc
     val staticMdc = Map("startTime" -> system.startTime.toString)
     Behaviors.withMdc[BackendManager.Command](
       staticMdc,
@@ -104,7 +104,7 @@ object LoggingDocExamples {
         (msg: BackendManager.Command) => Map("identifier" -> msg.identifier, "upTime" -> system.uptime.toString)) {
       BackendManager()
     }
-    //#withMdc
+    // #withMdc
   }
 
   def logging(): Unit = {
@@ -112,18 +112,18 @@ object LoggingDocExamples {
     final case class Message(s: String)
     val ref: ActorRef[Message] = ???
 
-    //#test-logging
+    // #test-logging
     import akka.actor.testkit.typed.scaladsl.LoggingTestKit
 
     // implicit ActorSystem is needed, but that is given by ScalaTestWithActorTestKit
-    //implicit val system: ActorSystem[_]
+    // implicit val system: ActorSystem[_]
 
     LoggingTestKit.info("Received message").expect {
       ref ! Message("hello")
     }
-    //#test-logging
+    // #test-logging
 
-    //#test-logging-criteria
+    // #test-logging-criteria
     LoggingTestKit
       .error[IllegalArgumentException]
       .withMessageRegex(".*was rejected.*expecting ascii input.*")
@@ -138,15 +138,15 @@ object LoggingDocExamples {
         ref ! Message("hellö")
         ref ! Message("hejdå")
       }
-    //#test-logging-criteria
+    // #test-logging-criteria
   }
 
   def tagsExample(): Unit = {
     Behaviors.setup[AnyRef] { context =>
       val myBehavior = Behaviors.empty[AnyRef]
-      //#tags
+      // #tags
       context.spawn(myBehavior, "MyActor", ActorTags("processing"))
-      //#tags
+      // #tags
       Behaviors.stopped
     }
   }

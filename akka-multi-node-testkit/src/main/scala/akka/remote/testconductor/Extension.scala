@@ -28,9 +28,7 @@ object TestConductor extends ExtensionId[TestConductorExt] with ExtensionIdProvi
 
   override def createExtension(system: ExtendedActorSystem): TestConductorExt = new TestConductorExt(system)
 
-  /**
-   * Java API: retrieve the TestConductor extension for the given system.
-   */
+  /** Java API: retrieve the TestConductor extension for the given system. */
   override def get(system: ActorSystem): TestConductorExt = super.get(system)
   override def get(system: ClassicActorSystemProvider): TestConductorExt = super.get(system)
 
@@ -51,7 +49,6 @@ object TestConductor extends ExtensionId[TestConductorExt] with ExtensionIdProvi
  * To use ``blackhole``, ``passThrough``, and ``throttle`` you must activate the
  * failure injector and throttler transport adapters by specifying `testTransport(on = true)`
  * in your MultiNodeConfig.
- *
  */
 class TestConductorExt(val system: ExtendedActorSystem) extends Extension with Conductor with Player {
 
@@ -78,14 +75,10 @@ class TestConductorExt(val system: ExtendedActorSystem) extends Extension with C
     val ClientSocketWorkerPoolSize = computeWPS(config.getConfig("netty.client-socket-worker-pool"))
   }
 
-  /**
-   * Remote transport used by the actor ref provider.
-   */
+  /** Remote transport used by the actor ref provider. */
   val transport = system.provider.asInstanceOf[RemoteActorRefProvider].transport
 
-  /**
-   * Transport address of this Netty-like remote transport.
-   */
+  /** Transport address of this Netty-like remote transport. */
   val address = transport.defaultAddress
 
 }

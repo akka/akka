@@ -7,9 +7,11 @@ package akka.stream.scaladsl
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.TestSink
 
-class FlowAlsoToAllSpec extends StreamSpec("""
+class FlowAlsoToAllSpec
+    extends StreamSpec("""
     akka.stream.materializer.initial-input-buffer-size = 2
-  """) with ScriptedTest {
+  """)
+    with ScriptedTest {
 
   "An also to all" must {
     "publish elements to all its downstream" in {

@@ -14,9 +14,7 @@ import scala.concurrent.duration.FiniteDuration
 
 import akka.annotation.InternalApi
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] class TestClock extends Clock {
 
   @volatile private var _instant = roundToMillis(Instant.now())

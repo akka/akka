@@ -26,9 +26,7 @@ import akka.dispatch.RequiresMessageQueue
 import akka.dispatch.UnboundedMessageQueueSemantics
 import akka.testkit.AkkaSpec
 
-/**
- * Redirect different logging sources to SLF4J.
- */
+/** Redirect different logging sources to SLF4J. */
 trait RedirectLogging {
 
   def redirectLogging(): Unit = {
@@ -41,16 +39,12 @@ trait RedirectLogging {
 
 }
 
-/**
- * Provide sigar library from `project/target` location.
- */
+/** Provide sigar library from `project/target` location. */
 case class SimpleSigarProvider(location: String = "native") extends SigarProvider {
   def extractFolder = s"${System.getProperty("user.dir")}/target/${location}"
 }
 
-/**
- * Provide sigar library as static mock.
- */
+/** Provide sigar library as static mock. */
 case class MockitoSigarProvider(
     pid: Long = 123,
     loadAverage: Array[Double] = Array(0.7, 0.3, 0.1),
@@ -106,7 +100,7 @@ trait MetricsCollectorFactory { this: AkkaSpec =>
   def createMetricsCollector: MetricsCollector =
     try {
       new SigarMetricsCollector(selfAddress, defaultDecayFactor, new Sigar())
-      //new SigarMetricsCollector(selfAddress, defaultDecayFactor, SimpleSigarProvider().createSigarInstance)
+      // new SigarMetricsCollector(selfAddress, defaultDecayFactor, SimpleSigarProvider().createSigarInstance)
     } catch {
       case e: Throwable =>
         log.warning("Sigar failed to load. Using JMX. Reason: " + e.toString)
@@ -133,7 +127,6 @@ trait MetricsCollectorFactory { this: AkkaSpec =>
 }
 
 /**
- *
  */
 class MockitoSigarMetricsCollector(system: ActorSystem)
     extends SigarMetricsCollector(
@@ -141,9 +134,7 @@ class MockitoSigarMetricsCollector(system: ActorSystem)
       MetricsConfig.defaultDecayFactor,
       MockitoSigarProvider().createSigarInstance) {}
 
-/**
- * Metrics test configurations.
- */
+/** Metrics test configurations. */
 object MetricsConfig {
 
   val defaultDecayFactor = 2.0 / (1 + 10)
@@ -189,9 +180,7 @@ object MetricsConfig {
   """
 }
 
-/**
- * Current cluster metrics, updated periodically via event bus.
- */
+/** Current cluster metrics, updated periodically via event bus. */
 class ClusterMetricsView(system: ExtendedActorSystem) extends Closeable {
 
   val extension = ClusterMetricsExtension(system)

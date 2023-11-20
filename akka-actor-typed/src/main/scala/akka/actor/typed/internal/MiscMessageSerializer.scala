@@ -12,9 +12,7 @@ import akka.actor.typed.scaladsl.adapter._
 import akka.annotation.InternalApi
 import akka.serialization.{ BaseSerializer, SerializerWithStringManifest }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] final class MiscMessageSerializer(val system: akka.actor.ExtendedActorSystem)
     extends SerializerWithStringManifest
     with BaseSerializer {

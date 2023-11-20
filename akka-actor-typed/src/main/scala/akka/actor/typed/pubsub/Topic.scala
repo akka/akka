@@ -28,40 +28,28 @@ import akka.annotation.DoNotInherit
  */
 object Topic {
 
-  /**
-   * Not for user extension
-   */
+  /** Not for user extension */
   @DoNotInherit
   trait Command[T] extends TopicImpl.Command[T]
 
-  /**
-   * Scala API: Publish the message to all currently known subscribers.
-   */
+  /** Scala API: Publish the message to all currently known subscribers. */
   object Publish {
     def apply[T](message: T): Command[T] =
       TopicImpl.Publish(message)
   }
 
-  /**
-   * Java API: Publish the message to all currently known subscribers.
-   */
+  /** Java API: Publish the message to all currently known subscribers. */
   def publish[T](message: T): Command[T] = Publish(message)
 
-  /**
-   * Scala API: Subscribe to this topic. Should only be used for local subscribers.
-   */
+  /** Scala API: Subscribe to this topic. Should only be used for local subscribers. */
   object Subscribe {
     def apply[T](subscriber: ActorRef[T]): Command[T] = TopicImpl.Subscribe(subscriber)
   }
 
-  /**
-   * Java API: Subscribe to this topic. Should only be used for local subscribers.
-   */
+  /** Java API: Subscribe to this topic. Should only be used for local subscribers. */
   def subscribe[T](subscriber: ActorRef[T]): Command[T] = Subscribe(subscriber)
 
-  /**
-   * Scala API: Unsubscribe a previously subscribed actor from this topic.
-   */
+  /** Scala API: Unsubscribe a previously subscribed actor from this topic. */
   object Unsubscribe {
     def apply[T](subscriber: ActorRef[T]): Command[T] = TopicImpl.Unsubscribe(subscriber)
   }
@@ -79,9 +67,7 @@ object Topic {
   @DoNotInherit
   trait TopicStats {
 
-    /**
-     * @return The number of local subscribers subscribing to this topic actor instance when the request was handled
-     */
+    /** @return The number of local subscribers subscribing to this topic actor instance when the request was handled */
     def localSubscriberCount: Int
 
     /**
@@ -110,20 +96,14 @@ object Topic {
   def getTopicStats[T](replyTo: ActorRef[TopicStats]): Command[T] =
     GetTopicStats(replyTo)
 
-  /**
-   * Java API: Unsubscribe a previously subscribed actor from this topic.
-   */
+  /** Java API: Unsubscribe a previously subscribed actor from this topic. */
   def unsubscribe[T](subscriber: ActorRef[T]): Command[T] = Unsubscribe(subscriber)
 
-  /**
-   * Scala API: Create a topic actor behavior for the given topic name and message type.
-   */
+  /** Scala API: Create a topic actor behavior for the given topic name and message type. */
   def apply[T](topicName: String)(implicit classTag: ClassTag[T]): Behavior[Command[T]] =
     Behaviors.setup[TopicImpl.Command[T]](context => new TopicImpl[T](topicName, context)).narrow
 
-  /**
-   * Java API: Create a topic actor behavior for the given topic name and message class
-   */
+  /** Java API: Create a topic actor behavior for the given topic name and message class */
   def create[T](messageClass: Class[T], topicName: String): Behavior[Command[T]] =
     apply[T](topicName)(ClassTag(messageClass))
 

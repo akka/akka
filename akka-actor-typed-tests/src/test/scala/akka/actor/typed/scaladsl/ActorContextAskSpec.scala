@@ -44,10 +44,13 @@ class ActorContextAskSpec
       case class Ping(sender: ActorRef[Pong])
       case class Pong(selfName: String, threadName: String)
 
-      val pingPong = spawn(Behaviors.receive[Ping] { (context, message) =>
-        message.sender ! Pong(context.self.path.name, Thread.currentThread().getName)
-        Behaviors.same
-      }, "ping-pong", Props.empty.withDispatcherFromConfig("ping-pong-dispatcher"))
+      val pingPong = spawn(
+        Behaviors.receive[Ping] { (context, message) =>
+          message.sender ! Pong(context.self.path.name, Thread.currentThread().getName)
+          Behaviors.same
+        },
+        "ping-pong",
+        Props.empty.withDispatcherFromConfig("ping-pong-dispatcher"))
 
       val probe = TestProbe[Pong]()
 
@@ -80,10 +83,9 @@ class ActorContextAskSpec
       case class Ping(respondTo: ActorRef[Pong.type]) extends Protocol
       case object Pong extends Protocol
 
-      val pingPong = spawn(Behaviors.receiveMessagePartial[Protocol] {
-        case Ping(respondTo) =>
-          respondTo ! Pong
-          Behaviors.same
+      val pingPong = spawn(Behaviors.receiveMessagePartial[Protocol] { case Ping(respondTo) =>
+        respondTo ! Pong
+        Behaviors.same
       })
 
       val snitch = Behaviors.setup[AnyRef] { context =>
@@ -93,16 +95,13 @@ class ActorContextAskSpec
         }
 
         Behaviors
-          .receivePartial[AnyRef] {
-            case (_, message) =>
-              probe.ref ! message
-              Behaviors.same
+          .receivePartial[AnyRef] { case (_, message) =>
+            probe.ref ! message
+            Behaviors.same
           }
-          .receiveSignal {
-
-            case (_, PostStop) =>
-              probe.ref ! "stopped"
-              Behaviors.same
+          .receiveSignal { case (_, PostStop) =>
+            probe.ref ! "stopped"
+            Behaviors.same
           }
       }
 
@@ -200,10 +199,9 @@ class ActorContextAskSpec
           case Failure(ex)   => throw ex
         }
 
-        Behaviors.receiveMessage {
-          case Pong =>
-            probe.ref ! "got pong"
-            Behaviors.same
+        Behaviors.receiveMessage { case Pong =>
+          probe.ref ! "got pong"
+          Behaviors.same
         }
       })
 
@@ -223,10 +221,9 @@ class ActorContextAskSpec
           case wat         => throw new IllegalArgumentException(s"Unexpected response $wat")
         }
 
-        Behaviors.receiveMessage {
-          case ex: Throwable =>
-            probe.ref ! s"got error: ${ex.getClass.getName}, ${ex.getMessage}"
-            Behaviors.same
+        Behaviors.receiveMessage { case ex: Throwable =>
+          probe.ref ! s"got error: ${ex.getClass.getName}, ${ex.getMessage}"
+          Behaviors.same
         }
       })
 
@@ -247,10 +244,9 @@ class ActorContextAskSpec
           case wat         => throw new IllegalArgumentException(s"Unexpected response $wat")
         }
 
-        Behaviors.receiveMessage {
-          case ex: Throwable =>
-            probe.ref ! s"got error: ${ex.getClass.getName}, ${ex.getMessage}"
-            Behaviors.same
+        Behaviors.receiveMessage { case ex: Throwable =>
+          probe.ref ! s"got error: ${ex.getClass.getName}, ${ex.getMessage}"
+          Behaviors.same
         }
       })
 

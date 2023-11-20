@@ -6,26 +6,18 @@ package akka.cluster.ddata
 
 object Flag {
 
-  /**
-   * `Flag` that is initialized to `false`.
-   */
+  /** `Flag` that is initialized to `false`. */
   val empty: Flag = new Flag(false)
 
-  /**
-   * `Flag` that is initialized to `false`.
-   */
+  /** `Flag` that is initialized to `false`. */
   val Disabled: Flag = empty
 
-  /**
-   * `Flag` that is initialized to `true`.
-   */
+  /** `Flag` that is initialized to `true`. */
   val Enabled: Flag = new Flag(true)
 
   def apply(): Flag = Disabled
 
-  /**
-   * Java API: `Flag` that is initialized to `false`.
-   */
+  /** Java API: `Flag` that is initialized to `false`. */
   def create(): Flag = Disabled
 
   // unapply from case class

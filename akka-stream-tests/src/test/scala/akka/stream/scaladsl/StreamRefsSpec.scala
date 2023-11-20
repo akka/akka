@@ -114,11 +114,10 @@ object StreamRefsSpec {
             .sinkRef[String]()
             .viaMat(KillSwitches.single)(Keep.both)
             .alsoToMat(Sink.head)(Keep.both)
-            .mapMaterializedValue {
-              case ((sink, ks), firstF) =>
-                // shutdown the stream after first element
-                firstF.foreach(_ => ks.shutdown())(context.dispatcher)
-                sink
+            .mapMaterializedValue { case ((sink, ks), firstF) =>
+              // shutdown the stream after first element
+              firstF.foreach(_ => ks.shutdown())(context.dispatcher)
+              sink
             }
             .watchTermination()(Keep.both)
             .to(Sink.actorRef(probe, "<COMPLETE>", f => "<FAILED>: " + f.getMessage))
@@ -168,7 +167,8 @@ object StreamRefsSpec {
   final case class BulkSinkMsg(dataSink: SinkRef[ByteString])
 
   def config(): Config = {
-    ConfigFactory.parseString("""
+    ConfigFactory
+      .parseString("""
     akka {
       loglevel = DEBUG
 
@@ -189,8 +189,8 @@ object StreamRefsSpec {
     def props(probe: ActorRef) = Props(new SnitchActor(probe))
   }
   class SnitchActor(probe: ActorRef) extends Actor {
-    def receive = {
-      case msg => probe ! msg
+    def receive = { case msg =>
+      probe ! msg
     }
   }
 }

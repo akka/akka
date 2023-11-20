@@ -22,9 +22,7 @@ import akka.serialization.BaseSerializer
 import akka.serialization.ByteBufferSerializer
 import akka.serialization.SerializerWithStringManifest
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] class ShardingSerializer(val system: akka.actor.ExtendedActorSystem)
     extends SerializerWithStringManifest
     with ByteBufferSerializer

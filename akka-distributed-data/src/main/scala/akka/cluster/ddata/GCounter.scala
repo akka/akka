@@ -13,14 +13,10 @@ object GCounter {
   val empty: GCounter = new GCounter
   def apply(): GCounter = empty
 
-  /**
-   * Java API
-   */
+  /** Java API */
   def create(): GCounter = empty
 
-  /**
-   * Extract the [[GCounter#value]].
-   */
+  /** Extract the [[GCounter#value]]. */
   def unapply(c: GCounter): Option[BigInt] = Some(c.value)
 
   private val Zero = BigInt(0)
@@ -55,16 +51,12 @@ final class GCounter private[akka] (
   type T = GCounter
   type D = GCounter
 
-  /**
-   * Scala API: Current total value of the counter.
-   */
+  /** Scala API: Current total value of the counter. */
   def value: BigInt = state.values.foldLeft(Zero) { (acc, v) =>
     acc + v
   }
 
-  /**
-   * Java API: Current total value of the counter.
-   */
+  /** Java API: Current total value of the counter. */
   def getValue: BigInteger = value.bigInteger
 
   /**
@@ -79,14 +71,10 @@ final class GCounter private[akka] (
    */
   def increment(node: SelfUniqueAddress, n: Long): GCounter = increment(node.uniqueAddress, n)
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[akka] def increment(key: UniqueAddress): GCounter = increment(key, 1)
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[akka] def increment(key: UniqueAddress, n: BigInt): GCounter = {
     require(n >= 0, "Can't decrement a GCounter")
     if (n == 0) this

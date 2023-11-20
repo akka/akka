@@ -51,8 +51,8 @@ class RemoteScatterGatherMultiJvmNode4 extends RemoteScatterGatherSpec
 
 object RemoteScatterGatherSpec {
   class SomeActor extends Actor {
-    def receive = {
-      case "hit" => sender() ! self
+    def receive = { case "hit" =>
+      sender() ! self
     }
   }
 }
@@ -89,9 +89,9 @@ class RemoteScatterGatherSpec extends RemotingMultiNodeSpec(RemoteRoundRobinConf
           actor ! "hit"
         }
 
-        val replies: Map[Address, Int] = (receiveWhile(5.seconds, messages = connectionCount * iterationCount) {
+        val replies: Map[Address, Int] = receiveWhile(5.seconds, messages = connectionCount * iterationCount) {
           case ref: ActorRef => ref.path.address
-        }).foldLeft(Map(node(first).address -> 0, node(second).address -> 0, node(third).address -> 0)) {
+        }.foldLeft(Map(node(first).address -> 0, node(second).address -> 0, node(third).address -> 0)) {
           case (replyMap, address) => replyMap + (address -> (replyMap(address) + 1))
         }
 

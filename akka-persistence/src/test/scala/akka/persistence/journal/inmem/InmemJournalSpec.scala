@@ -22,8 +22,7 @@ object InmemJournalSpec {
 
     override def persistenceId: String = name
 
-    override def receiveRecover: Receive = {
-      case Evt(_) =>
+    override def receiveRecover: Receive = { case Evt(_) =>
     }
     override def receiveCommand: Receive = {
       case Cmd(s)          => persist(Evt(s))(_ => ())

@@ -19,47 +19,47 @@ class RecipeSplitter extends AnyWordSpec with BeforeAndAfterAll with Matchers wi
   "Splitter" should {
     " simple split " in {
 
-      //#Simple-Split
-      //Sample Source
+      // #Simple-Split
+      // Sample Source
       val source: Source[String, NotUsed] = Source(List("1-2-3", "2-3", "3-4"))
 
       val ret = source
         .map(s => s.split("-").toList)
         .mapConcat(identity)
-        //Sub-streams logic
+        // Sub-streams logic
         .map(s => s.toInt)
         .runWith(Sink.seq)
 
-      //Verify results
+      // Verify results
 
       ret.futureValue should be(Vector(1, 2, 3, 2, 3, 3, 4))
-      //#Simple-Split
+      // #Simple-Split
 
     }
 
     " aggregate split" in {
 
-      //#Aggregate-Split
-      //Sample Source
+      // #Aggregate-Split
+      // Sample Source
       val source: Source[String, NotUsed] = Source(List("1-2-3", "2-3", "3-4"))
 
       val result = source
         .map(s => s.split("-").toList)
-        //split all messages into sub-streams
+        // split all messages into sub-streams
         .splitWhen(a => true)
-        //now split each collection
+        // now split each collection
         .mapConcat(identity)
-        //Sub-streams logic
+        // Sub-streams logic
         .map(s => s.toInt)
-        //aggregate each sub-stream
+        // aggregate each sub-stream
         .reduce((a, b) => a + b)
-        //and merge back the result into the original stream
+        // and merge back the result into the original stream
         .mergeSubstreams
         .runWith(Sink.seq);
 
-      //Verify results
+      // Verify results
       result.futureValue should be(Vector(6, 5, 7))
-      //#Aggregate-Split
+      // #Aggregate-Split
 
     }
 

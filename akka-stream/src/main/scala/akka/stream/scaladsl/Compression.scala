@@ -54,7 +54,6 @@ object Compression {
    *
    * @param level Compression level (0-9)
    * @param nowrap if true then use GZIP compatible compression
-   *
    */
   def deflate(level: Int, nowrap: Boolean): Flow[ByteString, ByteString, NotUsed] =
     CompressionUtils.compressorFlow(() => new DeflateCompressor(level, nowrap))

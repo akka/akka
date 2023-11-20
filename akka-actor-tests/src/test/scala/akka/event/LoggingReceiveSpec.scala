@@ -27,9 +27,11 @@ object LoggingReceiveSpec {
 class LoggingReceiveSpec extends AnyWordSpec with BeforeAndAfterAll {
 
   import LoggingReceiveSpec._
-  val config = ConfigFactory.parseString("""
+  val config = ConfigFactory
+    .parseString("""
     akka.loglevel=DEBUG # test verifies debug
-    """).withFallback(AkkaSpec.testConf)
+    """)
+    .withFallback(AkkaSpec.testConf)
   val appLogging =
     ActorSystem("logging", ConfigFactory.parseMap(Map("akka.actor.debug.receive" -> true).asJava).withFallback(config))
   val appAuto = ActorSystem(
@@ -49,8 +51,8 @@ class LoggingReceiveSpec extends AnyWordSpec with BeforeAndAfterAll {
   appLifecycle.eventStream.publish(filter)
 
   def ignoreMute(t: TestKit): Unit = {
-    t.ignoreMsg {
-      case (_: TestEvent.Mute | _: TestEvent.UnMute) => true
+    t.ignoreMsg { case (_: TestEvent.Mute | _: TestEvent.UnMute) =>
+      true
     }
   }
 
@@ -68,9 +70,10 @@ class LoggingReceiveSpec extends AnyWordSpec with BeforeAndAfterAll {
         system.eventStream.subscribe(testActor, classOf[UnhandledMessage])
         val a = system.actorOf(Props(new Actor {
           def receive =
-            new LoggingReceive(Some("funky"), {
-              case null =>
-            })
+            new LoggingReceive(
+              Some("funky"),
+              { case null =>
+              })
         }))
         a ! "hallo"
         expectMsg(
@@ -89,15 +92,14 @@ class LoggingReceiveSpec extends AnyWordSpec with BeforeAndAfterAll {
         system.eventStream.subscribe(testActor, classOf[Logging.Debug])
         system.eventStream.subscribe(testActor, classOf[UnhandledMessage])
 
-        val r: Actor.Receive = {
-          case null =>
+        val r: Actor.Receive = { case null =>
         }
 
         val actor = TestActorRef(new Actor {
           def switch: Actor.Receive = { case "becomenull" => context.become(r, false) }
           def receive =
-            switch.orElse(LoggingReceive {
-              case _ => sender() ! "x"
+            switch.orElse(LoggingReceive { case _ =>
+              sender() ! "x"
             })
         })
 
@@ -110,8 +112,8 @@ class LoggingReceiveSpec extends AnyWordSpec with BeforeAndAfterAll {
         actor ! "becomenull"
 
         actor ! "bah"
-        expectMsgPF() {
-          case UnhandledMessage("bah", _, `actor`) => true
+        expectMsgPF() { case UnhandledMessage("bah", _, `actor`) =>
+          true
         }
       }
     }
@@ -121,8 +123,8 @@ class LoggingReceiveSpec extends AnyWordSpec with BeforeAndAfterAll {
         system.eventStream.subscribe(testActor, classOf[Logging.Debug])
         val actor = TestActorRef(new Actor {
           def receive =
-            LoggingReceive(LoggingReceive {
-              case _ => sender() ! "x"
+            LoggingReceive(LoggingReceive { case _ =>
+              sender() ! "x"
             })
         })
         actor ! "buh"
@@ -139,8 +141,7 @@ class LoggingReceiveSpec extends AnyWordSpec with BeforeAndAfterAll {
         val myMDC = Map("hello" -> "mdc")
         val a = system.actorOf(Props(new Actor with DiagnosticActorLogging {
           override def mdc(currentMessage: Any) = myMDC
-          def receive = LoggingReceive {
-            case "hello" =>
+          def receive = LoggingReceive { case "hello" =>
           }
         }))
         a ! "hello"
@@ -154,8 +155,8 @@ class LoggingReceiveSpec extends AnyWordSpec with BeforeAndAfterAll {
       new TestKit(appLogging) with ImplicitSender {
         system.eventStream.subscribe(testActor, classOf[Logging.Info])
         val actor = TestActorRef(new Actor {
-          def receive = LoggingReceive(Logging.InfoLevel) {
-            case _ => sender() ! "x"
+          def receive = LoggingReceive(Logging.InfoLevel) { case _ =>
+            sender() ! "x"
           }
         })
         actor ! "buh"
@@ -176,8 +177,7 @@ class LoggingReceiveSpec extends AnyWordSpec with BeforeAndAfterAll {
       new TestKit(appAuto) {
         system.eventStream.subscribe(testActor, classOf[Logging.Debug])
         val actor = TestActorRef(new Actor {
-          def receive = {
-            case _ =>
+          def receive = { case _ =>
           }
         })
         val name = actor.path.toString

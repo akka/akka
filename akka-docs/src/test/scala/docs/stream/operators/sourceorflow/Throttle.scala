@@ -13,7 +13,6 @@ import akka.stream.scaladsl.Source
 import scala.concurrent.duration._
 
 /**
- *
  */
 object Throttle extends App {
 

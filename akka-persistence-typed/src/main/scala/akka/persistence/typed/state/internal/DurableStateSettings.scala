@@ -15,9 +15,7 @@ import akka.actor.typed.ActorSystem
 import akka.annotation.InternalApi
 import akka.persistence.Persistence
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object DurableStateSettings {
 
   def apply(
@@ -73,9 +71,7 @@ import akka.persistence.Persistence
 
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] final case class DurableStateSettings(
     stashCapacity: Int,
@@ -90,15 +86,11 @@ private[akka] final case class DurableStateSettings(
     "DurableStateBehavior plugin id must not be null; use empty string for 'default' state store")
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] sealed trait StashOverflowStrategy
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] object StashOverflowStrategy {
   case object Drop extends StashOverflowStrategy

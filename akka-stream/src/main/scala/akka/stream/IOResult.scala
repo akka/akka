@@ -26,14 +26,10 @@ final case class IOResult(
   @deprecated("status is always set to Success(Done)", "2.6.0")
   def withStatus(value: Try[Done]): IOResult = copy(status = value)
 
-  /**
-   * Java API: Numeric value depending on context, for example IO operations performed or bytes processed.
-   */
+  /** Java API: Numeric value depending on context, for example IO operations performed or bytes processed. */
   def getCount: Long = count
 
-  /**
-   * Java API: Indicates whether IO operation completed successfully or not.
-   */
+  /** Java API: Indicates whether IO operation completed successfully or not. */
   @deprecated("status is always set to Success(Done)", "2.6.0")
   def wasSuccessful: Boolean = status.isSuccess
 

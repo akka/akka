@@ -11,9 +11,11 @@ import scala.collection.immutable
 import akka.stream.testkit.ScriptedTest
 import akka.stream.testkit.StreamSpec
 
-class FlowGroupedSpec extends StreamSpec("""
+class FlowGroupedSpec
+    extends StreamSpec("""
     akka.stream.materializer.initial-input-buffer-size = 2
-  """) with ScriptedTest {
+  """)
+    with ScriptedTest {
 
   "A Grouped" must {
 

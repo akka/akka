@@ -20,7 +20,7 @@ class HubsDocSpec extends AkkaSpec with CompileOnlySpec {
     "demonstrate creating a dynamic merge" in {
       def println(s: String) = testActor ! s
 
-      //#merge-hub
+      // #merge-hub
       // A simple consumer that will print to the console for now
       val consumer = Sink.foreach(println)
 
@@ -38,13 +38,13 @@ class HubsDocSpec extends AkkaSpec with CompileOnlySpec {
       // Feeding two independent sources into the hub.
       Source.single("Hello!").runWith(toConsumer)
       Source.single("Hub!").runWith(toConsumer)
-      //#merge-hub
+      // #merge-hub
 
       expectMsgAllOf("Hello!", "Hub!")
     }
 
     "demonstrate creating a dynamic broadcast" in compileOnlySpec {
-      //#broadcast-hub
+      // #broadcast-hub
       // A simple producer that publishes a new "message" every second
       val producer = Source.tick(1.second, 1.second, "New message")
 
@@ -62,26 +62,26 @@ class HubsDocSpec extends AkkaSpec with CompileOnlySpec {
       // Print out messages from the producer in two independent consumers
       fromProducer.runForeach(msg => println("consumer1: " + msg))
       fromProducer.runForeach(msg => println("consumer2: " + msg))
-      //#broadcast-hub
+      // #broadcast-hub
     }
 
     "demonstrate combination" in {
       def println(s: String) = testActor ! s
 
-      //#pub-sub-1
+      // #pub-sub-1
       // Obtain a Sink and Source which will publish and receive from the "bus" respectively.
       val (sink, source) =
         MergeHub.source[String](perProducerBufferSize = 16).toMat(BroadcastHub.sink(bufferSize = 256))(Keep.both).run()
-      //#pub-sub-1
+      // #pub-sub-1
 
-      //#pub-sub-2
+      // #pub-sub-2
       // Ensure that the Broadcast output is dropped if there are no listening parties.
       // If this dropping Sink is not attached, then the broadcast hub will not drop any
       // elements itself when there are no subscribers, backpressuring the producer instead.
       source.runWith(Sink.ignore)
-      //#pub-sub-2
+      // #pub-sub-2
 
-      //#pub-sub-3
+      // #pub-sub-3
       // We create now a Flow that represents a publish-subscribe channel using the above
       // started stream as its "topic". We add two more features, external cancellation of
       // the registration and automatic cleanup for very slow subscribers.
@@ -90,19 +90,19 @@ class HubsDocSpec extends AkkaSpec with CompileOnlySpec {
           .fromSinkAndSource(sink, source)
           .joinMat(KillSwitches.singleBidi[String, String])(Keep.right)
           .backpressureTimeout(3.seconds)
-      //#pub-sub-3
+      // #pub-sub-3
 
-      //#pub-sub-4
+      // #pub-sub-4
       val switch: UniqueKillSwitch =
         Source.repeat("Hello world!").viaMat(busFlow)(Keep.right).to(Sink.foreach(println)).run()
 
       // Shut down externally
       switch.shutdown()
-      //#pub-sub-4
+      // #pub-sub-4
     }
 
     "demonstrate creating a dynamic partition hub" in compileOnlySpec {
-      //#partition-hub
+      // #partition-hub
       // A simple producer that publishes a new "message-" every second
       val producer = Source.tick(1.second, 1.second, "message").zipWith(Source(1 to 100))((a, b) => s"$a-$b")
 
@@ -124,11 +124,11 @@ class HubsDocSpec extends AkkaSpec with CompileOnlySpec {
       // Print out messages from the producer in two independent consumers
       fromProducer.runForeach(msg => println("consumer1: " + msg))
       fromProducer.runForeach(msg => println("consumer2: " + msg))
-      //#partition-hub
+      // #partition-hub
     }
 
     "demonstrate creating a dynamic stateful partition hub" in compileOnlySpec {
-      //#partition-hub-stateful
+      // #partition-hub-stateful
       // A simple producer that publishes a new "message-" every second
       val producer = Source.tick(1.second, 1.second, "message").zipWith(Source(1 to 100))((a, b) => s"$a-$b")
 
@@ -158,11 +158,11 @@ class HubsDocSpec extends AkkaSpec with CompileOnlySpec {
       // Print out messages from the producer in two independent consumers
       fromProducer.runForeach(msg => println("consumer1: " + msg))
       fromProducer.runForeach(msg => println("consumer2: " + msg))
-      //#partition-hub-stateful
+      // #partition-hub-stateful
     }
 
     "demonstrate creating a dynamic partition hub routing to fastest consumer" in compileOnlySpec {
-      //#partition-hub-fastest
+      // #partition-hub-fastest
       val producer = Source(0 until 100)
 
       // ConsumerInfo.queueSize is the approximate number of buffered elements for a consumer.
@@ -178,7 +178,7 @@ class HubsDocSpec extends AkkaSpec with CompileOnlySpec {
 
       fromProducer.runForeach(msg => println("consumer1: " + msg))
       fromProducer.throttle(10, 100.millis).runForeach(msg => println("consumer2: " + msg))
-      //#partition-hub-fastest
+      // #partition-hub-fastest
     }
 
   }

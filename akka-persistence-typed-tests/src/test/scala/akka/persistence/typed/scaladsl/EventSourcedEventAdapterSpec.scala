@@ -77,8 +77,11 @@ object EventSourcedEventAdapterSpec {
 }
 
 class EventSourcedEventAdapterSpec
-    extends ScalaTestWithActorTestKit(ConfigFactory.parseString("""
-          akka.persistence.testkit.events.serialize = true""").withFallback(PersistenceTestKitPlugin.config))
+    extends ScalaTestWithActorTestKit(
+      ConfigFactory
+        .parseString("""
+          akka.persistence.testkit.events.serialize = true""")
+        .withFallback(PersistenceTestKitPlugin.config))
     with AnyWordSpecLike
     with LogCapturing {
   import EventSourcedBehaviorSpec._
@@ -91,11 +94,15 @@ class EventSourcedEventAdapterSpec
     PersistenceQuery(system).readJournalFor[PersistenceTestKitReadJournal](PersistenceTestKitReadJournal.Identifier)
 
   private def behavior(pid: PersistenceId, probe: ActorRef[String]): EventSourcedBehavior[String, String, String] =
-    EventSourcedBehavior(pid, "", commandHandler = { (_, command) =>
-      Effect.persist(command).thenRun(newState => probe ! newState)
-    }, eventHandler = { (state, evt) =>
-      state + evt
-    })
+    EventSourcedBehavior(
+      pid,
+      "",
+      commandHandler = { (_, command) =>
+        Effect.persist(command).thenRun(newState => probe ! newState)
+      },
+      eventHandler = { (state, evt) =>
+        state + evt
+      })
 
   "Event adapter" must {
 

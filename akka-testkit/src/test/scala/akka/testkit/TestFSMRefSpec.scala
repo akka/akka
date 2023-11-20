@@ -15,16 +15,18 @@ class TestFSMRefSpec extends AkkaSpec {
   "A TestFSMRef" must {
 
     "allow access to state data" in {
-      val fsm = TestFSMRef(new Actor with FSM[Int, String] {
-        startWith(1, "")
-        when(1) {
-          case Event("go", _)         => goto(2).using("go")
-          case Event(StateTimeout, _) => goto(2).using("timeout")
-        }
-        when(2) {
-          case Event("back", _) => goto(1).using("back")
-        }
-      }, "test-fsm-ref-1")
+      val fsm = TestFSMRef(
+        new Actor with FSM[Int, String] {
+          startWith(1, "")
+          when(1) {
+            case Event("go", _)         => goto(2).using("go")
+            case Event(StateTimeout, _) => goto(2).using("timeout")
+          }
+          when(2) { case Event("back", _) =>
+            goto(1).using("back")
+          }
+        },
+        "test-fsm-ref-1")
       fsm.stateName should ===(1)
       fsm.stateData should ===("")
       fsm ! "go"
@@ -43,12 +45,14 @@ class TestFSMRefSpec extends AkkaSpec {
     }
 
     "allow access to timers" in {
-      val fsm = TestFSMRef(new Actor with FSM[Int, Null] {
-        startWith(1, null)
-        when(1) {
-          case _ => stay()
-        }
-      }, "test-fsm-ref-2")
+      val fsm = TestFSMRef(
+        new Actor with FSM[Int, Null] {
+          startWith(1, null)
+          when(1) { case _ =>
+            stay()
+          }
+        },
+        "test-fsm-ref-2")
       fsm.isTimerActive("test") should ===(false)
       fsm.startTimerWithFixedDelay("test", 12, 10 millis)
       fsm.isTimerActive("test") should ===(true)
@@ -65,8 +69,8 @@ class TestFSMRefSpec extends AkkaSpec {
 
     class TestFSMActor extends Actor with FSM[Int, Null] {
       startWith(1, null)
-      when(1) {
-        case _ => stay()
+      when(1) { case _ =>
+        stay()
       }
       val supervisor = context.parent
       val name = context.self.path.name

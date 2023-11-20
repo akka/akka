@@ -21,19 +21,13 @@ sealed abstract class InPort { self: Inlet[_] =>
   final override def hashCode: Int = super.hashCode
   final override def equals(that: Any): Boolean = this eq that.asInstanceOf[AnyRef]
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @volatile private[stream] var id: Int = -1
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @volatile private[stream] var mappedTo: InPort = this
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   private[stream] def inlet: Inlet[_] = this
 }
 
@@ -47,19 +41,13 @@ sealed abstract class OutPort { self: Outlet[_] =>
   final override def hashCode: Int = super.hashCode
   final override def equals(that: Any): Boolean = this eq that.asInstanceOf[AnyRef]
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @volatile private[stream] var id: Int = -1
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @volatile private[stream] var mappedTo: OutPort = this
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   private[stream] def outlet: Outlet[_] = this
 }
 
@@ -94,9 +82,7 @@ final class Inlet[T] private (val s: String) extends InPort {
     in
   }
 
-  /**
-   * INTERNAL API.
-   */
+  /** INTERNAL API. */
   def as[U]: Inlet[U] = this.asInstanceOf[Inlet[U]]
 
   override def toString: String =
@@ -136,9 +122,7 @@ final class Outlet[T] private (val s: String) extends OutPort {
     out
   }
 
-  /**
-   * INTERNAL API.
-   */
+  /** INTERNAL API. */
   def as[U]: Outlet[U] = this.asInstanceOf[Outlet[U]]
 
   override def toString: String =
@@ -147,9 +131,7 @@ final class Outlet[T] private (val s: String) extends OutPort {
      else s" mapped to $mappedTo")
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object Shape {
 
   /**
@@ -172,14 +154,10 @@ final class Outlet[T] private (val s: String) extends OutPort {
  */
 abstract class Shape {
 
-  /**
-   * Scala API: get a list of all input ports
-   */
+  /** Scala API: get a list of all input ports */
   def inlets: immutable.Seq[Inlet[_]]
 
-  /**
-   * Scala API: get a list of all output ports
-   */
+  /** Scala API: get a list of all output ports */
   def outlets: immutable.Seq[Outlet[_]]
 
   /**
@@ -189,56 +167,38 @@ abstract class Shape {
    */
   def deepCopy(): Shape
 
-  /**
-   * Java API: get a list of all input ports
-   */
+  /** Java API: get a list of all input ports */
   def getInlets: java.util.List[Inlet[_]] = inlets.asJava
 
-  /**
-   * Java API: get a list of all output ports
-   */
+  /** Java API: get a list of all output ports */
   def getOutlets: java.util.List[Outlet[_]] = outlets.asJava
 
-  /**
-   * Compare this to another shape and determine whether the set of ports is the same (ignoring their ordering).
-   */
+  /** Compare this to another shape and determine whether the set of ports is the same (ignoring their ordering). */
   def hasSamePortsAs(s: Shape): Boolean =
     inlets.toSet == s.inlets.toSet && outlets.toSet == s.outlets.toSet
 
-  /**
-   * Compare this to another shape and determine whether the arrangement of ports is the same (including their ordering).
-   */
+  /** Compare this to another shape and determine whether the arrangement of ports is the same (including their ordering). */
   def hasSamePortsAndShapeAs(s: Shape): Boolean =
     inlets == s.inlets && outlets == s.outlets
 
-  /**
-   * Asserting version of [[#hasSamePortsAs]].
-   */
+  /** Asserting version of [[#hasSamePortsAs]]. */
   def requireSamePortsAs(s: Shape): Unit = require(hasSamePortsAs(s), nonCorrespondingMessage(s))
 
-  /**
-   * Asserting version of [[#hasSamePortsAndShapeAs]].
-   */
+  /** Asserting version of [[#hasSamePortsAndShapeAs]]. */
   def requireSamePortsAndShapeAs(s: Shape): Unit = require(hasSamePortsAndShapeAs(s), nonCorrespondingMessage(s))
 
   private def nonCorrespondingMessage(s: Shape) =
-    s"The inlets [${s.inlets.mkString(", ")}] and outlets [${s.outlets.mkString(", ")}] must correspond to the inlets [${inlets
-      .mkString(", ")}] and outlets [${outlets.mkString(", ")}]"
+    s"The inlets [${s.inlets.mkString(", ")}] and outlets [${s.outlets.mkString(
+        ", ")}] must correspond to the inlets [${inlets.mkString(", ")}] and outlets [${outlets.mkString(", ")}]"
 }
 
-/**
- * Java API for creating custom [[Shape]] types.
- */
+/** Java API for creating custom [[Shape]] types. */
 abstract class AbstractShape extends Shape {
 
-  /**
-   * Provide the list of all input ports of this shape.
-   */
+  /** Provide the list of all input ports of this shape. */
   def allInlets: java.util.List[Inlet[_]]
 
-  /**
-   * Provide the list of all output ports of this shape.
-   */
+  /** Provide the list of all output ports of this shape. */
   def allOutlets: java.util.List[Outlet[_]]
 
   final override lazy val inlets: immutable.Seq[Inlet[_]] = allInlets.asScala.toList
@@ -258,9 +218,7 @@ object ClosedShape extends ClosedShape {
   override val outlets: immutable.Seq[Outlet[_]] = EmptyImmutableSeq
   override def deepCopy() = this
 
-  /**
-   * Java API: obtain ClosedShape instance
-   */
+  /** Java API: obtain ClosedShape instance */
   def getInstance: ClosedShape = this
 
   override def toString: String = "ClosedShape"
@@ -311,9 +269,7 @@ object FlowShape {
     FlowShape(inlet, outlet)
 }
 
-/**
- * A Sink [[Shape]] has exactly one input and no outputs, it models a data sink.
- */
+/** A Sink [[Shape]] has exactly one input and no outputs, it models a data sink. */
 final case class SinkShape[-T](in: Inlet[T @uncheckedVariance]) extends Shape {
   override val inlets: immutable.Seq[Inlet[_]] = in :: Nil
   override val outlets: immutable.Seq[Outlet[_]] = EmptyImmutableSeq
@@ -346,19 +302,17 @@ final case class BidiShape[-In1, +Out1, -In2, +Out2](
     in2: Inlet[In2 @uncheckedVariance],
     out2: Outlet[Out2 @uncheckedVariance])
     extends Shape {
-  //#implementation-details-elided
+  // #implementation-details-elided
   override val inlets: immutable.Seq[Inlet[_]] = in1 :: in2 :: Nil
   override val outlets: immutable.Seq[Outlet[_]] = out1 :: out2 :: Nil
 
-  /**
-   * Java API for creating from a pair of unidirectional flows.
-   */
+  /** Java API for creating from a pair of unidirectional flows. */
   def this(top: FlowShape[In1, Out1], bottom: FlowShape[In2, Out2]) = this(top.in, top.out, bottom.in, bottom.out)
 
   override def deepCopy(): BidiShape[In1, Out1, In2, Out2] =
     BidiShape(in1.carbonCopy(), out1.carbonCopy(), in2.carbonCopy(), out2.carbonCopy())
 
-  //#implementation-details-elided
+  // #implementation-details-elided
 }
 //#bidi-shape
 object BidiShape {

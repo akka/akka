@@ -9,9 +9,7 @@ import scala.concurrent.duration.FiniteDuration
 
 import akka.annotation.InternalApi
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] object SegmentedRecencyList {
   def empty[A](limits: immutable.Seq[Int]): SegmentedRecencyList[A] =

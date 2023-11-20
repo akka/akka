@@ -8,9 +8,7 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.internal.receptionist.{ AbstractServiceKey, ReceptionistMessages }
 import akka.annotation.InternalApi
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[receptionist] object ClusterReceptionistProtocol {
   type SubscriptionsKV[K <: AbstractServiceKey] = ActorRef[ReceptionistMessages.Listing[K#Protocol]]

@@ -33,20 +33,16 @@ import akka.actor._
  *
  * @since 1.2
  */
-class TestFSMRef[S, D, T <: Actor](system: ActorSystem, props: Props, supervisor: ActorRef, name: String)(
-    implicit ev: T <:< FSM[S, D])
+class TestFSMRef[S, D, T <: Actor](system: ActorSystem, props: Props, supervisor: ActorRef, name: String)(implicit
+    ev: T <:< FSM[S, D])
     extends TestActorRef[T](system, props, supervisor, name) {
 
   private def fsm: T = underlyingActor
 
-  /**
-   * Get current state name of this FSM.
-   */
+  /** Get current state name of this FSM. */
   def stateName: S = fsm.stateName
 
-  /**
-   * Get current state data of this FSM.
-   */
+  /** Get current state data of this FSM. */
   def stateData: D = fsm.stateData
 
   /**
@@ -63,27 +59,19 @@ class TestFSMRef[S, D, T <: Actor](system: ActorSystem, props: Props, supervisor
     fsm.applyState(FSM.State(stateName, stateData, Option(timeout), stopReason))
   }
 
-  /**
-   * Proxy for [[akka.actor.FSM#startTimerWithFixedDelay]].
-   */
+  /** Proxy for [[akka.actor.FSM#startTimerWithFixedDelay]]. */
   def startTimerWithFixedDelay(name: String, msg: Any, delay: FiniteDuration): Unit =
     fsm.startTimerWithFixedDelay(name, msg, delay)
 
-  /**
-   * Proxy for [[akka.actor.FSM#startTimerAtFixedRate]].
-   */
+  /** Proxy for [[akka.actor.FSM#startTimerAtFixedRate]]. */
   def startTimerAtFixedRate(name: String, msg: Any, interval: FiniteDuration): Unit =
     fsm.startTimerAtFixedRate(name, msg, interval)
 
-  /**
-   * Proxy for [[akka.actor.FSM#startSingleTimer]].
-   */
+  /** Proxy for [[akka.actor.FSM#startSingleTimer]]. */
   def startSingleTimer(name: String, msg: Any, delay: FiniteDuration): Unit =
     fsm.startSingleTimer(name, msg, delay)
 
-  /**
-   * Proxy for [[akka.actor.FSM#setTimer]].
-   */
+  /** Proxy for [[akka.actor.FSM#setTimer]]. */
   @deprecated(
     "Use startTimerWithFixedDelay or startTimerAtFixedRate instead. This has the same semantics as " +
     "startTimerAtFixedRate, but startTimerWithFixedDelay is often preferred.",
@@ -92,19 +80,13 @@ class TestFSMRef[S, D, T <: Actor](system: ActorSystem, props: Props, supervisor
     fsm.setTimer(name, msg, timeout, repeat)
   }
 
-  /**
-   * Proxy for [[akka.actor.FSM#cancelTimer]].
-   */
+  /** Proxy for [[akka.actor.FSM#cancelTimer]]. */
   def cancelTimer(name: String): Unit = { fsm.cancelTimer(name) }
 
-  /**
-   * Proxy for [[akka.actor.FSM#isStateTimerActive]].
-   */
+  /** Proxy for [[akka.actor.FSM#isStateTimerActive]]. */
   def isTimerActive(name: String) = fsm.isTimerActive(name)
 
-  /**
-   * Proxy for [[akka.actor.FSM#isStateTimerActive]].
-   */
+  /** Proxy for [[akka.actor.FSM#isStateTimerActive]]. */
   def isStateTimerActive = fsm.isStateTimerActive
 }
 
@@ -116,22 +98,22 @@ object TestFSMRef {
     new TestFSMRef(impl, Props(factory), impl.guardian.asInstanceOf[InternalActorRef], TestActorRef.randomName)
   }
 
-  def apply[S, D, T <: Actor: ClassTag](factory: => T, name: String)(
-      implicit ev: T <:< FSM[S, D],
+  def apply[S, D, T <: Actor: ClassTag](factory: => T, name: String)(implicit
+      ev: T <:< FSM[S, D],
       system: ActorSystem): TestFSMRef[S, D, T] = {
     val impl = system.asInstanceOf[ActorSystemImpl]
     new TestFSMRef(impl, Props(factory), impl.guardian.asInstanceOf[InternalActorRef], name)
   }
 
-  def apply[S, D, T <: Actor: ClassTag](factory: => T, supervisor: ActorRef, name: String)(
-      implicit ev: T <:< FSM[S, D],
+  def apply[S, D, T <: Actor: ClassTag](factory: => T, supervisor: ActorRef, name: String)(implicit
+      ev: T <:< FSM[S, D],
       system: ActorSystem): TestFSMRef[S, D, T] = {
     val impl = system.asInstanceOf[ActorSystemImpl]
     new TestFSMRef(impl, Props(factory), supervisor.asInstanceOf[InternalActorRef], name)
   }
 
-  def apply[S, D, T <: Actor: ClassTag](factory: => T, supervisor: ActorRef)(
-      implicit ev: T <:< FSM[S, D],
+  def apply[S, D, T <: Actor: ClassTag](factory: => T, supervisor: ActorRef)(implicit
+      ev: T <:< FSM[S, D],
       system: ActorSystem): TestFSMRef[S, D, T] = {
     val impl = system.asInstanceOf[ActorSystemImpl]
     new TestFSMRef(impl, Props(factory), supervisor.asInstanceOf[InternalActorRef], TestActorRef.randomName)

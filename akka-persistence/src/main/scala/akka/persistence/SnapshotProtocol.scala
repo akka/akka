@@ -168,15 +168,11 @@ final case class SnapshotSelectionCriteria(
     minSequenceNr: Long = 0L,
     minTimestamp: Long = 0L) {
 
-  /**
-   * INTERNAL API.
-   */
+  /** INTERNAL API. */
   private[persistence] def limit(toSequenceNr: Long): SnapshotSelectionCriteria =
     if (toSequenceNr < maxSequenceNr) copy(maxSequenceNr = toSequenceNr) else this
 
-  /**
-   * INTERNAL API.
-   */
+  /** INTERNAL API. */
   private[persistence] def matches(metadata: SnapshotMetadata): Boolean =
     metadata.sequenceNr <= maxSequenceNr && metadata.timestamp <= maxTimestamp &&
     metadata.sequenceNr >= minSequenceNr && metadata.timestamp >= minTimestamp
@@ -184,36 +180,24 @@ final case class SnapshotSelectionCriteria(
 
 object SnapshotSelectionCriteria {
 
-  /**
-   * The latest saved snapshot.
-   */
+  /** The latest saved snapshot. */
   val Latest = SnapshotSelectionCriteria()
 
-  /**
-   * No saved snapshot matches.
-   */
+  /** No saved snapshot matches. */
   val None = SnapshotSelectionCriteria(0L, 0L)
 
-  /**
-   * Java API.
-   */
+  /** Java API. */
   def create(maxSequenceNr: Long, maxTimestamp: Long) =
     SnapshotSelectionCriteria(maxSequenceNr, maxTimestamp)
 
-  /**
-   * Java API.
-   */
+  /** Java API. */
   def create(maxSequenceNr: Long, maxTimestamp: Long, minSequenceNr: Long, minTimestamp: Long) =
     SnapshotSelectionCriteria(maxSequenceNr, maxTimestamp, minSequenceNr, minTimestamp)
 
-  /**
-   * Java API.
-   */
+  /** Java API. */
   def latest() = Latest
 
-  /**
-   * Java API.
-   */
+  /** Java API. */
   def none() = None
 }
 
@@ -227,9 +211,7 @@ final case class SelectedSnapshot(metadata: SnapshotMetadata, snapshot: Any)
 
 object SelectedSnapshot {
 
-  /**
-   * Java API, Plugin API.
-   */
+  /** Java API, Plugin API. */
   def create(metadata: SnapshotMetadata, snapshot: Any): SelectedSnapshot =
     SelectedSnapshot(metadata, snapshot)
 }

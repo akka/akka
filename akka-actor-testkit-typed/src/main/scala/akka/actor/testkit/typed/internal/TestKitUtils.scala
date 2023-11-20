@@ -14,9 +14,7 @@ import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.InternalApi
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] object ActorTestKitGuardian {
   sealed trait TestKitCommand
@@ -52,17 +50,14 @@ private[akka] object ActorTestKitGuardian {
   private def handleSpawnException[T](
       context: ActorContext[ActorTestKitGuardian.TestKitCommand],
       reply: ActorRef[ActorRef[T]],
-      props: Props): Catcher[Behavior[TestKitCommand]] = {
-    case NonFatal(e) =>
-      context.log.error(s"Spawn failed, props [$props]", e)
-      reply ! context.spawnAnonymous(Behaviors.stopped)
-      Behaviors.same
+      props: Props): Catcher[Behavior[TestKitCommand]] = { case NonFatal(e) =>
+    context.log.error(s"Spawn failed, props [$props]", e)
+    reply ! context.spawnAnonymous(Behaviors.stopped)
+    Behaviors.same
   }
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] object TestKitUtils {
 

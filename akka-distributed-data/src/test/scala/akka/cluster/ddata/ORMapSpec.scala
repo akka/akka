@@ -69,7 +69,7 @@ class ORMapSpec extends AnyWordSpec with Matchers {
 
     "be able to remove entry" in {
       val m = ORMap().put(node1, "a", GSet() + "A").put(node1, "b", GSet() + "B").remove(node1, "a")
-      m.entries.keySet should not contain ("a")
+      m.entries.keySet should not contain "a"
       m.entries.keySet should contain("b")
     }
 
@@ -83,13 +83,13 @@ class ORMapSpec extends AnyWordSpec with Matchers {
       m1.entries.keySet should contain("a")
 
       val m2 = m1.mergeDelta(removeDelta)
-      m2.entries.keySet should not contain ("a")
+      m2.entries.keySet should not contain "a"
       m2.entries.keySet should contain("b")
     }
 
     "be able to add removed" in {
       val m = ORMap().put(node1, "a", GSet() + "A").put(node1, "b", GSet() + "B").remove(node1, "a")
-      m.entries.keySet should not contain ("a")
+      m.entries.keySet should not contain "a"
       m.entries.keySet should contain("b")
       val m2 = m.put(node1, "a", GSet() + "C")
       m2.entries.keySet should contain("a")
@@ -366,7 +366,7 @@ class ORMapSpec extends AnyWordSpec with Matchers {
         .updated(node1, "b", ORSet.empty[String])(_.add(node1, "B3"))
         .updated(node2, "b", ORSet.empty[String])(_.add(node2, "B4"))
 
-      val merged1 = (m1.merge(m2d)).mergeDelta(m2u.delta.get)
+      val merged1 = m1.merge(m2d).mergeDelta(m2u.delta.get)
 
       merged1.entries("a").elements should be(Set("A"))
       // note that B1 is lost as it was added and removed earlier in timeline than B2
@@ -391,7 +391,7 @@ class ORMapSpec extends AnyWordSpec with Matchers {
       merged2.entries("b").elements should be(Set("B3"))
       merged2.entries("c").elements should be(Set("C"))
 
-      val merged3 = (merged1.mergeDelta(m3.delta.get)).mergeDelta(m4.delta.get)
+      val merged3 = merged1.mergeDelta(m3.delta.get).mergeDelta(m4.delta.get)
 
       merged3.entries("a").elements should be(Set("A"))
       merged3.entries("b").elements should be(Set("B3"))
@@ -418,7 +418,7 @@ class ORMapSpec extends AnyWordSpec with Matchers {
       merged2.entries("b").elements should be(Set("B2", "B3"))
       merged2.entries("c").elements should be(Set("C"))
 
-      val merged3 = (merged1.mergeDelta(m3.delta.get)).mergeDelta(m4.delta.get)
+      val merged3 = merged1.mergeDelta(m3.delta.get).mergeDelta(m4.delta.get)
 
       merged3.entries("a").elements should be(Set("A"))
       merged3.entries("b").elements should be(Set("B2", "B3"))

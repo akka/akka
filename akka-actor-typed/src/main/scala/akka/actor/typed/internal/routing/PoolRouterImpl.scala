@@ -13,9 +13,7 @@ import akka.actor.typed.scaladsl.{ AbstractBehavior, ActorContext, Behaviors }
 import akka.annotation.InternalApi
 import akka.util.ConstantFun
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] final case class PoolRouterBuilder[T](
     poolSize: Int,
@@ -45,8 +43,8 @@ private[akka] final case class PoolRouterBuilder[T](
     withConsistentHashingRouting(virtualNodesFactor, mapping.apply(_))
 
   def withConsistentHashingRouting(virtualNodesFactor: Int, mapping: T => String): PoolRouterBuilder[T] = {
-    copy(
-      logicFactory = system => new RoutingLogics.ConsistentHashingLogic[T](virtualNodesFactor, mapping, system.address))
+    copy(logicFactory = system =>
+      new RoutingLogics.ConsistentHashingLogic[T](virtualNodesFactor, mapping, system.address))
   }
 
   def withPoolSize(poolSize: Int): PoolRouterBuilder[T] = copy(poolSize = poolSize)
@@ -59,9 +57,7 @@ private[akka] final case class PoolRouterBuilder[T](
   override def withBroadcastPredicate(pred: T => Boolean): scaladsl.PoolRouter[T] = copy(broadcastPredicate = pred)
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private final class PoolRouterImpl[T](
     ctx: ActorContext[T],
@@ -93,20 +89,19 @@ private final class PoolRouterImpl[T](
     this
   }
 
-  override def onSignal: PartialFunction[Signal, Behavior[T]] = {
-    case Terminated(child) =>
-      // Note that if several children are stopping concurrently children may already be empty
-      // for the `Terminated` we receive for the first child. This means it is not certain that
-      // there will be a log entry per child in those cases (it does not make sense to keep the
-      // pool alive just to get the logging right when there are no routees available)
-      if (context.children.nonEmpty) {
-        context.log.debug("Pool child stopped [{}]", child.path)
-        onRouteesChanged()
-        this
-      } else {
-        context.log.info("Last pool child stopped, stopping pool [{}]", context.self.path)
-        Behaviors.stopped
-      }
+  override def onSignal: PartialFunction[Signal, Behavior[T]] = { case Terminated(child) =>
+    // Note that if several children are stopping concurrently children may already be empty
+    // for the `Terminated` we receive for the first child. This means it is not certain that
+    // there will be a log entry per child in those cases (it does not make sense to keep the
+    // pool alive just to get the logging right when there are no routees available)
+    if (context.children.nonEmpty) {
+      context.log.debug("Pool child stopped [{}]", child.path)
+      onRouteesChanged()
+      this
+    } else {
+      context.log.info("Last pool child stopped, stopping pool [{}]", context.self.path)
+      Behaviors.stopped
+    }
   }
 
 }

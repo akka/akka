@@ -5,40 +5,40 @@
 package docs.stream
 
 import akka.stream.scaladsl.{ Sink, Source }
-import akka.stream.{ SubstreamCancelStrategy }
+import akka.stream.SubstreamCancelStrategy
 import akka.testkit.AkkaSpec
 
 class SubstreamDocSpec extends AkkaSpec {
 
   "generate substreams by groupBy" in {
-    //#groupBy1
+    // #groupBy1
     val source = Source(1 to 10).groupBy(3, _ % 3)
-    //#groupBy1
+    // #groupBy1
 
-    //#groupBy2
+    // #groupBy2
     Source(1 to 10).groupBy(3, _ % 3).to(Sink.ignore).run()
-    //#groupBy2
+    // #groupBy2
 
-    //#groupBy3
+    // #groupBy3
     Source(1 to 10).groupBy(3, _ % 3).mergeSubstreams.runWith(Sink.ignore)
-    //#groupBy3
+    // #groupBy3
 
-    //#groupBy4
+    // #groupBy4
     Source(1 to 10).groupBy(3, _ % 3).mergeSubstreamsWithParallelism(2).runWith(Sink.ignore)
 
-    //concatSubstreams is equivalent to mergeSubstreamsWithParallelism(1)
+    // concatSubstreams is equivalent to mergeSubstreamsWithParallelism(1)
     Source(1 to 10).groupBy(3, _ % 3).concatSubstreams.runWith(Sink.ignore)
-    //#groupBy4
+    // #groupBy4
   }
 
   "generate substreams by splitWhen and splitAfter" in {
-    //#splitWhenAfter
+    // #splitWhenAfter
     Source(1 to 10).splitWhen(SubstreamCancelStrategy.drain)(_ == 3)
 
     Source(1 to 10).splitAfter(SubstreamCancelStrategy.drain)(_ == 3)
-    //#splitWhenAfter
+    // #splitWhenAfter
 
-    //#wordCount
+    // #wordCount
     val text =
       "This is the first line.\n" +
       "The second line.\n" +
@@ -51,16 +51,16 @@ class SubstreamDocSpec extends AkkaSpec {
       .reduce(_ + _)
       .to(Sink.foreach(println))
       .run()
-    //#wordCount
+    // #wordCount
   }
 
   "generate substreams by flatMapConcat and flatMapMerge" in {
-    //#flatMapConcat
+    // #flatMapConcat
     Source(1 to 2).flatMapConcat(i => Source(List.fill(3)(i))).runWith(Sink.ignore)
-    //#flatMapConcat
+    // #flatMapConcat
 
-    //#flatMapMerge
+    // #flatMapMerge
     Source(1 to 2).flatMapMerge(2, i => Source(List.fill(3)(i))).runWith(Sink.ignore)
-    //#flatMapMerge
+    // #flatMapMerge
   }
 }

@@ -17,10 +17,12 @@ import akka.testkit.WithLogCapturing
 import akka.util.Timeout
 
 @nowarn
-class AskSpec extends AkkaSpec("""
+class AskSpec
+    extends AkkaSpec("""
      akka.loglevel = DEBUG
      akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
-    """) with WithLogCapturing {
+    """)
+    with WithLogCapturing {
 
   "The “ask” pattern" must {
     "send request to actor and wrap the answer in Future" in {
@@ -132,9 +134,11 @@ class AskSpec extends AkkaSpec("""
       val deadListener = TestProbe()
       system.eventStream.subscribe(deadListener.ref, classOf[DeadLetter])
 
-      val echo = system.actorOf(Props(new Actor {
-        def receive = { case x => context.actorSelection(sender().path) ! x }
-      }), "select-echo2")
+      val echo = system.actorOf(
+        Props(new Actor {
+          def receive = { case x => context.actorSelection(sender().path) ! x }
+        }),
+        "select-echo2")
       val f = echo ? "hi"
 
       Await.result(f, 1 seconds) should ===("hi")
@@ -163,14 +167,15 @@ class AskSpec extends AkkaSpec("""
       val deadListener = TestProbe()
       system.eventStream.subscribe(deadListener.ref, classOf[DeadLetter])
 
-      val echo = system.actorOf(Props(new Actor {
-        def receive = {
-          case x =>
+      val echo = system.actorOf(
+        Props(new Actor {
+          def receive = { case x =>
             val name = sender().path.name
             val parent = sender().path.parent
             context.actorSelection(parent / ".." / "temp" / name) ! x
-        }
-      }), "select-echo4")
+          }
+        }),
+        "select-echo4")
       val f = echo ? "hi"
       intercept[AskTimeoutException] {
         Await.result(f, 1 seconds) should ===("hi")
@@ -184,13 +189,14 @@ class AskSpec extends AkkaSpec("""
       val deadListener = TestProbe()
       system.eventStream.subscribe(deadListener.ref, classOf[DeadLetter])
 
-      val echo = system.actorOf(Props(new Actor {
-        def receive = {
-          case x =>
+      val echo = system.actorOf(
+        Props(new Actor {
+          def receive = { case x =>
             val parent = sender().path.parent
             context.actorSelection(parent / "missing") ! x
-        }
-      }), "select-echo5")
+          }
+        }),
+        "select-echo5")
       val f = echo ? "hi"
       intercept[AskTimeoutException] {
         Await.result(f, 1 seconds) should ===("hi")
@@ -203,12 +209,13 @@ class AskSpec extends AkkaSpec("""
       val deadListener = TestProbe()
       system.eventStream.subscribe(deadListener.ref, classOf[DeadLetter])
 
-      val echo = system.actorOf(Props(new Actor {
-        def receive = {
-          case x =>
+      val echo = system.actorOf(
+        Props(new Actor {
+          def receive = { case x =>
             context.actorSelection(sender().path / "missing") ! x
-        }
-      }), "select-echo6")
+          }
+        }),
+        "select-echo6")
       val f = echo ? "hi"
       intercept[AskTimeoutException] {
         Await.result(f, 1 seconds) should ===(ActorSelectionMessage("hi", Vector(SelectChildName("missing")), false))
@@ -221,8 +228,8 @@ class AskSpec extends AkkaSpec("""
       val p = TestProbe()
 
       val act = system.actorOf(Props(new Actor {
-        def receive = {
-          case msg => p.ref ! sender() -> msg
+        def receive = { case msg =>
+          p.ref ! sender() -> msg
         }
       }))
 
@@ -241,11 +248,13 @@ class AskSpec extends AkkaSpec("""
       implicit val timeout: Timeout = Timeout(300 millis)
       val p = TestProbe()
 
-      val act = system.actorOf(Props(new Actor {
-        def receive = {
-          case msg => p.ref ! sender() -> msg
-        }
-      }), "myName")
+      val act = system.actorOf(
+        Props(new Actor {
+          def receive = { case msg =>
+            p.ref ! sender() -> msg
+          }
+        }),
+        "myName")
 
       (act ? "ask").mapTo[String]
       val (promiseActorRef, _) = p.expectMsgType[(ActorRef, String)]

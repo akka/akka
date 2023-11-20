@@ -28,22 +28,16 @@ private[akka] trait AutoReceivedMessage extends Serializable
  */
 trait PossiblyHarmful
 
-/**
- * Marker trait to signal that this class should not be verified for serializability.
- */
+/** Marker trait to signal that this class should not be verified for serializability. */
 trait NoSerializationVerificationNeeded
 
 abstract class PoisonPill extends AutoReceivedMessage with PossiblyHarmful with DeadLetterSuppression
 
-/**
- * A message all Actors will understand, that when processed will terminate the Actor permanently.
- */
+/** A message all Actors will understand, that when processed will terminate the Actor permanently. */
 @SerialVersionUID(1L)
 case object PoisonPill extends PoisonPill {
 
-  /**
-   * Java API: get the singleton instance
-   */
+  /** Java API: get the singleton instance */
   def getInstance = this
 }
 
@@ -56,9 +50,7 @@ abstract class Kill extends AutoReceivedMessage with PossiblyHarmful
 @SerialVersionUID(1L)
 case object Kill extends Kill {
 
-  /**
-   * Java API: get the singleton instance
-   */
+  /** Java API: get the singleton instance */
   def getInstance = this
 }
 
@@ -142,15 +134,11 @@ abstract class ReceiveTimeout extends PossiblyHarmful
 @SerialVersionUID(1L)
 case object ReceiveTimeout extends ReceiveTimeout {
 
-  /**
-   * Java API: get the singleton instance
-   */
+  /** Java API: get the singleton instance */
   def getInstance = this
 }
 
-/**
- * Marker trait to indicate that a message should not reset the receive timeout.
- */
+/** Marker trait to indicate that a message should not reset the receive timeout. */
 trait NotInfluenceReceiveTimeout
 
 /**
@@ -160,9 +148,7 @@ trait NotInfluenceReceiveTimeout
 @SerialVersionUID(1L)
 final case class IllegalActorStateException private[akka] (message: String) extends AkkaException(message)
 
-/**
- * ActorKilledException is thrown when an Actor receives the [[akka.actor.Kill]] message
- */
+/** ActorKilledException is thrown when an Actor receives the [[akka.actor.Kill]] message */
 @SerialVersionUID(1L)
 final case class ActorKilledException private[akka] (message: String) extends AkkaException(message) with NoStackTrace
 
@@ -280,9 +266,7 @@ final case class DeathPactException private[akka] (dead: ActorRef)
 @SerialVersionUID(1L)
 class ActorInterruptedException private[akka] (cause: Throwable) extends AkkaException(cause.getMessage, cause)
 
-/**
- * This message is published to the EventStream whenever an Actor receives a message it doesn't understand
- */
+/** This message is published to the EventStream whenever an Actor receives a message it doesn't understand */
 @SerialVersionUID(1L)
 final case class UnhandledMessage(
     @BeanProperty message: Any,
@@ -301,9 +285,7 @@ final case class UnhandledMessage(
 object Status {
   sealed trait Status extends Serializable
 
-  /**
-   * This class/message type is preferably used to indicate success of some operation performed.
-   */
+  /** This class/message type is preferably used to indicate success of some operation performed. */
   @SerialVersionUID(1L)
   final case class Success(status: Any) extends Status
 
@@ -373,26 +355,20 @@ trait DiagnosticActorLogging extends Actor {
 
 object Actor {
 
-  /**
-   * Type alias representing a Receive-expression for Akka Actors.
-   */
-  //#receive
+  /** Type alias representing a Receive-expression for Akka Actors. */
+  // #receive
   type Receive = PartialFunction[Any, Unit]
 
-  //#receive
+  // #receive
 
-  /**
-   * emptyBehavior is a Receive-expression that matches no messages at all, ever.
-   */
+  /** emptyBehavior is a Receive-expression that matches no messages at all, ever. */
   @SerialVersionUID(1L)
   object emptyBehavior extends Receive {
     def isDefinedAt(x: Any) = false
     def apply(x: Any) = throw new UnsupportedOperationException("Empty behavior apply()")
   }
 
-  /**
-   * ignoringBehavior is a Receive-expression that consumes and ignores all messages.
-   */
+  /** ignoringBehavior is a Receive-expression that consumes and ignores all messages. */
   @SerialVersionUID(1L)
   object ignoringBehavior extends Receive {
     def isDefinedAt(x: Any): Boolean = true
@@ -405,14 +381,10 @@ object Actor {
    */
   final val noSender: ActorRef = null
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   private final val NotHandled = new Object
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   private final val notHandledFun = (_: Any) => NotHandled
 }
 
@@ -503,7 +475,7 @@ trait Actor {
    * self ! message
    * </pre>
    */
-  implicit final val self: ActorRef = context.self //MUST BE A VAL, TRUST ME
+  implicit final val self: ActorRef = context.self // MUST BE A VAL, TRUST ME
 
   /**
    * The reference sender Actor of the last received message.
@@ -519,9 +491,9 @@ trait Actor {
    * Scala API: This defines the initial actor behavior, it must return a partial function
    * with the actor logic.
    */
-  //#receive
+  // #receive
   def receive: Actor.Receive
-  //#receive
+  // #receive
 
   /**
    * INTERNAL API.
@@ -585,10 +557,10 @@ trait Actor {
    * Empty default implementation.
    */
   @throws(classOf[Exception]) // when changing this you MUST also change ActorDocTest
-  //#lifecycle-hooks
+  // #lifecycle-hooks
   def preStart(): Unit = ()
 
-  //#lifecycle-hooks
+  // #lifecycle-hooks
 
   /**
    * User overridable callback.
@@ -597,10 +569,10 @@ trait Actor {
    * Empty default implementation.
    */
   @throws(classOf[Exception]) // when changing this you MUST also change ActorDocTest
-  //#lifecycle-hooks
+  // #lifecycle-hooks
   def postStop(): Unit = ()
 
-  //#lifecycle-hooks
+  // #lifecycle-hooks
 
   /**
    * Scala API: User overridable callback: '''By default it disposes of all children and then calls `postStop()`.'''
@@ -611,7 +583,7 @@ trait Actor {
    * up of resources before Actor is terminated.
    */
   @throws(classOf[Exception]) // when changing this you MUST also change ActorDocTest
-  //#lifecycle-hooks
+  // #lifecycle-hooks
   def preRestart(@unused reason: Throwable, @unused message: Option[Any]): Unit = {
     context.children.foreach { child =>
       context.unwatch(child)
@@ -620,7 +592,7 @@ trait Actor {
     postStop()
   }
 
-  //#lifecycle-hooks
+  // #lifecycle-hooks
 
   /**
    * User overridable callback: By default it calls `preStart()`.
@@ -629,11 +601,11 @@ trait Actor {
    * Is called right AFTER restart on the newly created Actor to allow reinitialization after an Actor crash.
    */
   @throws(classOf[Exception]) // when changing this you MUST also change ActorDocTest
-  //#lifecycle-hooks
+  // #lifecycle-hooks
   def postRestart(@unused reason: Throwable): Unit = {
     preStart()
   }
-  //#lifecycle-hooks
+  // #lifecycle-hooks
 
   /**
    * User overridable callback.

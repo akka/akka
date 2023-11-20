@@ -20,7 +20,7 @@ object UniformFanInShape {
 
 class UniformFanInShape[-T, +O](val n: Int, _init: FanInShape.Init[O]) extends FanInShape[O](_init) {
 
-  //ports get added to `FanInShape.inlets` as a side-effect of calling `newInlet`
+  // ports get added to `FanInShape.inlets` as a side-effect of calling `newInlet`
   for (i <- 0 until n) newInlet[T](s"in$i")
 
   def this(n: Int) = this(n, FanInShape.Name[O]("UniformFanIn"))

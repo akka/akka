@@ -10,25 +10,25 @@ import akka.cluster.ClusterEvent._
 
 class SimpleClusterListener2 extends Actor with ActorLogging {
 
-  //#join
+  // #join
   val cluster = Cluster(context.system)
-  //#join
+  // #join
 
   // subscribe to cluster changes, re-subscribe when restart
   override def preStart(): Unit = {
-    //#join
+    // #join
     cluster.join(cluster.selfAddress)
-    //#join
+    // #join
 
-    //#subscribe
+    // #subscribe
     cluster.subscribe(self, classOf[MemberEvent], classOf[UnreachableMember])
-    //#subscribe
+    // #subscribe
 
-    //#register-on-memberup
+    // #register-on-memberup
     cluster.registerOnMemberUp {
       cluster.subscribe(self, classOf[MemberEvent], classOf[UnreachableMember])
     }
-    //#register-on-memberup
+    // #register-on-memberup
   }
   override def postStop(): Unit = cluster.unsubscribe(self)
 

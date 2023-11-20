@@ -36,7 +36,6 @@ private[akka] object SystemMessageList {
 }
 
 /**
- *
  * INTERNAL API
  *
  * Value class supporting list operations on system messages. The `next` field of [[SystemMessage]]
@@ -48,24 +47,17 @@ private[akka] object SystemMessageList {
  *
  * The type of the list also encodes that the messages contained are in reverse order, i.e. the head of the list is the
  * latest appended element.
- *
  */
 private[akka] class LatestFirstSystemMessageList(val head: SystemMessage) extends AnyVal {
   import SystemMessageList._
 
-  /**
-   * Indicates if the list is empty or not. This operation has constant cost.
-   */
+  /** Indicates if the list is empty or not. This operation has constant cost. */
   final def isEmpty: Boolean = head eq null
 
-  /**
-   * Indicates if the list has at least one element or not. This operation has constant cost.
-   */
+  /** Indicates if the list has at least one element or not. This operation has constant cost. */
   final def nonEmpty: Boolean = head ne null
 
-  /**
-   * Indicates if the list is empty or not. This operation has constant cost.
-   */
+  /** Indicates if the list is empty or not. This operation has constant cost. */
   final def size: Int = sizeInner(head, 0)
 
   /**
@@ -85,9 +77,7 @@ private[akka] class LatestFirstSystemMessageList(val head: SystemMessage) extend
    */
   final def reverse: EarliestFirstSystemMessageList = new EarliestFirstSystemMessageList(reverseInner(head, null))
 
-  /**
-   * Attaches a message to the current head of the list. This operation has constant cost.
-   */
+  /** Attaches a message to the current head of the list. This operation has constant cost. */
   final def ::(msg: SystemMessage): LatestFirstSystemMessageList = {
     assert(msg ne null)
     msg.next = head
@@ -97,7 +87,6 @@ private[akka] class LatestFirstSystemMessageList(val head: SystemMessage) extend
 }
 
 /**
- *
  * INTERNAL API
  *
  * Value class supporting list operations on system messages. The `next` field of [[SystemMessage]]
@@ -109,24 +98,17 @@ private[akka] class LatestFirstSystemMessageList(val head: SystemMessage) extend
  *
  * This list type also encodes that the messages contained are in reverse order, i.e. the head of the list is the
  * latest appended element.
- *
  */
 private[akka] class EarliestFirstSystemMessageList(val head: SystemMessage) extends AnyVal {
   import SystemMessageList._
 
-  /**
-   * Indicates if the list is empty or not. This operation has constant cost.
-   */
+  /** Indicates if the list is empty or not. This operation has constant cost. */
   final def isEmpty: Boolean = head eq null
 
-  /**
-   * Indicates if the list has at least one element or not. This operation has constant cost.
-   */
+  /** Indicates if the list has at least one element or not. This operation has constant cost. */
   final def nonEmpty: Boolean = head ne null
 
-  /**
-   * Indicates if the list is empty or not. This operation has constant cost.
-   */
+  /** Indicates if the list is empty or not. This operation has constant cost. */
   final def size: Int = sizeInner(head, 0)
 
   /**
@@ -146,9 +128,7 @@ private[akka] class EarliestFirstSystemMessageList(val head: SystemMessage) exte
    */
   final def reverse: LatestFirstSystemMessageList = new LatestFirstSystemMessageList(reverseInner(head, null))
 
-  /**
-   * Attaches a message to the current head of the list. This operation has constant cost.
-   */
+  /** Attaches a message to the current head of the list. This operation has constant cost. */
   final def ::(msg: SystemMessage): EarliestFirstSystemMessageList = {
     assert(msg ne null)
     msg.next = head
@@ -203,66 +183,56 @@ private[akka] sealed trait SystemMessage extends PossiblyHarmful with Serializab
   def unlinked: Boolean = next eq null
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[akka] trait StashWhenWaitingForChildren
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[akka] trait StashWhenFailed
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @SerialVersionUID(1L)
-private[akka] final case class Create(failure: Option[ActorInitializationException]) extends SystemMessage // sent to self from Dispatcher.register
-/**
- * INTERNAL API
- */
+private[akka] final case class Create(failure: Option[ActorInitializationException])
+    extends SystemMessage // sent to self from Dispatcher.register
+/** INTERNAL API */
 @SerialVersionUID(1L)
-private[akka] final case class Recreate(cause: Throwable) extends SystemMessage with StashWhenWaitingForChildren // sent to self from ActorCell.restart
-/**
- * INTERNAL API
- */
+private[akka] final case class Recreate(cause: Throwable)
+    extends SystemMessage
+    with StashWhenWaitingForChildren // sent to self from ActorCell.restart
+/** INTERNAL API */
 @SerialVersionUID(1L)
-private[akka] final case class Suspend() extends SystemMessage with StashWhenWaitingForChildren // sent to self from ActorCell.suspend
-/**
- * INTERNAL API
- */
+private[akka] final case class Suspend()
+    extends SystemMessage
+    with StashWhenWaitingForChildren // sent to self from ActorCell.suspend
+/** INTERNAL API */
 @SerialVersionUID(1L)
-private[akka] final case class Resume(causedByFailure: Throwable) extends SystemMessage with StashWhenWaitingForChildren // sent to self from ActorCell.resume
-/**
- * INTERNAL API
- */
+private[akka] final case class Resume(causedByFailure: Throwable)
+    extends SystemMessage
+    with StashWhenWaitingForChildren // sent to self from ActorCell.resume
+/** INTERNAL API */
 @SerialVersionUID(1L)
-private[akka] final case class Terminate() extends SystemMessage with DeadLetterSuppression // sent to self from ActorCell.stop
+private[akka] final case class Terminate()
+    extends SystemMessage
+    with DeadLetterSuppression // sent to self from ActorCell.stop
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @SerialVersionUID(1L)
-private[akka] final case class Supervise(child: ActorRef, async: Boolean) extends SystemMessage // sent to supervisor ActorRef from ActorCell.start
-/**
- * INTERNAL API
- */
+private[akka] final case class Supervise(child: ActorRef, async: Boolean)
+    extends SystemMessage // sent to supervisor ActorRef from ActorCell.start
+/** INTERNAL API */
 @SerialVersionUID(1L)
-private[akka] final case class Watch(watchee: InternalActorRef, watcher: InternalActorRef) extends SystemMessage // sent to establish a DeathWatch
-/**
- * INTERNAL API
- */
-@SerialVersionUID(1L) // Watch and Unwatch have different signatures, but this can't be changed without breaking serialization compatibility
-private[akka] final case class Unwatch(watchee: ActorRef, watcher: ActorRef) extends SystemMessage // sent to tear down a DeathWatch
-/**
- * INTERNAL API
- */
+private[akka] final case class Watch(watchee: InternalActorRef, watcher: InternalActorRef)
+    extends SystemMessage // sent to establish a DeathWatch
+/** INTERNAL API */
+@SerialVersionUID(
+  1L
+) // Watch and Unwatch have different signatures, but this can't be changed without breaking serialization compatibility
+private[akka] final case class Unwatch(watchee: ActorRef, watcher: ActorRef)
+    extends SystemMessage // sent to tear down a DeathWatch
+/** INTERNAL API */
 @SerialVersionUID(1L)
 private[akka] case object NoMessage extends SystemMessage // switched into the mailbox to signal termination
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @SerialVersionUID(1L)
 private[akka] final case class Failed(child: ActorRef, cause: Throwable, uid: Int)
     extends SystemMessage

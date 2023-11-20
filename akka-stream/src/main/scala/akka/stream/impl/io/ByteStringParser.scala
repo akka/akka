@@ -12,9 +12,7 @@ import akka.stream._
 import akka.stream.stage._
 import akka.util.ByteString
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] abstract class ByteStringParser[T] extends GraphStage[FlowShape[ByteString, T]] {
   import ByteStringParser._
 
@@ -142,9 +140,7 @@ import akka.util.ByteString
   }
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object ByteStringParser {
 
   val CompactionThreshold = 16
@@ -210,15 +206,15 @@ import akka.util.ByteString
       if (off < input.length) {
         val x = input(off)
         off += 1
-        x & 0xFF
+        x & 0xff
       } else throw NeedMoreData
     def readShortLE(): Int = readByte() | (readByte() << 8)
     def readIntLE(): Int = readShortLE() | (readShortLE() << 16)
-    def readLongLE(): Long = (readIntLE() & 0XFFFFFFFFL) | ((readIntLE() & 0XFFFFFFFFL) << 32)
+    def readLongLE(): Long = (readIntLE() & 0xffffffffL) | ((readIntLE() & 0xffffffffL) << 32)
 
     def readShortBE(): Int = (readByte() << 8) | readByte()
     def readIntBE(): Int = (readShortBE() << 16) | readShortBE()
-    def readLongBE(): Long = ((readIntBE() & 0XFFFFFFFFL) << 32) | (readIntBE() & 0XFFFFFFFFL)
+    def readLongBE(): Long = ((readIntBE() & 0xffffffffL) << 32) | (readIntBE() & 0xffffffffL)
 
     def skip(numBytes: Int): Unit =
       if (off + numBytes <= input.length) off += numBytes

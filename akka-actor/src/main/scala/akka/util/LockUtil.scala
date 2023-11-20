@@ -17,9 +17,7 @@ final class ReentrantGuard extends ReentrantLock {
   }
 }
 
-/**
- * An atomic switch that can be either on or off
- */
+/** An atomic switch that can be either on or off */
 class Switch(startAsOn: Boolean = false) {
   private val switch = new AtomicBoolean(startAsOn) // FIXME switch to AQS
 
@@ -49,29 +47,19 @@ class Switch(startAsOn: Boolean = false) {
    */
   def switchOn(action: => Unit): Boolean = transcend(from = false, action)
 
-  /**
-   * Switches the switch off (if on), uses locking
-   */
+  /** Switches the switch off (if on), uses locking */
   def switchOff: Boolean = synchronized { switch.compareAndSet(true, false) }
 
-  /**
-   * Switches the switch on (if off), uses locking
-   */
+  /** Switches the switch on (if off), uses locking */
   def switchOn: Boolean = synchronized { switch.compareAndSet(false, true) }
 
-  /**
-   * Executes the provided action and returns its value if the switch is IMMEDIATELY on (i.e. no lock involved)
-   */
+  /** Executes the provided action and returns its value if the switch is IMMEDIATELY on (i.e. no lock involved) */
   def ifOnYield[T](action: => T): Option[T] = if (switch.get) Some(action) else None
 
-  /**
-   * Executes the provided action and returns its value if the switch is IMMEDIATELY off (i.e. no lock involved)
-   */
+  /** Executes the provided action and returns its value if the switch is IMMEDIATELY off (i.e. no lock involved) */
   def ifOffYield[T](action: => T): Option[T] = if (!switch.get) Some(action) else None
 
-  /**
-   * Executes the provided action and returns if the action was executed or not, if the switch is IMMEDIATELY on (i.e. no lock involved)
-   */
+  /** Executes the provided action and returns if the action was executed or not, if the switch is IMMEDIATELY on (i.e. no lock involved) */
   def ifOn(action: => Unit): Boolean = {
     if (switch.get) {
       action
@@ -79,9 +67,7 @@ class Switch(startAsOn: Boolean = false) {
     } else false
   }
 
-  /**
-   * Executes the provided action and returns if the action was executed or not, if the switch is IMMEDIATELY off (i.e. no lock involved)
-   */
+  /** Executes the provided action and returns if the action was executed or not, if the switch is IMMEDIATELY off (i.e. no lock involved) */
   def ifOff(action: => Unit): Boolean = {
     if (!switch.get) {
       action
@@ -129,18 +115,12 @@ class Switch(startAsOn: Boolean = false) {
    */
   def fold[T](on: => T)(off: => T): T = synchronized { if (switch.get) on else off }
 
-  /**
-   * Executes the given code while holding this switch’s lock, i.e. protected from concurrent modification of the switch status.
-   */
+  /** Executes the given code while holding this switch’s lock, i.e. protected from concurrent modification of the switch status. */
   def locked[T](code: => T): T = synchronized { code }
 
-  /**
-   * Returns whether the switch is IMMEDIATELY on (no locking)
-   */
+  /** Returns whether the switch is IMMEDIATELY on (no locking) */
   def isOn: Boolean = switch.get
 
-  /**
-   * Returns whether the switch is IMMEDIATELY off (no locking)
-   */
+  /** Returns whether the switch is IMMEDIATELY off (no locking) */
   def isOff: Boolean = !isOn
 }

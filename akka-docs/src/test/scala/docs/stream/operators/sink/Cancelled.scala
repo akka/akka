@@ -14,9 +14,9 @@ object Cancelled {
   implicit val system: ActorSystem = ???
   implicit val ec: ExecutionContextExecutor = system.dispatcher
   def cancelledExample(): NotUsed = {
-    //#cancelled
+    // #cancelled
     val source = Source(1 to 5)
     source.runWith(Sink.cancelled)
-    //#cancelled
+    // #cancelled
   }
 }

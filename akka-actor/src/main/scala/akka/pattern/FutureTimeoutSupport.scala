@@ -21,8 +21,8 @@ trait FutureTimeoutSupport {
    * Returns a [[scala.concurrent.Future]] that will be completed with the success or failure of the provided value
    * after the specified duration.
    */
-  def after[T](duration: FiniteDuration)(value: => Future[T])(
-      implicit system: ClassicActorSystemProvider): Future[T] = {
+  def after[T](duration: FiniteDuration)(value: => Future[T])(implicit
+      system: ClassicActorSystemProvider): Future[T] = {
     after(duration, using = system.classicSystem.scheduler)(value)(system.classicSystem.dispatcher)
   }
 
@@ -30,16 +30,16 @@ trait FutureTimeoutSupport {
    * Returns a [[java.util.concurrent.CompletionStage]] that will be completed with the success or failure of the provided value
    * after the specified duration.
    */
-  def afterCompletionStage[T](duration: FiniteDuration)(value: => CompletionStage[T])(
-      implicit system: ClassicActorSystemProvider): CompletionStage[T] =
+  def afterCompletionStage[T](duration: FiniteDuration)(value: => CompletionStage[T])(implicit
+      system: ClassicActorSystemProvider): CompletionStage[T] =
     afterCompletionStage(duration, system.classicSystem.scheduler)(value)(system.classicSystem.dispatcher)
 
   /**
    * Returns a [[scala.concurrent.Future]] that will be completed with the success or failure of the provided value
    * after the specified duration.
    */
-  def after[T](duration: FiniteDuration, using: Scheduler)(value: => Future[T])(
-      implicit ec: ExecutionContext): Future[T] =
+  def after[T](duration: FiniteDuration, using: Scheduler)(value: => Future[T])(implicit
+      ec: ExecutionContext): Future[T] =
     if (duration.isFinite && duration.length < 1) {
       try value
       catch { case NonFatal(t) => Future.failed(t) }
@@ -58,8 +58,8 @@ trait FutureTimeoutSupport {
    * Returns a [[java.util.concurrent.CompletionStage]] that will be completed with the success or failure of the provided value
    * after the specified duration.
    */
-  def afterCompletionStage[T](duration: FiniteDuration, using: Scheduler)(value: => CompletionStage[T])(
-      implicit ec: ExecutionContext): CompletionStage[T] =
+  def afterCompletionStage[T](duration: FiniteDuration, using: Scheduler)(value: => CompletionStage[T])(implicit
+      ec: ExecutionContext): CompletionStage[T] =
     if (duration.isFinite && duration.length < 1) {
       try value
       catch { case NonFatal(t) => Futures.failedCompletionStage(t) }

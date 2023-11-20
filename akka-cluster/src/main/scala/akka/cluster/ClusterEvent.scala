@@ -46,14 +46,10 @@ object ClusterEvent {
    */
   case object InitialStateAsEvents extends SubscriptionInitialStateMode
 
-  /**
-   * Java API
-   */
+  /** Java API */
   def initialStateAsSnapshot = InitialStateAsSnapshot
 
-  /**
-   * Java API
-   */
+  /** Java API */
   def initialStateAsEvents = InitialStateAsEvents
 
   /**
@@ -133,43 +129,31 @@ object ClusterEvent {
         roleLeaderMap: Map[String, Option[Address]] = Map.empty) =
       this(members, unreachable, seenBy, leader, roleLeaderMap, Set.empty, Set.empty)
 
-    /**
-     * Java API: get current member list.
-     */
+    /** Java API: get current member list. */
     def getMembers: java.lang.Iterable[Member] = {
       import akka.util.ccompat.JavaConverters._
       members.asJava
     }
 
-    /**
-     * Java API: get current unreachable set.
-     */
+    /** Java API: get current unreachable set. */
     @nowarn("msg=deprecated")
     def getUnreachable: java.util.Set[Member] =
       scala.collection.JavaConverters.setAsJavaSetConverter(unreachable).asJava
 
-    /**
-     * Java API: All data centers in the cluster
-     */
+    /** Java API: All data centers in the cluster */
     @nowarn("msg=deprecated")
     def getUnreachableDataCenters: java.util.Set[String] =
       scala.collection.JavaConverters.setAsJavaSetConverter(unreachableDataCenters).asJava
 
-    /**
-     * Java API: get current “seen-by” set.
-     */
+    /** Java API: get current “seen-by” set. */
     @nowarn("msg=deprecated")
     def getSeenBy: java.util.Set[Address] =
       scala.collection.JavaConverters.setAsJavaSetConverter(seenBy).asJava
 
-    /**
-     * Java API: get address of current data center leader, or null if none
-     */
+    /** Java API: get address of current data center leader, or null if none */
     def getLeader: Address = leader orNull
 
-    /**
-     * get address of current leader, if any, within the data center that has the given role
-     */
+    /** get address of current leader, if any, within the data center that has the given role */
     def roleLeader(role: String): Option[Address] = roleLeaderMap.getOrElse(role, None)
 
     /**
@@ -178,33 +162,23 @@ object ClusterEvent {
      */
     def getRoleLeader(role: String): Address = roleLeaderMap.get(role).flatten.orNull
 
-    /**
-     * All node roles in the cluster
-     */
+    /** All node roles in the cluster */
     def allRoles: Set[String] = roleLeaderMap.keySet
 
-    /**
-     * Java API: All node roles in the cluster
-     */
+    /** Java API: All node roles in the cluster */
     @nowarn("msg=deprecated")
     def getAllRoles: java.util.Set[String] =
       scala.collection.JavaConverters.setAsJavaSetConverter(allRoles).asJava
 
-    /**
-     * All data centers in the cluster
-     */
+    /** All data centers in the cluster */
     def allDataCenters: Set[String] = members.iterator.map(_.dataCenter).to(immutable.Set)
 
-    /**
-     * Java API: All data centers in the cluster
-     */
+    /** Java API: All data centers in the cluster */
     @nowarn("msg=deprecated")
     def getAllDataCenters: java.util.Set[String] =
       scala.collection.JavaConverters.setAsJavaSetConverter(allDataCenters).asJava
 
-    /**
-     * Replace the set of unreachable datacenters with the given set
-     */
+    /** Replace the set of unreachable datacenters with the given set */
     def withUnreachableDataCenters(unreachableDataCenters: Set[DataCenter]): CurrentClusterState =
       new CurrentClusterState(
         members,
@@ -287,9 +261,7 @@ object ClusterEvent {
     def member: Member
   }
 
-  /**
-   * Member status changed to Joining.
-   */
+  /** Member status changed to Joining. */
   final case class MemberJoined(member: Member) extends MemberEvent {
     if (member.status != Joining) throw new IllegalArgumentException("Expected Joining status, got: " + member)
   }
@@ -304,16 +276,12 @@ object ClusterEvent {
     if (member.status != WeaklyUp) throw new IllegalArgumentException("Expected WeaklyUp status, got: " + member)
   }
 
-  /**
-   * Member status changed to Up.
-   */
+  /** Member status changed to Up. */
   final case class MemberUp(member: Member) extends MemberEvent {
     if (member.status != Up) throw new IllegalArgumentException("Expected Up status, got: " + member)
   }
 
-  /**
-   * Member status changed to Leaving.
-   */
+  /** Member status changed to Leaving. */
   final case class MemberLeft(member: Member) extends MemberEvent {
     if (member.status != Leaving) throw new IllegalArgumentException("Expected Leaving status, got: " + member)
   }
@@ -388,9 +356,7 @@ object ClusterEvent {
    */
   case object ClusterShuttingDown extends ClusterDomainEvent
 
-  /**
-   * Java API: get the singleton instance of `ClusterShuttingDown` event
-   */
+  /** Java API: get the singleton instance of `ClusterShuttingDown` event */
   def getClusterShuttingDownInstance = ClusterShuttingDown
 
   /**
@@ -401,9 +367,7 @@ object ClusterEvent {
     def member: Member
   }
 
-  /**
-   * A member is considered as unreachable by the failure detector.
-   */
+  /** A member is considered as unreachable by the failure detector. */
   final case class UnreachableMember(member: Member) extends ReachabilityEvent
 
   /**
@@ -419,14 +383,10 @@ object ClusterEvent {
    */
   sealed trait DataCenterReachabilityEvent extends ClusterDomainEvent
 
-  /**
-   * A data center is considered as unreachable when any members from the data center are unreachable
-   */
+  /** A data center is considered as unreachable when any members from the data center are unreachable */
   final case class UnreachableDataCenter(dataCenter: DataCenter) extends DataCenterReachabilityEvent
 
-  /**
-   * A data center is considered reachable when all members from the data center are reachable
-   */
+  /** A data center is considered reachable when all members from the data center are reachable */
   final case class ReachableDataCenter(dataCenter: DataCenter) extends DataCenterReachabilityEvent
 
   /**
@@ -437,28 +397,20 @@ object ClusterEvent {
   @ccompatUsedUntil213
   private[cluster] final case class SeenChanged(convergence: Boolean, seenBy: Set[Address]) extends ClusterDomainEvent
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi
   private[cluster] final case class ReachabilityChanged(reachability: Reachability) extends ClusterDomainEvent
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi
   private[cluster] final case class CurrentInternalStats(gossipStats: GossipStats, vclockStats: VectorClockStats)
       extends ClusterDomainEvent
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi
   private[cluster] final case class MemberTombstonesChanged(tombstones: Set[UniqueAddress]) extends ClusterDomainEvent
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi
   private[cluster] def diffUnreachable(
       oldState: MembershipState,
@@ -475,9 +427,7 @@ object ClusterEvent {
         .to(immutable.IndexedSeq)
     }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi
   private[cluster] def diffReachable(
       oldState: MembershipState,
@@ -488,15 +438,14 @@ object ClusterEvent {
       oldState.dcReachabilityNoOutsideNodes.allUnreachable.iterator
         .collect {
           case node
-              if newGossip.hasMember(node) && newState.dcReachabilityNoOutsideNodes.isReachable(node) && node != newState.selfUniqueAddress =>
+              if newGossip.hasMember(node) && newState.dcReachabilityNoOutsideNodes.isReachable(
+                node) && node != newState.selfUniqueAddress =>
             ReachableMember(newGossip.member(node))
         }
         .to(immutable.IndexedSeq)
     }
 
-  /**
-   * Internal API
-   */
+  /** Internal API */
   @InternalApi
   private[cluster] def isDataCenterReachable(state: MembershipState)(otherDc: DataCenter): Boolean = {
     val unrelatedDcNodes = state.latestGossip.members.collect {
@@ -507,17 +456,15 @@ object ClusterEvent {
     reachabilityForOtherDc.allUnreachable.isEmpty
   }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi
   private[cluster] def diffUnreachableDataCenter(
       oldState: MembershipState,
       newState: MembershipState): immutable.Seq[UnreachableDataCenter] = {
     if (newState eq oldState) Nil
     else {
-      val otherDcs = (oldState.latestGossip.allDataCenters
-          .union(newState.latestGossip.allDataCenters)) - newState.selfDc
+      val otherDcs =
+        (oldState.latestGossip.allDataCenters.union(newState.latestGossip.allDataCenters)) - newState.selfDc
 
       val oldUnreachableDcs = otherDcs.filterNot(isDataCenterReachable(oldState))
       val currentUnreachableDcs = otherDcs.filterNot(isDataCenterReachable(newState))
@@ -526,17 +473,15 @@ object ClusterEvent {
     }
   }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi
   private[cluster] def diffReachableDataCenter(
       oldState: MembershipState,
       newState: MembershipState): immutable.Seq[ReachableDataCenter] = {
     if (newState eq oldState) Nil
     else {
-      val otherDcs = (oldState.latestGossip.allDataCenters
-          .union(newState.latestGossip.allDataCenters)) - newState.selfDc
+      val otherDcs =
+        (oldState.latestGossip.allDataCenters.union(newState.latestGossip.allDataCenters)) - newState.selfDc
 
       val oldUnreachableDcs = otherDcs.filterNot(isDataCenterReachable(oldState))
       val currentUnreachableDcs = otherDcs.filterNot(isDataCenterReachable(newState))
@@ -545,9 +490,7 @@ object ClusterEvent {
     }
   }
 
-  /**
-   * INTERNAL API.
-   */
+  /** INTERNAL API. */
   @InternalApi
   private[cluster] def diffMemberEvents(
       oldState: MembershipState,
@@ -581,9 +524,7 @@ object ClusterEvent {
       (new VectorBuilder[MemberEvent]() ++= removedEvents ++= memberEvents).result()
     }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi
   private[cluster] def diffLeader(
       oldState: MembershipState,
@@ -593,9 +534,7 @@ object ClusterEvent {
     else Nil
   }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi
   private[cluster] def diffRolesLeader(oldState: MembershipState, newState: MembershipState): Set[RoleLeaderChanged] = {
     for {
@@ -605,9 +544,7 @@ object ClusterEvent {
     } yield RoleLeaderChanged(role, newLeader.map(_.address))
   }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi
   private[cluster] def diffSeen(oldState: MembershipState, newState: MembershipState): immutable.Seq[SeenChanged] =
     if (oldState eq newState) Nil
@@ -619,9 +556,7 @@ object ClusterEvent {
       else Nil
     }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi
   private[cluster] def diffReachability(
       oldState: MembershipState,
@@ -629,9 +564,7 @@ object ClusterEvent {
     if (newState.overview.reachability eq oldState.overview.reachability) Nil
     else List(ReachabilityChanged(newState.overview.reachability))
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi
   private[cluster] def diffTombstones(
       oldState: MembershipState,
@@ -639,9 +572,7 @@ object ClusterEvent {
     if (newState.latestGossip.tombstones == oldState.latestGossip.tombstones) Nil
     else MemberTombstonesChanged(newState.latestGossip.tombstones.keySet) :: Nil
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi
   private[cluster] def publishDiff(oldState: MembershipState, newState: MembershipState, pub: AnyRef => Unit): Unit = {
     diffTombstones(oldState, newState).foreach(pub)

@@ -13,17 +13,13 @@ import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
 import akka.stream.stage._
 import akka.util.NanoTimeTokenBucket
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object Throttle {
   final val AutomaticMaximumBurst = -1
   private case object TimerKey
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] class Throttle[T](
     val cost: Int,
     val per: FiniteDuration,
@@ -42,7 +38,7 @@ import akka.util.NanoTimeTokenBucket
   // 100 ms is a realistic minimum between tokens, otherwise the maximumBurst is adjusted
   // to be able to support higher rates
   val effectiveMaximumBurst: Long =
-    if (maximumBurst == Throttle.AutomaticMaximumBurst) math.max(1, ((100 * 1000 * 1000) / nanosBetweenTokens))
+    if (maximumBurst == Throttle.AutomaticMaximumBurst) math.max(1, (100 * 1000 * 1000) / nanosBetweenTokens)
     else maximumBurst
   require(!(mode == ThrottleMode.Enforcing && effectiveMaximumBurst < 0), "maximumBurst must be > 0 in Enforcing mode")
 

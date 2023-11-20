@@ -54,16 +54,15 @@ final class Attributes private[akka] (
   def this(attributeList: List[Attributes.Attribute] = Nil) =
     this(
       attributeList,
-      (attributeList.reverseIterator
-        .foldLeft(Map.newBuilder[Class[AnyRef], Attributes.MandatoryAttribute]) {
-          case (builder, attribute) =>
-            attribute match {
-              case m: Attributes.MandatoryAttribute =>
-                builder += (m.getClass.asInstanceOf[Class[AnyRef]] -> m)
-                builder
-              case _ => builder
-            }
-        })
+      attributeList.reverseIterator
+        .foldLeft(Map.newBuilder[Class[AnyRef], Attributes.MandatoryAttribute]) { case (builder, attribute) =>
+          attribute match {
+            case m: Attributes.MandatoryAttribute =>
+              builder += (m.getClass.asInstanceOf[Class[AnyRef]] -> m)
+              builder
+            case _ => builder
+          }
+        }
         .result())
 
   /**
@@ -193,9 +192,7 @@ final class Attributes private[akka] (
 
   }
 
-  /**
-   * Extracts Name attributes and concatenates them.
-   */
+  /** Extracts Name attributes and concatenates them. */
   def nameLifted: Option[String] = {
     @tailrec def concatNames(i: Iterator[Attribute], first: String, buf: java.lang.StringBuilder): String =
       if (i.hasNext)
@@ -207,15 +204,14 @@ final class Attributes private[akka] (
               concatNames(i, null, b.append(first).append('-').append(n))
             } else concatNames(i, n, null)
           case _ => concatNames(i, first, buf)
-        } else if (buf eq null) first
+        }
+      else if (buf eq null) first
       else buf.toString
 
     Option(concatNames(attributeList.reverseIterator, null, null))
   }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private def getName(): Option[String] = {
     @tailrec def find(attrs: List[Attribute]): Option[String] = attrs match {
       case Attributes.Name(name) :: _ => Some(name)
@@ -290,9 +286,7 @@ final class Attributes private[akka] (
     attributeList.collect { case attr if c.isAssignableFrom(attr.getClass) => c.cast(attr) }
   }
 
-  /**
-   * Scala API: Get the least specific attribute (added first) of a given type parameter T `Class` or subclass thereof.
-   */
+  /** Scala API: Get the least specific attribute (added first) of a given type parameter T `Class` or subclass thereof. */
   // deprecated but used by Akka HTTP so needs to stay
   @deprecated("Attributes should always be most specific, use get[T]", "2.5.7")
   def getFirst[T <: Attribute: ClassTag]: Option[T] = {
@@ -330,9 +324,7 @@ final class Attributes private[akka] (
   }
 }
 
-/**
- * Note that more attributes for the [[Materializer]] are defined in [[ActorAttributes]].
- */
+/** Note that more attributes for the [[Materializer]] are defined in [[ActorAttributes]]. */
 object Attributes {
 
   trait Attribute
@@ -353,7 +345,7 @@ object Attributes {
   // for binary compatibility
 
   @deprecated("Use explicit methods on Attributes to interact, not the synthetic case class ones", "2.8.0")
-  def unapply(attrs: Attributes): Option[(List[Attribute])] =
+  def unapply(attrs: Attributes): Option[List[Attribute]] =
     Some(attrs.attributeList)
 
   final case class Name(n: String) extends Attribute
@@ -363,18 +355,19 @@ object Attributes {
    * for debugging. Included in the default toString of GraphStageLogic if present
    */
   final class SourceLocation(lambda: AnyRef) extends Attribute {
-    lazy val locationName: String = try {
-      val locationName = LineNumbers(lambda) match {
-        case LineNumbers.NoSourceInfo           => "unknown"
-        case LineNumbers.UnknownSourceFormat(_) => "unknown"
-        case LineNumbers.SourceFile(filename)   => filename
-        case LineNumbers.SourceFileLines(filename, from, _) =>
-          s"$filename:$from"
+    lazy val locationName: String =
+      try {
+        val locationName = LineNumbers(lambda) match {
+          case LineNumbers.NoSourceInfo           => "unknown"
+          case LineNumbers.UnknownSourceFormat(_) => "unknown"
+          case LineNumbers.SourceFile(filename)   => filename
+          case LineNumbers.SourceFileLines(filename, from, _) =>
+            s"$filename:$from"
+        }
+        s"${lambda.getClass.getPackage.getName}-$locationName"
+      } catch {
+        case NonFatal(_) => "unknown" // location is not critical so give up without failing
       }
-      s"${lambda.getClass.getPackage.getName}-$locationName"
-    } catch {
-      case NonFatal(_) => "unknown" // location is not critical so give up without failing
-    }
 
     override def toString: String = locationName
   }
@@ -411,15 +404,11 @@ object Attributes {
 
   object CancellationStrategy {
 
-    /**
-     * INTERNAL API
-     */
+    /** INTERNAL API */
     @InternalApi
     private[stream] val Default: CancellationStrategy = CancellationStrategy(PropagateFailure)
 
-    /**
-     * Not for user extension
-     */
+    /** Not for user extension */
     @DoNotInherit
     sealed trait Strategy
 
@@ -707,9 +696,7 @@ object Attributes {
   /** Java API: Use to enable logging at DEBUG level for certain operations when configuring [[Attributes#createLogLevels]] */
   def logLevelDebug: Logging.LogLevel = LogLevels.Debug
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   def apply(attribute: Attribute): Attributes =
     apply(attribute :: Nil)
 
@@ -737,7 +724,6 @@ object Attributes {
    *
    * Configures `log()` operator log-levels to be used when logging.
    * Logging a certain operation can be completely disabled by using [[Attributes#logLevelOff]].
-   *
    */
   def createLogLevels(
       onElement: Logging.LogLevel,
@@ -750,7 +736,6 @@ object Attributes {
    *
    * Configures `log()` operator log-levels to be used when logging onElement.
    * Logging a certain operation can be completely disabled by using [[Attributes#logLevelOff]].
-   *
    */
   def createLogLevels(onElement: Logging.LogLevel): Attributes =
     logLevels(onElement)
@@ -794,9 +779,7 @@ object ActorAttributes {
 
   val IODispatcher: Dispatcher = ActorAttributes.Dispatcher("akka.stream.materializer.blocking-io-dispatcher")
 
-  /**
-   * Specifies the name of the dispatcher. This also adds an async boundary.
-   */
+  /** Specifies the name of the dispatcher. This also adds an async boundary. */
   def dispatcher(dispatcher: String): Attributes = Attributes(Dispatcher(dispatcher))
 
   /**
@@ -826,7 +809,6 @@ object ActorAttributes {
    *
    * Configures `log()` operator log-levels to be used when logging.
    * Logging a certain operation can be completely disabled by using [[Attributes#logLevelOff]].
-   *
    */
   def createLogLevels(
       onElement: Logging.LogLevel,
@@ -839,7 +821,6 @@ object ActorAttributes {
    *
    * Configures `log()` operator log-levels to be used when logging onElement.
    * Logging a certain operation can be completely disabled by using [[Attributes#logLevelOff]].
-   *
    */
   def createLogLevels(onElement: Logging.LogLevel): Attributes =
     logLevels(onElement)
@@ -863,9 +844,7 @@ object ActorAttributes {
    */
   final case class DebugLogging(enabled: Boolean) extends MandatoryAttribute
 
-  /**
-   * Enables additional low level troubleshooting logging at DEBUG log level
-   */
+  /** Enables additional low level troubleshooting logging at DEBUG log level */
   def debugLogging(enabled: Boolean): Attributes =
     Attributes(DebugLogging(enabled))
 
@@ -877,15 +856,11 @@ object ActorAttributes {
   final case class StreamSubscriptionTimeout(timeout: FiniteDuration, mode: StreamSubscriptionTimeoutTerminationMode)
       extends MandatoryAttribute
 
-  /**
-   * Scala API: Defines a timeout for stream subscription and what action to take when that hits.
-   */
+  /** Scala API: Defines a timeout for stream subscription and what action to take when that hits. */
   def streamSubscriptionTimeout(timeout: FiniteDuration, mode: StreamSubscriptionTimeoutTerminationMode): Attributes =
     Attributes(StreamSubscriptionTimeout(timeout, mode))
 
-  /**
-   * Java API: Defines a timeout for stream subscription and what action to take when that hits.
-   */
+  /** Java API: Defines a timeout for stream subscription and what action to take when that hits. */
   def streamSubscriptionTimeout(timeout: Duration, mode: StreamSubscriptionTimeoutTerminationMode): Attributes =
     streamSubscriptionTimeout(timeout.asScala, mode)
 
@@ -896,9 +871,7 @@ object ActorAttributes {
    */
   final case class OutputBurstLimit(limit: Int) extends MandatoryAttribute
 
-  /**
-   * Maximum number of elements emitted in batch if downstream signals large demand.
-   */
+  /** Maximum number of elements emitted in batch if downstream signals large demand. */
   def outputBurstLimit(limit: Int): Attributes =
     Attributes(OutputBurstLimit(limit))
 
@@ -941,9 +914,7 @@ object ActorAttributes {
    */
   final case class SyncProcessingLimit(limit: Int) extends MandatoryAttribute
 
-  /**
-   * Limit for number of messages that can be processed synchronously in stream to substream communication
-   */
+  /** Limit for number of messages that can be processed synchronously in stream to substream communication */
   def syncProcessingLimit(limit: Int): Attributes =
     Attributes(SyncProcessingLimit(limit))
 
@@ -956,7 +927,8 @@ object ActorAttributes {
 object StreamRefAttributes {
   import Attributes._
 
-  /** Attributes specific to stream refs.
+  /**
+   * Attributes specific to stream refs.
    *
    * Not for user extension.
    */
@@ -970,42 +942,28 @@ object StreamRefAttributes {
   final case class DemandRedeliveryInterval(timeout: FiniteDuration) extends StreamRefAttribute
   final case class FinalTerminationSignalDeadline(timeout: FiniteDuration) extends StreamRefAttribute
 
-  /**
-   * Scala API: Specifies the subscription timeout within which the remote side MUST subscribe to the handed out stream reference.
-   */
+  /** Scala API: Specifies the subscription timeout within which the remote side MUST subscribe to the handed out stream reference. */
   def subscriptionTimeout(timeout: FiniteDuration): Attributes = Attributes(SubscriptionTimeout(timeout))
 
-  /**
-   * Java API: Specifies the subscription timeout within which the remote side MUST subscribe to the handed out stream reference.
-   */
+  /** Java API: Specifies the subscription timeout within which the remote side MUST subscribe to the handed out stream reference. */
   def subscriptionTimeout(timeout: Duration): Attributes = subscriptionTimeout(timeout.asScala)
 
-  /**
-   * Specifies the size of the buffer on the receiving side that is eagerly filled even without demand.
-   */
+  /** Specifies the size of the buffer on the receiving side that is eagerly filled even without demand. */
   def bufferCapacity(capacity: Int): Attributes = Attributes(BufferCapacity(capacity))
 
-  /**
-   *  Scala API: If no new elements arrive within this timeout, demand is redelivered.
-   */
+  /** Scala API: If no new elements arrive within this timeout, demand is redelivered. */
   def demandRedeliveryInterval(timeout: FiniteDuration): Attributes =
     Attributes(DemandRedeliveryInterval(timeout))
 
-  /**
-   *  Java API: If no new elements arrive within this timeout, demand is redelivered.
-   */
+  /** Java API: If no new elements arrive within this timeout, demand is redelivered. */
   def demandRedeliveryInterval(timeout: Duration): Attributes =
     demandRedeliveryInterval(timeout.asScala)
 
-  /**
-   * Scala API: The time between the Terminated signal being received and when the local SourceRef determines to fail itself
-   */
+  /** Scala API: The time between the Terminated signal being received and when the local SourceRef determines to fail itself */
   def finalTerminationSignalDeadline(timeout: FiniteDuration): Attributes =
     Attributes(FinalTerminationSignalDeadline(timeout))
 
-  /**
-   * Java API: The time between the Terminated signal being received and when the local SourceRef determines to fail itself
-   */
+  /** Java API: The time between the Terminated signal being received and when the local SourceRef determines to fail itself */
   def finalTerminationSignalDeadline(timeout: Duration): Attributes =
     finalTerminationSignalDeadline(timeout.asScala)
 

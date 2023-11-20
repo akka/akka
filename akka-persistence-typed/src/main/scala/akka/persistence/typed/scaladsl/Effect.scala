@@ -11,9 +11,7 @@ import akka.annotation.DoNotInherit
 import akka.persistence.typed.internal._
 import akka.persistence.typed.internal.SideEffect
 
-/**
- * Factory methods for creating [[Effect]] directives - how an event sourced actor reacts on a command.
- */
+/** Factory methods for creating [[Effect]] directives - how an event sourced actor reacts on a command. */
 object Effect {
 
   /**
@@ -135,9 +133,7 @@ trait EffectBuilder[+Event, State] extends Effect[Event, State] {
   /* All events that will be persisted in this effect */
   def events: im.Seq[Event]
 
-  /**
-   * Run the given callback. Callbacks are run sequentially.
-   */
+  /** Run the given callback. Callbacks are run sequentially. */
   def thenRun(callback: State => Unit): EffectBuilder[Event, State]
 
   /** The side effect is to stop the actor */

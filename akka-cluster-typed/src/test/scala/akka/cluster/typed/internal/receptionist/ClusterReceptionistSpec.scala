@@ -197,10 +197,12 @@ class ClusterReceptionistSpec extends AnyWordSpec with Matchers with LogCapturin
           clusterNode1.manager ! Leave(clusterNode2.selfMember.address)
         }
 
-        regProbe1.awaitAssert({
-          // we will also potentially get an update that the service was unreachable before the expected one
-          regProbe1.expectMessage(10.seconds, Listing(PingKey, Set(service1)))
-        }, 10.seconds)
+        regProbe1.awaitAssert(
+          {
+            // we will also potentially get an update that the service was unreachable before the expected one
+            regProbe1.expectMessage(10.seconds, Listing(PingKey, Set(service1)))
+          },
+          10.seconds)
 
         // register another after removal
         val service1b = testKit1.spawn(pingPongBehavior)
@@ -252,10 +254,12 @@ class ClusterReceptionistSpec extends AnyWordSpec with Matchers with LogCapturin
 
         clusterNode2.manager ! Down(clusterNode1.selfMember.address)
         // service1 removed
-        regProbe2.awaitAssert({
-          // we will also potentially get an update that the service was unreachable before the expected one
-          regProbe2.expectMessage(10.seconds, Listing(PingKey, Set(service2)))
-        }, 10.seconds)
+        regProbe2.awaitAssert(
+          {
+            // we will also potentially get an update that the service was unreachable before the expected one
+            regProbe2.expectMessage(10.seconds, Listing(PingKey, Set(service2)))
+          },
+          10.seconds)
       } finally {
         testKit1.shutdownTestKit()
         testKit2.shutdownTestKit()
@@ -310,11 +314,13 @@ class ClusterReceptionistSpec extends AnyWordSpec with Matchers with LogCapturin
         system2.terminate()
         Await.ready(system2.whenTerminated, 10.seconds)
         clusterNode1.manager ! Down(clusterNode2.selfMember.address)
-        regProbe1.awaitAssert({
+        regProbe1.awaitAssert(
+          {
 
-          // we will also potentially get an update that the service was unreachable before the expected one
-          regProbe1.expectMessage(10.seconds, Listing(PingKey, Set.empty[ActorRef[PingProtocol]]))
-        }, 10.seconds)
+            // we will also potentially get an update that the service was unreachable before the expected one
+            regProbe1.expectMessage(10.seconds, Listing(PingKey, Set.empty[ActorRef[PingProtocol]]))
+          },
+          10.seconds)
       } finally {
         testKit1.shutdownTestKit()
         testKit2.shutdownTestKit()
@@ -358,11 +364,13 @@ class ClusterReceptionistSpec extends AnyWordSpec with Matchers with LogCapturin
 
         val testKit3 = ActorTestKit(
           system1.name,
-          ConfigFactory.parseString(s"""
+          ConfigFactory
+            .parseString(s"""
             akka.remote.artery.canonical.port = ${clusterNode2.selfMember.address.port.get}
             # retry joining when existing member removed
             akka.cluster.retry-unsuccessful-join-after = 1s
-          """).withFallback(config))
+          """)
+            .withFallback(config))
 
         try {
           val system3 = testKit3.system
@@ -384,11 +392,10 @@ class ClusterReceptionistSpec extends AnyWordSpec with Matchers with LogCapturin
           // make sure it joined fine and node1 has upped it
           regProbe1.awaitAssert(
             {
-              clusterNode1.state.members.exists(
-                m =>
-                  m.uniqueAddress == clusterNode3.selfMember.uniqueAddress &&
-                  m.status == MemberStatus.Up &&
-                  !clusterNode1.state.unreachable(m)) should ===(true)
+              clusterNode1.state.members.exists(m =>
+                m.uniqueAddress == clusterNode3.selfMember.uniqueAddress &&
+                m.status == MemberStatus.Up &&
+                !clusterNode1.state.unreachable(m)) should ===(true)
             },
             10.seconds)
 
@@ -426,7 +433,8 @@ class ClusterReceptionistSpec extends AnyWordSpec with Matchers with LogCapturin
       GHExcludeAeronTest) in {
       val testKit1 = ActorTestKit(
         "ClusterReceptionistSpec-test-7",
-        ConfigFactory.parseString("""
+        ConfigFactory
+          .parseString("""
           akka.cluster {
             failure-detector.acceptable-heartbeat-pause = 20s
           }
@@ -434,7 +442,8 @@ class ClusterReceptionistSpec extends AnyWordSpec with Matchers with LogCapturin
             # it can be stressed more by using all
             write-consistency = all
           }
-          """).withFallback(ClusterReceptionistSpec.config))
+          """)
+          .withFallback(ClusterReceptionistSpec.config))
       val system1 = testKit1.system
       val testKit2 = ActorTestKit(system1.name, system1.settings.config)
       val system2 = testKit2.system
@@ -473,9 +482,11 @@ class ClusterReceptionistSpec extends AnyWordSpec with Matchers with LogCapturin
 
         val testKit3 = ActorTestKit(
           system1.name,
-          ConfigFactory.parseString(s"""
+          ConfigFactory
+            .parseString(s"""
             akka.remote.artery.canonical.port = ${clusterNode2.selfMember.address.port.get}
-          """).withFallback(config))
+          """)
+            .withFallback(config))
 
         try {
           val system3 = testKit3.system
@@ -527,11 +538,13 @@ class ClusterReceptionistSpec extends AnyWordSpec with Matchers with LogCapturin
     }
 
     "not lose removals on concurrent updates to same key".taggedAs(LongRunningTest, GHExcludeAeronTest) in {
-      val config = ConfigFactory.parseString("""
+      val config = ConfigFactory
+        .parseString("""
           # disable delta propagation so we can have repeatable concurrent writes
           # without delta reaching between nodes already
           akka.cluster.distributed-data.delta-crdt.enabled=false
-        """).withFallback(ClusterReceptionistSpec.config)
+        """)
+        .withFallback(ClusterReceptionistSpec.config)
       val testKit1 = ActorTestKit("ClusterReceptionistSpec-test-8", config)
       val system1 = testKit1.system
       val testKit2 = ActorTestKit(system1.name, system1.settings.config)
@@ -550,12 +563,14 @@ class ClusterReceptionistSpec extends AnyWordSpec with Matchers with LogCapturin
         regProbe1.awaitAssert(clusterNode1.state.members.count(_.status == MemberStatus.Up) should ===(2))
 
         // one actor on each node up front
-        val actor1 = testKit1.spawn(Behaviors.receive[AnyRef] {
-          case (ctx, "stop") =>
-            ctx.log.info("Stopping")
-            Behaviors.stopped
-          case _ => Behaviors.same
-        }, "actor1")
+        val actor1 = testKit1.spawn(
+          Behaviors.receive[AnyRef] {
+            case (ctx, "stop") =>
+              ctx.log.info("Stopping")
+              Behaviors.stopped
+            case _ => Behaviors.same
+          },
+          "actor1")
         val actor2 = testKit2.spawn(Behaviors.empty[AnyRef], "actor2")
 
         system1.receptionist ! Register(TheKey, actor1)
@@ -716,7 +731,9 @@ class ClusterReceptionistSpec extends AnyWordSpec with Matchers with LogCapturin
 
     }
 
-    "handle concurrent unregistration and registration on different nodes".taggedAs(LongRunningTest, GHExcludeAeronTest) in {
+    "handle concurrent unregistration and registration on different nodes".taggedAs(
+      LongRunningTest,
+      GHExcludeAeronTest) in {
       // this covers the fact that with ddata a removal can be lost
       val testKit1 = ActorTestKit("ClusterReceptionistSpec-test-12", ClusterReceptionistSpec.config)
       val system1 = testKit1.system
@@ -778,13 +795,15 @@ class ClusterReceptionistSpec extends AnyWordSpec with Matchers with LogCapturin
     "notify subscribers when registering and joining simultaneously".taggedAs(LongRunningTest, GHExcludeAeronTest) in {
       // failing test reproducer for issue #28792
       // It's possible that the registry entry from the ddata update arrives before MemberJoined.
-      val config = ConfigFactory.parseString("""
+      val config = ConfigFactory
+        .parseString("""
         # quick dissemination to increase the chance of the race condition
         akka.cluster.typed.receptionist.distributed-data.write-consistency = all
         akka.cluster.typed.receptionist.distributed-data.gossip-interval = 500ms
         # run the RemoveTick cleanup often to exercise that scenario 
         akka.cluster.typed.receptionist.pruning-interval = 50ms
-        """).withFallback(ClusterReceptionistSpec.config)
+        """)
+        .withFallback(ClusterReceptionistSpec.config)
       val numberOfNodes = 6 // use 9 or more to stress it more
       val testKits = Vector.fill(numberOfNodes)(ActorTestKit("ClusterReceptionistSpec-13", config))
       try {

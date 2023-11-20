@@ -127,14 +127,16 @@ object WriteAggregatorSpec {
   }
 }
 
-class WriteAggregatorSpec extends AkkaSpec(s"""
+class WriteAggregatorSpec
+    extends AkkaSpec(s"""
       akka.actor.provider = "cluster"
       akka.remote.artery.canonical.port = 0
       akka.cluster.distributed-data.durable.lmdb {
         dir = target/WriteAggregatorSpec-${System.currentTimeMillis}-ddata
         map-size = 10 MiB
       }
-      """) with ImplicitSender {
+      """)
+    with ImplicitSender {
   import WriteAggregatorSpec._
 
   val protocol = "akka"
@@ -157,9 +159,7 @@ class WriteAggregatorSpec extends AkkaSpec(s"""
   def probes(probe: ActorRef): Map[UniqueAddress, ActorRef] =
     nodes.toSeq.map(_ -> system.actorOf(WriteAggregatorSpec.writeAckAdapterProps(probe))).toMap
 
-  /**
-   * Create a tuple for each node with the WriteAckAdapter and the TestProbe
-   */
+  /** Create a tuple for each node with the WriteAckAdapter and the TestProbe */
   def probes(): Map[UniqueAddress, TestMock] = {
     nodes.toSeq.map(_ -> TestMock()).toMap
   }

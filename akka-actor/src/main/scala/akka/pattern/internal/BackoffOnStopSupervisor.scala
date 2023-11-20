@@ -47,12 +47,11 @@ import akka.pattern.{
     val decider = super.supervisorStrategy.decider
     strategy match {
       case oneForOne: OneForOneStrategy =>
-        OneForOneStrategy(oneForOne.maxNrOfRetries, oneForOne.withinTimeRange, oneForOne.loggingEnabled) {
-          case ex =>
-            val defaultDirective: Directive =
-              decider.applyOrElse(ex, (_: Any) => Escalate)
+        OneForOneStrategy(oneForOne.maxNrOfRetries, oneForOne.withinTimeRange, oneForOne.loggingEnabled) { case ex =>
+          val defaultDirective: Directive =
+            decider.applyOrElse(ex, (_: Any) => Escalate)
 
-            strategy.decider.applyOrElse(ex, (_: Any) => defaultDirective)
+          strategy.decider.applyOrElse(ex, (_: Any) => defaultDirective)
         }
       case s => s
     }

@@ -17,9 +17,11 @@ import akka.testkit.ImplicitSender
 import akka.testkit.TestProbe
 import akka.util.OptionVal
 
-class SystemMessageAckerSpec extends AkkaSpec("""
+class SystemMessageAckerSpec
+    extends AkkaSpec("""
     akka.stream.materializer.debug.fuzzing-mode = on
-  """) with ImplicitSender {
+  """)
+    with ImplicitSender {
 
   val addressA = UniqueAddress(Address("akka", "sysA", "hostA", 1001), 1)
   val addressB = UniqueAddress(Address("akka", "sysB", "hostB", 1002), 2)

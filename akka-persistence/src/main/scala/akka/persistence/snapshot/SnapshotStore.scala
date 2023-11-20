@@ -13,9 +13,7 @@ import akka.pattern.CircuitBreaker
 import akka.pattern.pipe
 import akka.persistence._
 
-/**
- * Abstract snapshot store.
- */
+/** Abstract snapshot store. */
 trait SnapshotStore extends Actor with ActorLogging {
   import SnapshotProtocol._
 
@@ -46,8 +44,8 @@ trait SnapshotStore extends Actor with ActorLogging {
             .map { sso =>
               LoadSnapshotResult(sso, toSequenceNr)
             }
-            .recover {
-              case e => LoadSnapshotFailed(e)
+            .recover { case e =>
+              LoadSnapshotFailed(e)
             }
             .pipeTo(senderPersistentActor())
         }
@@ -59,8 +57,8 @@ trait SnapshotStore extends Actor with ActorLogging {
           .map { _ =>
             SaveSnapshotSuccess(md)
           }
-          .recover {
-            case e => SaveSnapshotFailure(metadata, e)
+          .recover { case e =>
+            SaveSnapshotFailure(metadata, e)
           }
           .to(self, senderPersistentActor())
 
@@ -76,15 +74,15 @@ trait SnapshotStore extends Actor with ActorLogging {
       case d @ DeleteSnapshot(metadata) =>
         breaker
           .withCircuitBreaker(deleteAsync(metadata))
-          .map {
-            case _ => DeleteSnapshotSuccess(metadata)
+          .map { case _ =>
+            DeleteSnapshotSuccess(metadata)
           }
-          .recover {
-            case e => DeleteSnapshotFailure(metadata, e)
+          .recover { case e =>
+            DeleteSnapshotFailure(metadata, e)
           }
           .pipeTo(self)(senderPersistentActor())
-          .onComplete {
-            case _ => if (publish) eventStream.publish(d)
+          .onComplete { case _ =>
+            if (publish) eventStream.publish(d)
           }
 
       case evt: DeleteSnapshotSuccess =>
@@ -97,15 +95,15 @@ trait SnapshotStore extends Actor with ActorLogging {
       case d @ DeleteSnapshots(persistenceId, criteria) =>
         breaker
           .withCircuitBreaker(deleteAsync(persistenceId, criteria))
-          .map {
-            case _ => DeleteSnapshotsSuccess(criteria)
+          .map { case _ =>
+            DeleteSnapshotsSuccess(criteria)
           }
-          .recover {
-            case e => DeleteSnapshotsFailure(criteria, e)
+          .recover { case e =>
+            DeleteSnapshotsFailure(criteria, e)
           }
           .pipeTo(self)(senderPersistentActor())
-          .onComplete {
-            case _ => if (publish) eventStream.publish(d)
+          .onComplete { case _ =>
+            if (publish) eventStream.publish(d)
           }
 
       case evt: DeleteSnapshotsFailure =>
@@ -123,7 +121,7 @@ trait SnapshotStore extends Actor with ActorLogging {
   private def tryReceivePluginInternal(evt: Any): Unit =
     if (receivePluginInternal.isDefinedAt(evt)) receivePluginInternal(evt)
 
-  //#snapshot-store-plugin-api
+  // #snapshot-store-plugin-api
 
   /**
    * Plugin API: asynchronously loads a snapshot.
@@ -176,5 +174,5 @@ trait SnapshotStore extends Actor with ActorLogging {
    * handle additional messages for implementing advanced features
    */
   def receivePluginInternal: Actor.Receive = Actor.emptyBehavior
-  //#snapshot-store-plugin-api
+  // #snapshot-store-plugin-api
 }

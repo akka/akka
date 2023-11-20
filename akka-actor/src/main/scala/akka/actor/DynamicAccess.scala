@@ -49,9 +49,7 @@ import akka.annotation.DoNotInherit
    */
   def createInstanceFor[T: ClassTag](fqcn: String, args: immutable.Seq[(Class[_], AnyRef)]): Try[T]
 
-  /**
-   * Obtain the Scala “object” instance for the given fully-qualified class name, if there is one.
-   */
+  /** Obtain the Scala “object” instance for the given fully-qualified class name, if there is one. */
   def getObjectFor[T: ClassTag](fqcn: String): Try[T]
 
   /**

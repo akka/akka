@@ -14,23 +14,23 @@ object From {
   implicit val system: ActorSystem = null
 
   def fromIteratorSample(): Unit = {
-    //#from-iterator
+    // #from-iterator
     Source.fromIterator(() => (1 to 3).iterator).runForeach(println)
     // could print
     // 1
     // 2
     // 3
-    //#from-iterator
+    // #from-iterator
   }
 
   def fromJavaStreamSample(): Unit = {
-    //#from-javaStream
+    // #from-javaStream
     Source.fromJavaStream(() => IntStream.rangeClosed(1, 3)).runForeach(println)
     // could print
     // 1
     // 2
     // 3
-    //#from-javaStream
+    // #from-javaStream
   }
 
 }

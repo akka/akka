@@ -15,7 +15,8 @@ import akka.testkit.ImplicitSender
 
 object EventAdapterSpec {
 
-  final val JournalModelClassName = classOf[EventAdapterSpec].getCanonicalName + "$" + classOf[JournalModel].getSimpleName
+  final val JournalModelClassName =
+    classOf[EventAdapterSpec].getCanonicalName + "$" + classOf[JournalModel].getSimpleName
   trait JournalModel {
     def payload: Any
     def tags: immutable.Set[String]

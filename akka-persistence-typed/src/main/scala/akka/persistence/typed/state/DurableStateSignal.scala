@@ -22,8 +22,6 @@ case object RecoveryCompleted extends RecoveryCompleted {
 
 final case class RecoveryFailed(failure: Throwable) extends DurableStateSignal {
 
-  /**
-   * Java API
-   */
+  /** Java API */
   def getFailure(): Throwable = failure
 }

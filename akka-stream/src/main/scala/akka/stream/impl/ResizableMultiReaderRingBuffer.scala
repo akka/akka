@@ -45,33 +45,23 @@ import akka.annotation.InternalApi
   // bit mask for converting a cursor into an array index
   private def mask: Int = Int.MaxValue >> (31 - lenBit)
 
-  /**
-   * The number of elements currently in the buffer.
-   */
+  /** The number of elements currently in the buffer. */
   def size: Int = writeIx - readIx
 
   def isEmpty: Boolean = size == 0
 
   def nonEmpty: Boolean = !isEmpty
 
-  /**
-   * The number of elements the buffer can still take without having to be resized.
-   */
+  /** The number of elements the buffer can still take without having to be resized. */
   def immediatelyAvailable: Int = array.length - size
 
-  /**
-   * The maximum number of elements the buffer can still take.
-   */
+  /** The maximum number of elements the buffer can still take. */
   def maxAvailable: Int = (1 << maxSizeBit) - size
 
-  /**
-   * Returns the number of elements that the buffer currently contains for the given cursor.
-   */
+  /** Returns the number of elements that the buffer currently contains for the given cursor. */
   def count(cursor: Cursor): Int = writeIx - cursor.cursor
 
-  /**
-   * Initializes the given Cursor to the oldest buffer entry that is still available.
-   */
+  /** Initializes the given Cursor to the oldest buffer entry that is still available. */
   def initCursor(cursor: Cursor): Unit = cursor.cursor = readIx
 
   /**
@@ -143,9 +133,7 @@ import akka.annotation.InternalApi
     s"ResizableMultiReaderRingBuffer(size=$size, writeIx=$writeIx, readIx=$readIx, cursors=${cursors.cursors.size})"
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object ResizableMultiReaderRingBuffer {
   object NothingToReadException extends RuntimeException with NoStackTrace
 

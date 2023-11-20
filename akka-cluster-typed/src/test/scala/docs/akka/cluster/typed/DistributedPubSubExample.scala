@@ -77,13 +77,11 @@ object Publisher {
 
   import Ontology._
 
-  /**
-   * Handles new data type setup: validates schema, registers valid data types, publishes new ones to subscribers
-   */
+  /** Handles new data type setup: validates schema, registers valid data types, publishes new ones to subscribers */
   object RegistrationService {
 
     def apply(): Behavior[AnyRef] = {
-      //#publisher
+      // #publisher
       Behaviors.setup[AnyRef] { context =>
         import akka.cluster.pubsub.DistributedPubSub
         import akka.cluster.pubsub.DistributedPubSubMediator
@@ -121,7 +119,7 @@ object Publisher {
             Behaviors.unhandled
         }
       }
-      //#publisher
+      // #publisher
 
     }
   }
@@ -132,7 +130,7 @@ object Ingestion {
   import Ontology._
 
   def apply(dt: DataType, mediator: akka.actor.ActorRef): Behavior[DataEvent] = {
-    //#destination
+    // #destination
     Behaviors.setup { context =>
       // register to the path
       import akka.actor.typed.scaladsl.adapter._
@@ -140,7 +138,7 @@ object Ingestion {
 
       idle(dt, mediator)
     }
-    //#destination
+    // #destination
   }
 
   private def idle(dt: DataType, mediator: akka.actor.ActorRef): Behavior[DataEvent] =
@@ -160,7 +158,7 @@ object Ingestion {
 
   /** Would normally be typed more specifically. */
   private def active(key: DataKey, sink: Option[DataSink], mediator: akka.actor.ActorRef): Behavior[DataEvent] =
-    //#publisher
+    // #publisher
     Behaviors.setup { context =>
       Behaviors.receiveMessagePartial[DataEvent] {
         case e: DataEnvelope if e.key == key =>
@@ -175,7 +173,7 @@ object Ingestion {
           Behaviors.stopped
       }
     }
-  //#publisher
+  // #publisher
 
 }
 
@@ -184,7 +182,7 @@ object Subscriber {
 
   def apply(key: DataKey, mediator: akka.actor.ActorRef): Behavior[DataEvent] = {
 
-    //#subscriber
+    // #subscriber
     Behaviors.setup[DataEvent] { context =>
       import akka.actor.typed.scaladsl.adapter._
 
@@ -200,7 +198,7 @@ object Subscriber {
           wonderland()
 
         case IngestionStarted(k, path) if k == key =>
-          //#send
+          // #send
           // simulate data sent from various data sources:
           (1 to 100).foreach { n =>
             mediator ! DistributedPubSubMediator.Send(
@@ -208,12 +206,12 @@ object Subscriber {
               msg = DataEnvelope(key, s"hello-$key-$n"),
               localAffinity = true)
           }
-          //#send
+          // #send
           andThen(key, mediator)
 
       }
     }
-    //#subscriber
+    // #subscriber
   }
 
   private def wonderland(): Behavior[DataEvent] = {
@@ -261,9 +259,9 @@ object DataPlatform {
 
   def apply(): Behavior[ProvisionCommand] = {
     Behaviors.setup { context =>
-      //#mediator
+      // #mediator
       val mediator = DistributedPubSub(context.system).mediator
-      //#mediator
+      // #mediator
       val service = context.spawn(DataService(mediator), "data")
 
       Behaviors.receiveMessagePartial {

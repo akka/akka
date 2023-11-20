@@ -81,24 +81,23 @@ private[akka] object ShardedDaemonProcessCoordinator {
       shardingRef: ActorRef[ShardingEnvelope[T]]): Behavior[ShardedDaemonProcessCommand] = {
     Behaviors
       .supervise[ShardedDaemonProcessCommand](Behaviors.setup { context =>
-        Behaviors.withTimers {
-          timers =>
-            context.log.debug("ShardedDaemonProcessCoordinator for [{}] starting", daemonProcessName)
-            val key = ShardedDaemonProcessStateKey(daemonProcessName)
-            DistributedData.withReplicatorMessageAdapter[ShardedDaemonProcessCommand, ShardedDaemonProcessState] {
-              replicatorAdapter =>
-                new ShardedDaemonProcessCoordinator(
-                  settings,
-                  shardingSettings,
-                  context,
-                  timers,
-                  daemonProcessName,
-                  shardingRef.toClassic,
-                  initialNumberOfProcesses,
-                  key,
-                  replicatorAdapter).start()
+        Behaviors.withTimers { timers =>
+          context.log.debug("ShardedDaemonProcessCoordinator for [{}] starting", daemonProcessName)
+          val key = ShardedDaemonProcessStateKey(daemonProcessName)
+          DistributedData.withReplicatorMessageAdapter[ShardedDaemonProcessCommand, ShardedDaemonProcessState] {
+            replicatorAdapter =>
+              new ShardedDaemonProcessCoordinator(
+                settings,
+                shardingSettings,
+                context,
+                timers,
+                daemonProcessName,
+                shardingRef.toClassic,
+                initialNumberOfProcesses,
+                key,
+                replicatorAdapter).start()
 
-            }
+          }
         }
       })
       .onFailure(SupervisorStrategy.restart)
@@ -147,8 +146,8 @@ private final class ShardedDaemonProcessCoordinator private (
   }
 
   private val shardStoppedAdapter = context
-    .messageAdapter[ShardCoordinator.Internal.ShardStopped] {
-      case ShardCoordinator.Internal.ShardStopped(shard) => ShardStopped(shard)
+    .messageAdapter[ShardCoordinator.Internal.ShardStopped] { case ShardCoordinator.Internal.ShardStopped(shard) =>
+      ShardStopped(shard)
     }
     .toClassic
 
@@ -323,7 +322,7 @@ private final class ShardedDaemonProcessCoordinator private (
     request.foreach(req => req.replyTo ! StatusReply.Ack)
     val newState = state.completeScaling()
     replicatorAdapter.askUpdate(
-      replyTo => Replicator.Update(key, initialState, stateWriteConsistency, replyTo)((_) => newState),
+      replyTo => Replicator.Update(key, initialState, stateWriteConsistency, replyTo)(_ => newState),
       response => InternalUpdateResponse(response))
 
     receiveWhileRescaling("rescalingComplete", state) {

@@ -49,17 +49,20 @@ class ActorSelectionSpec extends AkkaSpec with DefaultTimeout {
   val root = sysImpl.lookupRoot
 
   def empty(path: String) =
-    new EmptyLocalActorRef(sysImpl.provider, path match {
-      case RelativeActorPath(elems) => sysImpl.lookupRoot.path / elems
-      case _                        => throw new RuntimeException()
-    }, system.eventStream)
+    new EmptyLocalActorRef(
+      sysImpl.provider,
+      path match {
+        case RelativeActorPath(elems) => sysImpl.lookupRoot.path / elems
+        case _                        => throw new RuntimeException()
+      },
+      system.eventStream)
 
   val idProbe = TestProbe()
 
   def identify(selection: ActorSelection): Option[ActorRef] = {
     selection.tell(Identify(selection), idProbe.ref)
-    val result = idProbe.expectMsgPF() {
-      case ActorIdentity(`selection`, ref) => ref
+    val result = idProbe.expectMsgPF() { case ActorIdentity(`selection`, ref) =>
+      ref
     }
     val asked = Await.result((selection ? Identify(selection)).mapTo[ActorIdentity], timeout.duration)
     asked.ref should ===(result)
@@ -128,7 +131,7 @@ class ActorSelectionSpec extends AkkaSpec with DefaultTimeout {
       val a2 = system.actorOf(p, name)
       a2.path should ===(a1.path)
       a2.path.toString should ===(a1.path.toString)
-      a2 should not be (a1)
+      a2 should not be a1
       a2.toString should not be (a1.toString)
 
       watch(a2)
@@ -253,12 +256,13 @@ class ActorSelectionSpec extends AkkaSpec with DefaultTimeout {
       }
       def check(looker: ActorRef): Unit = {
         for ((l, r) <- Seq(
-               SelectString("a/b/c") -> None,
-               SelectString("akka://all-systems/Nobody") -> None,
-               SelectPath(system / "hallo") -> None,
-               SelectPath(looker.path.child("hallo")) -> None, // test Java API
-               SelectPath(looker.path.descendant(Seq("a", "b").asJava)) -> None) // test Java API
-             ) checkOne(looker, l, r)
+            SelectString("a/b/c") -> None,
+            SelectString("akka://all-systems/Nobody") -> None,
+            SelectPath(system / "hallo") -> None,
+            SelectPath(looker.path.child("hallo")) -> None, // test Java API
+            SelectPath(looker.path.descendant(Seq("a", "b").asJava)) -> None
+          ) // test Java API
+        ) checkOne(looker, l, r)
       }
       for (looker <- all) check(looker)
     }
@@ -288,9 +292,9 @@ class ActorSelectionSpec extends AkkaSpec with DefaultTimeout {
     "send messages with correct sender" in {
       implicit val sender = c1
       ActorSelection(c21, "../../*") ! GetSender(testActor)
-      val actors = Set() ++ receiveWhile(messages = 2) {
-          case `c1` => lastSender
-        }
+      val actors = Set() ++ receiveWhile(messages = 2) { case `c1` =>
+        lastSender
+      }
       actors should ===(Set(c1, c2))
       expectNoMessage()
     }
@@ -298,8 +302,8 @@ class ActorSelectionSpec extends AkkaSpec with DefaultTimeout {
     "drop messages which cannot be delivered" in {
       implicit val sender = c2
       ActorSelection(c21, "../../*/c21") ! GetSender(testActor)
-      val actors = receiveWhile(messages = 2) {
-        case `c2` => lastSender
+      val actors = receiveWhile(messages = 2) { case `c2` =>
+        lastSender
       }
       actors should ===(Seq(c21))
       expectNoMessage()

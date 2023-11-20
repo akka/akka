@@ -83,8 +83,8 @@ trait Conductor { this: TestConductorExt =>
     _controller = system.systemActorOf(Props(classOf[Controller], participants, controllerPort), "controller")
     import Settings.BarrierTimeout
     import system.dispatcher
-    (controller ? GetSockAddr).mapTo[InetSocketAddress].flatMap {
-      case sockAddr: InetSocketAddress => startClient(name, sockAddr).map(_ => sockAddr)
+    (controller ? GetSockAddr).mapTo[InetSocketAddress].flatMap { case sockAddr: InetSocketAddress =>
+      startClient(name, sockAddr).map(_ => sockAddr)
     }
   }
 
@@ -232,14 +232,12 @@ trait Conductor { this: TestConductorExt =>
     import system.dispatcher
     // the recover is needed to handle ClientDisconnectedException exception,
     // which is normal during shutdown
-    (controller ? Terminate(node, Left(abort))).mapTo(classTag[Done]).recover {
-      case _: ClientDisconnectedException => Done
+    (controller ? Terminate(node, Left(abort))).mapTo(classTag[Done]).recover { case _: ClientDisconnectedException =>
+      Done
     }
   }
 
-  /**
-   * Obtain the list of remote host names currently registered.
-   */
+  /** Obtain the list of remote host names currently registered. */
   def getNodes: Future[Iterable[RoleName]] = {
     import Settings.QueryTimeout
     (controller ? GetNodes).mapTo(classTag[Iterable[RoleName]])
@@ -309,9 +307,7 @@ private[akka] class ConductorHandler(_createTimeout: Timeout, controller: ActorR
   }
 }
 
-/**
- * INTERNAL API.
- */
+/** INTERNAL API. */
 private[akka] object ServerFSM {
   sealed trait State
   case object Initial extends State
@@ -350,10 +346,9 @@ private[akka] class ServerFSM(val controller: ActorRef, val channel: Channel)
     case Event(ClientDisconnected, None) => stop()
   }
 
-  onTermination {
-    case _ =>
-      controller ! ClientDisconnected(roleName)
-      channel.close()
+  onTermination { case _ =>
+    controller ! ClientDisconnected(roleName)
+    channel.close()
   }
 
   when(Initial, stateTimeout = 10 seconds) {
@@ -398,9 +393,7 @@ private[akka] class ServerFSM(val controller: ActorRef, val channel: Channel)
   initialize()
 }
 
-/**
- * INTERNAL API.
- */
+/** INTERNAL API. */
 private[akka] object Controller {
   final case class ClientDisconnected(name: RoleName) extends DeadLetterSuppression
   class ClientDisconnectedException(msg: String) extends AkkaException(msg) with NoStackTrace
@@ -495,7 +488,7 @@ private[akka] class Controller(private var initialParticipants: Int, controllerP
         case GetAddress(node) =>
           if (nodes contains node) sender() ! ToClient(AddressReply(node, nodes(node).addr))
           else addrInterest += node -> ((addrInterest.get(node).getOrElse(Set())) + sender())
-        case _: Done => //FIXME what should happen?
+        case _: Done => // FIXME what should happen?
       }
     case op: CommandOp =>
       op match {
@@ -522,9 +515,7 @@ private[akka] class Controller(private var initialParticipants: Int, controllerP
   }
 }
 
-/**
- * INTERNAL API.
- */
+/** INTERNAL API. */
 private[akka] object BarrierCoordinator {
   sealed trait State
   case object Idle extends State

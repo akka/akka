@@ -124,8 +124,8 @@ class SourceWithContextSpec extends StreamSpec {
         .map { offset =>
           Message("a", offset)
         }
-        .map {
-          case m @ Message(_, offset) => if (offset == 3) throw ex else m
+        .map { case m @ Message(_, offset) =>
+          if (offset == 3) throw ex else m
         }
         .asSourceWithContext(_.offset)
         .mapError { case _: Throwable => boom }

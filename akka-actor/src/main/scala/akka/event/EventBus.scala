@@ -25,7 +25,7 @@ trait EventBus {
   type Classifier
   type Subscriber
 
-  //#event-bus-api
+  // #event-bus-api
   /**
    * Attempts to register the subscriber to the specified Classifier
    * @return true if successful and false if not (because it was already
@@ -40,36 +40,26 @@ trait EventBus {
    */
   def unsubscribe(subscriber: Subscriber, from: Classifier): Boolean
 
-  /**
-   * Attempts to deregister the subscriber from all Classifiers it may be subscribed to
-   */
+  /** Attempts to deregister the subscriber from all Classifiers it may be subscribed to */
   def unsubscribe(subscriber: Subscriber): Unit
 
-  /**
-   * Publishes the specified Event to this bus
-   */
+  /** Publishes the specified Event to this bus */
   def publish(event: Event): Unit
-  //#event-bus-api
+  // #event-bus-api
 }
 
-/**
- * Represents an EventBus where the Subscriber type is ActorRef
- */
+/** Represents an EventBus where the Subscriber type is ActorRef */
 trait ActorEventBus extends EventBus {
   type Subscriber = ActorRef
   protected def compareSubscribers(a: ActorRef, b: ActorRef) = a.compareTo(b)
 }
 
-/**
- * Can be mixed into an EventBus to specify that the Classifier type is ActorRef
- */
+/** Can be mixed into an EventBus to specify that the Classifier type is ActorRef */
 trait ActorClassifier { this: EventBus =>
   type Classifier = ActorRef
 }
 
-/**
- * Can be mixed into an EventBus to specify that the Classifier type is a Function from Event to Boolean (predicate)
- */
+/** Can be mixed into an EventBus to specify that the Classifier type is a Function from Event to Boolean (predicate) */
 trait PredicateClassifier { this: EventBus =>
   type Classifier = Event => Boolean
 }
@@ -82,28 +72,22 @@ trait PredicateClassifier { this: EventBus =>
  */
 trait LookupClassification { this: EventBus =>
 
-  protected final val subscribers = new Index[Classifier, Subscriber](mapSize(), new Comparator[Subscriber] {
-    def compare(a: Subscriber, b: Subscriber): Int = compareSubscribers(a, b)
-  })
+  protected final val subscribers = new Index[Classifier, Subscriber](
+    mapSize(),
+    new Comparator[Subscriber] {
+      def compare(a: Subscriber, b: Subscriber): Int = compareSubscribers(a, b)
+    })
 
-  /**
-   * This is a size hint for the number of Classifiers you expect to have (use powers of 2)
-   */
+  /** This is a size hint for the number of Classifiers you expect to have (use powers of 2) */
   protected def mapSize(): Int
 
-  /**
-   * Provides a total ordering of Subscribers (think java.util.Comparator.compare)
-   */
+  /** Provides a total ordering of Subscribers (think java.util.Comparator.compare) */
   protected def compareSubscribers(a: Subscriber, b: Subscriber): Int
 
-  /**
-   * Returns the Classifier associated with the given Event
-   */
+  /** Returns the Classifier associated with the given Event */
   protected def classify(event: Event): Classifier
 
-  /**
-   * Publishes the given Event to the given Subscriber
-   */
+  /** Publishes the given Event to the given Subscriber */
   protected def publish(event: Event, subscriber: Subscriber): Unit
 
   def subscribe(subscriber: Subscriber, to: Classifier): Boolean = subscribers.put(to, subscriber)
@@ -124,9 +108,7 @@ trait LookupClassification { this: EventBus =>
  */
 trait SubchannelClassification { this: EventBus =>
 
-  /**
-   * The logic to form sub-class hierarchy
-   */
+  /** The logic to form sub-class hierarchy */
   protected implicit def subclassification: Subclassification[Classifier]
 
   // must be lazy to avoid initialization order problem with subclassification
@@ -135,14 +117,10 @@ trait SubchannelClassification { this: EventBus =>
   @volatile
   private var cache = Map.empty[Classifier, Set[Subscriber]]
 
-  /**
-   * Returns the Classifier associated with the given Event
-   */
+  /** Returns the Classifier associated with the given Event */
   protected def classify(event: Event): Classifier
 
-  /**
-   * Publishes the given Event to the given Subscriber
-   */
+  /** Publishes the given Event to the given Subscriber */
   protected def publish(event: Event, subscriber: Subscriber): Unit
 
   def subscribe(subscriber: Subscriber, to: Classifier): Boolean = subscriptions.synchronized {
@@ -188,13 +166,13 @@ trait SubchannelClassification { this: EventBus =>
     cache.values.exists { _ contains subscriber }
 
   private def removeFromCache(changes: immutable.Seq[(Classifier, Set[Subscriber])]): Unit =
-    cache = changes.foldLeft(cache) {
-      case (m, (c, cs)) => m.updated(c, m.getOrElse(c, Set.empty[Subscriber]).diff(cs))
+    cache = changes.foldLeft(cache) { case (m, (c, cs)) =>
+      m.updated(c, m.getOrElse(c, Set.empty[Subscriber]).diff(cs))
     }
 
   private def addToCache(changes: immutable.Seq[(Classifier, Set[Subscriber])]): Unit =
-    cache = changes.foldLeft(cache) {
-      case (m, (c, cs)) => m.updated(c, m.getOrElse(c, Set.empty[Subscriber]).union(cs))
+    cache = changes.foldLeft(cache) { case (m, (c, cs)) =>
+      m.updated(c, m.getOrElse(c, Set.empty[Subscriber]).union(cs))
     }
 
 }
@@ -215,24 +193,16 @@ trait ScanningClassification { self: EventBus =>
         }
     })
 
-  /**
-   * Provides a total ordering of Classifiers (think java.util.Comparator.compare)
-   */
+  /** Provides a total ordering of Classifiers (think java.util.Comparator.compare) */
   protected def compareClassifiers(a: Classifier, b: Classifier): Int
 
-  /**
-   * Provides a total ordering of Subscribers (think java.util.Comparator.compare)
-   */
+  /** Provides a total ordering of Subscribers (think java.util.Comparator.compare) */
   protected def compareSubscribers(a: Subscriber, b: Subscriber): Int
 
-  /**
-   * Returns whether the specified Classifier matches the specified Event
-   */
+  /** Returns whether the specified Classifier matches the specified Event */
   protected def matches(classifier: Classifier, event: Event): Boolean
 
-  /**
-   * Publishes the specified Event to the specified Subscriber
-   */
+  /** Publishes the specified Event to the specified Subscriber */
   protected def publish(event: Event, subscriber: Subscriber): Unit
 
   def subscribe(subscriber: Subscriber, to: Classifier): Boolean = subscribers.add((to, subscriber))
@@ -297,7 +267,7 @@ trait ManagedActorClassification { this: ActorEventBus with ActorClassifier =>
 
   /** The unsubscriber takes care of unsubscribing actors, which have terminated. */
   protected lazy val unsubscriber =
-    ActorClassificationUnsubscriber.start(system, this.toString(), (this.unsubscribe: ActorRef => Unit))
+    ActorClassificationUnsubscriber.start(system, this.toString(), this.unsubscribe: ActorRef => Unit)
 
   @tailrec
   protected final def associate(monitored: ActorRef, monitor: ActorRef): Boolean = {
@@ -376,14 +346,10 @@ trait ManagedActorClassification { this: ActorEventBus with ActorClassifier =>
     }
   }
 
-  /**
-   * Returns the Classifier associated with the specified Event
-   */
+  /** Returns the Classifier associated with the specified Event */
   protected def classify(event: Event): Classifier
 
-  /**
-   * This is a size hint for the number of Classifiers you expect to have (use powers of 2)
-   */
+  /** This is a size hint for the number of Classifiers you expect to have (use powers of 2) */
   protected def mapSize: Int
 
   def publish(event: Event): Unit = {
@@ -407,17 +373,13 @@ trait ManagedActorClassification { this: ActorEventBus with ActorClassifier =>
     if (subscriber eq null) throw new IllegalArgumentException("Subscriber is null")
     else dissociate(subscriber)
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   private[akka] def registerWithUnsubscriber(subscriber: ActorRef, seqNr: Int): Boolean = {
     unsubscriber ! ActorClassificationUnsubscriber.Register(subscriber, seqNr)
     true
   }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   private[akka] def unregisterFromUnsubscriber(subscriber: ActorRef, seqNr: Int): Boolean = {
     unsubscriber ! ActorClassificationUnsubscriber.Unregister(subscriber, seqNr)
     true

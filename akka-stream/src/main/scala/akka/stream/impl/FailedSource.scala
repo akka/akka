@@ -9,9 +9,7 @@ import akka.stream.{ Attributes, Outlet, SourceShape }
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.stage.{ GraphStage, GraphStageLogic, OutHandler }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] final class FailedSource[T](failure: Throwable) extends GraphStage[SourceShape[T]] {
   val out = Outlet[T]("FailedSource.out")
   override val shape = SourceShape(out)

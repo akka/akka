@@ -69,10 +69,9 @@ class DurableShardingSpec
         TestConsumer.JobDelivery(d.message, d.confirmTo, d.producerId, d.seqNr)
       }
       c ! ConsumerController.Start(deliveryAdapter)
-      Behaviors.receiveMessagePartial {
-        case jobDelivery: TestConsumer.JobDelivery =>
-          consumerProbe.ref ! jobDelivery
-          Behaviors.same
+      Behaviors.receiveMessagePartial { case jobDelivery: TestConsumer.JobDelivery =>
+        consumerProbe.ref ! jobDelivery
+        Behaviors.same
       }
     }
 

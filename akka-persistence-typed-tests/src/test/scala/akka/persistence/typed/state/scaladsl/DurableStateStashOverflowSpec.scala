@@ -76,7 +76,7 @@ class DurableStateStashOverflowSpec
       val droppedMessageProbe = testKit.createDroppedMessageProbe()
       val stashCapacity = testKit.config.getInt("akka.persistence.typed.stash-capacity")
 
-      for (_ <- 0 until (stashCapacity)) {
+      for (_ <- 0 until stashCapacity) {
         ref.tell(Stasher.Hey(probe.ref))
       }
 

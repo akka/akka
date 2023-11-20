@@ -29,9 +29,7 @@ trait AsyncSerializer {
    */
   def toBinaryAsync(o: AnyRef): Future[Array[Byte]]
 
-  /**
-   * Produces an object from an array of bytes, with an optional type-hint.
-   */
+  /** Produces an object from an array of bytes, with an optional type-hint. */
   def fromBinaryAsync(bytes: Array[Byte], manifest: String): Future[AnyRef]
 }
 
@@ -72,15 +70,11 @@ abstract class AsyncSerializerWithStringManifestCS(system: ExtendedActorSystem)
 
   def fromBinaryAsyncCS(bytes: Array[Byte], manifest: String): CompletionStage[AnyRef]
 
-  /**
-   * Delegates to [[AsyncSerializerWithStringManifestCS#toBinaryAsyncCS]]
-   */
+  /** Delegates to [[AsyncSerializerWithStringManifestCS#toBinaryAsyncCS]] */
   final def toBinaryAsync(o: AnyRef): Future[Array[Byte]] =
     toBinaryAsyncCS(o).toScala
 
-  /**
-   * Delegates to [[AsyncSerializerWithStringManifestCS#fromBinaryAsyncCS]]
-   */
+  /** Delegates to [[AsyncSerializerWithStringManifestCS#fromBinaryAsyncCS]] */
   def fromBinaryAsync(bytes: Array[Byte], manifest: String): Future[AnyRef] =
     fromBinaryAsyncCS(bytes, manifest).toScala
 }

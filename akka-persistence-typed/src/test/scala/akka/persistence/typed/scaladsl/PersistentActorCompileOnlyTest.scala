@@ -37,14 +37,13 @@ object PersistentActorCompileOnlyTest {
     EventSourcedBehavior[MyCommand, MyEvent, ExampleState](
       persistenceId = PersistenceId.ofUniqueId("sample-id-1"),
       emptyState = ExampleState(Nil),
-      commandHandler = CommandHandler.command {
-        case Cmd(data, sender) =>
-          Effect.persist(Evt(data)).thenRun { _ =>
-            sender ! Ack
-          }
+      commandHandler = CommandHandler.command { case Cmd(data, sender) =>
+        Effect.persist(Evt(data)).thenRun { _ =>
+          sender ! Ack
+        }
       },
-      eventHandler = {
-        case (state, Evt(data)) => state.copy(data :: state.events)
+      eventHandler = { case (state, Evt(data)) =>
+        state.copy(data :: state.events)
       })
   }
 
@@ -76,34 +75,32 @@ object PersistentActorCompileOnlyTest {
     }
 
     val behavior: Behavior[Command] =
-      Behaviors.setup(
-        ctx =>
-          EventSourcedBehavior[Command, Event, EventsInFlight](
-            persistenceId = PersistenceId.ofUniqueId("recovery-complete-id"),
-            emptyState = EventsInFlight(0, Map.empty),
-            commandHandler = (state, cmd) =>
-              cmd match {
-                case DoSideEffect(data) =>
-                  Effect.persist(IntentRecorded(state.nextCorrelationId, data)).thenRun { _ =>
-                    performSideEffect(ctx.self, state.nextCorrelationId, data)
-                  }
-                case AcknowledgeSideEffect(correlationId) =>
-                  Effect.persist(SideEffectAcknowledged(correlationId))
-              },
-            eventHandler = (state, evt) =>
-              evt match {
-                case IntentRecorded(correlationId, data) =>
-                  EventsInFlight(
-                    nextCorrelationId = correlationId + 1,
-                    dataByCorrelationId = state.dataByCorrelationId + (correlationId -> data))
-                case SideEffectAcknowledged(correlationId) =>
-                  state.copy(dataByCorrelationId = state.dataByCorrelationId - correlationId)
-              }).receiveSignal {
-            case (state, RecoveryCompleted) =>
-              state.dataByCorrelationId.foreach {
-                case (correlationId, data) => performSideEffect(ctx.self, correlationId, data)
-              }
-          })
+      Behaviors.setup(ctx =>
+        EventSourcedBehavior[Command, Event, EventsInFlight](
+          persistenceId = PersistenceId.ofUniqueId("recovery-complete-id"),
+          emptyState = EventsInFlight(0, Map.empty),
+          commandHandler = (state, cmd) =>
+            cmd match {
+              case DoSideEffect(data) =>
+                Effect.persist(IntentRecorded(state.nextCorrelationId, data)).thenRun { _ =>
+                  performSideEffect(ctx.self, state.nextCorrelationId, data)
+                }
+              case AcknowledgeSideEffect(correlationId) =>
+                Effect.persist(SideEffectAcknowledged(correlationId))
+            },
+          eventHandler = (state, evt) =>
+            evt match {
+              case IntentRecorded(correlationId, data) =>
+                EventsInFlight(
+                  nextCorrelationId = correlationId + 1,
+                  dataByCorrelationId = state.dataByCorrelationId + (correlationId -> data))
+              case SideEffectAcknowledged(correlationId) =>
+                state.copy(dataByCorrelationId = state.dataByCorrelationId - correlationId)
+            }).receiveSignal { case (state, RecoveryCompleted) =>
+          state.dataByCorrelationId.foreach { case (correlationId, data) =>
+            performSideEffect(ctx.self, correlationId, data)
+          }
+        })
 
   }
 
@@ -140,8 +137,8 @@ object PersistentActorCompileOnlyTest {
             }
         }
       },
-      eventHandler = {
-        case (_, MoodChanged(to)) => to
+      eventHandler = { case (_, MoodChanged(to)) =>
+        to
       })
 
     Behaviors.withTimers((timers: TimerScheduler[Command]) => {
@@ -194,27 +191,26 @@ object PersistentActorCompileOnlyTest {
 
     def worker(task: Task): Behavior[Nothing] = ???
 
-    val behavior: Behavior[Command] = Behaviors.setup(
-      ctx =>
-        EventSourcedBehavior[Command, Event, State](
-          persistenceId = PersistenceId.ofUniqueId("asdf"),
-          emptyState = State(Nil),
-          commandHandler = (_, cmd) =>
-            cmd match {
-              case RegisterTask(task) =>
-                Effect.persist(TaskRegistered(task)).thenRun { _ =>
-                  val child = ctx.spawn[Nothing](worker(task), task)
-                  // This assumes *any* termination of the child may trigger a `TaskDone`:
-                  ctx.watchWith(child, TaskDone(task))
-                }
-              case TaskDone(task) => Effect.persist(TaskRemoved(task))
-            },
-          eventHandler = (state, evt) =>
-            evt match {
-              case TaskRegistered(task) => State(task :: state.tasksInFlight)
-              case TaskRemoved(task) =>
-                State(state.tasksInFlight.filter(_ != task))
-            }))
+    val behavior: Behavior[Command] = Behaviors.setup(ctx =>
+      EventSourcedBehavior[Command, Event, State](
+        persistenceId = PersistenceId.ofUniqueId("asdf"),
+        emptyState = State(Nil),
+        commandHandler = (_, cmd) =>
+          cmd match {
+            case RegisterTask(task) =>
+              Effect.persist(TaskRegistered(task)).thenRun { _ =>
+                val child = ctx.spawn[Nothing](worker(task), task)
+                // This assumes *any* termination of the child may trigger a `TaskDone`:
+                ctx.watchWith(child, TaskDone(task))
+              }
+            case TaskDone(task) => Effect.persist(TaskRemoved(task))
+          },
+        eventHandler = (state, evt) =>
+          evt match {
+            case TaskRegistered(task) => State(task :: state.tasksInFlight)
+            case TaskRemoved(task) =>
+              State(state.tasksInFlight.filter(_ != task))
+          }))
 
   }
 
@@ -238,14 +234,14 @@ object PersistentActorCompileOnlyTest {
       if (currentState == newMood) Effect.none
       else Effect.persist(MoodChanged(newMood))
 
-    //#commonChainedEffects
+    // #commonChainedEffects
     // Example factoring out a chained effect to use in several places with `thenRun`
     val commonChainedEffects: Mood => Unit = _ => println("Command processed")
     // Then in a command handler:
     Effect
       .persist(Remembered("Yep")) // persist event
       .thenRun(commonChainedEffects) // add on common chained effect
-    //#commonChainedEffects
+    // #commonChainedEffects
 
     val commandHandler: CommandHandler[Command, Event, Mood] = { (state, cmd) =>
       cmd match {
@@ -288,13 +284,12 @@ object PersistentActorCompileOnlyTest {
 
     class State
 
-    private val commandHandler: CommandHandler[Command, Event, State] = CommandHandler.command {
-      case Enough =>
-        Effect.persist(Done).thenRun((_: State) => println("yay")).thenStop()
+    private val commandHandler: CommandHandler[Command, Event, State] = CommandHandler.command { case Enough =>
+      Effect.persist(Done).thenRun((_: State) => println("yay")).thenStop()
     }
 
-    private val eventHandler: (State, Event) => State = {
-      case (state, Done) => state
+    private val eventHandler: (State, Event) => State = { case (state, Done) =>
+      state
     }
 
     EventSourcedBehavior[Command, Event, State](

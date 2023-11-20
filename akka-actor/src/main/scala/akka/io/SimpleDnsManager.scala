@@ -40,10 +40,9 @@ final class SimpleDnsManager(val ext: DnsExt)
   }
 
   @nowarn("cat=deprecation")
-  val oldApis: Receive = {
-    case r @ Dns.Resolve(name) =>
-      log.debug("(deprecated) Resolution request for {} from {}", name, sender())
-      resolver.forward(r)
+  val oldApis: Receive = { case r @ Dns.Resolve(name) =>
+    log.debug("(deprecated) Resolution request for {} from {}", name, sender())
+    resolver.forward(r)
   }
 
   // the inet resolver supports the old and new DNS APIs

@@ -62,8 +62,8 @@ class AskBenchmark {
   def setup(): Unit = {
     testSource = Source.fromGraph(new BenchTestSource(OperationsPerInvocation))
     actor = system.actorOf(Props(new Actor {
-      override def receive = {
-        case element => sender() ! element
+      override def receive = { case element =>
+        sender() ! element
       }
     }))
     // eager init of materializer

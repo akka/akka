@@ -69,49 +69,51 @@ trait Scheduler {
    *
    * Note: For scheduling within actors `with Timers` should be preferred.
    */
-  def scheduleWithFixedDelay(initialDelay: FiniteDuration, delay: FiniteDuration)(runnable: Runnable)(
-      implicit executor: ExecutionContext): Cancellable = {
-    try new AtomicReference[Cancellable](Cancellable.initialNotCancelled) with Cancellable { self =>
-      compareAndSet(
-        Cancellable.initialNotCancelled,
-        scheduleOnce(
-          initialDelay,
-          new Runnable {
-            override def run(): Unit = {
-              try {
-                runnable.run()
-                if (self.get != null)
-                  swap(scheduleOnce(delay, this))
-              } catch {
-                // ignore failure to enqueue or terminated target actor
-                case _: SchedulerException                                                                         =>
-                case e: IllegalStateException if e.getCause != null && e.getCause.isInstanceOf[SchedulerException] =>
+  def scheduleWithFixedDelay(initialDelay: FiniteDuration, delay: FiniteDuration)(runnable: Runnable)(implicit
+      executor: ExecutionContext): Cancellable = {
+    try
+      new AtomicReference[Cancellable](Cancellable.initialNotCancelled) with Cancellable { self =>
+        compareAndSet(
+          Cancellable.initialNotCancelled,
+          scheduleOnce(
+            initialDelay,
+            new Runnable {
+              override def run(): Unit = {
+                try {
+                  runnable.run()
+                  if (self.get != null)
+                    swap(scheduleOnce(delay, this))
+                } catch {
+                  // ignore failure to enqueue or terminated target actor
+                  case _: SchedulerException                                                                         =>
+                  case e: IllegalStateException if e.getCause != null && e.getCause.isInstanceOf[SchedulerException] =>
+                }
               }
-            }
-          }))
+            }))
 
-      @tailrec private def swap(c: Cancellable): Unit = {
-        get match {
-          case null => if (c != null) c.cancel()
-          case old  => if (!compareAndSet(old, c)) swap(c)
-        }
-      }
-
-      final def cancel(): Boolean = {
-        @tailrec def tailrecCancel(): Boolean = {
+        @tailrec private def swap(c: Cancellable): Unit = {
           get match {
-            case null => false
-            case c =>
-              if (c.cancel()) compareAndSet(c, null)
-              else compareAndSet(c, null) || tailrecCancel()
+            case null => if (c != null) c.cancel()
+            case old  => if (!compareAndSet(old, c)) swap(c)
           }
         }
 
-        tailrecCancel()
-      }
+        final def cancel(): Boolean = {
+          @tailrec def tailrecCancel(): Boolean = {
+            get match {
+              case null => false
+              case c =>
+                if (c.cancel()) compareAndSet(c, null)
+                else compareAndSet(c, null) || tailrecCancel()
+            }
+          }
 
-      override def isCancelled: Boolean = get == null
-    } catch {
+          tailrecCancel()
+        }
+
+        override def isCancelled: Boolean = get == null
+      }
+    catch {
       case SchedulerException(msg) => throw new IllegalStateException(msg)
     }
   }
@@ -166,10 +168,7 @@ trait Scheduler {
       initialDelay: FiniteDuration,
       delay: FiniteDuration,
       receiver: ActorRef,
-      message: Any)(
-      implicit
-      executor: ExecutionContext,
-      sender: ActorRef = Actor.noSender): Cancellable = {
+      message: Any)(implicit executor: ExecutionContext, sender: ActorRef = Actor.noSender): Cancellable = {
     scheduleWithFixedDelay(initialDelay, delay)(new Runnable {
       def run(): Unit = {
         receiver ! message
@@ -237,8 +236,8 @@ trait Scheduler {
    * Note: For scheduling within actors `with Timers` should be preferred.
    */
   @nowarn("msg=deprecated")
-  final def scheduleAtFixedRate(initialDelay: FiniteDuration, interval: FiniteDuration)(runnable: Runnable)(
-      implicit executor: ExecutionContext): Cancellable =
+  final def scheduleAtFixedRate(initialDelay: FiniteDuration, interval: FiniteDuration)(runnable: Runnable)(implicit
+      executor: ExecutionContext): Cancellable =
     schedule(initialDelay, interval, runnable)(executor)
 
   /**
@@ -310,10 +309,7 @@ trait Scheduler {
       initialDelay: FiniteDuration,
       interval: FiniteDuration,
       receiver: ActorRef,
-      message: Any)(
-      implicit
-      executor: ExecutionContext,
-      sender: ActorRef = Actor.noSender): Cancellable =
+      message: Any)(implicit executor: ExecutionContext, sender: ActorRef = Actor.noSender): Cancellable =
     schedule(initialDelay, interval, receiver, message)
 
   /**
@@ -351,16 +347,13 @@ trait Scheduler {
     scheduleAtFixedRate(initialDelay.asScala, interval.asScala, receiver, message)(executor, sender)
   }
 
-  /**
-   * Deprecated API: See [[Scheduler#scheduleWithFixedDelay]] or [[Scheduler#scheduleAtFixedRate]].
-   */
+  /** Deprecated API: See [[Scheduler#scheduleWithFixedDelay]] or [[Scheduler#scheduleAtFixedRate]]. */
   @deprecated(
     "Use scheduleWithFixedDelay or scheduleAtFixedRate instead. This has the same semantics as " +
     "scheduleAtFixedRate, but scheduleWithFixedDelay is often preferred.",
     since = "2.6.0")
   @nowarn("msg=deprecated")
-  final def schedule(initialDelay: FiniteDuration, interval: FiniteDuration, receiver: ActorRef, message: Any)(
-      implicit
+  final def schedule(initialDelay: FiniteDuration, interval: FiniteDuration, receiver: ActorRef, message: Any)(implicit
       executor: ExecutionContext,
       sender: ActorRef = Actor.noSender): Cancellable =
     schedule(
@@ -374,9 +367,7 @@ trait Scheduler {
         }
       })
 
-  /**
-   * Deprecated API: See [[Scheduler#scheduleWithFixedDelay]] or [[Scheduler#scheduleAtFixedRate]].
-   */
+  /** Deprecated API: See [[Scheduler#scheduleWithFixedDelay]] or [[Scheduler#scheduleAtFixedRate]]. */
   @deprecated(
     "Use scheduleWithFixedDelay or scheduleAtFixedRate instead. This has the same semantics as " +
     "scheduleAtFixedRate, but scheduleWithFixedDelay is often preferred.",
@@ -392,37 +383,30 @@ trait Scheduler {
     schedule(initialDelay.asScala, interval.asScala, receiver, message)(executor, sender)
   }
 
-  /**
-   * Deprecated API: See [[Scheduler#scheduleWithFixedDelay]] or [[Scheduler#scheduleAtFixedRate]].
-   */
+  /** Deprecated API: See [[Scheduler#scheduleWithFixedDelay]] or [[Scheduler#scheduleAtFixedRate]]. */
   @deprecated(
     "Use scheduleWithFixedDelay or scheduleAtFixedRate instead. This has the same semantics as " +
     "scheduleAtFixedRate, but scheduleWithFixedDelay is often preferred.",
     since = "2.6.0")
-  final def schedule(initialDelay: FiniteDuration, interval: FiniteDuration)(f: => Unit)(
-      implicit
+  final def schedule(initialDelay: FiniteDuration, interval: FiniteDuration)(f: => Unit)(implicit
       executor: ExecutionContext): Cancellable =
     schedule(initialDelay, interval, new Runnable { override def run(): Unit = f })
 
-  /**
-   * Deprecated API: See [[Scheduler#scheduleWithFixedDelay]] or [[Scheduler#scheduleAtFixedRate]].
-   */
+  /** Deprecated API: See [[Scheduler#scheduleWithFixedDelay]] or [[Scheduler#scheduleAtFixedRate]]. */
   @deprecated(
     "Use scheduleWithFixedDelay or scheduleAtFixedRate instead. This has the same semantics as " +
     "scheduleAtFixedRate, but scheduleWithFixedDelay is often preferred.",
     since = "2.6.0")
-  def schedule(initialDelay: FiniteDuration, interval: FiniteDuration, runnable: Runnable)(
-      implicit executor: ExecutionContext): Cancellable
+  def schedule(initialDelay: FiniteDuration, interval: FiniteDuration, runnable: Runnable)(implicit
+      executor: ExecutionContext): Cancellable
 
-  /**
-   * Deprecated API: See [[Scheduler#scheduleWithFixedDelay]] or [[Scheduler#scheduleAtFixedRate]].
-   */
+  /** Deprecated API: See [[Scheduler#scheduleWithFixedDelay]] or [[Scheduler#scheduleAtFixedRate]]. */
   @deprecated(
     "Use scheduleWithFixedDelay or scheduleAtFixedRate instead. This has the same semantics as " +
     "scheduleAtFixedRate, but scheduleWithFixedDelay is often preferred.",
     since = "2.6.0")
-  def schedule(initialDelay: java.time.Duration, interval: java.time.Duration, runnable: Runnable)(
-      implicit executor: ExecutionContext): Cancellable = {
+  def schedule(initialDelay: java.time.Duration, interval: java.time.Duration, runnable: Runnable)(implicit
+      executor: ExecutionContext): Cancellable = {
     import JavaDurationConverters._
     schedule(initialDelay.asScala, interval.asScala, runnable)
   }
@@ -436,13 +420,14 @@ trait Scheduler {
    *
    * Note: For scheduling within actors `with Timers` should be preferred.
    */
-  final def scheduleOnce(delay: FiniteDuration, receiver: ActorRef, message: Any)(
-      implicit
+  final def scheduleOnce(delay: FiniteDuration, receiver: ActorRef, message: Any)(implicit
       executor: ExecutionContext,
       sender: ActorRef = Actor.noSender): Cancellable =
-    scheduleOnce(delay, new Runnable {
-      override def run(): Unit = receiver ! message
-    })
+    scheduleOnce(
+      delay,
+      new Runnable {
+        override def run(): Unit = receiver ! message
+      })
 
   /**
    * Java API: Schedules a message to be sent once with a delay, i.e. a time period that has
@@ -472,9 +457,7 @@ trait Scheduler {
    *
    * Note: For scheduling within actors `with Timers` should be preferred.
    */
-  final def scheduleOnce(delay: FiniteDuration)(f: => Unit)(
-      implicit
-      executor: ExecutionContext): Cancellable =
+  final def scheduleOnce(delay: FiniteDuration)(f: => Unit)(implicit executor: ExecutionContext): Cancellable =
     scheduleOnce(delay, new Runnable { override def run(): Unit = f })
 
   /**
@@ -543,9 +526,7 @@ object Cancellable {
     def isCancelled: Boolean = true
   }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[akka] val initialNotCancelled: Cancellable = new Cancellable {
     def cancel(): Boolean = false
     def isCancelled: Boolean = false

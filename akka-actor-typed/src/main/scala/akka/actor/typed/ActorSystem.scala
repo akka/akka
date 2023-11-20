@@ -11,7 +11,7 @@ import scala.concurrent.{ ExecutionContextExecutor, Future }
 import com.typesafe.config.{ Config, ConfigFactory }
 import org.slf4j.Logger
 
-import akka.{ Done, actor => classic }
+import akka.{ actor => classic, Done }
 import akka.actor.{ Address, BootstrapSetup, ClassicActorSystemProvider }
 import akka.actor.setup.ActorSystemSetup
 import akka.actor.typed.eventstream.EventStream
@@ -40,14 +40,10 @@ abstract class ActorSystem[-T] extends ActorRef[T] with Extensions with ClassicA
    */
   def name: String
 
-  /**
-   * The core settings extracted from the supplied configuration.
-   */
+  /** The core settings extracted from the supplied configuration. */
   def settings: Settings
 
-  /**
-   * Log the configuration.
-   */
+  /** Log the configuration. */
   def logConfiguration(): Unit
 
   /**
@@ -58,19 +54,13 @@ abstract class ActorSystem[-T] extends ActorRef[T] with Extensions with ClassicA
    */
   def log: Logger
 
-  /**
-   * Start-up time in milliseconds since the epoch.
-   */
+  /** Start-up time in milliseconds since the epoch. */
   def startTime: Long
 
-  /**
-   * Up-time of this actor system in seconds.
-   */
+  /** Up-time of this actor system in seconds. */
   def uptime: Long
 
-  /**
-   * A ThreadFactory that can be used if the transport needs to create any Threads
-   */
+  /** A ThreadFactory that can be used if the transport needs to create any Threads */
   def threadFactory: ThreadFactory
 
   /**
@@ -89,14 +79,10 @@ abstract class ActorSystem[-T] extends ActorRef[T] with Extensions with ClassicA
    */
   def scheduler: Scheduler
 
-  /**
-   * Facilities for lookup up thread-pools from configuration.
-   */
+  /** Facilities for lookup up thread-pools from configuration. */
   def dispatchers: Dispatchers
 
-  /**
-   * The default thread pool of this ActorSystem, configured with settings in `akka.actor.default-dispatcher`.
-   */
+  /** The default thread pool of this ActorSystem, configured with settings in `akka.actor.default-dispatcher`. */
   implicit def executionContext: ExecutionContextExecutor
 
   /**
@@ -142,9 +128,7 @@ abstract class ActorSystem[-T] extends ActorRef[T] with Extensions with ClassicA
    */
   def deadLetters[U]: ActorRef[U]
 
-  /**
-   * An ActorRef that ignores any incoming messages.
-   */
+  /** An ActorRef that ignores any incoming messages. */
   def ignoreRef[U]: ActorRef[U]
 
   /**
@@ -164,9 +148,7 @@ abstract class ActorSystem[-T] extends ActorRef[T] with Extensions with ClassicA
    */
   def systemActorOf[U](behavior: Behavior[U], name: String, props: Props = Props.empty): ActorRef[U]
 
-  /**
-   * Return a reference to this system’s [[akka.actor.typed.receptionist.Receptionist]].
-   */
+  /** Return a reference to this system’s [[akka.actor.typed.receptionist.Receptionist]]. */
   def receptionist: ActorRef[Receptionist.Command] =
     Receptionist(this).ref
 
@@ -191,21 +173,15 @@ abstract class ActorSystem[-T] extends ActorRef[T] with Extensions with ClassicA
 
 object ActorSystem {
 
-  /**
-   * Scala API: Create an ActorSystem
-   */
+  /** Scala API: Create an ActorSystem */
   def apply[T](guardianBehavior: Behavior[T], name: String): ActorSystem[T] =
     createInternal(name, guardianBehavior, Props.empty, ActorSystemSetup.create(BootstrapSetup()))
 
-  /**
-   * Scala API: Create an ActorSystem
-   */
+  /** Scala API: Create an ActorSystem */
   def apply[T](guardianBehavior: Behavior[T], name: String, config: Config): ActorSystem[T] =
     createInternal(name, guardianBehavior, Props.empty, ActorSystemSetup.create(BootstrapSetup(config)))
 
-  /**
-   * Scala API: Create an ActorSystem
-   */
+  /** Scala API: Create an ActorSystem */
   def apply[T](guardianBehavior: Behavior[T], name: String, config: Config, guardianProps: Props): ActorSystem[T] =
     createInternal(name, guardianBehavior, guardianProps, ActorSystemSetup.create(BootstrapSetup(config)))
 
@@ -228,21 +204,15 @@ object ActorSystem {
   def apply[T](guardianBehavior: Behavior[T], name: String, bootstrapSetup: BootstrapSetup): ActorSystem[T] =
     apply(guardianBehavior, name, ActorSystemSetup.create(bootstrapSetup))
 
-  /**
-   * Java API: Create an ActorSystem
-   */
+  /** Java API: Create an ActorSystem */
   def create[T](guardianBehavior: Behavior[T], name: String): ActorSystem[T] =
     apply(guardianBehavior, name)
 
-  /**
-   * Java API: Create an ActorSystem
-   */
+  /** Java API: Create an ActorSystem */
   def create[T](guardianBehavior: Behavior[T], name: String, config: Config): ActorSystem[T] =
     apply(guardianBehavior, name, config)
 
-  /**
-   * Java API: Create an ActorSystem
-   */
+  /** Java API: Create an ActorSystem */
   def create[T](guardianBehavior: Behavior[T], name: String, config: Config, guardianProps: Props): ActorSystem[T] =
     createInternal(name, guardianBehavior, guardianProps, ActorSystemSetup.create(BootstrapSetup(config)))
 
@@ -311,9 +281,7 @@ final class Settings(val config: Config, val classicSettings: classic.ActorSyste
 
   def setup: ActorSystemSetup = classicSettings.setup
 
-  /**
-   * Returns the String representation of the Config that this Settings is backed by
-   */
+  /** Returns the String representation of the Config that this Settings is backed by */
   override def toString: String = config.root.render
 
   private val typedConfig = config.getConfig("akka.actor.typed")

@@ -106,9 +106,7 @@ private[testkit] trait PolicyOpsTestKit[P] {
     this
   }
 
-  /**
-   * Returns default policy if it was changed by [[PolicyOpsTestKit.this.withPolicy()]].
-   */
+  /** Returns default policy if it was changed by [[PolicyOpsTestKit.this.withPolicy()]]. */
   def resetPolicy(): Unit = storage.resetPolicy()
 
 }
@@ -128,106 +126,91 @@ private[testkit] trait ExpectOps[U] {
 
   private[testkit] def reprToAny(repr: U): Any
 
-  /**
-   * Check that next persisted in storage for particular persistence id event/snapshot was `event`.
-   */
+  /** Check that next persisted in storage for particular persistence id event/snapshot was `event`. */
   def expectNextPersisted[A](persistenceId: String, event: A): A =
     expectNextPersisted(persistenceId, event, maxTimeout)
 
   def getItem(persistenceId: String, nextInd: Int): Option[Any] =
     storage.findOneByIndex(persistenceId, nextInd).map(reprToAny)
 
-  /**
-   * Check for `max` time that next persisted in storage for particular persistence id event/snapshot was `event`.
-   */
+  /** Check for `max` time that next persisted in storage for particular persistence id event/snapshot was `event`. */
   def expectNextPersisted[A](persistenceId: String, event: A, max: FiniteDuration): A = {
     val nextInd = nextIndex(persistenceId)
     val expected = Some(event)
-    val res = awaitAssert({
-      val actual = getItem(persistenceId, nextInd)
-      assert(actual == expected, s"Failed to persist $event, got $actual instead")
-      actual
-    }, max = max.dilated, interval = pollInterval)
+    val res = awaitAssert(
+      {
+        val actual = getItem(persistenceId, nextInd)
+        assert(actual == expected, s"Failed to persist $event, got $actual instead")
+        actual
+      },
+      max = max.dilated,
+      interval = pollInterval)
 
     setIndex(persistenceId, nextInd + 1)
     res.get.asInstanceOf[A]
   }
 
-  /**
-   * Check that next persisted in storage for particular persistence id event/snapshot has expected type.
-   */
+  /** Check that next persisted in storage for particular persistence id event/snapshot has expected type. */
   def expectNextPersistedType[A](persistenceId: String)(implicit t: ClassTag[A]): A =
     expectNextPersistedType(persistenceId, maxTimeout)
 
-  /**
-   * Check for `max` time that next persisted in storage for particular persistence id event/snapshot has expected type.
-   */
+  /** Check for `max` time that next persisted in storage for particular persistence id event/snapshot has expected type. */
   def expectNextPersistedType[A](persistenceId: String, max: FiniteDuration)(implicit t: ClassTag[A]): A =
     expectNextPersistedClass(persistenceId, t.runtimeClass.asInstanceOf[Class[A]], max)
 
-  /**
-   * Check that next persisted in storage for particular persistence id event/snapshot has expected type.
-   */
+  /** Check that next persisted in storage for particular persistence id event/snapshot has expected type. */
   def expectNextPersistedClass[A](persistenceId: String, cla: Class[A]): A =
     expectNextPersistedClass(persistenceId, cla, maxTimeout)
 
-  /**
-   * Check for `max` time that next persisted in storage for particular persistence id event/snapshot has expected type.
-   */
+  /** Check for `max` time that next persisted in storage for particular persistence id event/snapshot has expected type. */
   def expectNextPersistedClass[A](persistenceId: String, cla: Class[A], max: FiniteDuration): A = {
     val nextInd = nextIndex(persistenceId)
     val c = util.BoxedType(cla)
-    val res = awaitAssert({
-      val actual = storage.findOneByIndex(persistenceId, nextInd).map(reprToAny)
-      assert(actual.isDefined, s"Expected: $cla but got no event")
-      val a = actual.get
-      assert(c.isInstance(a), s"Expected: $cla but got unexpected ${a.getClass}")
-      a.asInstanceOf[A]
-    }, max.dilated, interval = pollInterval)
+    val res = awaitAssert(
+      {
+        val actual = storage.findOneByIndex(persistenceId, nextInd).map(reprToAny)
+        assert(actual.isDefined, s"Expected: $cla but got no event")
+        val a = actual.get
+        assert(c.isInstance(a), s"Expected: $cla but got unexpected ${a.getClass}")
+        a.asInstanceOf[A]
+      },
+      max.dilated,
+      interval = pollInterval)
     setIndex(persistenceId, nextInd + 1)
     res
   }
 
-  /**
-   * Check that nothing was persisted in storage for particular persistence id.
-   */
+  /** Check that nothing was persisted in storage for particular persistence id. */
   def expectNothingPersisted(persistenceId: String): Unit =
     expectNothingPersisted(persistenceId, maxTimeout)
 
-  /**
-   * Check for `max` time that nothing was persisted in storage for particular persistence id.
-   */
+  /** Check for `max` time that nothing was persisted in storage for particular persistence id. */
   def expectNothingPersisted(persistenceId: String, max: FiniteDuration): Unit = {
     val nextInd = nextIndex(persistenceId)
-    assertForDuration({
-      val actual = storage.findOneByIndex(persistenceId, nextInd).map(reprToAny)
-      val res = actual.isEmpty
-      assert(res, s"Found persisted event $actual, but expected None instead")
-    }, max = max.dilated, interval = pollInterval)
+    assertForDuration(
+      {
+        val actual = storage.findOneByIndex(persistenceId, nextInd).map(reprToAny)
+        val res = actual.isEmpty
+        assert(res, s"Found persisted event $actual, but expected None instead")
+      },
+      max = max.dilated,
+      interval = pollInterval)
   }
 
-  /**
-   * Receive for `max` time next `n` events/snapshots that have been persisted in the storage.
-   */
-  def receivePersisted[A](persistenceId: String, n: Int, max: FiniteDuration)(
-      implicit t: ClassTag[A]): immutable.Seq[A] =
+  /** Receive for `max` time next `n` events/snapshots that have been persisted in the storage. */
+  def receivePersisted[A](persistenceId: String, n: Int, max: FiniteDuration)(implicit
+      t: ClassTag[A]): immutable.Seq[A] =
     receivePersisted(persistenceId, n, t.runtimeClass.asInstanceOf[Class[A]], max)
 
-  /**
-   * Receive next `n` events/snapshots that have been persisted in the storage.
-   */
+  /** Receive next `n` events/snapshots that have been persisted in the storage. */
   def receivePersisted[A](persistenceId: String, n: Int)(implicit t: ClassTag[A]): immutable.Seq[A] =
     receivePersisted(persistenceId, n, t.runtimeClass.asInstanceOf[Class[A]], maxTimeout)
 
-  /**
-   * Receive next `n` events/snapshots that have been persisted in the storage.
-   */
+  /** Receive next `n` events/snapshots that have been persisted in the storage. */
   def receivePersisted[A](persistenceId: String, n: Int, cla: Class[A]): immutable.Seq[A] =
     receivePersisted(persistenceId, n, cla, maxTimeout)
 
-  /**
-   * Receive for `max` time next `n` events/snapshots that have been persisted in the storage.
-   */
+  /** Receive for `max` time next `n` events/snapshots that have been persisted in the storage. */
   def receivePersisted[A](persistenceId: String, n: Int, cla: Class[A], max: FiniteDuration): immutable.Seq[A] = {
     val nextInd = nextIndex(persistenceId)
     val bt = BoxedType(cla)
@@ -316,7 +299,7 @@ private[testkit] trait HasStorage[P, R] {
 
   protected def storage: TestKitStorage[P, R]
 
-  //todo needs to be thread safe (atomic read-increment-write) for parallel tests. Do we need parallel tests support?
+  // todo needs to be thread safe (atomic read-increment-write) for parallel tests. Do we need parallel tests support?
   @volatile
   private var nextIndexByPersistenceId: immutable.Map[String, Int] = Map.empty
 

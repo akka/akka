@@ -33,9 +33,7 @@ import akka.persistence.journal.Tagged
 import akka.util.JavaDurationConverters.JavaDurationOps
 import akka.util.Timeout
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalStableApi
 private[akka] object EventWriterExtension extends ExtensionId[EventWriterExtension] {
   def createExtension(system: ActorSystem[_]): EventWriterExtension = new EventWriterExtension(system)
@@ -43,9 +41,7 @@ private[akka] object EventWriterExtension extends ExtensionId[EventWriterExtensi
   def get(system: ActorSystem[_]): EventWriterExtension = apply(system)
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalStableApi
 private[akka] class EventWriterExtension(system: ActorSystem[_]) extends Extension {
 
@@ -54,7 +50,8 @@ private[akka] class EventWriterExtension(system: ActorSystem[_]) extends Extensi
 
   def writerForJournal(journalId: Option[String]): ActorRef[EventWriter.Command] =
     writersPerJournalId.computeIfAbsent(
-      journalId.getOrElse(""), { _ =>
+      journalId.getOrElse(""),
+      { _ =>
         system.systemActorOf(
           EventWriter(journalId.getOrElse(""), settings),
           s"EventWriter-${URLEncoder.encode(journalId.getOrElse("default"), "UTF-8")}")
@@ -62,9 +59,7 @@ private[akka] class EventWriterExtension(system: ActorSystem[_]) extends Extensi
 
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalStableApi
 private[akka] object EventWriter {
 
@@ -179,8 +174,8 @@ private[akka] object EventWriter {
               perPidWriteState = perPidWriteState - pid
             } else {
               // batch waiting for pid
-              val newReplyTo = newStateForPid.waitingForWrite.map {
-                case (repr, replyTo) => (repr.sequenceNr, (repr, replyTo))
+              val newReplyTo = newStateForPid.waitingForWrite.map { case (repr, replyTo) =>
+                (repr.sequenceNr, (repr, replyTo))
               }.toMap
               val updatedState =
                 newStateForPid.copy(
@@ -229,15 +224,15 @@ private[akka] object EventWriter {
           val accumulationFactor = 1.1
           if (perPidWriteState.size >= latestSequenceNumberCacheCapacity * accumulationFactor) {
             val idleEntries =
-              perPidWriteState.iterator.filter {
-                case (_, stateForPid) => stateForPid.idle && stateForPid.waitingForSeqNrLookup.isEmpty
+              perPidWriteState.iterator.filter { case (_, stateForPid) =>
+                stateForPid.idle && stateForPid.waitingForSeqNrLookup.isEmpty
               }.toVector
 
             if (idleEntries.size >= latestSequenceNumberCacheCapacity * accumulationFactor) {
               val pidsToRemove =
                 idleEntries
-                  .sortBy {
-                    case (_, stateForPid) => stateForPid.usedTimestamp
+                  .sortBy { case (_, stateForPid) =>
+                    stateForPid.usedTimestamp
                   }
                   .take(idleEntries.size - latestSequenceNumberCacheCapacity)
                   .map { case (pid, _) => pid }
@@ -421,7 +416,8 @@ private[akka] object EventWriter {
                     if (state.idle) {
                       sendToJournal(state.currentTransactionId + 1, fillRepr :+ repr)
                       val newWaitingForReply =
-                        (fillRepr.map(r => r.sequenceNr -> (r -> ignoreRef)) :+ (repr.sequenceNr -> (repr -> replyTo))).toMap
+                        (fillRepr.map(r =>
+                          r.sequenceNr -> (r -> ignoreRef)) :+ (repr.sequenceNr -> (repr -> replyTo))).toMap
                       state.copy(
                         waitingForReply = newWaitingForReply,
                         currentTransactionId = state.currentTransactionId + 1)
@@ -500,9 +496,8 @@ private[akka] object EventWriter {
                 val (alreadyInJournal, needsWrite) = sortedSeqs.partition(seqNr => seqNr <= maxSeqNr)
                 if (alreadyInJournal.isEmpty) {
                   // error was not about duplicates
-                  state.waitingForReply.values.foreach {
-                    case (_, replyTo) =>
-                      replyTo ! StatusReply.error("Journal write failed")
+                  state.waitingForReply.values.foreach { case (_, replyTo) =>
+                    replyTo ! StatusReply.error("Journal write failed")
                   }
                   context.log.warnN(
                     "Failed writing event batch persistence id [{}], sequence nr [{}-{}]: {}",
@@ -559,9 +554,8 @@ private[akka] object EventWriter {
                   pid,
                   errorDescInLog)
               case Some(state) =>
-                state.waitingForReply.values.foreach {
-                  case (_, replyTo) =>
-                    replyTo ! StatusReply.error("Journal write failed")
+                state.waitingForReply.values.foreach { case (_, replyTo) =>
+                  replyTo ! StatusReply.error("Journal write failed")
                 }
                 val sortedSeqs = state.waitingForReply.keys.toSeq.sorted
                 context.log.warnN(

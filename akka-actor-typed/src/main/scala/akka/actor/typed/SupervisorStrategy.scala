@@ -34,9 +34,7 @@ object SupervisorStrategy {
   val restart: RestartSupervisorStrategy =
     Restart(maxRestarts = -1, withinTimeRange = Duration.Zero)
 
-  /**
-   * Stop the actor
-   */
+  /** Stop the actor */
   val stop: SupervisorStrategy = Stop(loggingEnabled = true, logLevel = Level.ERROR)
 
   /**
@@ -109,9 +107,7 @@ object SupervisorStrategy {
       randomFactor: Double): BackoffSupervisorStrategy =
     restartWithBackoff(minBackoff.asScala, maxBackoff.asScala, randomFactor)
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[akka] case class Resume(loggingEnabled: Boolean, logLevel: Level) extends SupervisorStrategy {
     override def withLoggingEnabled(enabled: Boolean): SupervisorStrategy =
       copy(loggingEnabled = enabled)
@@ -119,9 +115,7 @@ object SupervisorStrategy {
       copy(logLevel = level)
   }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[akka] case class Stop(loggingEnabled: Boolean, logLevel: Level) extends SupervisorStrategy {
     override def withLoggingEnabled(enabled: Boolean) =
       copy(loggingEnabled = enabled)
@@ -129,9 +123,7 @@ object SupervisorStrategy {
       copy(logLevel = level)
   }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[akka] sealed trait RestartOrBackoff extends SupervisorStrategy {
     def maxRestarts: Int
     def stopChildren: Boolean
@@ -141,9 +133,7 @@ object SupervisorStrategy {
     def unlimitedRestarts(): Boolean = maxRestarts == -1
   }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[akka] final case class Restart(
       maxRestarts: Int,
       withinTimeRange: FiniteDuration,
@@ -173,9 +163,7 @@ object SupervisorStrategy {
       copy(logLevel = level)
   }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[akka] final case class Backoff(
       minBackoff: FiniteDuration,
       maxBackoff: FiniteDuration,
@@ -220,9 +208,7 @@ object SupervisorStrategy {
   }
 }
 
-/**
- * Not for user extension
- */
+/** Not for user extension */
 @DoNotInherit
 sealed abstract class SupervisorStrategy {
   def loggingEnabled: Boolean
@@ -234,9 +220,7 @@ sealed abstract class SupervisorStrategy {
 
 }
 
-/**
- * Not for user extension
- */
+/** Not for user extension */
 @DoNotInherit
 sealed abstract class RestartSupervisorStrategy extends SupervisorStrategy {
 
@@ -293,9 +277,7 @@ sealed abstract class RestartSupervisorStrategy extends SupervisorStrategy {
 
 }
 
-/**
- * Not for user extension
- */
+/** Not for user extension */
 @DoNotInherit
 sealed abstract class BackoffSupervisorStrategy extends SupervisorStrategy {
   def resetBackoffAfter: FiniteDuration

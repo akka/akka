@@ -23,15 +23,13 @@ import akka.io.Tcp._
 import akka.stream._
 import akka.stream.impl.ReactiveStreamsCompliance
 import akka.stream.impl.fusing.GraphStages.detacher
-import akka.stream.scaladsl.{ BidiFlow, Flow, TcpIdleTimeoutException, Tcp => StreamTcp }
+import akka.stream.scaladsl.{ BidiFlow, Flow, Tcp => StreamTcp, TcpIdleTimeoutException }
 import akka.stream.scaladsl.Tcp.{ OutgoingConnection, ServerBinding }
 import akka.stream.scaladsl.TcpAttributes
 import akka.stream.stage._
 import akka.util.ByteString
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[stream] class ConnectionSourceStage(
     val tcpManager: ActorRef,
     val endpoint: InetSocketAddress,
@@ -40,7 +38,9 @@ import akka.util.ByteString
     val halfClose: Boolean,
     val idleTimeout: Duration,
     val bindShutdownTimeout: FiniteDuration)
-    extends GraphStageWithMaterializedValue[SourceShape[StreamTcp.IncomingConnection], Future[StreamTcp.ServerBinding]] {
+    extends GraphStageWithMaterializedValue[
+      SourceShape[StreamTcp.IncomingConnection],
+      Future[StreamTcp.ServerBinding]] {
   import ConnectionSourceStage._
 
   val out: Outlet[StreamTcp.IncomingConnection] = Outlet("IncomingConnections.out")
@@ -77,16 +77,19 @@ import akka.util.ByteString
             stageActor.watch(listener)
             if (isAvailable(out)) listener ! ResumeAccepting(1)
             val thisStage = self
-            bindingPromise.success(ServerBinding(localAddress)(() => {
-              // To allow unbind() to be invoked multiple times with minimal chance of dead letters, we check if
-              // it's already unbound before sending the message.
-              if (!unbindPromise.isCompleted) {
-                // Beware, sender must be explicit since stageActor.ref will be invalid to access after the stage
-                // stopped.
-                thisStage.tell(Unbind, thisStage)
-              }
-              unbindPromise.future
-            }, unbindPromise.future.map(_ => Done)(ExecutionContexts.parasitic)))
+            bindingPromise.success(
+              ServerBinding(localAddress)(
+                () => {
+                  // To allow unbind() to be invoked multiple times with minimal chance of dead letters, we check if
+                  // it's already unbound before sending the message.
+                  if (!unbindPromise.isCompleted) {
+                    // Beware, sender must be explicit since stageActor.ref will be invalid to access after the stage
+                    // stopped.
+                    thisStage.tell(Unbind, thisStage)
+                  }
+                  unbindPromise.future
+                },
+                unbindPromise.future.map(_ => Done)(ExecutionContexts.parasitic)))
           case f: CommandFailed =>
             val ex = new BindFailedException {
               // cannot modify the actual exception class for compatibility reasons
@@ -207,9 +210,7 @@ private[stream] object ConnectionSourceStage {
   val BindShutdownTimer = "BindTimer"
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[stream] object TcpConnectionStage {
   case object WriteAck extends Tcp.Event
 
@@ -497,9 +498,7 @@ private[stream] object ConnectionSourceStage {
   }
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] class IncomingConnectionStage(
     connection: ActorRef,
     remoteAddress: InetSocketAddress,
@@ -535,9 +534,7 @@ private[stream] object ConnectionSourceStage {
   override def toString = s"TCP-from($remoteAddress)"
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[stream] class OutgoingConnectionStage(
     manager: ActorRef,
     remoteAddress: InetSocketAddress,
@@ -596,11 +593,10 @@ private[stream] object ConnectionSourceStage {
 
     val toNetTimeout: BidiFlow[ByteString, ByteString, ByteString, ByteString, NotUsed] =
       BidiFlow.fromFlows(
-        Flow[ByteString].mapError {
-          case _: TimeoutException =>
-            new TcpIdleTimeoutException(
-              s"TCP idle-timeout encountered$connectionToString, no bytes passed in the last $idleTimeout",
-              idleTimeout)
+        Flow[ByteString].mapError { case _: TimeoutException =>
+          new TcpIdleTimeoutException(
+            s"TCP idle-timeout encountered$connectionToString, no bytes passed in the last $idleTimeout",
+            idleTimeout)
         },
         Flow[ByteString])
     val fromNetTimeout: BidiFlow[ByteString, ByteString, ByteString, ByteString, NotUsed] =

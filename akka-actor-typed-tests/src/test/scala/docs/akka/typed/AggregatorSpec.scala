@@ -14,7 +14,7 @@ import org.scalatest.wordspec.AnyWordSpecLike
 
 object AggregatorSpec {
   object IllustrateUsage {
-    //#usage
+    // #usage
     object Hotel1 {
       final case class RequestQuote(replyTo: ActorRef[Quote])
       final case class Quote(hotel: String, price: BigDecimal)
@@ -57,15 +57,14 @@ object AggregatorSpec {
                     .toList),
               timeout = 5.seconds))
 
-          Behaviors.receiveMessage {
-            case AggregatedQuotes(quotes) =>
-              context.log.info("Best {}", quotes.headOption.getOrElse("Quote N/A"))
-              Behaviors.same
+          Behaviors.receiveMessage { case AggregatedQuotes(quotes) =>
+            context.log.info("Best {}", quotes.headOption.getOrElse("Quote N/A"))
+            Behaviors.same
           }
         }
       }
     }
-    //#usage
+    // #usage
   }
 }
 

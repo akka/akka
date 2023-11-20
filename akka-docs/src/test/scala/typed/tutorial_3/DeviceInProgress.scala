@@ -16,7 +16,7 @@ import akka.actor.typed.Signal
 
 object DeviceInProgress1 {
 
-  //#read-protocol-1
+  // #read-protocol-1
   import akka.actor.typed.ActorRef
 
   object Device {
@@ -24,14 +24,14 @@ object DeviceInProgress1 {
     final case class ReadTemperature(replyTo: ActorRef[RespondTemperature]) extends Command
     final case class RespondTemperature(value: Option[Double])
   }
-  //#read-protocol-1
+  // #read-protocol-1
 
 }
 
 object DeviceInProgress2 {
   import akka.actor.typed.ActorRef
 
-  //#device-with-read
+  // #device-with-read
   import akka.actor.typed.Behavior
   import akka.actor.typed.scaladsl.AbstractBehavior
   import akka.actor.typed.scaladsl.ActorContext
@@ -42,11 +42,11 @@ object DeviceInProgress2 {
     def apply(groupId: String, deviceId: String): Behavior[Command] =
       Behaviors.setup(context => new Device(context, groupId, deviceId))
 
-    //#read-protocol-2
+    // #read-protocol-2
     sealed trait Command
     final case class ReadTemperature(requestId: Long, replyTo: ActorRef[RespondTemperature]) extends Command
     final case class RespondTemperature(requestId: Long, value: Option[Double])
-    //#read-protocol-2
+    // #read-protocol-2
   }
 
   class Device(context: ActorContext[Device.Command], groupId: String, deviceId: String)
@@ -65,23 +65,22 @@ object DeviceInProgress2 {
       }
     }
 
-    override def onSignal: PartialFunction[Signal, Behavior[Command]] = {
-      case PostStop =>
-        context.log.info2("Device actor {}-{} stopped", groupId, deviceId)
-        this
+    override def onSignal: PartialFunction[Signal, Behavior[Command]] = { case PostStop =>
+      context.log.info2("Device actor {}-{} stopped", groupId, deviceId)
+      this
     }
 
   }
-  //#device-with-read
+  // #device-with-read
 
 }
 
 object DeviceInProgress3 {
 
   object Device {
-    //#write-protocol-1
+    // #write-protocol-1
     sealed trait Command
     final case class RecordTemperature(value: Double) extends Command
-    //#write-protocol-1
+    // #write-protocol-1
   }
 }

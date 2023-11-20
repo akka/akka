@@ -31,8 +31,8 @@ object MultiNodeClusterShardingSpec {
   class EntityActor(probe: ActorRef) extends Actor {
     probe ! EntityActor.Started(self)
 
-    def receive: Receive = {
-      case m => sender() ! m
+    def receive: Receive = { case m =>
+      sender() ! m
     }
   }
 
@@ -63,8 +63,8 @@ object MultiNodeClusterShardingSpec {
     }
   }
 
-  val intExtractEntityId: ShardRegion.ExtractEntityId = {
-    case id: Int => (id.toString, id)
+  val intExtractEntityId: ShardRegion.ExtractEntityId = { case id: Int =>
+    (id.toString, id)
   }
   val intExtractShardId: ShardRegion.ExtractShardId = msg =>
     msg match {
@@ -174,8 +174,8 @@ abstract class MultiNodeClusterShardingSpec(val config: MultiNodeClusterSharding
   protected def isDdataMode = mode == ClusterShardingSettings.StateStoreModeDData
   protected def persistenceIsNeeded: Boolean =
     mode == ClusterShardingSettings.StateStoreModePersistence ||
-    system.settings.config
-      .getString("akka.cluster.sharding.remember-entities-store") == ClusterShardingSettings.RememberEntitiesStoreEventsourced
+    system.settings.config.getString(
+      "akka.cluster.sharding.remember-entities-store") == ClusterShardingSettings.RememberEntitiesStoreEventsourced
 
   protected def setStoreIfNeeded(sys: ActorSystem, storeOn: RoleName): Unit =
     if (persistenceIsNeeded) setStore(sys, storeOn)

@@ -42,9 +42,7 @@ object Source {
    */
   def empty[O](): Source[O, NotUsed] = _empty.asInstanceOf[Source[O, NotUsed]]
 
-  /**
-   * Create a `Source` with no elements. The result is the same as calling `Source.<O>empty()`
-   */
+  /** Create a `Source` with no elements. The result is the same as calling `Source.<O>empty()` */
   def empty[T](@unused clazz: Class[T]): Source[T, NotUsed] = empty[T]()
 
   /**
@@ -233,9 +231,7 @@ object Source {
   def single[T](element: T): Source[T, NotUsed] =
     new Source(scaladsl.Source.single(element))
 
-  /**
-   * Create a `Source` that will continually emit the given element.
-   */
+  /** Create a `Source` that will continually emit the given element. */
   def repeat[T](element: T): Source[T, NotUsed] =
     new Source(scaladsl.Source.repeat(element))
 
@@ -246,15 +242,11 @@ object Source {
   def unfold[S, E](s: S, f: function.Function[S, Optional[Pair[S, E]]]): Source[E, NotUsed] =
     new Source(scaladsl.Source.unfold(s)((s: S) => f.apply(s).asScala.map(_.toScala)))
 
-  /**
-   * Same as [[unfold]], but uses an async function to generate the next state-element tuple.
-   */
+  /** Same as [[unfold]], but uses an async function to generate the next state-element tuple. */
   def unfoldAsync[S, E](s: S, f: function.Function[S, CompletionStage[Optional[Pair[S, E]]]]): Source[E, NotUsed] =
     new Source(scaladsl.Source.fromGraph(new UnfoldAsyncJava[S, E](s, f)))
 
-  /**
-   * Create a `Source` that immediately ends the stream with the `cause` failure to every connected `Sink`.
-   */
+  /** Create a `Source` that immediately ends the stream with the `cause` failure to every connected `Sink`. */
   def failed[T](cause: Throwable): Source[T, NotUsed] =
     new Source(scaladsl.Source.failed(cause))
 
@@ -386,9 +378,7 @@ object Source {
     lazySource[T, CompletionStage[M]](() => completionStageSource(create.create()))
       .mapMaterializedValue(_.thenCompose(csm => csm))
 
-  /**
-   * Creates a `Source` that is materialized as a [[org.reactivestreams.Subscriber]]
-   */
+  /** Creates a `Source` that is materialized as a [[org.reactivestreams.Subscriber]] */
   def asSubscriber[T](): Source[T, Subscriber[T]] =
     new Source(scaladsl.Source.asSubscriber)
 
@@ -435,19 +425,24 @@ object Source {
       failureMatcher: akka.japi.function.Function[Any, java.util.Optional[Throwable]],
       bufferSize: Int,
       overflowStrategy: OverflowStrategy): Source[T, ActorRef] =
-    new Source(scaladsl.Source.actorRef(new JavaPartialFunction[Any, CompletionStrategy] {
-      override def apply(x: Any, isCheck: Boolean): CompletionStrategy = {
-        val result = completionMatcher(x)
-        if (!result.isPresent) throw JavaPartialFunction.noMatch()
-        else result.get()
-      }
-    }, new JavaPartialFunction[Any, Throwable] {
-      override def apply(x: Any, isCheck: Boolean): Throwable = {
-        val result = failureMatcher(x)
-        if (!result.isPresent) throw JavaPartialFunction.noMatch()
-        else result.get()
-      }
-    }, bufferSize, overflowStrategy))
+    new Source(
+      scaladsl.Source.actorRef(
+        new JavaPartialFunction[Any, CompletionStrategy] {
+          override def apply(x: Any, isCheck: Boolean): CompletionStrategy = {
+            val result = completionMatcher(x)
+            if (!result.isPresent) throw JavaPartialFunction.noMatch()
+            else result.get()
+          }
+        },
+        new JavaPartialFunction[Any, Throwable] {
+          override def apply(x: Any, isCheck: Boolean): Throwable = {
+            val result = failureMatcher(x)
+            if (!result.isPresent) throw JavaPartialFunction.noMatch()
+            else result.get()
+          }
+        },
+        bufferSize,
+        overflowStrategy))
 
   /**
    * Creates a `Source` that is materialized as an [[akka.actor.ActorRef]].
@@ -494,11 +489,16 @@ object Source {
   @Deprecated
   @deprecated("Use variant accepting completion and failure matchers", "2.6.0")
   def actorRef[T](bufferSize: Int, overflowStrategy: OverflowStrategy): Source[T, ActorRef] =
-    new Source(scaladsl.Source.actorRef({
-      case akka.actor.Status.Success(s: CompletionStrategy) => s
-      case akka.actor.Status.Success(_)                     => CompletionStrategy.Draining
-      case akka.actor.Status.Success                        => CompletionStrategy.Draining
-    }, { case akka.actor.Status.Failure(cause)              => cause }, bufferSize, overflowStrategy))
+    new Source(
+      scaladsl.Source.actorRef(
+        {
+          case akka.actor.Status.Success(s: CompletionStrategy) => s
+          case akka.actor.Status.Success(_)                     => CompletionStrategy.Draining
+          case akka.actor.Status.Success                        => CompletionStrategy.Draining
+        },
+        { case akka.actor.Status.Failure(cause) => cause },
+        bufferSize,
+        overflowStrategy))
 
   /**
    * Creates a `Source` that is materialized as an [[akka.actor.ActorRef]].
@@ -518,19 +518,23 @@ object Source {
       ackMessage: Any,
       completionMatcher: akka.japi.function.Function[Any, java.util.Optional[CompletionStrategy]],
       failureMatcher: akka.japi.function.Function[Any, java.util.Optional[Throwable]]): Source[T, ActorRef] =
-    new Source(scaladsl.Source.actorRefWithBackpressure(ackMessage, new JavaPartialFunction[Any, CompletionStrategy] {
-      override def apply(x: Any, isCheck: Boolean): CompletionStrategy = {
-        val result = completionMatcher(x)
-        if (!result.isPresent) throw JavaPartialFunction.noMatch()
-        else result.get()
-      }
-    }, new JavaPartialFunction[Any, Throwable] {
-      override def apply(x: Any, isCheck: Boolean): Throwable = {
-        val result = failureMatcher(x)
-        if (!result.isPresent) throw JavaPartialFunction.noMatch()
-        else result.get()
-      }
-    }))
+    new Source(
+      scaladsl.Source.actorRefWithBackpressure(
+        ackMessage,
+        new JavaPartialFunction[Any, CompletionStrategy] {
+          override def apply(x: Any, isCheck: Boolean): CompletionStrategy = {
+            val result = completionMatcher(x)
+            if (!result.isPresent) throw JavaPartialFunction.noMatch()
+            else result.get()
+          }
+        },
+        new JavaPartialFunction[Any, Throwable] {
+          override def apply(x: Any, isCheck: Boolean): Throwable = {
+            val result = failureMatcher(x)
+            if (!result.isPresent) throw JavaPartialFunction.noMatch()
+            else result.get()
+          }
+        }))
 
   /**
    * Creates a `Source` that is materialized as an [[akka.actor.ActorRef]].
@@ -554,19 +558,23 @@ object Source {
       ackMessage: Any,
       completionMatcher: akka.japi.function.Function[Any, java.util.Optional[CompletionStrategy]],
       failureMatcher: akka.japi.function.Function[Any, java.util.Optional[Throwable]]): Source[T, ActorRef] =
-    new Source(scaladsl.Source.actorRefWithBackpressure(ackMessage, new JavaPartialFunction[Any, CompletionStrategy] {
-      override def apply(x: Any, isCheck: Boolean): CompletionStrategy = {
-        val result = completionMatcher(x)
-        if (!result.isPresent) throw JavaPartialFunction.noMatch()
-        else result.get()
-      }
-    }, new JavaPartialFunction[Any, Throwable] {
-      override def apply(x: Any, isCheck: Boolean): Throwable = {
-        val result = failureMatcher(x)
-        if (!result.isPresent) throw JavaPartialFunction.noMatch()
-        else result.get()
-      }
-    }))
+    new Source(
+      scaladsl.Source.actorRefWithBackpressure(
+        ackMessage,
+        new JavaPartialFunction[Any, CompletionStrategy] {
+          override def apply(x: Any, isCheck: Boolean): CompletionStrategy = {
+            val result = completionMatcher(x)
+            if (!result.isPresent) throw JavaPartialFunction.noMatch()
+            else result.get()
+          }
+        },
+        new JavaPartialFunction[Any, Throwable] {
+          override def apply(x: Any, isCheck: Boolean): Throwable = {
+            val result = failureMatcher(x)
+            if (!result.isPresent) throw JavaPartialFunction.noMatch()
+            else result.get()
+          }
+        }))
 
   /**
    * Creates a `Source` that is materialized as an [[akka.actor.ActorRef]].
@@ -590,11 +598,15 @@ object Source {
   @Deprecated
   @deprecated("Use actorRefWithBackpressure accepting completion and failure matchers", "2.6.0")
   def actorRefWithAck[T](ackMessage: Any): Source[T, ActorRef] =
-    new Source(scaladsl.Source.actorRefWithBackpressure(ackMessage, {
-      case akka.actor.Status.Success(s: CompletionStrategy) => s
-      case akka.actor.Status.Success(_)                     => CompletionStrategy.Draining
-      case akka.actor.Status.Success                        => CompletionStrategy.Draining
-    }, { case akka.actor.Status.Failure(cause)              => cause }))
+    new Source(
+      scaladsl.Source.actorRefWithBackpressure(
+        ackMessage,
+        {
+          case akka.actor.Status.Success(s: CompletionStrategy) => s
+          case akka.actor.Status.Success(_)                     => CompletionStrategy.Draining
+          case akka.actor.Status.Success                        => CompletionStrategy.Draining
+        },
+        { case akka.actor.Status.Failure(cause) => cause }))
 
   /**
    * A graph with the shape of a source logically is a source, this method makes
@@ -625,9 +637,7 @@ object Source {
   def setup[T, M](factory: BiFunction[ActorMaterializer, Attributes, Source[T, M]]): Source[T, CompletionStage[M]] =
     scaladsl.Source.setup((mat, attr) => factory(mat, attr).asScala).mapMaterializedValue(_.toJava).asJava
 
-  /**
-   * Combines several sources with fan-in strategy like [[Merge]] or [[Concat]] into a single [[Source]].
-   */
+  /** Combines several sources with fan-in strategy like [[Merge]] or [[Concat]] into a single [[Source]]. */
   def combine[T, U](
       first: Source[T, _ <: Any],
       second: Source[T, _ <: Any],
@@ -640,9 +650,7 @@ object Source {
     new Source(scaladsl.Source.combine(first.asScala, second.asScala, seq: _*)(num => fanInStrategy.apply(num)))
   }
 
-  /**
-   * Combines two sources with fan-in strategy like `Merge` or `Concat` and returns `Source` with a materialized value.
-   */
+  /** Combines two sources with fan-in strategy like `Merge` or `Concat` and returns `Source` with a materialized value. */
   def combineMat[T, U, M1, M2, M](
       first: Source[T, M1],
       second: Source[T, M2],
@@ -654,9 +662,7 @@ object Source {
       scaladsl.Source.combineMat(first.asScala, second.asScala)(num => fanInStrategy.apply(num))(combinerToScala(matF)))
   }
 
-  /**
-   * Combines several sources with fan-in strategy like [[Merge]] or [[Concat]] into a single [[Source]].
-   */
+  /** Combines several sources with fan-in strategy like [[Merge]] or [[Concat]] into a single [[Source]]. */
   def combine[T, U, M](
       sources: java.util.List[_ <: Graph[SourceShape[T], M]],
       fanInStrategy: function.Function[java.lang.Integer, Graph[UniformFanInShape[T, U], NotUsed]])
@@ -664,14 +670,13 @@ object Source {
     val seq = if (sources != null) Util.immutableSeq(sources).collect {
       case source: Source[T @unchecked, M @unchecked] => source.asScala
       case other                                      => other
-    } else immutable.Seq()
+    }
+    else immutable.Seq()
     import akka.util.ccompat.JavaConverters._
     new Source(scaladsl.Source.combine(seq)(size => fanInStrategy(size)).mapMaterializedValue(_.asJava))
   }
 
-  /**
-   * Combine the elements of multiple streams into a stream of lists.
-   */
+  /** Combine the elements of multiple streams into a stream of lists. */
   def zipN[T](sources: java.util.List[Source[T, _ <: Any]]): Source[java.util.List[T], NotUsed] = {
     val seq = if (sources != null) Util.immutableSeq(sources).map(_.asScala) else immutable.Seq()
     new Source(scaladsl.Source.zipN(seq).map(_.asJava))
@@ -918,14 +923,10 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
 
   override def toString: String = delegate.toString
 
-  /**
-   * Converts this Java DSL element to its Scala DSL counterpart.
-   */
+  /** Converts this Java DSL element to its Scala DSL counterpart. */
   def asScala: scaladsl.Source[Out, Mat] = delegate
 
-  /**
-   * Transform only the materialized value of this Source, leaving all other properties as they were.
-   */
+  /** Transform only the materialized value of this Source, leaving all other properties as they were. */
   def mapMaterializedValue[Mat2](f: function.Function[Mat, Mat2]): Source[Out, Mat2] =
     new Source(delegate.mapMaterializedValue(f.apply _))
 
@@ -1523,7 +1524,6 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    * '''Completes when''' upstream completes
    *
    * '''Cancels when''' downstream cancels
-   *
    */
   def wireTap(that: Graph[SinkShape[Out], _]): javadsl.Source[Out, Mat] =
     new Source(delegate.wireTap(that))
@@ -1665,7 +1665,8 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
     val seq = if (those != null) Util.immutableSeq(those).collect {
       case source: Source[Out @unchecked, _] => source.asScala
       case other                             => other
-    } else immutable.Seq()
+    }
+    else immutable.Seq()
     new Source(delegate.interleaveAll(seq, segmentSize, eagerClose))
   }
 
@@ -1744,7 +1745,8 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
     val seq = if (those != null) Util.immutableSeq(those).collect {
       case source: Source[Out @unchecked, _] => source.asScala
       case other                             => other
-    } else immutable.Seq()
+    }
+    else immutable.Seq()
     new Source(delegate.mergeAll(seq, eagerComplete))
   }
 
@@ -2214,7 +2216,6 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    * '''Completes when''' upstream completes or upstream failed with exception pf can handle
    *
    * '''Cancels when''' downstream cancels
-   *
    */
   def mapError(pf: PartialFunction[Throwable, Throwable]): javadsl.Source[Out, Mat] =
     new Source(delegate.mapError(pf))
@@ -2236,7 +2237,6 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    * '''Completes when''' upstream completes or upstream failed with exception pf can handle
    *
    * '''Cancels when''' downstream cancels
-   *
    */
   def mapError[E <: Throwable](clazz: Class[E], f: function.Function[E, Throwable]): javadsl.Source[Out, Mat] =
     mapError {
@@ -2368,7 +2368,6 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    * '''Completes when''' upstream completes or upstream failed with exception pf can handle
    *
    * '''Cancels when''' downstream cancels
-   *
    */
   def recoverWithRetries(
       attempts: Int,
@@ -2405,9 +2404,11 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
       attempts: Int,
       clazz: Class[_ <: Throwable],
       supplier: Supplier[Graph[SourceShape[Out], NotUsed]]): Source[Out, Mat] =
-    recoverWithRetries(attempts, {
-      case elem if clazz.isInstance(elem) => supplier.get()
-    }: PartialFunction[Throwable, Graph[SourceShape[Out], NotUsed]])
+    recoverWithRetries(
+      attempts,
+      {
+        case elem if clazz.isInstance(elem) => supplier.get()
+      }: PartialFunction[Throwable, Graph[SourceShape[Out], NotUsed]])
 
   /**
    * Transform each input element into an `Iterable` of output elements that is
@@ -2580,9 +2581,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
   def mapAsync[T](parallelism: Int, f: function.Function[Out, CompletionStage[T]]): javadsl.Source[T, Mat] =
     new Source(delegate.mapAsync(parallelism)(x => f(x).toScala))
 
-  /**
-   * @see [[akka.stream.javadsl.Flow.mapAsyncPartitioned]]
-   */
+  /** @see [[akka.stream.javadsl.Flow.mapAsyncPartitioned]] */
   def mapAsyncPartitioned[T, P](
       parallelism: Int,
       perPartition: Int,
@@ -2716,7 +2715,6 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    * '''Completes when''' upstream completes
    *
    * '''Cancels when''' downstream cancels
-   *
    */
   def filter(p: function.Predicate[Out]): javadsl.Source[Out, Mat] =
     new Source(delegate.filter(p.test))
@@ -3613,7 +3611,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    *  @param n the number of elements to accumulate before materializing the downstream flow.
    *  @param f a function that produces the downstream flow based on the upstream's prefix.
-   **/
+   */
   def flatMapPrefix[Out2, Mat2](
       n: Int,
       f: function.Function[java.lang.Iterable[Out], javadsl.Flow[Out, Out2, Mat2]]): javadsl.Source[Out2, Mat] = {
@@ -4001,7 +3999,6 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    * '''Completes when''' upstream completes
    *
    * '''Cancels when''' downstream cancels
-   *
    */
   def throttle(elements: Int, per: java.time.Duration): javadsl.Source[Out, Mat] =
     new Source(delegate.throttle(elements, per.asScala))
@@ -4040,7 +4037,6 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    * '''Completes when''' upstream completes
    *
    * '''Cancels when''' downstream cancels
-   *
    */
   def throttle(
       elements: Int,
@@ -4079,7 +4075,6 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    * '''Completes when''' upstream completes
    *
    * '''Cancels when''' downstream cancels
-   *
    */
   def throttle(
       cost: Int,
@@ -4124,7 +4119,6 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    * '''Completes when''' upstream completes
    *
    * '''Cancels when''' downstream cancels
-   *
    */
   def throttle(
       cost: Int,
@@ -4210,15 +4204,11 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
   override def addAttributes(attr: Attributes): javadsl.Source[Out, Mat] =
     new Source(delegate.addAttributes(attr))
 
-  /**
-   * Add a ``name`` attribute to this Source.
-   */
+  /** Add a ``name`` attribute to this Source. */
   override def named(name: String): javadsl.Source[Out, Mat] =
     new Source(delegate.named(name))
 
-  /**
-   * Put an asynchronous boundary around this `Source`
-   */
+  /** Put an asynchronous boundary around this `Source` */
   override def async: javadsl.Source[Out, Mat] =
     new Source(delegate.async)
 
@@ -4417,9 +4407,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
   def logWithMarker(name: String, marker: function.Function[Out, LogMarker]): javadsl.Source[Out, Mat] =
     this.logWithMarker(name, marker, ConstantFun.javaIdentityFunction[Out], null)
 
-  /**
-   * Transform this source whose element is ``e`` into a source producing tuple ``(e, f(e))``
-   **/
+  /** Transform this source whose element is ``e`` into a source producing tuple ``(e, f(e))`` */
   def asSourceWithContext[Ctx](extractContext: function.Function[Out, Ctx]): SourceWithContext[Out, Ctx, Mat] =
     new scaladsl.SourceWithContext(this.asScala.map(x => (x, extractContext.apply(x)))).asJava
 
@@ -4450,8 +4438,8 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
       .aggregateWithBoundary(() => allocate.get())(
         aggregate = (agg, out) => aggregate.apply(agg, out).toScala,
         harvest = agg => harvest.apply(agg),
-        emitOnTimer = Option(emitOnTimer).map {
-          case Pair(predicate, duration) => (agg => predicate.test(agg), duration.asScala)
+        emitOnTimer = Option(emitOnTimer).map { case Pair(predicate, duration) =>
+          (agg => predicate.test(agg), duration.asScala)
         })
       .asJava
 

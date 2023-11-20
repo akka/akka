@@ -13,7 +13,7 @@ class RecipeDigest extends RecipeSpec {
 
     "work" in {
 
-      //#calculating-digest
+      // #calculating-digest
       import java.security.MessageDigest
 
       import akka.NotUsed
@@ -33,27 +33,31 @@ class RecipeDigest extends RecipeSpec {
         override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
           private val digest = MessageDigest.getInstance(algorithm)
 
-          setHandler(out, new OutHandler {
-            override def onPull(): Unit = pull(in)
-          })
+          setHandler(
+            out,
+            new OutHandler {
+              override def onPull(): Unit = pull(in)
+            })
 
-          setHandler(in, new InHandler {
-            override def onPush(): Unit = {
-              val chunk = grab(in)
-              digest.update(chunk.toArray)
-              pull(in)
-            }
+          setHandler(
+            in,
+            new InHandler {
+              override def onPush(): Unit = {
+                val chunk = grab(in)
+                digest.update(chunk.toArray)
+                pull(in)
+              }
 
-            override def onUpstreamFinish(): Unit = {
-              emit(out, ByteString(digest.digest()))
-              completeStage()
-            }
-          })
+              override def onUpstreamFinish(): Unit = {
+                emit(out, ByteString(digest.digest()))
+                completeStage()
+              }
+            })
         }
       }
 
       val digest: Source[ByteString, NotUsed] = data.via(new DigestCalculator("SHA-256"))
-      //#calculating-digest
+      // #calculating-digest
 
       Await.result(digest.runWith(Sink.head), 3.seconds) should be(
         ByteString(0xba, 0x78, 0x16, 0xbf, 0x8f, 0x01, 0xcf, 0xea, 0x41, 0x41, 0x40, 0xde, 0x5d, 0xae, 0x22, 0x23, 0xb0,

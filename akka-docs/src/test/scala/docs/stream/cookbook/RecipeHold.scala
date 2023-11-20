@@ -11,7 +11,7 @@ import akka.stream.testkit._
 import scala.concurrent.duration._
 
 object HoldOps {
-  //#hold-version-1
+  // #hold-version-1
   import akka.stream._
   import akka.stream.stage._
   final class HoldWithInitial[T](initial: T) extends GraphStage[FlowShape[T, T]] {
@@ -23,16 +23,19 @@ object HoldOps {
     override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
       private var currentValue: T = initial
 
-      setHandlers(in, out, new InHandler with OutHandler {
-        override def onPush(): Unit = {
-          currentValue = grab(in)
-          pull(in)
-        }
+      setHandlers(
+        in,
+        out,
+        new InHandler with OutHandler {
+          override def onPush(): Unit = {
+            currentValue = grab(in)
+            pull(in)
+          }
 
-        override def onPull(): Unit = {
-          push(out, currentValue)
-        }
-      })
+          override def onPull(): Unit = {
+            push(out, currentValue)
+          }
+        })
 
       override def preStart(): Unit = {
         pull(in)
@@ -40,9 +43,9 @@ object HoldOps {
     }
 
   }
-  //#hold-version-1
+  // #hold-version-1
 
-  //#hold-version-2
+  // #hold-version-2
   import akka.stream._
   import akka.stream.stage._
   final class HoldWithWait[T] extends GraphStage[FlowShape[T, T]] {
@@ -78,7 +81,7 @@ object HoldOps {
       }
     }
   }
-  //#hold-version-2
+  // #hold-version-2
 }
 
 class RecipeHold extends RecipeSpec {

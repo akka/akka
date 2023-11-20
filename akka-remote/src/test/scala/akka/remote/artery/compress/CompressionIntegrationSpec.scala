@@ -79,13 +79,13 @@ class CompressionIntegrationSpec
         awaitAssert {
           val a1 = aManifestProbe.expectMsgType[Events.ReceivedClassManifestCompressionTable](2.seconds)
           info("System [A] received: " + a1)
-          a1.table.version.toInt should be >= (1)
+          a1.table.version.toInt should be >= 1
           a1.table.dictionary.keySet should contain("TestMessageManifest")
         }
         awaitAssert {
           val a1 = aRefProbe.expectMsgType[Events.ReceivedActorRefCompressionTable](2.seconds)
           info("System [A] received: " + a1)
-          a1.table.version.toInt should be >= (1)
+          a1.table.version.toInt should be >= 1
           a1.table.dictionary.keySet should contain(echoRefA) // recipient
           a1.table.dictionary.keySet should contain(testActor) // sender
         }
@@ -94,13 +94,13 @@ class CompressionIntegrationSpec
         awaitAssert {
           val b1 = bManifestProbe.expectMsgType[Events.ReceivedClassManifestCompressionTable](2.seconds)
           info("System [B] received: " + b1)
-          b1.table.version.toInt should be >= (1)
+          b1.table.version.toInt should be >= 1
           b1.table.dictionary.keySet should contain("TestMessageManifest")
         }
         awaitAssert {
           val b1 = bRefProbe.expectMsgType[Events.ReceivedActorRefCompressionTable](2.seconds)
           info("System [B] received: " + b1)
-          b1.table.version.toInt should be >= (1)
+          b1.table.version.toInt should be >= 1
           b1.table.dictionary.keySet should contain(echoRefB)
         }
       }
@@ -112,26 +112,26 @@ class CompressionIntegrationSpec
           echoRefA.tell(TestMessage("hello2"), ignore.ref)
           val a2 = aManifestProbe.expectMsgType[Events.ReceivedClassManifestCompressionTable](2.seconds)
           info("System [A] received more: " + a2)
-          a2.table.version.toInt should be >= (3)
+          a2.table.version.toInt should be >= 3
         }
         awaitAssert {
           echoRefA.tell(TestMessage("hello2"), ignore.ref)
           val a2 = aRefProbe.expectMsgType[Events.ReceivedActorRefCompressionTable](2.seconds)
           info("System [A] received more: " + a2)
-          a2.table.version.toInt should be >= (3)
+          a2.table.version.toInt should be >= 3
         }
 
         awaitAssert {
           echoRefA.tell(TestMessage("hello3"), ignore.ref)
           val b2 = bManifestProbe.expectMsgType[Events.ReceivedClassManifestCompressionTable](2.seconds)
           info("System [B] received more: " + b2)
-          b2.table.version.toInt should be >= (3)
+          b2.table.version.toInt should be >= 3
         }
         awaitAssert {
           echoRefA.tell(TestMessage("hello3"), ignore.ref)
           val b2 = bRefProbe.expectMsgType[Events.ReceivedActorRefCompressionTable](2.seconds)
           info("System [B] received more: " + b2)
-          b2.table.version.toInt should be >= (3)
+          b2.table.version.toInt should be >= 3
         }
       }
     }
@@ -301,15 +301,15 @@ class CompressionIntegrationSpec
       awaitAssert {
         val a2 = aManifestProbe.expectMsgType[Events.ReceivedClassManifestCompressionTable](2.seconds)
         info("System [A] received: " + a2)
-        a2.table.version.toInt should be >= (1)
-        a2.table.version.toInt should be < (3)
+        a2.table.version.toInt should be >= 1
+        a2.table.version.toInt should be < 3
         a2.table.dictionary.keySet should contain("TestMessageManifest")
       }
       awaitAssert {
         val a2 = aRefProbe.expectMsgType[Events.ReceivedActorRefCompressionTable](2.seconds)
         info("System [A] received: " + a2)
-        a2.table.version.toInt should be >= (1)
-        a2.table.version.toInt should be < (3)
+        a2.table.version.toInt should be >= 1
+        a2.table.version.toInt should be < 3
         a2.table.dictionary.keySet should contain(echoRefA) // recipient
         a2.table.dictionary.keySet should contain(testActor) // sender
       }
@@ -318,13 +318,13 @@ class CompressionIntegrationSpec
       awaitAssert {
         val b2 = bManifestProbe.expectMsgType[Events.ReceivedClassManifestCompressionTable](2.seconds)
         info("System [B2] received: " + b2)
-        b2.table.version.toInt should be >= (1)
+        b2.table.version.toInt should be >= 1
         b2.table.dictionary.keySet should contain("TestMessageManifest")
       }
       awaitAssert {
         val b2 = bRefProbe.expectMsgType[Events.ReceivedActorRefCompressionTable](2.seconds)
         info("System [B] received: " + b2)
-        b2.table.version.toInt should be >= (1)
+        b2.table.version.toInt should be >= 1
         b2.table.dictionary.keySet should contain(echoRefB2)
       }
     }
@@ -377,14 +377,16 @@ class CompressionIntegrationSpec
         receiveN(messagesToExchange) // the replies
 
         var currentTable: CompressionTable[ActorRef] = null
-        receivedActorRefCompressionTableProbe.awaitAssert({
-          // discard duplicates with awaitAssert until we receive next version
-          val receivedActorRefCompressionTable =
-            receivedActorRefCompressionTableProbe.expectMsgType[Events.ReceivedActorRefCompressionTable](10.seconds)
+        receivedActorRefCompressionTableProbe.awaitAssert(
+          {
+            // discard duplicates with awaitAssert until we receive next version
+            val receivedActorRefCompressionTable =
+              receivedActorRefCompressionTableProbe.expectMsgType[Events.ReceivedActorRefCompressionTable](10.seconds)
 
-          currentTable = receivedActorRefCompressionTable.table
-          seenTableVersions = currentTable.version :: seenTableVersions
-        }, max = 10.seconds)
+            currentTable = receivedActorRefCompressionTable.table
+            seenTableVersions = currentTable.version :: seenTableVersions
+          },
+          max = 10.seconds)
 
         // debugging: info("Seen versions: " + seenTableVersions)
         lastTable = currentTable

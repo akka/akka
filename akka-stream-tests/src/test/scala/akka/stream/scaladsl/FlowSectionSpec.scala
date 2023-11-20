@@ -57,7 +57,7 @@ class FlowSectionSpec extends StreamSpec(FlowSectionSpec.config) {
     }
 
     "include name in toString" in {
-      pending //FIXME: Flow has no simple toString anymore
+      pending // FIXME: Flow has no simple toString anymore
       val n = "Uppercase reverser"
       val f1 = Flow[String].map(_.toLowerCase)
       val f2 = Flow[String].map(_.toUpperCase).map(_.reverse).named(n).map(_.toLowerCase)

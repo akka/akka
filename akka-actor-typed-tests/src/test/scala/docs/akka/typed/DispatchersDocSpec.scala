@@ -42,7 +42,7 @@ object DispatchersDocSpec {
   val yourBehavior: Behavior[String] = Behaviors.same
 
   val example = Behaviors.receive[Any] { (context, _) =>
-    //#spawn-dispatcher
+    // #spawn-dispatcher
     import akka.actor.typed.DispatcherSelector
 
     context.spawn(yourBehavior, "DefaultDispatcher")
@@ -50,7 +50,7 @@ object DispatchersDocSpec {
     context.spawn(yourBehavior, "BlockingDispatcher", DispatcherSelector.blocking())
     context.spawn(yourBehavior, "ParentDispatcher", DispatcherSelector.sameAsParent())
     context.spawn(yourBehavior, "DispatcherFromConfig", DispatcherSelector.fromConfig("your-dispatcher"))
-    //#spawn-dispatcher
+    // #spawn-dispatcher
 
     Behaviors.same
   }

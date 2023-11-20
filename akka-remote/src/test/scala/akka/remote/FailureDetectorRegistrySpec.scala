@@ -42,15 +42,14 @@ class FailureDetectorRegistrySpec extends AkkaSpec("akka.loglevel = INFO") {
       acceptableLostDuration: FiniteDuration = Duration.Zero,
       firstHeartbeatEstimate: FiniteDuration = 1.second,
       clock: Clock = FailureDetector.defaultClock): FailureDetectorRegistry[String] = {
-    new DefaultFailureDetectorRegistry[String](
-      () =>
-        createFailureDetector(
-          threshold,
-          maxSampleSize,
-          minStdDeviation,
-          acceptableLostDuration,
-          firstHeartbeatEstimate,
-          clock))
+    new DefaultFailureDetectorRegistry[String](() =>
+      createFailureDetector(
+        threshold,
+        maxSampleSize,
+        minStdDeviation,
+        acceptableLostDuration,
+        firstHeartbeatEstimate,
+        clock))
   }
 
   "mark node as available after a series of successful heartbeats" in {
@@ -68,13 +67,13 @@ class FailureDetectorRegistrySpec extends AkkaSpec("akka.loglevel = INFO") {
     val timeInterval = List[Long](0, 1000, 100, 100, 4000, 3000)
     val fd = createFailureDetectorRegistry(threshold = 3, clock = fakeTimeGenerator(timeInterval))
 
-    fd.heartbeat("resource1") //0
-    fd.heartbeat("resource1") //1000
-    fd.heartbeat("resource1") //1100
+    fd.heartbeat("resource1") // 0
+    fd.heartbeat("resource1") // 1000
+    fd.heartbeat("resource1") // 1100
 
-    fd.isAvailable("resource1") should ===(true) //1200
-    fd.heartbeat("resource2") //5200, but unrelated resource
-    fd.isAvailable("resource1") should ===(false) //8200
+    fd.isAvailable("resource1") should ===(true) // 1200
+    fd.heartbeat("resource2") // 5200, but unrelated resource
+    fd.isAvailable("resource1") should ===(false) // 8200
   }
 
   "accept some configured missing heartbeats" in {
@@ -123,25 +122,25 @@ class FailureDetectorRegistrySpec extends AkkaSpec("akka.loglevel = INFO") {
     val fd = createFailureDetectorRegistry(clock = fakeTimeGenerator(timeInterval))
     fd.isMonitoring("resource1") should ===(false)
 
-    fd.heartbeat("resource1") //0
+    fd.heartbeat("resource1") // 0
 
-    fd.heartbeat("resource1") //1000
-    fd.heartbeat("resource1") //1100
+    fd.heartbeat("resource1") // 1000
+    fd.heartbeat("resource1") // 1100
 
-    fd.isAvailable("resource1") should ===(true) //2200
+    fd.isAvailable("resource1") should ===(true) // 2200
     fd.isMonitoring("resource1") should ===(true)
 
     fd.remove("resource1")
 
     fd.isMonitoring("resource1") should ===(false)
-    fd.isAvailable("resource1") should ===(true) //3300
+    fd.isAvailable("resource1") should ===(true) // 3300
 
     // it receives heartbeat from an explicitly removed node
-    fd.heartbeat("resource1") //4400
-    fd.heartbeat("resource1") //5500
-    fd.heartbeat("resource1") //6600
+    fd.heartbeat("resource1") // 4400
+    fd.heartbeat("resource1") // 5500
+    fd.heartbeat("resource1") // 6600
 
-    fd.isAvailable("resource1") should ===(true) //6700
+    fd.isAvailable("resource1") should ===(true) // 6700
     fd.isMonitoring("resource1") should ===(true)
   }
 

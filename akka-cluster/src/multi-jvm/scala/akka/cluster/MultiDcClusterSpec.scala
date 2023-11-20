@@ -19,9 +19,12 @@ class MultiDcSpecConfig(crossDcConnections: Int = 5) extends MultiNodeConfig {
   val fourth = role("fourth")
   val fifth = role("fifth")
 
-  commonConfig(ConfigFactory.parseString(s"""
+  commonConfig(
+    ConfigFactory
+      .parseString(s"""
       akka.cluster.multi-data-center.cross-data-center-connections = $crossDcConnections
-    """).withFallback(MultiNodeClusterSpec.clusterConfig))
+    """)
+      .withFallback(MultiNodeClusterSpec.clusterConfig))
 
   nodeConfig(first, second)(ConfigFactory.parseString("""
       akka.cluster.multi-data-center.self-data-center = "dc1"

@@ -16,8 +16,8 @@ object SnapshotDirectoryFailureSpec {
 
     override def persistenceId: String = name
 
-    override def receiveRecover: Receive = {
-      case SnapshotOffer(md, s) => probe ! ((md, s))
+    override def receiveRecover: Receive = { case SnapshotOffer(md, s) =>
+      probe ! ((md, s))
     }
 
     override def receiveCommand = {

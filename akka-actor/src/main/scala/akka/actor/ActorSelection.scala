@@ -95,7 +95,6 @@ abstract class ActorSelection extends Serializable {
    * if such an actor exists. It is completed with failure [[ActorNotFound]] if
    * no such actor exists or the identification didn't complete within the
    * supplied `timeout`.
-   *
    */
   def resolveOne(timeout: java.time.Duration): CompletionStage[ActorRef] = {
     import JavaDurationConverters._
@@ -112,14 +111,10 @@ abstract class ActorSelection extends Serializable {
     builder.toString
   }
 
-  /**
-   * The [[akka.actor.ActorPath]] of the anchor actor.
-   */
+  /** The [[akka.actor.ActorPath]] of the anchor actor. */
   def anchorPath: ActorPath = anchor.path
 
-  /**
-   * String representation of the path elements, starting with "/" and separated with "/".
-   */
+  /** String representation of the path elements, starting with "/" and separated with "/". */
   def pathString: String = path.mkString("/", "/", "")
 
   /**
@@ -161,7 +156,7 @@ abstract class ActorSelection extends Serializable {
  * allowing for broadcasting of messages to that section.
  */
 object ActorSelection {
-  //This cast is safe because the self-type of ActorSelection requires that it mixes in ScalaActorSelection
+  // This cast is safe because the self-type of ActorSelection requires that it mixes in ScalaActorSelection
   implicit def toScala(sel: ActorSelection): ScalaActorSelection = sel.asInstanceOf[ScalaActorSelection]
 
   /**
@@ -297,33 +292,25 @@ private[akka] final case class ActorSelectionMessage(
   override def message: Any = msg
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @nowarn("msg=@SerialVersionUID has no effect on traits")
 @SerialVersionUID(1L)
 private[akka] sealed trait SelectionPathElement
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @SerialVersionUID(2L)
 private[akka] final case class SelectChildName(name: String) extends SelectionPathElement {
   override def toString: String = name
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @SerialVersionUID(2L)
 private[akka] final case class SelectChildPattern(patternStr: String) extends SelectionPathElement {
   val pattern: Pattern = Helpers.makePattern(patternStr)
   override def toString: String = patternStr
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @SerialVersionUID(2L)
 private[akka] case object SelectParent extends SelectionPathElement {
   override def toString: String = ".."

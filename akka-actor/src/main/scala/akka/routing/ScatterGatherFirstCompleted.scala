@@ -37,9 +37,7 @@ final case class ScatterGatherFirstCompletedRoutingLogic(within: FiniteDuration)
     ScatterGatherFirstCompletedRoutees(routees, within)
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @SerialVersionUID(1L)
 private[akka] final case class ScatterGatherFirstCompletedRoutees(
     routees: immutable.IndexedSeq[Routee],
@@ -138,15 +136,11 @@ final case class ScatterGatherFirstCompletedPool(
 
   override def nrOfInstances(sys: ActorSystem) = this.nrOfInstances
 
-  /**
-   * Setting the supervisor strategy to be used for the “head” Router actor.
-   */
+  /** Setting the supervisor strategy to be used for the “head” Router actor. */
   def withSupervisorStrategy(strategy: SupervisorStrategy): ScatterGatherFirstCompletedPool =
     copy(supervisorStrategy = strategy)
 
-  /**
-   * Setting the resizer to be used.
-   */
+  /** Setting the resizer to be used. */
   def withResizer(resizer: Resizer): ScatterGatherFirstCompletedPool = copy(resizer = Some(resizer))
 
   /**

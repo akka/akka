@@ -60,38 +60,35 @@ class DeadLetterListener extends Actor {
         case _                               => receiveWithMaxCountLogging
       }
 
-  private def receiveWithAlwaysLogging: Receive = {
-    case d: AllDeadLetters =>
-      if (!isWrappedSuppressed(d)) {
-        incrementCount()
-        logDeadLetter(d, doneMsg = "")
-      }
+  private def receiveWithAlwaysLogging: Receive = { case d: AllDeadLetters =>
+    if (!isWrappedSuppressed(d)) {
+      incrementCount()
+      logDeadLetter(d, doneMsg = "")
+    }
   }
 
-  private def receiveWithMaxCountLogging: Receive = {
-    case d: AllDeadLetters =>
-      if (!isWrappedSuppressed(d)) {
-        incrementCount()
-        if (count == maxCount) {
-          logDeadLetter(d, ", no more dead letters will be logged")
-          context.stop(self)
-        } else {
-          logDeadLetter(d, "")
-        }
+  private def receiveWithMaxCountLogging: Receive = { case d: AllDeadLetters =>
+    if (!isWrappedSuppressed(d)) {
+      incrementCount()
+      if (count == maxCount) {
+        logDeadLetter(d, ", no more dead letters will be logged")
+        context.stop(self)
+      } else {
+        logDeadLetter(d, "")
       }
+    }
   }
 
-  private def receiveWithSuspendLogging(suspendDuration: FiniteDuration): Receive = {
-    case d: AllDeadLetters =>
-      if (!isWrappedSuppressed(d)) {
-        incrementCount()
-        if (count == maxCount) {
-          val doneMsg = s", no more dead letters will be logged in next [${suspendDuration.pretty}]"
-          logDeadLetter(d, doneMsg)
-          context.become(receiveWhenSuspended(suspendDuration, Deadline.now + suspendDuration))
-        } else
-          logDeadLetter(d, "")
-      }
+  private def receiveWithSuspendLogging(suspendDuration: FiniteDuration): Receive = { case d: AllDeadLetters =>
+    if (!isWrappedSuppressed(d)) {
+      incrementCount()
+      if (count == maxCount) {
+        val doneMsg = s", no more dead letters will be logged in next [${suspendDuration.pretty}]"
+        logDeadLetter(d, doneMsg)
+        context.become(receiveWhenSuspended(suspendDuration, Deadline.now + suspendDuration))
+      } else
+        logDeadLetter(d, "")
+    }
   }
 
   private def receiveWhenSuspended(suspendDuration: FiniteDuration, suspendDeadline: Deadline): Receive = {

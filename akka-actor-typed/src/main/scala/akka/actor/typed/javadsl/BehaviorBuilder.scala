@@ -31,9 +31,7 @@ import akka.util.OptionVal
  */
 final class BehaviorBuilder[T] private (messageHandlers: List[Case[T, T]], signalHandlers: List[Case[T, Signal]]) {
 
-  /**
-   * Build a Behavior from the current state of the builder
-   */
+  /** Build a Behavior from the current state of the builder */
   def build(): Behavior[T] = {
     new BuiltBehavior[T](messageHandlers.reverse.toArray, signalHandlers.reverse.toArray)
   }
@@ -167,9 +165,7 @@ object BehaviorBuilder {
       test: OptionVal[MT => Boolean],
       handler: JFunction[MT, Behavior[BT]])
 
-  /**
-   * @return new empty immutable behavior builder.
-   */
+  /** @return new empty immutable behavior builder. */
   // Empty param list to work around https://github.com/lampepfl/dotty/issues/10347
   def create[T]: BehaviorBuilder[T] = _empty.asInstanceOf[BehaviorBuilder[T]]
 }

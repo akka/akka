@@ -21,9 +21,7 @@ private[akka] trait ActorRefImpl[-T] extends ActorRef[T] { this: InternalRecipie
 
   final override def unsafeUpcast[U >: T @uncheckedVariance]: ActorRef[U] = this.asInstanceOf[ActorRef[U]]
 
-  /**
-   * Comparison takes path and the unique id of the actor cell into account.
-   */
+  /** Comparison takes path and the unique id of the actor cell into account. */
   final override def compareTo(other: ActorRef[_]) = {
     val x = this.path.compareTo(other.path)
     if (x == 0) if (this.path.uid < other.path.uid) -1 else if (this.path.uid == other.path.uid) 0 else 1
@@ -32,9 +30,7 @@ private[akka] trait ActorRefImpl[-T] extends ActorRef[T] { this: InternalRecipie
 
   final override def hashCode: Int = path.uid
 
-  /**
-   * Equals takes path and the unique id of the actor cell into account.
-   */
+  /** Equals takes path and the unique id of the actor cell into account. */
   final override def equals(that: Any): Boolean = that match {
     case other: ActorRef[_] => path.uid == other.path.uid && path == other.path
     case _                  => false

@@ -16,9 +16,7 @@ import akka.stream.Attributes
 import akka.stream.StreamSubscriptionTimeoutTerminationMode
 import akka.util.OptionVal
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] abstract class FanoutOutputs(
     val maxBufferSize: Int,
     val initialBufferSize: Int,
@@ -109,17 +107,13 @@ import akka.util.OptionVal
 
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object FanoutProcessorImpl {
   def props(attributes: Attributes): Props =
     Props(new FanoutProcessorImpl(attributes)).withDeploy(Deploy.local)
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] class FanoutProcessorImpl(attributes: Attributes) extends ActorProcessorImpl(attributes) {
 
   val StreamSubscriptionTimeout(timeout, timeoutMode) = attributes.mandatoryAttribute[StreamSubscriptionTimeout]
@@ -156,18 +150,17 @@ import akka.util.OptionVal
 
   initialPhase(1, running)
 
-  def subTimeoutHandling: Receive = {
-    case ActorProcessorImpl.SubscriptionTimeout =>
-      import StreamSubscriptionTimeoutTerminationMode._
-      if (!primaryOutputs.subscribed) {
-        timeoutMode match {
-          case CancelTermination =>
-            primaryInputs.cancel()
-            context.stop(self)
-          case WarnTermination =>
-            log.warning("Subscription timeout for {}", this)
-          case NoopTermination => // won't happen
-        }
+  def subTimeoutHandling: Receive = { case ActorProcessorImpl.SubscriptionTimeout =>
+    import StreamSubscriptionTimeoutTerminationMode._
+    if (!primaryOutputs.subscribed) {
+      timeoutMode match {
+        case CancelTermination =>
+          primaryInputs.cancel()
+          context.stop(self)
+        case WarnTermination =>
+          log.warning("Subscription timeout for {}", this)
+        case NoopTermination => // won't happen
       }
+    }
   }
 }

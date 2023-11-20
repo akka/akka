@@ -17,23 +17,17 @@ import com.fasterxml.jackson.databind.ser.std.StdScalarSerializer
 import akka.actor.ActorRef
 import akka.annotation.InternalApi
 
-/**
- * INTERNAL API: Adds support for serializing and deserializing [[ActorRef]].
- */
+/** INTERNAL API: Adds support for serializing and deserializing [[ActorRef]]. */
 @InternalApi private[akka] trait ActorRefModule extends JacksonModule {
   addSerializer(classOf[ActorRef], () => ActorRefSerializer.instance, () => ActorRefDeserializer.instance)
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object ActorRefSerializer {
   val instance: ActorRefSerializer = new ActorRefSerializer
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] class ActorRefSerializer
     extends StdScalarSerializer[ActorRef](classOf[ActorRef])
     with ActorSystemAccess {
@@ -43,16 +37,12 @@ import akka.annotation.InternalApi
   }
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object ActorRefDeserializer {
   val instance: ActorRefDeserializer = new ActorRefDeserializer
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] class ActorRefDeserializer
     extends StdScalarDeserializer[ActorRef](classOf[ActorRef])
     with ActorSystemAccess {

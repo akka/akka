@@ -19,9 +19,11 @@ import akka.testkit.DefaultTimeout
 class IndexSpec extends AkkaSpec with Matchers with DefaultTimeout {
   implicit val ec: ExecutionContextExecutor = system.dispatcher
   private def emptyIndex =
-    new Index[String, Int](100, new Comparator[Int] {
-      override def compare(a: Int, b: Int): Int = Integer.compare(a, b)
-    })
+    new Index[String, Int](
+      100,
+      new Comparator[Int] {
+        override def compare(a: Int, b: Int): Int = Integer.compare(a, b)
+      })
 
   private def indexWithValues = {
     val index = emptyIndex
@@ -58,11 +60,11 @@ class IndexSpec extends AkkaSpec with Matchers with DefaultTimeout {
       index.put("s1", 2)
       index.put("s2", 1)
       index.put("s2", 2)
-      //Remove value
+      // Remove value
       index.remove("s1", 1) should ===(true)
       index.remove("s1", 1) should ===(false)
       index.valueIterator("s1").toSet should ===(Set(2))
-      //Remove key
+      // Remove key
       index.remove("s2") match {
         case Some(iter) => iter.toSet should ===(Set(1, 2))
         case None       => fail()
@@ -101,16 +103,18 @@ class IndexSpec extends AkkaSpec with Matchers with DefaultTimeout {
       index.isEmpty should ===(true)
     }
     "be able to be accessed in parallel" in {
-      val index = new Index[Int, Int](100, new Comparator[Int] {
-        override def compare(a: Int, b: Int): Int = Integer.compare(a, b)
-      })
+      val index = new Index[Int, Int](
+        100,
+        new Comparator[Int] {
+          override def compare(a: Int, b: Int): Int = Integer.compare(a, b)
+        })
       val nrOfTasks = 10000
       val nrOfKeys = 10
       val nrOfValues = 10
-      //Fill index
+      // Fill index
       for (key <- 0 until nrOfKeys; value <- 0 until nrOfValues)
         index.put(key, value)
-      //Tasks to be executed in parallel
+      // Tasks to be executed in parallel
       def putTask() = Future {
         index.put(Random.nextInt(nrOfKeys), Random.nextInt(nrOfValues))
       }

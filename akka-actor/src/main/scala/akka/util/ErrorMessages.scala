@@ -4,9 +4,7 @@
 
 package akka.util
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[akka] object ErrorMessages {
   val RemoteDeploymentConfigErrorPrefix = "configuration requested remote deployment"
 }

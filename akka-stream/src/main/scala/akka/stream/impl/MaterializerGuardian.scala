@@ -35,9 +35,7 @@ private[akka] object MaterializerGuardian {
     Props(new MaterializerGuardian(systemMaterializer, materializerSettings))
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @nowarn("msg=deprecated")
 @InternalApi
 private[akka] final class MaterializerGuardian(

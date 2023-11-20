@@ -36,10 +36,13 @@ object EventSourcedBehaviorTestKit {
    * constructor parameter to `ScalaTestWithActorTestKit`. The configuration enables the in-memory
    * journal and snapshot storage.
    */
-  val config: Config = ConfigFactory.parseString("""
+  val config: Config = ConfigFactory
+    .parseString("""
     akka.persistence.testkit.events.serialize = off
     akka.persistence.testkit.snapshots.serialize = off
-    """).withFallback(PersistenceTestKitPlugin.config).withFallback(PersistenceTestKitSnapshotPlugin.config)
+    """)
+    .withFallback(PersistenceTestKitPlugin.config)
+    .withFallback(PersistenceTestKitSnapshotPlugin.config)
 
   object SerializationSettings {
     val enabled: SerializationSettings = new SerializationSettings(
@@ -93,9 +96,7 @@ object EventSourcedBehaviorTestKit {
     }
   }
 
-  /**
-   * Factory method to create a new EventSourcedBehaviorTestKit.
-   */
+  /** Factory method to create a new EventSourcedBehaviorTestKit. */
   def apply[Command, Event, State](
       system: ActorSystem[_],
       behavior: Behavior[Command]): EventSourcedBehaviorTestKit[Command, Event, State] =
@@ -113,14 +114,10 @@ object EventSourcedBehaviorTestKit {
       serializationSettings: SerializationSettings): EventSourcedBehaviorTestKit[Command, Event, State] =
     new EventSourcedBehaviorTestKitImpl(ActorTestKit(system), behavior, serializationSettings)
 
-  /**
-   * The result of running a command.
-   */
+  /** The result of running a command. */
   @DoNotInherit trait CommandResult[Command, Event, State] {
 
-    /**
-     * The command that was run.
-     */
+    /** The command that was run. */
     def command: Command
 
     /**
@@ -130,14 +127,10 @@ object EventSourcedBehaviorTestKit {
      */
     def events: immutable.Seq[Event]
 
-    /**
-     * `true` if no events were emitted by the command.
-     */
+    /** `true` if no events were emitted by the command. */
     def hasNoEvents: Boolean
 
-    /**
-     * The first event. It will throw `AssertionError` if there is no event.
-     */
+    /** The first event. It will throw `AssertionError` if there is no event. */
     def event: Event
 
     /**
@@ -146,14 +139,10 @@ object EventSourcedBehaviorTestKit {
      */
     def eventOfType[E <: Event: ClassTag]: E
 
-    /**
-     * The state after applying the events.
-     */
+    /** The state after applying the events. */
     def state: State
 
-    /**
-     * The state as a given expected type. It will throw `AssertionError` if the state is of a different type.
-     */
+    /** The state as a given expected type. It will throw `AssertionError` if the state is of a different type. */
     def stateOfType[S <: State: ClassTag]: S
   }
 
@@ -164,9 +153,7 @@ object EventSourcedBehaviorTestKit {
   @DoNotInherit trait CommandResultWithReply[Command, Event, State, Reply]
       extends CommandResult[Command, Event, State] {
 
-    /**
-     * The reply. It will throw `AssertionError` if there was no reply.
-     */
+    /** The reply. It will throw `AssertionError` if there was no reply. */
     def reply: Reply
 
     /**
@@ -175,21 +162,15 @@ object EventSourcedBehaviorTestKit {
      */
     def replyOfType[R <: Reply: ClassTag]: R
 
-    /**
-     * `true` if there is no reply.
-     */
+    /** `true` if there is no reply. */
     def hasNoReply: Boolean
 
   }
 
-  /**
-   * The result of restarting the behavior.
-   */
+  /** The result of restarting the behavior. */
   @DoNotInherit trait RestartResult[State] {
 
-    /**
-     * The state after recovery.
-     */
+    /** The state after recovery. */
     def state: State
   }
 
@@ -212,9 +193,7 @@ object EventSourcedBehaviorTestKit {
    */
   def runCommand[R](creator: ActorRef[R] => Command): CommandResultWithReply[Command, Event, State, R]
 
-  /**
-   * Retrieve the current state of the Behavior.
-   */
+  /** Retrieve the current state of the Behavior. */
   def getState(): State
 
   /**
@@ -223,9 +202,7 @@ object EventSourcedBehaviorTestKit {
    */
   def restart(): RestartResult[State]
 
-  /**
-   * Clears the in-memory journal and snapshot storage and restarts the behavior.
-   */
+  /** Clears the in-memory journal and snapshot storage and restarts the behavior. */
   def clear(): Unit
 
   /**
@@ -242,9 +219,7 @@ object EventSourcedBehaviorTestKit {
    */
   def snapshotTestKit: Option[SnapshotTestKit]
 
-  /**
-   * Initializes behavior from provided state and/or events.
-   */
+  /** Initializes behavior from provided state and/or events. */
   def initialize(state: State, events: Event*): Unit
   def initialize(events: Event*): Unit
 }

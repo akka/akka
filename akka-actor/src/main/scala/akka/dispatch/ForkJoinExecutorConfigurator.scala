@@ -10,9 +10,7 @@ import com.typesafe.config.Config
 
 object ForkJoinExecutorConfigurator {
 
-  /**
-   * INTERNAL AKKA USAGE ONLY
-   */
+  /** INTERNAL AKKA USAGE ONLY */
   final class AkkaForkJoinPool(
       parallelism: Int,
       threadFactory: ForkJoinPool.ForkJoinWorkerThreadFactory,
@@ -36,9 +34,7 @@ object ForkJoinExecutorConfigurator {
     def atFullThrottle(): Boolean = this.getActiveThreadCount() >= this.getParallelism()
   }
 
-  /**
-   * INTERNAL AKKA USAGE ONLY
-   */
+  /** INTERNAL AKKA USAGE ONLY */
   @SerialVersionUID(1L)
   final class AkkaForkJoinTask(runnable: Runnable) extends ForkJoinTask[Unit] {
     override def getRawResult(): Unit = ()

@@ -20,9 +20,7 @@ private[dns] object ResolvConfParser {
   private val OptionsLabel = "options"
   private val NdotsOption = "ndots:"
 
-  /**
-   * Does a partial parse according to https://linux.die.net/man/5/resolver.
-   */
+  /** Does a partial parse according to https://linux.die.net/man/5/resolver. */
   def parseFile(file: File): Try[ResolvConf] = {
     Try {
       parseLines(Files.lines(file.toPath).iterator().asScala)

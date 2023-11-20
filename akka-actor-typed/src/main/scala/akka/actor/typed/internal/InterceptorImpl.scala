@@ -95,7 +95,8 @@ private[akka] final class InterceptorImpl[O, I](
 
   private def deduplicate(interceptedResult: Behavior[I], ctx: TypedActorContext[O]): Behavior[O] = {
     val started = Behavior.start(interceptedResult, ctx.asInstanceOf[TypedActorContext[I]])
-    if (started == BehaviorImpl.UnhandledBehavior || started == BehaviorImpl.SameBehavior || !Behavior.isAlive(started)) {
+    if (started == BehaviorImpl.UnhandledBehavior || started == BehaviorImpl.SameBehavior || !Behavior.isAlive(
+        started)) {
       started.unsafeCast[O]
     } else {
       // returned behavior could be nested in setups, so we need to start before we deduplicate
@@ -137,9 +138,7 @@ private[akka] final case class MonitorInterceptor[T: ClassTag](actorRef: ActorRe
 
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object LogMessagesInterceptor {
   def apply[T](opts: LogOptions): BehaviorInterceptor[T, T] = {
     new LogMessagesInterceptor(opts).asInstanceOf[BehaviorInterceptor[T, T]]
@@ -192,9 +191,7 @@ private[akka] final class LogMessagesInterceptor(val opts: LogOptions) extends B
   }
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] object TransformMessagesInterceptor {
 
@@ -203,9 +200,7 @@ private[akka] object TransformMessagesInterceptor {
   private final def any2NotMatchIndicator[T] = _any2NotMatchIndicator.asInstanceOf[Any => T]
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] final case class TransformMessagesInterceptor[O: ClassTag, I](matcher: PartialFunction[O, I])
     extends BehaviorInterceptor[O, I] {

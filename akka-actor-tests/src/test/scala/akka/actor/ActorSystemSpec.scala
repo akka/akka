@@ -34,10 +34,10 @@ object ActorSystemSpec {
       case n: Int =>
         master = sender()
         terminaters = Set() ++ (for (_ <- 1 to n) yield {
-            val man = context.watch(context.system.actorOf(Props[Terminater]()))
-            man ! "run"
-            man
-          })
+          val man = context.watch(context.system.actorOf(Props[Terminater]()))
+          man ! "run"
+          man
+        })
       case Terminated(child) if terminaters contains child =>
         terminaters -= child
         if (terminaters.isEmpty) {
@@ -55,14 +55,14 @@ object ActorSystemSpec {
   }
 
   class Terminater extends Actor {
-    def receive = {
-      case "run" => context.stop(self)
+    def receive = { case "run" =>
+      context.stop(self)
     }
   }
 
   class Strategy extends SupervisorStrategyConfigurator {
-    def create() = OneForOneStrategy() {
-      case _ => SupervisorStrategy.Escalate
+    def create() = OneForOneStrategy() { case _ =>
+      SupervisorStrategy.Escalate
     }
   }
 
@@ -72,8 +72,7 @@ object ActorSystemSpec {
     context.actorSelection(ref1.path.toString).tell(Identify(ref1), testActor)
     latch.countDown()
 
-    def receive = {
-      case _ =>
+    def receive = { case _ =>
     }
   }
 
@@ -103,9 +102,7 @@ object ActorSystemSpec {
       }
     }
 
-    /**
-     * Returns the same dispatcher instance for each invocation
-     */
+    /** Returns the same dispatcher instance for each invocation */
     override def dispatcher(): MessageDispatcher = instance
   }
 
@@ -125,15 +122,15 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
 
     "reject common invalid names" in {
       for (n <- Seq(
-             "-hallowelt",
-             "_hallowelt",
-             "hallo welt",
-             "hallo*welt",
-             "hallo@welt",
-             "hallo#welt",
-             "hallo$welt",
-             "hallo%welt",
-             "hallo/welt")) intercept[IllegalArgumentException] {
+          "-hallowelt",
+          "_hallowelt",
+          "hallo welt",
+          "hallo*welt",
+          "hallo@welt",
+          "hallo#welt",
+          "hallo$welt",
+          "hallo%welt",
+          "hallo/welt")) intercept[IllegalArgumentException] {
         ActorSystem(n)
       }
     }
@@ -330,8 +327,8 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
             .parseString("akka.actor.guardian-supervisor-strategy=akka.actor.StoppingSupervisorStrategy")
             .withFallback(AkkaSpec.testConf))
       val a = system.actorOf(Props(new Actor {
-        def receive = {
-          case "die" => throw new Exception("hello")
+        def receive = { case "die" =>
+          throw new Exception("hello")
         }
       }))
       val probe = TestProbe()
@@ -353,8 +350,8 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
             .parseString("akka.actor.guardian-supervisor-strategy=\"akka.actor.ActorSystemSpec$Strategy\"")
             .withFallback(AkkaSpec.testConf))
       val a = system.actorOf(Props(new Actor {
-        def receive = {
-          case "die" => throw new Exception("hello")
+        def receive = { case "die" =>
+          throw new Exception("hello")
         }
       }))
       EventFilter[Exception]("hello").intercept {

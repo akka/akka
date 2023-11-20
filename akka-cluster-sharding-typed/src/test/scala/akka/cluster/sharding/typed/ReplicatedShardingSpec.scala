@@ -39,27 +39,37 @@ import akka.util.ccompat._
 
 @ccompatUsedUntil213
 object ReplicatedShardingSpec {
-  def commonConfig = ConfigFactory.parseString("""
+  def commonConfig = ConfigFactory
+    .parseString("""
       akka.loglevel = DEBUG
       akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
       akka.actor.provider = "cluster"
-      akka.remote.artery.canonical.port = 0""").withFallback(PersistenceTestKitPlugin.config)
+      akka.remote.artery.canonical.port = 0""")
+    .withFallback(PersistenceTestKitPlugin.config)
 
-  def roleAConfig = ConfigFactory.parseString("""
+  def roleAConfig = ConfigFactory
+    .parseString("""
             akka.cluster.roles = ["DC-A"]
-            """.stripMargin).withFallback(commonConfig)
+            """.stripMargin)
+    .withFallback(commonConfig)
 
-  def roleBConfig = ConfigFactory.parseString("""
+  def roleBConfig = ConfigFactory
+    .parseString("""
             akka.cluster.roles = ["DC-B"]
-            """.stripMargin).withFallback(commonConfig)
+            """.stripMargin)
+    .withFallback(commonConfig)
 
-  def dcAConfig = ConfigFactory.parseString("""
+  def dcAConfig = ConfigFactory
+    .parseString("""
       akka.cluster.multi-data-center.self-data-center = "DC-A"
-      """).withFallback(commonConfig)
+      """)
+    .withFallback(commonConfig)
 
-  def dcBConfig = ConfigFactory.parseString("""
+  def dcBConfig = ConfigFactory
+    .parseString("""
       akka.cluster.multi-data-center.self-data-center = "DC-B"
-      """).withFallback(commonConfig)
+      """)
+    .withFallback(commonConfig)
 
   sealed trait ReplicationType
   case object Role extends ReplicationType
@@ -186,10 +196,9 @@ object ProxyActor {
         case ForwardToAllString(entityId, cmd) =>
           val entityRefs = replicatedShardingStringSet.entityRefsFor(entityId)
           ctx.log.infoN("Entity refs {}", entityRefs)
-          entityRefs.foreach {
-            case (replica, ref) =>
-              ctx.log.infoN("Forwarding to replica {} ref {}", replica, ref)
-              ref ! cmd
+          entityRefs.foreach { case (replica, ref) =>
+            ctx.log.infoN("Forwarding to replica {} ref {}", replica, ref)
+            ref ! cmd
           }
           Behaviors.same
         case ForwardToRandomString(entityId, cmd) =>
@@ -200,8 +209,8 @@ object ProxyActor {
           chosen ! cmd
           Behaviors.same
         case ForwardToAllInt(entityId, cmd) =>
-          replicatedShardingIntSet.entityRefsFor(entityId).foreach {
-            case (_, ref) => ref ! cmd
+          replicatedShardingIntSet.entityRefsFor(entityId).foreach { case (_, ref) =>
+            ref ! cmd
           }
           Behaviors.same
         case ForwardToRandomInt(entityId, cmd) =>

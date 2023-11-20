@@ -15,14 +15,10 @@ import akka.util.Timeout
  */
 trait FutureRef[T] {
 
-  /**
-   * ActorRef associated with this FutureRef.
-   */
+  /** ActorRef associated with this FutureRef. */
   def ref: ActorRef
 
-  /**
-   * Future associated with this FutureRef.
-   */
+  /** Future associated with this FutureRef. */
   def future: Future[T]
 }
 
@@ -32,32 +28,22 @@ trait FutureRef[T] {
  */
 trait PromiseRef[T] { this: FutureRef[T] =>
 
-  /**
-   * ActorRef associated with this PromiseRef.
-   */
+  /** ActorRef associated with this PromiseRef. */
   def ref: ActorRef
 
-  /**
-   * Promise associated with this PromiseRef.
-   */
+  /** Promise associated with this PromiseRef. */
   def promise: Promise[T]
 
-  /**
-   * Future containing the value of the Promise associated with this PromiseRef.
-   */
+  /** Future containing the value of the Promise associated with this PromiseRef. */
   final def future = promise.future
 
-  /**
-   * Converts this PromiseRef to FutureRef, effectively narrowing it's API.
-   */
+  /** Converts this PromiseRef to FutureRef, effectively narrowing it's API. */
   def toFutureRef: FutureRef[T]
 }
 
 object PromiseRef {
 
-  /**
-   * Wraps an ActorRef and a Promise into a PromiseRef.
-   */
+  /** Wraps an ActorRef and a Promise into a PromiseRef. */
   private[akka] def wrap[T](actorRef: ActorRef, promise: Promise[T]): PromiseRef[T] = {
     new PromiseRefImpl(actorRef, promise)
   }
@@ -99,9 +85,7 @@ object PromiseRef {
 
 object FutureRef {
 
-  /**
-   * Wraps an ActorRef and a Future into a FutureRef.
-   */
+  /** Wraps an ActorRef and a Future into a FutureRef. */
   private[akka] def wrap[T](actorRef: ActorRef, future: Future[T]): FutureRef[T] = {
     new FutureRefImpl(actorRef, future)
   }

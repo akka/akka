@@ -58,34 +58,33 @@ object StreamRefSpec extends MultiNodeConfig {
     import context.dispatcher
     implicit val mat: Materializer = Materializer(context)
 
-    def receive = {
-      case RequestLogs(streamId) =>
-        // materialize the SourceRef:
-        val (done: Future[Done], ref: SourceRef[String]) =
-          Source
-            .fromIterator(() => Iterator.from(1))
-            .map(n => s"elem-$n")
-            .watchTermination()(Keep.right)
-            .toMat(StreamRefs.sourceRef())(Keep.both)
-            .mapMaterializedValue { m =>
-              streamLifecycleProbe ! s"started-$streamId"
-              m
-            }
-            .run()
+    def receive = { case RequestLogs(streamId) =>
+      // materialize the SourceRef:
+      val (done: Future[Done], ref: SourceRef[String]) =
+        Source
+          .fromIterator(() => Iterator.from(1))
+          .map(n => s"elem-$n")
+          .watchTermination()(Keep.right)
+          .toMat(StreamRefs.sourceRef())(Keep.both)
+          .mapMaterializedValue { m =>
+            streamLifecycleProbe ! s"started-$streamId"
+            m
+          }
+          .run()
 
-        done.onComplete {
-          case Success(_) =>
-            streamLifecycleProbe ! s"completed-$streamId"
-          case Failure(ex) =>
-            log.info("Source stream completed with failure: {}", ex)
-            streamLifecycleProbe ! s"failed-$streamId"
-        }
+      done.onComplete {
+        case Success(_) =>
+          streamLifecycleProbe ! s"completed-$streamId"
+        case Failure(ex) =>
+          log.info("Source stream completed with failure: {}", ex)
+          streamLifecycleProbe ! s"failed-$streamId"
+      }
 
-        // wrap the SourceRef in some domain message, such that the sender knows what source it is
-        val reply = LogsOffer(streamId, ref)
+      // wrap the SourceRef in some domain message, such that the sender knows what source it is
+      val reply = LogsOffer(streamId, ref)
 
-        // reply to sender
-        sender() ! reply
+      // reply to sender
+      sender() ! reply
     }
 
   }
@@ -104,32 +103,31 @@ object StreamRefSpec extends MultiNodeConfig {
     import context.dispatcher
     implicit val mat: Materializer = Materializer(context)
 
-    def receive = {
-      case PrepareUpload(nodeId) =>
-        // materialize the SinkRef (the remote is like a source of data for us):
-        val (ref: SinkRef[String], done: Future[Done]) =
-          StreamRefs
-            .sinkRef[String]()
-            .throttle(1, 1.second)
-            .toMat(Sink.ignore)(Keep.both)
-            .mapMaterializedValue { m =>
-              streamLifecycleProbe ! s"started-$nodeId"
-              m
-            }
-            .run()
+    def receive = { case PrepareUpload(nodeId) =>
+      // materialize the SinkRef (the remote is like a source of data for us):
+      val (ref: SinkRef[String], done: Future[Done]) =
+        StreamRefs
+          .sinkRef[String]()
+          .throttle(1, 1.second)
+          .toMat(Sink.ignore)(Keep.both)
+          .mapMaterializedValue { m =>
+            streamLifecycleProbe ! s"started-$nodeId"
+            m
+          }
+          .run()
 
-        done.onComplete {
-          case Success(_) => streamLifecycleProbe ! s"completed-$nodeId"
-          case Failure(ex) =>
-            log.info("Sink stream completed with failure: {}", ex)
-            streamLifecycleProbe ! s"failed-$nodeId"
-        }
+      done.onComplete {
+        case Success(_) => streamLifecycleProbe ! s"completed-$nodeId"
+        case Failure(ex) =>
+          log.info("Sink stream completed with failure: {}", ex)
+          streamLifecycleProbe ! s"failed-$nodeId"
+      }
 
-        // wrap the SinkRef in some domain message, such that the sender knows what source it is
-        val reply = MeasurementsSinkReady(nodeId, ref)
+      // wrap the SinkRef in some domain message, such that the sender knows what source it is
+      val reply = MeasurementsSinkReady(nodeId, ref)
 
-        // reply to sender
-        sender() ! reply
+      // reply to sender
+      sender() ! reply
     }
 
   }
@@ -255,8 +253,8 @@ abstract class StreamRefSpec extends MultiNodeClusterSpec(StreamRefSpec) with Im
         // and it triggered the subscription timeout. Therefore we must wait more than the
         // the subscription timeout for a failure
         val timeout = system.settings.config
-            .getDuration("akka.stream.materializer.stream-ref.subscription-timeout")
-            .asScala + 2.seconds
+          .getDuration("akka.stream.materializer.stream-ref.subscription-timeout")
+          .asScala + 2.seconds
         streamLifecycle3.expectMsg(timeout, "failed-system-42-tmp")
       }
 

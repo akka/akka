@@ -31,7 +31,7 @@ trait EventAdapter extends WriteEventAdapter with ReadEventAdapter
  * </ul>
  */
 trait WriteEventAdapter {
-  //#event-adapter-api
+  // #event-adapter-api
   /**
    * Return the manifest (type hint) that will be provided in the `fromJournal` method.
    * Use `""` if manifest is not needed.
@@ -52,7 +52,7 @@ trait WriteEventAdapter {
    * @return the adapted event object, possibly the same object if no adaptation was performed
    */
   def toJournal(event: Any): Any
-  //#event-adapter-api
+  // #event-adapter-api
 }
 
 /**
@@ -66,7 +66,7 @@ trait WriteEventAdapter {
  * </ul>
  */
 trait ReadEventAdapter {
-  //#event-adapter-api
+  // #event-adapter-api
   /**
    * Convert a event from its journal model to the applications domain model.
    *
@@ -81,7 +81,7 @@ trait ReadEventAdapter {
    * @return sequence containing the adapted events (possibly zero) which will be delivered to the PersistentActor
    */
   def fromJournal(event: Any, manifest: String): EventSeq
-  //#event-adapter-api
+  // #event-adapter-api
 }
 
 sealed abstract class EventSeq {

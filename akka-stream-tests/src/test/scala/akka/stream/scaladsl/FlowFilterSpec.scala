@@ -16,9 +16,11 @@ import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.testkit.scaladsl.TestSource
 
-class FlowFilterSpec extends StreamSpec("""
+class FlowFilterSpec
+    extends StreamSpec("""
     akka.stream.materializer.initial-input-buffer-size = 2
-  """) with ScriptedTest {
+  """)
+    with ScriptedTest {
 
   "A Filter" must {
 

@@ -11,26 +11,26 @@ object DispatcherDocSpec {
   val context: ActorContext[Integer] = ???
 
   {
-    //#defining-dispatcher-in-code
+    // #defining-dispatcher-in-code
     import akka.actor.typed.DispatcherSelector
     val myActor =
       context.spawn(PrintActor(), "PrintActor", DispatcherSelector.fromConfig("PrintActor"))
-    //#defining-dispatcher-in-code
+    // #defining-dispatcher-in-code
   }
 
   {
-    //#defining-fixed-pool-size-dispatcher
+    // #defining-fixed-pool-size-dispatcher
     import akka.actor.typed.DispatcherSelector
     val myActor =
       context.spawn(PrintActor(), "PrintActor", DispatcherSelector.fromConfig("blocking-io-dispatcher"))
-    //#defining-fixed-pool-size-dispatcher
+    // #defining-fixed-pool-size-dispatcher
   }
 
   {
-    //#lookup
+    // #lookup
     // for use with Futures, Scheduler, etc.
     import akka.actor.typed.DispatcherSelector
     implicit val executionContext = context.system.dispatchers.lookup(DispatcherSelector.fromConfig("my-dispatcher"))
-    //#lookup
+    // #lookup
   }
 }

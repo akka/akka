@@ -13,11 +13,11 @@ class SinkRecipeDocSpec extends RecipeSpec {
   "Sink.foreachAsync" must {
     "processing each element asynchronously" in {
       def asyncProcessing(value: Int): Future[Unit] = Future { println(value) }(system.dispatcher)
-      //#forseachAsync-processing
-      //def asyncProcessing(value: Int): Future[Unit] = _
+      // #forseachAsync-processing
+      // def asyncProcessing(value: Int): Future[Unit] = _
 
       Source(1 to 100).runWith(Sink.foreachAsync(10)(asyncProcessing))
-      //#forseachAsync-processing
+      // #forseachAsync-processing
     }
   }
 }

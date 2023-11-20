@@ -10,9 +10,7 @@ import akka.actor.typed.receptionist.ServiceKey
 import akka.annotation.InternalApi
 import akka.serialization.{ BaseSerializer, SerializerWithStringManifest }
 
-/**
- * Internal API
- */
+/** Internal API */
 @InternalApi
 final class ServiceKeySerializer(val system: akka.actor.ExtendedActorSystem)
     extends SerializerWithStringManifest

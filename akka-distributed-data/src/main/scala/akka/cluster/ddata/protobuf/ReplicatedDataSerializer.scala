@@ -256,9 +256,7 @@ private object ReplicatedDataSerializer {
 
 }
 
-/**
- * Protobuf serializer of ReplicatedData.
- */
+/** Protobuf serializer of ReplicatedData. */
 class ReplicatedDataSerializer(val system: ExtendedActorSystem)
     extends SerializerWithStringManifest
     with SerializationSupport
@@ -621,13 +619,12 @@ class ReplicatedDataSerializer(val system: ExtendedActorSystem)
 
   def gcounterToProto(gcounter: GCounter): rd.GCounter = {
     val b = rd.GCounter.newBuilder()
-    gcounter.state.toVector.sortBy { case (address, _) => address }.foreach {
-      case (address, value) =>
-        b.addEntries(
-          rd.GCounter.Entry
-            .newBuilder()
-            .setNode(uniqueAddressToProto(address))
-            .setValue(ByteStringUtils.toProtoByteStringUnsafe(value.toByteArray)))
+    gcounter.state.toVector.sortBy { case (address, _) => address }.foreach { case (address, value) =>
+      b.addEntries(
+        rd.GCounter.Entry
+          .newBuilder()
+          .setNode(uniqueAddressToProto(address))
+          .setValue(ByteStringUtils.toProtoByteStringUnsafe(value.toByteArray)))
     }
     b.build()
   }
@@ -636,10 +633,9 @@ class ReplicatedDataSerializer(val system: ExtendedActorSystem)
     gcounterFromProto(rd.GCounter.parseFrom(bytes))
 
   def gcounterFromProto(gcounter: rd.GCounter): GCounter = {
-    new GCounter(
-      state = gcounter.getEntriesList.asScala.iterator
-        .map(entry => uniqueAddressFromProto(entry.getNode) -> BigInt(entry.getValue.toByteArray))
-        .toMap)
+    new GCounter(state = gcounter.getEntriesList.asScala.iterator
+      .map(entry => uniqueAddressFromProto(entry.getNode) -> BigInt(entry.getValue.toByteArray))
+      .toMap)
   }
 
   def pncounterToProto(pncounter: PNCounter): rd.PNCounter =
@@ -669,8 +665,8 @@ class ReplicatedDataSerializer(val system: ExtendedActorSystem)
       PValue <: GeneratedMessageV3](
       input: Map[IKey, IValue],
       createBuilder: () => EntryBuilder,
-      valueConverter: IValue => PValue)(
-      implicit comparator: Comparator[PEntry],
+      valueConverter: IValue => PValue)(implicit
+      comparator: Comparator[PEntry],
       eh: ProtoMapEntryWriter[PEntry, EntryBuilder, PValue]): java.lang.Iterable[PEntry] = {
     // The resulting Iterable needs to be ordered deterministically in order to create same signature upon serializing same data
     val protoEntries = new util.TreeSet[PEntry](comparator)

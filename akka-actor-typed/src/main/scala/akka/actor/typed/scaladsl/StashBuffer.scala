@@ -8,9 +8,7 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.internal.StashBufferImpl
 import akka.annotation.{ DoNotInherit, InternalApi }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object StashBuffer {
 
   /**
@@ -62,9 +60,7 @@ import akka.annotation.{ DoNotInherit, InternalApi }
    */
   def capacity: Int
 
-  /**
-   * @return `true` if no more messages can be added, i.e. size equals the capacity of the stash buffer
-   */
+  /** @return `true` if no more messages can be added, i.e. size equals the capacity of the stash buffer */
   def isFull: Boolean
 
   /**
@@ -108,9 +104,7 @@ import akka.annotation.{ DoNotInherit, InternalApi }
    */
   def exists(predicate: T => Boolean): Boolean
 
-  /**
-   * Removes all messages from the buffer.
-   */
+  /** Removes all messages from the buffer. */
   def clear(): Unit
 
   /**
@@ -156,7 +150,5 @@ import akka.annotation.{ DoNotInherit, InternalApi }
 
 }
 
-/**
- * Is thrown when the size of the stash exceeds the capacity of the stash buffer.
- */
+/** Is thrown when the size of the stash exceeds the capacity of the stash buffer. */
 class StashOverflowException(message: String) extends RuntimeException(message)

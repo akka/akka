@@ -66,11 +66,10 @@ final class LeaseProvider(system: ExtendedActorSystem) extends Extension {
 
           // Try and load a scala implementation
           val lease: Try[Lease] =
-            loadLease[Lease](settings).recoverWith {
-              case _: ClassCastException =>
-                // Try and load a java implementation
-                loadLease[akka.coordination.lease.javadsl.Lease](settings).map(javaLease =>
-                  new LeaseAdapterToScala(javaLease)(system.dispatchers.internalDispatcher))
+            loadLease[Lease](settings).recoverWith { case _: ClassCastException =>
+              // Try and load a java implementation
+              loadLease[akka.coordination.lease.javadsl.Lease](settings).map(javaLease =>
+                new LeaseAdapterToScala(javaLease)(system.dispatchers.internalDispatcher))
             }
 
           lease match {

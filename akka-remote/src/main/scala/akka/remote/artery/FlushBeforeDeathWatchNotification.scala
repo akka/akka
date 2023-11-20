@@ -16,9 +16,7 @@ import akka.actor.ActorLogging
 import akka.actor.Props
 import akka.annotation.InternalApi
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[remote] object FlushBeforeDeathWatchNotification {
   private val nameCounter = new AtomicLong(0L)
@@ -32,9 +30,7 @@ private[remote] object FlushBeforeDeathWatchNotification {
   private case object Timeout
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[remote] class FlushBeforeDeathWatchNotification(
     done: Promise[Done],

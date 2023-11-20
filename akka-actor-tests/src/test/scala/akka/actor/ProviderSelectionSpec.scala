@@ -50,7 +50,7 @@ class ProviderSelectionSpec extends AbstractSpec {
 
     "create a Custom ProviderSelection and set custom provider fqcn in Settings" in {
       val other = "other.ActorRefProvider"
-      val ps = ProviderSelection.Custom(other) //checked by dynamicAccess
+      val ps = ProviderSelection.Custom(other) // checked by dynamicAccess
       ps.fqcn shouldEqual "other.ActorRefProvider"
       ps.hasCluster shouldBe false
       settingsWith(other).ProviderClass shouldEqual ps.fqcn

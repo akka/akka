@@ -14,9 +14,11 @@ import akka.stream.testkit.{ StreamSpec, TestSubscriber }
 import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit.WithLogCapturing
 
-class BoundedSourceQueueSpec extends StreamSpec("""akka.loglevel = debug
+class BoundedSourceQueueSpec
+    extends StreamSpec("""akka.loglevel = debug
     |akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
-    |""".stripMargin) with WithLogCapturing {
+    |""".stripMargin)
+    with WithLogCapturing {
 
   override implicit def patienceConfig: PatienceConfig = PatienceConfig(5.seconds)
 
@@ -37,8 +39,8 @@ class BoundedSourceQueueSpec extends StreamSpec("""akka.loglevel = debug
       queue.complete()
 
       val subIt = Iterator.continually(sub.requestNext())
-      subIt.zip(elements.iterator).foreach {
-        case (subEle, origEle) => subEle should be(origEle)
+      subIt.zip(elements.iterator).foreach { case (subEle, origEle) =>
+        subEle should be(origEle)
       }
       sub.expectComplete()
     }
@@ -122,7 +124,9 @@ class BoundedSourceQueueSpec extends StreamSpec("""akka.loglevel = debug
       val numThreads = Runtime.getRuntime.availableProcessors() * 4
       val stopProb = 10000 // specifies run time of test indirectly
       val expected = 1d / (1d - math.pow(1d - 1d / stopProb, numThreads))
-      log.debug(s"Expected elements per thread: $expected") // variance might be quite high depending on number of threads
+      log.debug(
+        s"Expected elements per thread: $expected"
+      ) // variance might be quite high depending on number of threads
       val startBarrier = new CountDownLatch(numThreads)
       val stopBarrier = new CountDownLatch(numThreads)
 

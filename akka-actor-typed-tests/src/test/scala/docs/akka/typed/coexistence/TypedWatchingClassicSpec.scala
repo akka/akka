@@ -21,7 +21,7 @@ import scala.concurrent.duration._
 
 object TypedWatchingClassicSpec {
 
-  //#typed
+  // #typed
   object Typed {
     final case class Ping(replyTo: akka.actor.typed.ActorRef[Pong.type])
     sealed trait Command
@@ -39,32 +39,29 @@ object TypedWatchingClassicSpec {
         classic.tell(Typed.Ping(context.self), context.self.toClassic)
 
         Behaviors
-          .receivePartial[Command] {
-            case (context, Pong) =>
-              // it's not possible to get the sender, that must be sent in message
-              // context.stop is an implicit extension method
-              context.stop(classic)
-              Behaviors.same
+          .receivePartial[Command] { case (context, Pong) =>
+            // it's not possible to get the sender, that must be sent in message
+            // context.stop is an implicit extension method
+            context.stop(classic)
+            Behaviors.same
           }
-          .receiveSignal {
-            case (_, akka.actor.typed.Terminated(_)) =>
-              Behaviors.stopped
+          .receiveSignal { case (_, akka.actor.typed.Terminated(_)) =>
+            Behaviors.stopped
           }
       }
   }
-  //#typed
+  // #typed
 
-  //#classic
+  // #classic
   object Classic {
     def props(): classic.Props = classic.Props(new Classic)
   }
   class Classic extends classic.Actor {
-    override def receive = {
-      case Typed.Ping(replyTo) =>
-        replyTo ! Typed.Pong
+    override def receive = { case Typed.Ping(replyTo) =>
+      replyTo ! Typed.Pong
     }
   }
-  //#classic
+  // #classic
 }
 
 class TypedWatchingClassicSpec extends AnyWordSpec with LogCapturing {
@@ -73,10 +70,10 @@ class TypedWatchingClassicSpec extends AnyWordSpec with LogCapturing {
 
   "Typed -> Classic" must {
     "support creating, watching and messaging" in {
-      //#create
+      // #create
       val system = classic.ActorSystem("TypedWatchingClassic")
       val typed = system.spawn(Typed.behavior, "Typed")
-      //#create
+      // #create
       val probe = TestProbe()(system)
       probe.watch(typed.toClassic)
       probe.expectTerminated(typed.toClassic, 200.millis)

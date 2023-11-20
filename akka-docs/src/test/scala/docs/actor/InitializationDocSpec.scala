@@ -10,11 +10,10 @@ import akka.testkit.{ AkkaSpec, ImplicitSender }
 object InitializationDocSpec {
 
   class PreStartInitExample extends Actor {
-    override def receive = {
-      case _ => // Ignore
+    override def receive = { case _ => // Ignore
     }
 
-    //#preStartInit
+    // #preStartInit
     override def preStart(): Unit = {
       // Initialize children here
     }
@@ -30,24 +29,23 @@ object InitializationDocSpec {
       // Keep the call to postStop(), but no stopping of children
       postStop()
     }
-    //#preStartInit
+    // #preStartInit
   }
 
   class MessageInitExample extends Actor {
-    //#messageInit
+    // #messageInit
     var initializeMe: Option[String] = None
 
-    override def receive = {
-      case "init" =>
-        initializeMe = Some("Up and running")
-        context.become(initialized, discardOld = true)
+    override def receive = { case "init" =>
+      initializeMe = Some("Up and running")
+      context.become(initialized, discardOld = true)
 
     }
 
-    def initialized: Receive = {
-      case "U OK?" => initializeMe.foreach { sender() ! _ }
+    def initialized: Receive = { case "U OK?" =>
+      initializeMe.foreach { sender() ! _ }
     }
-    //#messageInit
+    // #messageInit
 
   }
 }

@@ -11,9 +11,7 @@ import scala.collection.mutable
 import akka.annotation.{ InternalApi, InternalStableApi }
 import akka.stream._
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] trait Buffer[T] {
   def capacity: Int
   def used: Int
@@ -42,9 +40,7 @@ private[akka] object Buffer {
     else new BoundedBuffer(size)
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object FixedSizeBuffer {
 
   /**
@@ -141,9 +137,7 @@ private[akka] object Buffer {
 
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] final class BoundedBuffer[T](val capacity: Int) extends Buffer[T] {
 
   import BoundedBuffer._
@@ -171,9 +165,7 @@ private[akka] object Buffer {
   private var q: Buffer[T] = new FixedQueue[T](capacity, newBuffer => q = newBuffer)
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object BoundedBuffer {
   private final class FixedQueue[T](override val capacity: Int, switchBuffer: Buffer[T] => Unit) extends Buffer[T] {
     import Buffer._
@@ -386,8 +378,8 @@ private[impl] final class PartitionedBuffer[K, V](size: Int) {
   def clear(): Unit = {
     linearBuffer.clear()
     // ensure that all sub-buffers are cleared
-    partitionBuffers.foreach {
-      case (_, buf) => buf.clear()
+    partitionBuffers.foreach { case (_, buf) =>
+      buf.clear()
     }
     partitionBuffers.clear()
   }

@@ -60,9 +60,11 @@ abstract class RestartNode2SpecSpec extends MultiNodeClusterSpec(RestartNode2Spe
   // this is the node that will attempt to re-join, keep gate times low so it can retry quickly
   lazy val restartedSeed1System = ActorSystem(
     system.name,
-    ConfigFactory.parseString(s"""
+    ConfigFactory
+      .parseString(s"""
       akka.remote.artery.canonical.port = ${seedNodes.head.port.get}
-      """).withFallback(system.settings.config))
+      """)
+      .withFallback(system.settings.config))
 
   override def afterAll(): Unit = {
     runOn(seed1) {
@@ -76,13 +78,14 @@ abstract class RestartNode2SpecSpec extends MultiNodeClusterSpec(RestartNode2Spe
       // seed1System is a separate ActorSystem, to be able to simulate restart
       // we must transfer its address to seed2
       runOn(seed2) {
-        system.actorOf(Props(new Actor {
-          def receive = {
-            case a: Address =>
+        system.actorOf(
+          Props(new Actor {
+            def receive = { case a: Address =>
               seedNode1Address = a
               sender() ! "ok"
-          }
-        }).withDeploy(Deploy.local), name = "address-receiver")
+            }
+          }).withDeploy(Deploy.local),
+          name = "address-receiver")
         enterBarrier("seed1-address-receiver-ready")
       }
 

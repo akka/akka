@@ -27,11 +27,10 @@ object PersistentActorRecoveryTimeoutSpec {
   class TestActor(probe: ActorRef) extends NamedPersistentActor("recovery-timeout-actor") {
     override def receiveRecover: Receive = Actor.emptyBehavior
 
-    override def receiveCommand: Receive = {
-      case x =>
-        persist(x) { _ =>
-          sender() ! x
-        }
+    override def receiveCommand: Receive = { case x =>
+      persist(x) { _ =>
+        sender() ! x
+      }
     }
 
     override protected def onRecoveryFailure(cause: Throwable, event: Option[Any]): Unit = {
@@ -52,11 +51,10 @@ object PersistentActorRecoveryTimeoutSpec {
       case _                 => // we don't care
     }
 
-    override def receiveCommand: Receive = {
-      case x =>
-        persist(x) { _ =>
-          sender() ! x
-        }
+    override def receiveCommand: Receive = { case x =>
+      persist(x) { _ =>
+        sender() ! x
+      }
     }
 
     override protected def onRecoveryFailure(cause: Throwable, event: Option[Any]): Unit = {

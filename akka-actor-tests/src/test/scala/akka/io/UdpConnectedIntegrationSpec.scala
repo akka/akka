@@ -16,7 +16,8 @@ import akka.testkit.TestProbe
 import akka.testkit.WithLogCapturing
 import akka.util.ByteString
 
-class UdpConnectedIntegrationSpec extends AkkaSpec("""
+class UdpConnectedIntegrationSpec
+    extends AkkaSpec("""
     akka.loglevel = DEBUG
     akka.actor.debug.lifecycle = on
     akka.actor.debug.autoreceive = on
@@ -25,7 +26,9 @@ class UdpConnectedIntegrationSpec extends AkkaSpec("""
     # Java native host resolution
     akka.io.dns.resolver = async-dns
     akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
-    """) with ImplicitSender with WithLogCapturing {
+    """)
+    with ImplicitSender
+    with WithLogCapturing {
 
   val addresses = temporaryServerAddresses(5, udp = true)
 
@@ -73,10 +76,9 @@ class UdpConnectedIntegrationSpec extends AkkaSpec("""
       val data2 = ByteString("All your datagram belong to us")
       connectUdp(localAddress = None, serverAddress, testActor) ! UdpConnected.Send(data1)
 
-      val clientAddress = expectMsgPF() {
-        case Udp.Received(d, a) =>
-          d should ===(data1)
-          a
+      val clientAddress = expectMsgPF() { case Udp.Received(d, a) =>
+        d should ===(data1)
+        a
       }
 
       server ! Udp.Send(data2, clientAddress)
@@ -92,10 +94,9 @@ class UdpConnectedIntegrationSpec extends AkkaSpec("""
       val data2 = ByteString("All your datagram belong to us")
       connectUdp(Some(clientAddress), serverAddress, testActor) ! UdpConnected.Send(data1)
 
-      expectMsgPF() {
-        case Udp.Received(d, a) =>
-          d should ===(data1)
-          a should ===(clientAddress)
+      expectMsgPF() { case Udp.Received(d, a) =>
+        d should ===(data1)
+        a should ===(clientAddress)
       }
 
       server ! Udp.Send(data2, clientAddress)

@@ -29,8 +29,8 @@ class StreamAttributeDocSpec extends StreamSpec("my-stream-dispatcher = \"akka.t
             .map(_.toString)
             .toMat(Sink.foreach(println))(Keep.right)
             .withAttributes(Attributes.inputBuffer(4, 4) and
-            ActorAttributes.dispatcher("my-stream-dispatcher") and
-            TcpAttributes.tcpWriteBufferSize(2048))
+              ActorAttributes.dispatcher("my-stream-dispatcher") and
+              TcpAttributes.tcpWriteBufferSize(2048))
 
         stream.run()
         // #attributes-on-stream

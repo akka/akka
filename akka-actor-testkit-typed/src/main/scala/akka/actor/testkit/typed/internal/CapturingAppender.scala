@@ -9,9 +9,7 @@ import ch.qos.logback.core.AppenderBase
 
 import akka.annotation.InternalApi
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object CapturingAppender {
   import LogbackUtil._
 
@@ -80,9 +78,7 @@ import akka.annotation.InternalApi
     clear()
   }
 
-  /**
-   * Discards the buffered logging events without output.
-   */
+  /** Discards the buffered logging events without output. */
   def clear(): Unit = synchronized {
     buffer = Vector.empty
   }

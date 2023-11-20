@@ -25,9 +25,7 @@ import akka.util.OptionVal
 @InternalApi
 private[remote] trait ArteryMessage extends Serializable
 
-/**
- * INTERNAL API: Marker trait for reply messages
- */
+/** INTERNAL API: Marker trait for reply messages */
 @InternalApi
 private[remote] trait Reply extends ControlMessage
 
@@ -39,39 +37,27 @@ private[remote] trait Reply extends ControlMessage
 @InternalApi
 private[remote] trait ControlMessage extends ArteryMessage
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[remote] final case class Quarantined(from: UniqueAddress, to: UniqueAddress) extends ControlMessage
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[remote] final case class ActorSystemTerminating(from: UniqueAddress) extends ControlMessage
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[remote] final case class ActorSystemTerminatingAck(from: UniqueAddress) extends ArteryMessage
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[remote] case object Flush extends ControlMessage
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[remote] final case class FlushAck(expectedAcks: Int) extends ArteryMessage
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[remote] object InboundControlJunction {
 
@@ -104,9 +90,7 @@ private[remote] object InboundControlJunction {
   private[InboundControlJunction] final case class Dettach(observer: ControlMessageObserver) extends CallbackMessage
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[remote] class InboundControlJunction
     extends GraphStageWithMaterializedValue[
@@ -168,9 +152,7 @@ private[remote] class InboundControlJunction
   }
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[remote] object OutboundControlJunction {
   private[remote] trait OutboundControlIngress {
@@ -178,9 +160,7 @@ private[remote] object OutboundControlJunction {
   }
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[remote] class OutboundControlJunction(
     outboundContext: OutboundContext,

@@ -18,9 +18,7 @@ import com.fasterxml.jackson.datatype.jsr310.ser.DurationSerializer
 import akka.annotation.InternalApi
 import akka.util.JavaDurationConverters._
 
-/**
- * INTERNAL API: Adds support for serializing and deserializing [[FiniteDuration]].
- */
+/** INTERNAL API: Adds support for serializing and deserializing [[FiniteDuration]]. */
 @InternalApi private[akka] trait FiniteDurationModule extends JacksonModule {
   addSerializer(
     classOf[FiniteDuration],
@@ -28,16 +26,12 @@ import akka.util.JavaDurationConverters._
     () => FiniteDurationDeserializer.instance)
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object FiniteDurationSerializer {
   val instance: FiniteDurationSerializer = new FiniteDurationSerializer
 }
 
-/**
- * INTERNAL API: Delegates to DurationSerializer in `jackson-modules-java8`
- */
+/** INTERNAL API: Delegates to DurationSerializer in `jackson-modules-java8` */
 @InternalApi private[akka] class FiniteDurationSerializer
     extends StdScalarSerializer[FiniteDuration](classOf[FiniteDuration]) {
   override def serialize(value: FiniteDuration, jgen: JsonGenerator, provider: SerializerProvider): Unit = {
@@ -45,16 +39,12 @@ import akka.util.JavaDurationConverters._
   }
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object FiniteDurationDeserializer {
   val instance: FiniteDurationDeserializer = new FiniteDurationDeserializer
 }
 
-/**
- * INTERNAL API: Delegates to DurationDeserializer in `jackson-modules-java8`
- */
+/** INTERNAL API: Delegates to DurationDeserializer in `jackson-modules-java8` */
 @InternalApi private[akka] class FiniteDurationDeserializer
     extends StdScalarDeserializer[FiniteDuration](classOf[FiniteDuration]) {
 

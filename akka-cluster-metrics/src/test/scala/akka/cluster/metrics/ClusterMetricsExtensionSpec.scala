@@ -73,17 +73,16 @@ class ClusterMetricsExtensionSpec
 
       expected.size should ===(sampleCount)
 
-      history.zip(expected).foreach {
-        case (mockMetrics, expectedData) =>
-          (mockMetrics, expectedData) match {
-            case (
+      history.zip(expected).foreach { case (mockMetrics, expectedData) =>
+        (mockMetrics, expectedData) match {
+          case (
                 Cpu(_, _, loadAverageMock, cpuCombinedMock, cpuStolenMock, _),
                 (loadAverageEwma, cpuCombinedEwma, cpuStolenEwma)) =>
-              loadAverageMock.get should ===(loadAverageEwma +- epsilon)
-              cpuCombinedMock.get should ===(cpuCombinedEwma +- epsilon)
-              cpuStolenMock.get should ===(cpuStolenEwma +- epsilon)
-            case _ => fail()
-          }
+            loadAverageMock.get should ===(loadAverageEwma +- epsilon)
+            cpuCombinedMock.get should ===(cpuCombinedEwma +- epsilon)
+            cpuStolenMock.get should ===(cpuStolenEwma +- epsilon)
+          case _ => fail()
+        }
       }
     }
 

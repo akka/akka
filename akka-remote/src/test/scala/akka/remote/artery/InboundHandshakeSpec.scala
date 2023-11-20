@@ -29,9 +29,11 @@ object InboundHandshakeSpec {
   case object Control3 extends ControlMessage
 }
 
-class InboundHandshakeSpec extends AkkaSpec("""
+class InboundHandshakeSpec
+    extends AkkaSpec("""
     akka.stream.materializer.debug.fuzzing-mode = on
-  """) with ImplicitSender {
+  """)
+    with ImplicitSender {
 
   val addressA = UniqueAddress(Address("akka", "sysA", "hostA", 1001), 1)
   val addressB = UniqueAddress(Address("akka", "sysB", "hostB", 1002), 2)

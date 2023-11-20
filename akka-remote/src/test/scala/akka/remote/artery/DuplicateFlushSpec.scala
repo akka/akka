@@ -18,9 +18,11 @@ import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
 import akka.util.OptionVal
 
-class DuplicateFlushSpec extends AkkaSpec("""
+class DuplicateFlushSpec
+    extends AkkaSpec("""
       akka.stream.materializer.debug.fuzzing-mode = on
-  """) with ImplicitSender {
+  """)
+    with ImplicitSender {
 
   private val pool = new EnvelopeBufferPool(1034 * 1024, 128)
   private val serialization = SerializationExtension(system)

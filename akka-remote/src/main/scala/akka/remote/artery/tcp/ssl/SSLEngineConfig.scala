@@ -12,9 +12,7 @@ import com.typesafe.config.Config
 import akka.annotation.InternalApi
 import akka.japi.Util.immutableSeq
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[tcp] class SSLEngineConfig(config: Config) {
   private[tcp] val SSLRandomNumberGenerator: String = config.getString("random-number-generator")

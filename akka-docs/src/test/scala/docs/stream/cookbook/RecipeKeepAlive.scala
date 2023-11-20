@@ -15,11 +15,11 @@ class RecipeKeepAlive extends RecipeSpec {
     "work" in {
       val keepaliveMessage = ByteString(11)
 
-      //#inject-keepalive
+      // #inject-keepalive
       import scala.concurrent.duration._
       val injectKeepAlive: Flow[ByteString, ByteString, NotUsed] =
         Flow[ByteString].keepAlive(1.second, () => keepaliveMessage)
-      //#inject-keepalive
+      // #inject-keepalive
 
       // No need to test, this is a built-in stage with proper tests
     }

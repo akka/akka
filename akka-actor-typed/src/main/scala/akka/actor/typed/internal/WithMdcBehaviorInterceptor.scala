@@ -11,9 +11,7 @@ import org.slf4j.MDC
 import akka.actor.typed.{ Behavior, BehaviorInterceptor, Signal, TypedActorContext }
 import akka.annotation.InternalApi
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object WithMdcBehaviorInterceptor {
   val noMdcPerMessage = (_: Any) => Map.empty[String, String]
 
@@ -96,11 +94,11 @@ import akka.annotation.InternalApi
   }
 
   private def setMdcValues(dynamicMdc: Map[String, String]): Unit = {
-    if (staticMdc.nonEmpty) staticMdc.foreach {
-      case (key, value) => MDC.put(key, value)
+    if (staticMdc.nonEmpty) staticMdc.foreach { case (key, value) =>
+      MDC.put(key, value)
     }
-    if (dynamicMdc.nonEmpty) dynamicMdc.foreach {
-      case (key, value) => MDC.put(key, value)
+    if (dynamicMdc.nonEmpty) dynamicMdc.foreach { case (key, value) =>
+      MDC.put(key, value)
     }
   }
 

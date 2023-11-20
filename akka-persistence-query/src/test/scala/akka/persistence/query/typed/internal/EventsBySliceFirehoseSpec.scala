@@ -146,12 +146,11 @@ class EventsBySliceFirehoseSpec
     val firehoseRunning = new AtomicBoolean
     private val firehosePublisherPromise = Promise[TestPublisher.Probe[EventEnvelope[Any]]]()
     private val firehoseSource: Source[EventEnvelope[Any], NotUsed] =
-      TestSource[EventEnvelope[Any]]().watchTermination()(Keep.both).mapMaterializedValue {
-        case (probe, termination) =>
-          firehoseRunning.set(true)
-          termination.onComplete(_ => firehoseRunning.set(false))(ExecutionContexts.parasitic)
-          firehosePublisherPromise.success(probe)
-          NotUsed
+      TestSource[EventEnvelope[Any]]().watchTermination()(Keep.both).mapMaterializedValue { case (probe, termination) =>
+        firehoseRunning.set(true)
+        termination.onComplete(_ => firehoseRunning.set(false))(ExecutionContexts.parasitic)
+        firehosePublisherPromise.success(probe)
+        NotUsed
       }
 
     val eventsBySliceFirehose = new EventsBySliceFirehose(system.classicSystem) {

@@ -15,17 +15,13 @@ import akka.stream.stage.GraphStageWithMaterializedValue
 import akka.stream.stage.InHandler
 import akka.stream.stage.OutHandler
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] trait ReplicationStreamControl {
   def fastForward(sequenceNumber: Long): Unit
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] class FastForwardingFilter
     extends GraphStageWithMaterializedValue[FlowShape[EventEnvelope, EventEnvelope], ReplicationStreamControl] {

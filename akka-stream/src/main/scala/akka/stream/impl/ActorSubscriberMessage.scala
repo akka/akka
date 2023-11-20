@@ -10,16 +10,12 @@ import akka.actor.DeadLetterSuppression
 import akka.actor.NoSerializationVerificationNeeded
 import akka.annotation.InternalApi
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] sealed abstract class ActorSubscriberMessage
     extends DeadLetterSuppression
     with NoSerializationVerificationNeeded
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object ActorSubscriberMessage {
   final case class OnNext(element: Any) extends ActorSubscriberMessage
   final case class OnError(cause: Throwable) extends ActorSubscriberMessage

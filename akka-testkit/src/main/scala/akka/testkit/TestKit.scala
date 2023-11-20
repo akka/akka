@@ -167,9 +167,7 @@ trait TestKitBase {
 
   def lastSender = lastMessage.sender
 
-  /**
-   * Defines the testActor name.
-   */
+  /** Defines the testActor name. */
   protected def testActorName: String = "testActor"
 
   /**
@@ -181,10 +179,13 @@ trait TestKitBase {
     val ref = impl.systemActorOf(
       TestActor.props(queue).withDispatcher(CallingThreadDispatcher.Id),
       "%s-%d".format(testActorName, TestKit.testActorId.incrementAndGet))
-    awaitCond(ref match {
-      case r: RepointableRef => r.isStarted
-      case _                 => true
-    }, 3.seconds.dilated, 10.millis)
+    awaitCond(
+      ref match {
+        case r: RepointableRef => r.isStarted
+        case _                 => true
+      },
+      3.seconds.dilated,
+      10.millis)
     ref
   }
 
@@ -202,22 +203,16 @@ trait TestKitBase {
    */
   def ignoreMsg(f: PartialFunction[Any, Boolean]): Unit = { testActor ! TestActor.SetIgnore(Some(f)) }
 
-  /**
-   * Stop ignoring messages in the test actor.
-   */
+  /** Stop ignoring messages in the test actor. */
   def ignoreNoMsg(): Unit = { testActor ! TestActor.SetIgnore(None) }
 
-  /**
-   * Have the testActor watch someone (i.e. `context.watch(...)`).
-   */
+  /** Have the testActor watch someone (i.e. `context.watch(...)`). */
   def watch(ref: ActorRef): ActorRef = {
     testActor ! TestActor.Watch(ref)
     ref
   }
 
-  /**
-   * Have the testActor stop watching someone (i.e. `context.unwatch(...)`).
-   */
+  /** Have the testActor stop watching someone (i.e. `context.unwatch(...)`). */
   def unwatch(ref: ActorRef): ActorRef = {
     testActor ! TestActor.UnWatch(ref)
     ref
@@ -230,9 +225,7 @@ trait TestKitBase {
    */
   def setAutoPilot(pilot: TestActor.AutoPilot): Unit = testActor ! TestActor.SetAutoPilot(pilot)
 
-  /**
-   * Obtain current time (`System.nanoTime`) as Duration.
-   */
+  /** Obtain current time (`System.nanoTime`) as Duration. */
   def now: FiniteDuration = System.nanoTime.nanos
 
   /**
@@ -270,9 +263,7 @@ trait TestKitBase {
     case _                            => throw new IllegalArgumentException("max duration cannot be infinite")
   }
 
-  /**
-   * Query queue status.
-   */
+  /** Query queue status. */
   def msgAvailable = !queue.isEmpty
 
   /**
@@ -414,8 +405,9 @@ trait TestKitBase {
     val prev_end = end
     end = start + max_diff
 
-    val ret = try f
-    finally end = prev_end
+    val ret =
+      try f
+      finally end = prev_end
 
     val diff = now - start
     assert(min <= diff, s"block took ${format(min.unit, diff)}, should at least have been $min")
@@ -426,14 +418,10 @@ trait TestKitBase {
     ret
   }
 
-  /**
-   * Same as calling `within(0 seconds, max)(f)`.
-   */
+  /** Same as calling `within(0 seconds, max)(f)`. */
   def within[T](max: FiniteDuration)(f: => T): T = within(0 seconds, max)(f)
 
-  /**
-   * Same as `expectMsg(remainingOrDefault, obj)`, but correctly treating the timeFactor.
-   */
+  /** Same as `expectMsg(remainingOrDefault, obj)`, but correctly treating the timeFactor. */
   def expectMsg[T](obj: T): T = expectMsg_internal(remainingOrDefault, obj)
 
   /**
@@ -490,8 +478,8 @@ trait TestKitBase {
    * @return the received Terminated message
    */
   def expectTerminated(target: ActorRef, max: Duration = Duration.Undefined): Terminated =
-    expectMsgPF(max, "Terminated " + target) {
-      case t @ Terminated(`target`) => t
+    expectMsgPF(max, "Terminated " + target) { case t @ Terminated(`target`) =>
+      t
     }
 
   /**
@@ -535,9 +523,7 @@ trait TestKitBase {
     recv
   }
 
-  /**
-   * Same as `expectMsgType[T](remainingOrDefault)`, but correctly treating the timeFactor.
-   */
+  /** Same as `expectMsgType[T](remainingOrDefault)`, but correctly treating the timeFactor. */
   def expectMsgType[T](implicit t: ClassTag[T]): T =
     expectMsgClass_internal(remainingOrDefault, t.runtimeClass.asInstanceOf[Class[T]])
 
@@ -551,9 +537,7 @@ trait TestKitBase {
   def expectMsgType[T](max: FiniteDuration)(implicit t: ClassTag[T]): T =
     expectMsgClass_internal(max.dilated, t.runtimeClass.asInstanceOf[Class[T]])
 
-  /**
-   * Same as `expectMsgClass(remainingOrDefault, c)`, but correctly treating the timeFactor.
-   */
+  /** Same as `expectMsgClass(remainingOrDefault, c)`, but correctly treating the timeFactor. */
   def expectMsgClass[C](c: Class[C]): C = expectMsgClass_internal(remainingOrDefault, c)
 
   /**
@@ -572,9 +556,7 @@ trait TestKitBase {
     o.asInstanceOf[C]
   }
 
-  /**
-   * Same as `expectMsgAnyOf(remainingOrDefault, obj...)`, but correctly treating the timeFactor.
-   */
+  /** Same as `expectMsgAnyOf(remainingOrDefault, obj...)`, but correctly treating the timeFactor. */
   def expectMsgAnyOf[T](obj: T*): T = expectMsgAnyOf_internal(remainingOrDefault, obj: _*)
 
   /**
@@ -593,9 +575,7 @@ trait TestKitBase {
     o.asInstanceOf[T]
   }
 
-  /**
-   * Same as `expectMsgAnyClassOf(remainingOrDefault, obj...)`, but correctly treating the timeFactor.
-   */
+  /** Same as `expectMsgAnyClassOf(remainingOrDefault, obj...)`, but correctly treating the timeFactor. */
   def expectMsgAnyClassOf[C](obj: Class[_ <: C]*): C = expectMsgAnyClassOf_internal(remainingOrDefault, obj: _*)
 
   /**
@@ -615,9 +595,7 @@ trait TestKitBase {
     o.asInstanceOf[C]
   }
 
-  /**
-   * Same as `expectMsgAllOf(remainingOrDefault, obj...)`, but correctly treating the timeFactor.
-   */
+  /** Same as `expectMsgAllOf(remainingOrDefault, obj...)`, but correctly treating the timeFactor. */
   def expectMsgAllOf[T](obj: T*): immutable.Seq[T] = expectMsgAllOf_internal(remainingOrDefault, obj: _*)
 
   /**
@@ -654,9 +632,7 @@ trait TestKitBase {
     recv.asInstanceOf[immutable.Seq[T]]
   }
 
-  /**
-   * Same as `expectMsgAllClassOf(remainingOrDefault, obj...)`, but correctly treating the timeFactor.
-   */
+  /** Same as `expectMsgAllClassOf(remainingOrDefault, obj...)`, but correctly treating the timeFactor. */
   def expectMsgAllClassOf[T](obj: Class[_ <: T]*): immutable.Seq[T] =
     internalExpectMsgAllClassOf(remainingOrDefault, obj: _*)
 
@@ -679,9 +655,7 @@ trait TestKitBase {
     recv.asInstanceOf[immutable.Seq[T]]
   }
 
-  /**
-   * Same as `expectMsgAllConformingOf(remainingOrDefault, obj...)`, but correctly treating the timeFactor.
-   */
+  /** Same as `expectMsgAllConformingOf(remainingOrDefault, obj...)`, but correctly treating the timeFactor. */
   def expectMsgAllConformingOf[T](obj: Class[_ <: T]*): immutable.Seq[T] =
     internalExpectMsgAllConformingOf(remainingOrDefault, obj: _*)
 
@@ -732,8 +706,8 @@ trait TestKitBase {
     var elem: AnyRef = queue.peekFirst()
     var left = leftNow
     while (left.toNanos > 0 && elem == null) {
-      //Use of (left / 2) gives geometric series limited by finish time similar to (1/2)^n limited by 1,
-      //so it is very precise
+      // Use of (left / 2) gives geometric series limited by finish time similar to (1/2)^n limited by 1,
+      // so it is very precise
       Thread.sleep(pollInterval.toMillis min (left / 2).toMillis)
       left = leftNow
       if (left.toNanos > 0) {
@@ -810,9 +784,7 @@ trait TestKitBase {
    */
   def receiveN(n: Int): immutable.Seq[AnyRef] = receiveN_internal(n, remainingOrDefault)
 
-  /**
-   * Receive N messages in a row before the given deadline.
-   */
+  /** Receive N messages in a row before the given deadline. */
   def receiveN(n: Int, max: FiniteDuration): immutable.Seq[AnyRef] = receiveN_internal(n, max.dilated)
 
   private def receiveN_internal(n: Int, max: Duration): immutable.Seq[AnyRef] = {
@@ -958,9 +930,7 @@ class TestKit(_system: ActorSystem) extends TestKitBase {
 
 object TestKit {
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi
   private[akka] val testActorId = new AtomicInteger(0)
 
@@ -988,9 +958,7 @@ object TestKit {
     poll()
   }
 
-  /**
-   * Obtain current timestamp as Duration for relative measurements (using System.nanoTime).
-   */
+  /** Obtain current timestamp as Duration for relative measurements (using System.nanoTime). */
   def now: Duration = System.nanoTime().nanos
 
   /**
@@ -1023,16 +991,12 @@ object TestKit {
   }
 }
 
-/**
- * TestKit-based probe which allows sending, reception and reply.
- */
+/** TestKit-based probe which allows sending, reception and reply. */
 class TestProbe(_application: ActorSystem, name: String) extends TestKit(_application) {
 
   def this(_application: ActorSystem) = this(_application, "testProbe")
 
-  /**
-   * Shorthand to get the testActor.
-   */
+  /** Shorthand to get the testActor. */
   def ref = testActor
 
   protected override def testActorName = name
@@ -1044,19 +1008,13 @@ class TestProbe(_application: ActorSystem, name: String) extends TestKit(_applic
    */
   def send(actor: ActorRef, msg: Any): Unit = actor.!(msg)(testActor)
 
-  /**
-   * Forward this message as if in the TestActor's receive method with self.forward.
-   */
+  /** Forward this message as if in the TestActor's receive method with self.forward. */
   def forward(actor: ActorRef, msg: Any = lastMessage.msg): Unit = actor.!(msg)(lastMessage.sender)
 
-  /**
-   * Get sender of last received message.
-   */
+  /** Get sender of last received message. */
   def sender() = lastMessage.sender
 
-  /**
-   * Send message to the sender of the last dequeued message.
-   */
+  /** Send message to the sender of the last dequeued message. */
   def reply(msg: Any): Unit = sender().!(msg)(ref)
 
 }

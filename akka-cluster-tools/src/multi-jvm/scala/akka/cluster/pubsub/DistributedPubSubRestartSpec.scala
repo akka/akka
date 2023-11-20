@@ -40,8 +40,8 @@ object DistributedPubSubRestartSpec extends MultiNodeConfig {
   testTransport(on = true)
 
   class Shutdown extends Actor {
-    def receive = {
-      case "shutdown" => context.system.terminate()
+    def receive = { case "shutdown" =>
+      context.system.terminate()
     }
   }
 
@@ -139,9 +139,11 @@ class DistributedPubSubRestartSpec
         Await.result(system.whenTerminated, 10.seconds)
         val newSystem = {
           val port = Cluster(system).selfAddress.port.get
-          val config = ConfigFactory.parseString(s"""
+          val config = ConfigFactory
+            .parseString(s"""
               akka.remote.artery.canonical.port=$port
-              """).withFallback(system.settings.config)
+              """)
+            .withFallback(system.settings.config)
 
           ActorSystem(system.name, config)
         }

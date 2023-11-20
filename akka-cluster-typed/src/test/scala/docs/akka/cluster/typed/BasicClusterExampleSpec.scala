@@ -50,14 +50,16 @@ akka {
 #config-seeds
      """)
 
-  val configSystem2 = ConfigFactory.parseString("""
+  val configSystem2 = ConfigFactory
+    .parseString("""
         akka.remote.artery.canonical.port = 0
-     """).withFallback(configSystem1)
+     """)
+    .withFallback(configSystem1)
 
   def illustrateJoinSeedNodes(): Unit = {
     val system: ActorSystem[_] = ???
 
-    //#join-seed-nodes
+    // #join-seed-nodes
     import akka.actor.Address
     import akka.actor.AddressFromURIString
     import akka.cluster.typed.JoinSeedNodes
@@ -65,7 +67,7 @@ akka {
     val seedNodes: List[Address] =
       List("akka://ClusterSystem@127.0.0.1:2551", "akka://ClusterSystem@127.0.0.1:2552").map(AddressFromURIString.parse)
     Cluster(system).manager ! JoinSeedNodes(seedNodes)
-    //#join-seed-nodes
+    // #join-seed-nodes
   }
 
   object Backend {
@@ -79,21 +81,21 @@ akka {
   def illustrateRoles(): Unit = {
     val context: ActorContext[_] = ???
 
-    //#hasRole
+    // #hasRole
     val selfMember = Cluster(context.system).selfMember
     if (selfMember.hasRole("backend")) {
       context.spawn(Backend(), "back")
     } else if (selfMember.hasRole("frontend")) {
       context.spawn(Frontend(), "front")
     }
-    //#hasRole
+    // #hasRole
   }
 
   @nowarn("msg=never used")
   def illustrateDcAccess(): Unit = {
     val system: ActorSystem[_] = ???
 
-    //#dcAccess
+    // #dcAccess
     val cluster = Cluster(system)
     // this node's data center
     val dc = cluster.selfMember.dataCenter
@@ -102,7 +104,7 @@ akka {
     // a specific member's data center
     val aMember = cluster.state.members.head
     val aDc = aMember.dataCenter
-    //#dcAccess
+    // #dcAccess
   }
 }
 
@@ -177,14 +179,14 @@ class BasicClusterManualSpec extends AnyWordSpec with ScalaFutures with Eventual
       val system2 = ActorSystem[Nothing](Behaviors.empty[Nothing], "ClusterSystem", noPort.withFallback(clusterConfig))
 
       try {
-        //#cluster-create
+        // #cluster-create
         val cluster = Cluster(system)
-        //#cluster-create
+        // #cluster-create
         val cluster2 = Cluster(system2)
 
-        //#cluster-join
+        // #cluster-join
         cluster.manager ! Join(cluster.selfMember.address)
-        //#cluster-join
+        // #cluster-join
         cluster2.manager ! Join(cluster.selfMember.address)
 
         eventually {
@@ -192,9 +194,9 @@ class BasicClusterManualSpec extends AnyWordSpec with ScalaFutures with Eventual
           cluster2.state.members.toList.map(_.status) shouldEqual List(MemberStatus.up, MemberStatus.up)
         }
 
-        //#cluster-leave
+        // #cluster-leave
         cluster2.manager ! Leave(cluster2.selfMember.address)
-        //#cluster-leave
+        // #cluster-leave
 
         eventually {
           cluster.state.members.toList.map(_.status) shouldEqual List(MemberStatus.up)
@@ -220,9 +222,9 @@ class BasicClusterManualSpec extends AnyWordSpec with ScalaFutures with Eventual
 
         val probe1 = TestProbe[MemberEvent]()(system1)
         val subscriber = probe1.ref
-        //#cluster-subscribe
+        // #cluster-subscribe
         cluster.subscriptions ! Subscribe(subscriber, classOf[MemberEvent])
-        //#cluster-subscribe
+        // #cluster-subscribe
 
         cluster1.manager ! Join(cluster1.selfMember.address)
         eventually {
@@ -255,10 +257,10 @@ class BasicClusterManualSpec extends AnyWordSpec with ScalaFutures with Eventual
         }
 
         val anotherMemberAddress = cluster2.selfMember.address
-        //#cluster-leave-example
+        // #cluster-leave-example
         cluster.manager ! Leave(anotherMemberAddress)
         // subscriber will receive events MemberLeft, MemberExited and MemberRemoved
-        //#cluster-leave-example
+        // #cluster-leave-example
         probe1.within(10.seconds) {
           probe1.expectMessageType[MemberLeft].member.address shouldEqual cluster2.selfMember.address
           probe1.expectMessageType[MemberExited].member.address shouldEqual cluster2.selfMember.address

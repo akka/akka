@@ -19,9 +19,7 @@ import akka.stream.stage.GraphStageLogic
 import akka.stream.stage.GraphStageLogicWithLogging
 import akka.stream.stage.OutHandler
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 final private[akka] class EventsByPersistenceIdStage[Event](
     persistenceId: String,

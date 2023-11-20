@@ -9,9 +9,7 @@ import scala.annotation.nowarn
 import akka.annotation.InternalApi
 import akka.io._
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 @nowarn("msg=deprecated")
 private[akka] class AsyncDnsProvider extends DnsProvider {

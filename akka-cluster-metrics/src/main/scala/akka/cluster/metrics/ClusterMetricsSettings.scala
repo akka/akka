@@ -12,9 +12,7 @@ import com.typesafe.config.Config
 import akka.util.Helpers.ConfigOps
 import akka.util.Helpers.Requiring
 
-/**
- * Metrics extension settings. Documented in: `src/main/resources/reference.conf`.
- */
+/** Metrics extension settings. Documented in: `src/main/resources/reference.conf`. */
 case class ClusterMetricsSettings(config: Config) {
 
   private val cc = config.getConfig("akka.cluster.metrics")

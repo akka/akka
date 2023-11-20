@@ -13,9 +13,7 @@ import akka.japi.function.Function3
 import akka.persistence.typed.SnapshotAdapter
 import akka.util.JavaDurationConverters._
 
-/**
- * Helper functions for migration from PersistentFSM to Persistence Typed
- */
+/** Helper functions for migration from PersistentFSM to Persistence Typed */
 object PersistentFSMMigration {
 
   /**

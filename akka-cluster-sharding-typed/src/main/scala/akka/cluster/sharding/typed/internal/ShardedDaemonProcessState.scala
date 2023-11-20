@@ -16,9 +16,7 @@ import akka.cluster.ddata.typed.scaladsl.DistributedData
 import akka.cluster.ddata.typed.scaladsl.Replicator
 import akka.cluster.sharding.typed.ShardedDaemonProcessContext
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[akka] final case class ShardedDaemonProcessState(
     revision: Long,
     numberOfProcesses: Int,
@@ -42,9 +40,7 @@ private[akka] final case class ShardedDaemonProcessState(
 
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] final case class ShardedDaemonProcessStateKey(_id: String)
     extends Key[ShardedDaemonProcessState](_id)
@@ -53,9 +49,7 @@ private[akka] final case class ShardedDaemonProcessStateKey(_id: String)
     ShardedDaemonProcessStateKey(newId)
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[akka] object ShardedDaemonProcessState {
 
   val startRevision = 0L

@@ -47,7 +47,7 @@ class FusingSpec extends StreamSpec {
         .futureValue
         .sorted should ===(0 to 9)
       val refs = receiveN(20)
-      refs.toSet should have size (11) // main flow + 10 subflows
+      refs.toSet should have size 11 // main flow + 10 subflows
     }
 
     "use multiple actors when there are asynchronous boundaries in the subflows (operator)" in {
@@ -59,7 +59,7 @@ class FusingSpec extends StreamSpec {
         .futureValue
         .sorted should ===(0 to 9)
       val refs = receiveN(20)
-      refs.toSet should have size (11) // main flow + 10 subflows
+      refs.toSet should have size 11 // main flow + 10 subflows
     }
 
     "use one actor per grouped substream when there is an async boundary around the flow (manual)" in {
@@ -92,7 +92,7 @@ class FusingSpec extends StreamSpec {
       refs.toSet should have size (in.size + 1) // outer/main actor + 1 actor per subflow
     }
 
-    //an UnfoldResourceSource equivalent without an async boundary
+    // an UnfoldResourceSource equivalent without an async boundary
     case class UnfoldResourceNoAsyncBoundry[T, S](create: () => S, readData: (S) => Option[T], close: (S) => Unit)
         extends GraphStage[SourceShape[T]] {
       val stage_ = new UnfoldResourceSource(create, readData, close)
@@ -107,7 +107,7 @@ class FusingSpec extends StreamSpec {
       val slowInitSrc = UnfoldResourceNoAsyncBoundry(
         () => { Await.result(promise.future, 1.minute); () },
         (_: Unit) => Some(1),
-        (_: Unit) => ()).asSource.watchTermination()(Keep.right).async //commenting this out, makes the test pass
+        (_: Unit) => ()).asSource.watchTermination()(Keep.right).async // commenting this out, makes the test pass
       val downstream = Flow[Int]
         .prepend(Source.single(1))
         .flatMapPrefix(0) {
@@ -122,13 +122,13 @@ class FusingSpec extends StreamSpec {
       val (f1, f2) = g.run()
       f2.failed.futureValue shouldEqual TE("I hate mondays")
       f1.value should be(empty)
-      //by now downstream managed to fail, hence it already processed the message from Flow.single,
-      //hence we know for sure that all graph stage locics in the downstream interpreter were initialized(=preStart)
-      //hence upstream subscription was initiated.
-      //since we're still blocking upstream's preStart we know for sure it didn't respond to the subscription request
-      //since a blocked actor can not process additional messages from its inbox.
-      //so long story short: downstream was able to initialize, subscribe and fail before upstream responded to the subscription request.
-      //prior to akka#29194, this scenario resulted with cancellation signal rather than the expected error signal.
+      // by now downstream managed to fail, hence it already processed the message from Flow.single,
+      // hence we know for sure that all graph stage locics in the downstream interpreter were initialized(=preStart)
+      // hence upstream subscription was initiated.
+      // since we're still blocking upstream's preStart we know for sure it didn't respond to the subscription request
+      // since a blocked actor can not process additional messages from its inbox.
+      // so long story short: downstream was able to initialize, subscribe and fail before upstream responded to the subscription request.
+      // prior to akka#29194, this scenario resulted with cancellation signal rather than the expected error signal.
       promise.success(Done)
       f1.failed.futureValue shouldEqual TE("I hate mondays")
     }
@@ -138,7 +138,7 @@ class FusingSpec extends StreamSpec {
       val slowInitSrc = UnfoldResourceNoAsyncBoundry(
         () => { Await.result(promise.future, 1.minute); () },
         (_: Unit) => Some(1),
-        (_: Unit) => ()).asSource.watchTermination()(Keep.right).async //commenting this out, makes the test pass
+        (_: Unit) => ()).asSource.watchTermination()(Keep.right).async // commenting this out, makes the test pass
 
       val failingSrc = Source.failed(TE("I hate mondays")).watchTermination()(Keep.right)
 
@@ -147,13 +147,13 @@ class FusingSpec extends StreamSpec {
       val (f1, f2) = g.run()
       f2.failed.futureValue shouldEqual TE("I hate mondays")
       f1.value should be(empty)
-      //by now downstream managed to fail, hence it already processed the message from Flow.single,
-      //hence we know for sure that all graph stage locics in the downstream interpreter were initialized(=preStart)
-      //hence upstream subscription was initiated.
-      //since we're still blocking upstream's preStart we know for sure it didn't respond to the subscription request
-      //since a blocked actor can not process additional messages from its inbox.
-      //so long story short: downstream was able to initialize, subscribe and fail before upstream responded to the subscription request.
-      //prior to akka#29194, this scenario resulted with cancellation signal rather than the expected error signal.
+      // by now downstream managed to fail, hence it already processed the message from Flow.single,
+      // hence we know for sure that all graph stage locics in the downstream interpreter were initialized(=preStart)
+      // hence upstream subscription was initiated.
+      // since we're still blocking upstream's preStart we know for sure it didn't respond to the subscription request
+      // since a blocked actor can not process additional messages from its inbox.
+      // so long story short: downstream was able to initialize, subscribe and fail before upstream responded to the subscription request.
+      // prior to akka#29194, this scenario resulted with cancellation signal rather than the expected error signal.
       promise.success(Done)
       f1.failed.futureValue shouldEqual TE("I hate mondays")
     }

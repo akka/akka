@@ -17,18 +17,18 @@ import akka.pattern
 class StreamTestKitDocSpec extends AkkaSpec {
 
   "strict collection" in {
-    //#strict-collection
+    // #strict-collection
     val sinkUnderTest =
       Flow[Int].map(_ * 2).toMat(Sink.fold(0)(_ + _))(Keep.right)
 
     val future = Source(1 to 4).runWith(sinkUnderTest)
     val result = Await.result(future, 3.seconds)
     assert(result == 20)
-    //#strict-collection
+    // #strict-collection
   }
 
   "grouped part of infinite stream" in {
-    //#grouped-infinite
+    // #grouped-infinite
     import system.dispatcher
     import akka.pattern.pipe
 
@@ -37,21 +37,21 @@ class StreamTestKitDocSpec extends AkkaSpec {
     val future = sourceUnderTest.take(10).runWith(Sink.seq)
     val result = Await.result(future, 3.seconds)
     assert(result == Seq.fill(10)(2))
-    //#grouped-infinite
+    // #grouped-infinite
   }
 
   "folded stream" in {
-    //#folded-stream
+    // #folded-stream
     val flowUnderTest = Flow[Int].takeWhile(_ < 5)
 
     val future = Source(1 to 10).via(flowUnderTest).runWith(Sink.fold(Seq.empty[Int])(_ :+ _))
     val result = Await.result(future, 3.seconds)
     assert(result == (1 to 4))
-    //#folded-stream
+    // #folded-stream
   }
 
   "pipe to test probe" in {
-    //#pipeto-testprobe
+    // #pipeto-testprobe
     import system.dispatcher
     import akka.pattern.pipe
 
@@ -60,11 +60,11 @@ class StreamTestKitDocSpec extends AkkaSpec {
     val probe = TestProbe()
     sourceUnderTest.runWith(Sink.seq).pipeTo(probe.ref)
     probe.expectMsg(3.seconds, Seq(Seq(1, 2), Seq(3, 4)))
-    //#pipeto-testprobe
+    // #pipeto-testprobe
   }
 
   "sink actor ref" in {
-    //#sink-actorref
+    // #sink-actorref
     case object Tick
     val sourceUnderTest = Source.tick(0.seconds, 200.millis, Tick)
 
@@ -78,18 +78,17 @@ class StreamTestKitDocSpec extends AkkaSpec {
     probe.expectMsg(3.seconds, Tick)
     cancellable.cancel()
     probe.expectMsg(3.seconds, "completed")
-    //#sink-actorref
+    // #sink-actorref
   }
 
   "source actor ref" in {
-    //#source-actorref
+    // #source-actorref
     val sinkUnderTest = Flow[Int].map(_.toString).toMat(Sink.fold("")(_ + _))(Keep.right)
 
     val (ref, future) = Source
       .actorRef(
-        completionMatcher = {
-          case Done =>
-            CompletionStrategy.draining
+        completionMatcher = { case Done =>
+          CompletionStrategy.draining
         },
         // Never fail the stream because of a message:
         failureMatcher = PartialFunction.empty,
@@ -105,39 +104,39 @@ class StreamTestKitDocSpec extends AkkaSpec {
 
     val result = Await.result(future, 3.seconds)
     assert(result == "123")
-    //#source-actorref
+    // #source-actorref
   }
 
   "test sink probe" in {
-    //#test-sink-probe
+    // #test-sink-probe
     val sourceUnderTest = Source(1 to 4).filter(_ % 2 == 0).map(_ * 2)
 
     sourceUnderTest.runWith(TestSink[Int]()).request(2).expectNext(4, 8).expectComplete()
-    //#test-sink-probe
+    // #test-sink-probe
   }
 
   "test source probe" in {
-    //#test-source-probe
+    // #test-source-probe
     val sinkUnderTest = Sink.cancelled
 
     TestSource[Int]().toMat(sinkUnderTest)(Keep.left).run().expectCancellation()
-    //#test-source-probe
+    // #test-source-probe
   }
 
   "injecting failure" in {
-    //#injecting-failure
+    // #injecting-failure
     val sinkUnderTest = Sink.head[Int]
 
     val (probe, future) = TestSource[Int]().toMat(sinkUnderTest)(Keep.both).run()
     probe.sendError(new Exception("boom"))
 
     assert(future.failed.futureValue.getMessage == "boom")
-    //#injecting-failure
+    // #injecting-failure
   }
 
   "test source and a sink" in {
     import system.dispatcher
-    //#test-source-and-sink
+    // #test-source-and-sink
     val flowUnderTest = Flow[Int].mapAsyncUnordered(2) { sleep =>
       pattern.after(10.millis * sleep, using = system.scheduler)(Future.successful(sleep))
     }
@@ -153,7 +152,7 @@ class StreamTestKitDocSpec extends AkkaSpec {
     pub.sendError(new Exception("Power surge in the linear subroutine C-47!"))
     val ex = sub.expectError()
     assert(ex.getMessage.contains("C-47"))
-    //#test-source-and-sink
+    // #test-source-and-sink
   }
 
 }

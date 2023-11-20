@@ -40,10 +40,10 @@ class FlowZipWithIndexSpec extends StreamSpec {
     }
 
     "work in fruit example" in {
-      //#zip-with-index
+      // #zip-with-index
       Source(List("apple", "orange", "banana")).zipWithIndex.runWith(Sink.foreach(println))
       // this will print ('apple', 0), ('orange', 1), ('banana', 2)
-      //#zip-with-index
+      // #zip-with-index
     }
 
   }

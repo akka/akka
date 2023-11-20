@@ -41,19 +41,13 @@ class MyStateStore[A](system: ExtendedActorSystem, config: Config, cfgPath: Stri
    */
   override def upsertObject(persistenceId: String, revision: Long, value: A, tag: String): Future[Done] = ???
 
-  /**
-   * Deprecated. Use the deleteObject overload with revision instead.
-   */
+  /** Deprecated. Use the deleteObject overload with revision instead. */
   override def deleteObject(persistenceId: String): Future[Done] = deleteObject(persistenceId, 0)
 
-  /**
-   * Will delete the state by setting it to the empty state and the revision number will be incremented by 1.
-   */
+  /** Will delete the state by setting it to the empty state and the revision number will be incremented by 1. */
   override def deleteObject(persistenceId: String, revision: Long): Future[Done] = ???
 
-  /**
-   * Returns the current state for the given persistence id.
-   */
+  /** Returns the current state for the given persistence id. */
   override def getObject(persistenceId: String): Future[GetObjectResult[A]] = ???
 }
 //#plugin-api

@@ -6,9 +6,7 @@ package akka.remote.artery
 
 import org.agrona.concurrent.ManyToManyConcurrentArrayQueue
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[remote] class ObjectPool[A <: AnyRef](capacity: Int, create: () => A, clear: A => Unit) {
   private val pool = new ManyToManyConcurrentArrayQueue[A](capacity)
 
@@ -20,6 +18,6 @@ private[remote] class ObjectPool[A <: AnyRef](capacity: Int, create: () => A, cl
 
   def release(obj: A): Boolean = {
     clear(obj)
-    (!pool.offer(obj))
+    !pool.offer(obj)
   }
 }

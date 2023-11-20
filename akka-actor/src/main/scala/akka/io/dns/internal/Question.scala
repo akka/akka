@@ -8,9 +8,7 @@ import akka.annotation.InternalApi
 import akka.io.dns.{ RecordClass, RecordType }
 import akka.util.{ ByteIterator, ByteString, ByteStringBuilder }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] final case class Question(name: String, qType: RecordType, qClass: RecordClass) {
   def write(out: ByteStringBuilder): Unit = {
@@ -20,9 +18,7 @@ private[akka] final case class Question(name: String, qType: RecordType, qClass:
   }
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] object Question {
   def parse(it: ByteIterator, msg: ByteString): Question = {

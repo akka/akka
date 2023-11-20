@@ -54,9 +54,7 @@ import akka.util.WildcardIndex
  */
 private[remote] trait InboundContext {
 
-  /**
-   * The local inbound address.
-   */
+  /** The local inbound address. */
   def localAddress: UniqueAddress
 
   /**
@@ -65,9 +63,7 @@ private[remote] trait InboundContext {
    */
   def sendControl(to: Address, message: ControlMessage): Unit
 
-  /**
-   * Lookup the outbound association for a given address.
-   */
+  /** Lookup the outbound association for a given address. */
   def association(remoteAddress: Address): OutboundContext
 
   /**
@@ -85,9 +81,7 @@ private[remote] trait InboundContext {
 
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[remote] object AssociationState {
   def apply(): AssociationState =
     new AssociationState(
@@ -113,9 +107,7 @@ private[remote] object AssociationState {
 
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[remote] final class AssociationState private (
     val incarnation: Int,
     val lastUsedTimestamp: AtomicLong, // System.nanoTime timestamp
@@ -228,14 +220,10 @@ private[remote] final class AssociationState private (
  */
 private[remote] trait OutboundContext {
 
-  /**
-   * The local inbound address.
-   */
+  /** The local inbound address. */
   def localAddress: UniqueAddress
 
-  /**
-   * The outbound address for this association.
-   */
+  /** The outbound address for this association. */
   def remoteAddress: Address
 
   def associationState: AssociationState
@@ -248,9 +236,7 @@ private[remote] trait OutboundContext {
    */
   def sendControl(message: ControlMessage): Unit
 
-  /**
-   * @return `true` if any of the streams are active (not stopped due to idle)
-   */
+  /** @return `true` if any of the streams are active (not stopped due to idle) */
   def isOrdinaryMessageStreamActive(): Boolean
 
   /**
@@ -263,9 +249,7 @@ private[remote] trait OutboundContext {
 
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _provider: RemoteActorRefProvider)
     extends RemoteTransport(_system, _provider)
     with InboundContext {
@@ -312,9 +296,7 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
   override def addresses: Set[Address] = _addresses
   override def localAddressForRemote(remote: Address): Address = defaultAddress
 
-  /**
-   * Must not be accessed before `start()`, will throw NullPointerException otherwise.
-   */
+  /** Must not be accessed before `start()`, will throw NullPointerException otherwise. */
   override def systemUid: Long = _localAddress.uid
 
   protected val killSwitch: SharedKillSwitch = KillSwitches.shared("transportKillSwitch")
@@ -333,8 +315,8 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
 
   private val priorityMessageDestinations =
     WildcardIndex[NotUsed]()
-    // These destinations are not defined in configuration because it should not
-    // be possible to abuse the control channel
+      // These destinations are not defined in configuration because it should not
+      // be possible to abuse the control channel
       .insert(Array("system", "remote-watcher"), NotUsed)
       // these belongs to cluster and should come from there
       .insert(Array("system", "cluster", "core", "daemon", "heartbeatSender"), NotUsed)
@@ -354,21 +336,19 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
 
   private val inboundEnvelopePool = ReusableInboundEnvelope.createObjectPool(capacity = 16)
   // The outboundEnvelopePool is shared among all outbound associations
-  private val outboundEnvelopePool = ReusableOutboundEnvelope.createObjectPool(
-    capacity =
-      settings.Advanced.OutboundMessageQueueSize * settings.Advanced.OutboundLanes * 3)
+  private val outboundEnvelopePool = ReusableOutboundEnvelope.createObjectPool(capacity =
+    settings.Advanced.OutboundMessageQueueSize * settings.Advanced.OutboundLanes * 3)
 
-  private val associationRegistry = new AssociationRegistry(
-    remoteAddress =>
-      new Association(
-        this,
-        materializer,
-        controlMaterializer,
-        remoteAddress,
-        controlSubject,
-        settings.LargeMessageDestinations,
-        priorityMessageDestinations,
-        outboundEnvelopePool))
+  private val associationRegistry = new AssociationRegistry(remoteAddress =>
+    new Association(
+      this,
+      materializer,
+      controlMaterializer,
+      remoteAddress,
+      controlSubject,
+      settings.LargeMessageDestinations,
+      priorityMessageDestinations,
+      outboundEnvelopePool))
 
   def remoteAddresses: Set[Address] = associationRegistry.allAssociations.map(_.remoteAddress)
 
@@ -650,7 +630,7 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
     killSwitch.abort(ShutdownSignal)
     flightRecorder.transportKillSwitchPulled()
     for {
-      _ <- streamsCompleted.recover { case _    => Done }
+      _ <- streamsCompleted.recover { case _ => Done }
       _ <- shutdownTransport().recover { case _ => Done }
     } yield {
       // no need to explicitly shut down the contained access since it's lifecycle is bound to the Decoder
@@ -677,8 +657,8 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
     implicit val ec = system.dispatchers.internalDispatcher
     for {
       _ <- Future.traverse(associationRegistry.allAssociations)(_.streamsCompleted)
-      _ <- Future.sequence(streamMatValues.get().valuesIterator.map {
-        case InboundStreamMatValues(_, done) => done
+      _ <- Future.sequence(streamMatValues.get().valuesIterator.map { case InboundStreamMatValues(_, done) =>
+        done
       })
     } yield Done
   }
@@ -763,8 +743,8 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
   }
 
   def outboundLarge(outboundContext: OutboundContext): Sink[OutboundEnvelope, Future[Done]] =
-    createOutboundSink(LargeStreamId, outboundContext, largeEnvelopeBufferPool).mapMaterializedValue {
-      case (_, d) => d
+    createOutboundSink(LargeStreamId, outboundContext, largeEnvelopeBufferPool).mapMaterializedValue { case (_, d) =>
+      d
     }
 
   def outbound(outboundContext: OutboundContext): Sink[OutboundEnvelope, (OutboundCompressionAccess, Future[Done])] =
@@ -798,15 +778,14 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
 
     Flow
       .fromGraph(killSwitch.flow[OutboundEnvelope])
-      .via(
-        new OutboundHandshake(
-          system,
-          outboundContext,
-          outboundEnvelopePool,
-          settings.Advanced.HandshakeTimeout,
-          settings.Advanced.HandshakeRetryInterval,
-          settings.Advanced.InjectHandshakeInterval,
-          Duration.Undefined))
+      .via(new OutboundHandshake(
+        system,
+        outboundContext,
+        outboundEnvelopePool,
+        settings.Advanced.HandshakeTimeout,
+        settings.Advanced.HandshakeRetryInterval,
+        settings.Advanced.InjectHandshakeInterval,
+        Duration.Undefined))
       .viaMat(createEncoder(bufferPool, streamId))(Keep.right)
   }
 
@@ -816,15 +795,14 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
       (settings.Advanced.QuarantineIdleOutboundAfter / 10).max(settings.Advanced.HandshakeRetryInterval)
     Flow
       .fromGraph(killSwitch.flow[OutboundEnvelope])
-      .via(
-        new OutboundHandshake(
-          system,
-          outboundContext,
-          outboundEnvelopePool,
-          settings.Advanced.HandshakeTimeout,
-          settings.Advanced.HandshakeRetryInterval,
-          settings.Advanced.InjectHandshakeInterval,
-          livenessProbeInterval))
+      .via(new OutboundHandshake(
+        system,
+        outboundContext,
+        outboundEnvelopePool,
+        settings.Advanced.HandshakeTimeout,
+        settings.Advanced.HandshakeRetryInterval,
+        settings.Advanced.InjectHandshakeInterval,
+        livenessProbeInterval))
       .via(
         new SystemMessageDelivery(
           outboundContext,
@@ -962,9 +940,7 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
 
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[remote] object ArteryTransport {
 
   val ProtocolName = "akka"
@@ -1006,7 +982,7 @@ private[remote] object ArteryTransport {
     hash2 = 31 * hash2 + java.lang.Long.hashCode(System.nanoTime())
     hash2 = 31 * hash2 + java.lang.Long.hashCode(System.currentTimeMillis())
 
-    (hash1.toLong << 32) | (hash2 & 0XFFFFFFFFL)
+    (hash1.toLong << 32) | (hash2 & 0xffffffffL)
   }
 
 }

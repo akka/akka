@@ -9,9 +9,7 @@ import scala.util.control.NonFatal
 import akka.annotation.InternalApi
 import akka.util.OptionVal
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] object LoggerClass {
 
@@ -22,9 +20,7 @@ private[akka] object LoggerClass {
 
   private val defaultPrefixesToSkip = List("scala.runtime", "akka.actor.typed.internal")
 
-  /**
-   * Try to extract a logger class from the call stack, if not possible the provided default is used
-   */
+  /** Try to extract a logger class from the call stack, if not possible the provided default is used */
   def detectLoggerClassFromStack(default: Class[_], additionalPrefixesToSkip: List[String] = Nil): Class[_] = {
     // TODO use stack walker API when we no longer need to support Java 8
     try {

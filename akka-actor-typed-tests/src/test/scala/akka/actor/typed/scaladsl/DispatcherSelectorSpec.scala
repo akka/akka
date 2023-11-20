@@ -58,20 +58,19 @@ class DispatcherSelectorSpec(config: Config)
 
   private def behavior: Behavior[WhatsYourDispatcherAndMailbox] =
     Behaviors.setup { context =>
-      Behaviors.receiveMessage[WhatsYourDispatcherAndMailbox] {
-        case WhatsYourDispatcherAndMailbox(replyTo) =>
-          val result = context match {
-            case adapter: ActorContextAdapter[_] =>
-              adapter.classicActorContext match {
-                case cell: ActorCell =>
-                  (cell.dispatcher.id, cell.mailbox.messageQueue)
-                case unexpected => throw new RuntimeException(s"Unexpected: $unexpected")
-              }
-            case unexpected => throw new RuntimeException(s"Unexpected: $unexpected")
-          }
+      Behaviors.receiveMessage[WhatsYourDispatcherAndMailbox] { case WhatsYourDispatcherAndMailbox(replyTo) =>
+        val result = context match {
+          case adapter: ActorContextAdapter[_] =>
+            adapter.classicActorContext match {
+              case cell: ActorCell =>
+                (cell.dispatcher.id, cell.mailbox.messageQueue)
+              case unexpected => throw new RuntimeException(s"Unexpected: $unexpected")
+            }
+          case unexpected => throw new RuntimeException(s"Unexpected: $unexpected")
+        }
 
-          replyTo ! result
-          Behaviors.stopped
+        replyTo ! result
+        Behaviors.stopped
       }
     }
 

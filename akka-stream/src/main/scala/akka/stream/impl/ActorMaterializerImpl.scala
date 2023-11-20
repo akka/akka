@@ -46,9 +46,7 @@ import akka.util.OptionVal
       defaultPhase: Phase[Any],
       phases: Map[IslandTag, Phase[Any]]): Mat
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[akka] override def actorOf(context: MaterializationContext, props: Props): ActorRef = {
     val effectiveProps = props.dispatcher match {
       case Dispatchers.DefaultDispatcherId =>
@@ -62,9 +60,7 @@ import akka.util.OptionVal
     actorOf(effectiveProps, context.islandName)
   }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[akka] def actorOf(props: Props, name: String): ActorRef = {
     supervisor match {
       case ref: LocalActorRef =>
@@ -74,14 +70,10 @@ import akka.util.OptionVal
     }
   }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[akka] override def logger: LoggingAdapter
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[akka] override def supervisor: ActorRef
 
 }
@@ -167,9 +159,7 @@ private[akka] class SubFusingActorMaterializerImpl(
   override def settings: ActorMaterializerSettings = delegate.settings
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object FlowNames extends ExtensionId[FlowNames] with ExtensionIdProvider {
   override def get(system: ActorSystem): FlowNames = super.get(system)
   override def get(system: ClassicActorSystemProvider): FlowNames = super.get(system)
@@ -177,16 +167,12 @@ private[akka] class SubFusingActorMaterializerImpl(
   override def createExtension(system: ExtendedActorSystem): FlowNames = new FlowNames
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] class FlowNames extends Extension {
   val name = SeqActorName("Flow")
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object StreamSupervisor {
   def props(attributes: Attributes, haveShutDown: AtomicBoolean): Props =
     Props(new StreamSupervisor(haveShutDown))
@@ -220,9 +206,7 @@ private[akka] class SubFusingActorMaterializerImpl(
   case object StoppedChildren
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] class StreamSupervisor(haveShutDown: AtomicBoolean) extends Actor {
   import akka.stream.impl.StreamSupervisor._
   implicit val ec: ExecutionContextExecutor = context.dispatcher

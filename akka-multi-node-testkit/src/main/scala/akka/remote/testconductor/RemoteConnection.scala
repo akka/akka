@@ -30,9 +30,7 @@ import java.net.InetSocketAddress
 import java.util.concurrent.TimeUnit
 import scala.util.control.NonFatal
 
-/**
- * INTERNAL API.
- */
+/** INTERNAL API. */
 private[akka] class ProtobufEncoder extends MessageToMessageEncoder[Message] {
 
   override def encode(ctx: ChannelHandlerContext, msg: Message, out: java.util.List[AnyRef]): Unit = {
@@ -44,9 +42,7 @@ private[akka] class ProtobufEncoder extends MessageToMessageEncoder[Message] {
   }
 }
 
-/**
- * INTERNAL API.
- */
+/** INTERNAL API. */
 private[akka] class ProtobufDecoder(prototype: Message) extends MessageToMessageDecoder[ByteBuf] {
 
   override def decode(ctx: ChannelHandlerContext, msg: ByteBuf, out: java.util.List[AnyRef]): Unit = {
@@ -55,9 +51,7 @@ private[akka] class ProtobufDecoder(prototype: Message) extends MessageToMessage
   }
 }
 
-/**
- * INTERNAL API.
- */
+/** INTERNAL API. */
 @Sharable
 private[akka] class TestConductorPipelineFactory(handler: ChannelInboundHandler)
     extends ChannelInitializer[SocketChannel] {
@@ -74,40 +68,26 @@ private[akka] class TestConductorPipelineFactory(handler: ChannelInboundHandler)
   }
 }
 
-/**
- * INTERNAL API.
- */
+/** INTERNAL API. */
 private[akka] sealed trait Role
 
-/**
- * INTERNAL API.
- */
+/** INTERNAL API. */
 private[akka] case object Client extends Role
 
-/**
- * INTERNAL API.
- */
+/** INTERNAL API. */
 private[akka] case object Server extends Role
 
-/**
- * INTERNAL API.
- */
+/** INTERNAL API. */
 private[akka] trait RemoteConnection {
 
-  /**
-   * The channel future associated with this connection.
-   */
+  /** The channel future associated with this connection. */
   def channelFuture: ChannelFuture
 
-  /**
-   * Shutdown the connection and release the resources.
-   */
+  /** Shutdown the connection and release the resources. */
   def shutdown(): Unit
 }
 
-/**
- * INTERNAL API.
- */
+/** INTERNAL API. */
 private[akka] object RemoteConnection {
   def apply(
       role: Role,

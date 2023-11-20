@@ -81,8 +81,8 @@ class EventSourcedBehaviorInterceptorSpec
     "be possible to combine with transformMessages" in {
       val probe = createTestProbe[String]()
       val pid = nextPid()
-      val ref = spawn(testBehavior(pid, probe.ref).transformMessages[String] {
-        case s => s.toUpperCase()
+      val ref = spawn(testBehavior(pid, probe.ref).transformMessages[String] { case s =>
+        s.toUpperCase()
       })
 
       ref ! "a"

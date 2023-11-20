@@ -12,29 +12,29 @@ import akka.testkit.AkkaSpec
 class ReactiveStreamsDocSpec extends AkkaSpec {
   import TwitterStreamQuickstartDocSpec._
 
-  //#imports
+  // #imports
   import org.reactivestreams.Publisher
   import org.reactivestreams.Subscriber
   import org.reactivestreams.Processor
-  //#imports
+  // #imports
 
   trait Fixture {
-    //#authors
+    // #authors
     val authors = Flow[Tweet].filter(_.hashtags.contains(akkaTag)).map(_.author)
 
-    //#authors
+    // #authors
 
-    //#tweets-publisher
+    // #tweets-publisher
     def tweets: Publisher[Tweet]
-    //#tweets-publisher
+    // #tweets-publisher
 
-    //#author-storage-subscriber
+    // #author-storage-subscriber
     def storage: Subscriber[Author]
-    //#author-storage-subscriber
+    // #author-storage-subscriber
 
-    //#author-alert-subscriber
+    // #author-alert-subscriber
     def alert: Subscriber[Author]
-    //#author-alert-subscriber
+    // #author-alert-subscriber
   }
 
   val impl = new Fixture {
@@ -63,9 +63,9 @@ class ReactiveStreamsDocSpec extends AkkaSpec {
     import impl._
     val storage = impl.storage
 
-    //#connect-all
+    // #connect-all
     Source.fromPublisher(tweets).via(authors).to(Sink.fromSubscriber(storage)).run()
-    //#connect-all
+    // #connect-all
 
     assertResult(storage)
   }
@@ -74,12 +74,12 @@ class ReactiveStreamsDocSpec extends AkkaSpec {
     import impl._
     val storage = impl.storage
 
-    //#flow-publisher-subscriber
+    // #flow-publisher-subscriber
     val processor: Processor[Tweet, Author] = authors.toProcessor.run()
 
     tweets.subscribe(processor)
     processor.subscribe(storage)
-    //#flow-publisher-subscriber
+    // #flow-publisher-subscriber
 
     assertResult(storage)
   }
@@ -88,12 +88,12 @@ class ReactiveStreamsDocSpec extends AkkaSpec {
     import impl._
     val storage = impl.storage
 
-    //#source-publisher
+    // #source-publisher
     val authorPublisher: Publisher[Author] =
       Source.fromPublisher(tweets).via(authors).runWith(Sink.asPublisher(fanout = false))
 
     authorPublisher.subscribe(storage)
-    //#source-publisher
+    // #source-publisher
 
     assertResult(storage)
   }
@@ -103,13 +103,13 @@ class ReactiveStreamsDocSpec extends AkkaSpec {
     val storage = impl.storage
     val alert = impl.alert
 
-    //#source-fanoutPublisher
+    // #source-fanoutPublisher
     val authorPublisher: Publisher[Author] =
       Source.fromPublisher(tweets).via(authors).runWith(Sink.asPublisher(fanout = true))
 
     authorPublisher.subscribe(storage)
     authorPublisher.subscribe(alert)
-    //#source-fanoutPublisher
+    // #source-fanoutPublisher
 
     // this relies on fanoutPublisher buffer size > number of authors
     assertResult(storage)
@@ -120,24 +120,24 @@ class ReactiveStreamsDocSpec extends AkkaSpec {
     import impl._
     val storage = impl.storage
 
-    //#sink-subscriber
+    // #sink-subscriber
     val tweetSubscriber: Subscriber[Tweet] =
       authors.to(Sink.fromSubscriber(storage)).runWith(Source.asSubscriber[Tweet])
 
     tweets.subscribe(tweetSubscriber)
-    //#sink-subscriber
+    // #sink-subscriber
 
     assertResult(storage)
   }
 
   "use a processor" in {
 
-    //#use-processor
+    // #use-processor
     // An example Processor factory
     def createProcessor: Processor[Int, Int] = Flow[Int].toProcessor.run()
 
     val flow: Flow[Int, Int, NotUsed] = Flow.fromProcessor(() => createProcessor)
-    //#use-processor
+    // #use-processor
 
   }
 

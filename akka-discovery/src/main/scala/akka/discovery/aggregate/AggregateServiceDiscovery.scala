@@ -20,9 +20,7 @@ import akka.event.Logging
 import akka.util.Helpers.Requiring
 import akka.util.ccompat.JavaConverters._
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private final class AggregateServiceDiscoverySettings(config: Config) {
 
@@ -34,17 +32,13 @@ private final class AggregateServiceDiscoverySettings(config: Config) {
 
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private object AggregateServiceDiscovery {
   type Methods = List[(String, ServiceDiscovery)]
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] final class AggregateServiceDiscovery(system: ExtendedActorSystem) extends ServiceDiscovery {
 
@@ -59,9 +53,7 @@ private[akka] final class AggregateServiceDiscovery(system: ExtendedActorSystem)
   }
   private implicit val ec: MessageDispatcher = system.dispatchers.internalDispatcher
 
-  /**
-   * Each discovery method is given the resolveTimeout rather than reducing it each time between methods.
-   */
+  /** Each discovery method is given the resolveTimeout rather than reducing it each time between methods. */
   override def lookup(lookup: Lookup, resolveTimeout: FiniteDuration): Future[Resolved] =
     resolve(methods, lookup, resolveTimeout)
 
@@ -82,10 +74,9 @@ private[akka] final class AggregateServiceDiscovery(system: ExtendedActorSystem)
             } else
               Future.successful(resolved)
           }
-          .recoverWith {
-            case NonFatal(t) =>
-              log.error(t, "[{}] Service discovery failed. Trying next discovery method", method)
-              resolve(tail, query, resolveTimeout)
+          .recoverWith { case NonFatal(t) =>
+            log.error(t, "[{}] Service discovery failed. Trying next discovery method", method)
+            resolve(tail, query, resolveTimeout)
           }
       case Nil =>
         // this is checked in `discoveryMethods`, but silence compiler warning

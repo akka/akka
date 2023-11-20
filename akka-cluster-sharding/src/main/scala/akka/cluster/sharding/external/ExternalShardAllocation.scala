@@ -23,14 +23,10 @@ final class ExternalShardAllocation(system: ExtendedActorSystem) extends Extensi
       new ExternalShardAllocationClientImpl(system, typeName)
   }
 
-  /**
-   * Scala API
-   */
+  /** Scala API */
   def clientFor(typeName: String): scaladsl.ExternalShardAllocationClient = client(typeName)
 
-  /**
-   * Java API
-   */
+  /** Java API */
   def getClient(typeName: String): javadsl.ExternalShardAllocationClient = client(typeName)
 
   private def client(typeName: String): ExternalShardAllocationClientImpl = {

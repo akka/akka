@@ -13,9 +13,7 @@ import akka.stream.OverflowStrategies._
 import akka.stream.scaladsl.SourceQueueWithComplete
 import akka.stream.stage._
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object QueueSource {
 
   sealed trait Input[+T]
@@ -25,9 +23,7 @@ import akka.stream.stage._
 
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] final class QueueSource[T](
     maxBuffer: Int,
     overflowStrategy: OverflowStrategy,

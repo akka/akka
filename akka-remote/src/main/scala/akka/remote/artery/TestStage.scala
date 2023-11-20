@@ -103,14 +103,10 @@ private[remote] class SharedTestState {
 
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[remote] final case class TestState(blackholes: Map[Address, Set[Address]], failInboundStream: Option[Throwable])
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[remote] class OutboundTestStage(outboundContext: OutboundContext, state: SharedTestState)
     extends GraphStage[FlowShape[OutboundEnvelope, OutboundEnvelope]] {
   val in: Inlet[OutboundEnvelope] = Inlet("OutboundTestStage.in")
@@ -141,9 +137,7 @@ private[remote] class OutboundTestStage(outboundContext: OutboundContext, state:
 
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[remote] class InboundTestStage(inboundContext: InboundContext, state: SharedTestState)
     extends GraphStage[FlowShape[InboundEnvelope, InboundEnvelope]] {
   val in: Inlet[InboundEnvelope] = Inlet("InboundTestStage.in")

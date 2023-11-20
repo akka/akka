@@ -20,7 +20,6 @@ import akka.util.ConstantFun
 /**
  * Shared stream operations for [[FlowWithContext]] and [[SourceWithContext]] that automatically propagate a context
  * element with each data element.
- *
  */
 @ccompatUsedUntil213
 trait FlowWithContextOps[+Out, +Ctx, +Mat] {
@@ -100,8 +99,8 @@ trait FlowWithContextOps[+Out, +Ctx, +Mat] {
    * @see [[akka.stream.scaladsl.FlowOps.mapAsync]]
    */
   def mapAsync[Out2](parallelism: Int)(f: Out => Future[Out2]): Repr[Out2, Ctx] =
-    via(flow.mapAsync(parallelism) {
-      case (e, ctx) => f(e).map(o => (o, ctx))(ExecutionContexts.parasitic)
+    via(flow.mapAsync(parallelism) { case (e, ctx) =>
+      f(e).map(o => (o, ctx))(ExecutionContexts.parasitic)
     })
 
   /**
@@ -209,13 +208,11 @@ trait FlowWithContextOps[+Out, +Ctx, +Mat] {
    * @see [[akka.stream.scaladsl.FlowOps.mapConcat]]
    */
   def mapConcat[Out2](f: Out => IterableOnce[Out2]): Repr[Out2, Ctx] =
-    via(flow.mapConcat {
-      case (e, ctx) => f(e).iterator.map(_ -> ctx)
+    via(flow.mapConcat { case (e, ctx) =>
+      f(e).iterator.map(_ -> ctx)
     })
 
-  /**
-   * Apply the given function to each context element (leaving the data elements unchanged).
-   */
+  /** Apply the given function to each context element (leaving the data elements unchanged). */
   def mapContext[Ctx2](f: Ctx => Ctx2): Repr[Out, Ctx2] =
     via(flow.map { case (e, ctx) => (e, f(ctx)) })
 
@@ -224,8 +221,8 @@ trait FlowWithContextOps[+Out, +Ctx, +Mat] {
    *
    * @see [[akka.stream.scaladsl.FlowOps.log]]
    */
-  def log(name: String, extract: Out => Any = ConstantFun.scalaIdentityFunction)(
-      implicit log: LoggingAdapter = null): Repr[Out, Ctx] = {
+  def log(name: String, extract: Out => Any = ConstantFun.scalaIdentityFunction)(implicit
+      log: LoggingAdapter = null): Repr[Out, Ctx] = {
     val extractWithContext: ((Out, Ctx)) => Any = { case (e, _) => extract(e) }
     via(flow.log(name, extractWithContext)(log))
   }
@@ -238,8 +235,8 @@ trait FlowWithContextOps[+Out, +Ctx, +Mat] {
   def logWithMarker(
       name: String,
       marker: (Out, Ctx) => LogMarker,
-      extract: Out => Any = ConstantFun.scalaIdentityFunction)(
-      implicit log: MarkerLoggingAdapter = null): Repr[Out, Ctx] = {
+      extract: Out => Any = ConstantFun.scalaIdentityFunction)(implicit
+      log: MarkerLoggingAdapter = null): Repr[Out, Ctx] = {
     val extractWithContext: ((Out, Ctx)) => Any = { case (e, _) => extract(e) }
     via(flow.logWithMarker(name, marker.tupled, extractWithContext)(log))
   }

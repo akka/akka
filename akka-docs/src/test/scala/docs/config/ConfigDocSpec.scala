@@ -18,14 +18,14 @@ class ConfigDocSpec extends AnyWordSpec with Matchers {
   val rootBehavior = Behaviors.empty[String]
 
   def compileOnlyCustomConfig(): Unit = {
-    //#custom-config
+    // #custom-config
     val customConf = ConfigFactory.parseString("""
       akka.log-config-on-start = on
     """)
     // ConfigFactory.load sandwiches customConfig between default reference
     // config and default overrides, and then resolves it.
     val system = ActorSystem(rootBehavior, "MySystem", ConfigFactory.load(customConf))
-    //#custom-config
+    // #custom-config
   }
 
   def compileOnlyPrintConfig(): Unit = {

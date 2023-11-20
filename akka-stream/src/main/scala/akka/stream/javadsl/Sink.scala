@@ -84,27 +84,19 @@ object Sink {
   def reduce[In](f: function.Function2[In, In, In]): Sink[In, CompletionStage[In]] =
     new Sink(scaladsl.Sink.reduce[In](f.apply).toCompletionStage())
 
-  /**
-   * Helper to create [[Sink]] from `Subscriber`.
-   */
+  /** Helper to create [[Sink]] from `Subscriber`. */
   def fromSubscriber[In](subs: Subscriber[In]): Sink[In, NotUsed] =
     new Sink(scaladsl.Sink.fromSubscriber(subs))
 
-  /**
-   * A `Sink` that immediately cancels its upstream after materialization.
-   */
+  /** A `Sink` that immediately cancels its upstream after materialization. */
   def cancelled[T](): Sink[T, NotUsed] =
     new Sink(scaladsl.Sink.cancelled)
 
-  /**
-   * A `Sink` that will consume the stream and discard the elements.
-   */
+  /** A `Sink` that will consume the stream and discard the elements. */
   def ignore[T](): Sink[T, CompletionStage[Done]] =
     new Sink(scaladsl.Sink.ignore.toCompletionStage())
 
-  /**
-   * A [[Sink]] that will always backpressure never cancel and never consume any elements from the stream.
-   * */
+  /** A [[Sink]] that will always backpressure never cancel and never consume any elements from the stream. */
   def never[T]: Sink[T, CompletionStage[Done]] =
     new Sink(scaladsl.Sink.never.toCompletionStage())
 
@@ -237,7 +229,6 @@ object Sink {
    * of the actor will grow. For potentially slow consumer actors it is recommended
    * to use a bounded mailbox with zero `mailbox-push-timeout-time` or use a rate
    * limiting operator in front of this `Sink`.
-   *
    */
   def actorRef[In](ref: ActorRef, onCompleteMessage: Any): Sink[In, NotUsed] =
     new Sink(scaladsl.Sink.actorRef[In](ref, onCompleteMessage, (t: Throwable) => Status.Failure(t)))
@@ -340,9 +331,7 @@ object Sink {
   def setup[T, M](factory: BiFunction[ActorMaterializer, Attributes, Sink[T, M]]): Sink[T, CompletionStage[M]] =
     scaladsl.Sink.setup((mat, attr) => factory(mat, attr).asScala).mapMaterializedValue(_.toJava).asJava
 
-  /**
-   * Combine several sinks with fan-out strategy like `Broadcast` or `Balance` and returns `Sink`.
-   */
+  /** Combine several sinks with fan-out strategy like `Broadcast` or `Balance` and returns `Sink`. */
   def combine[T, U](
       output1: Sink[U, _],
       output2: Sink[U, _],
@@ -356,9 +345,7 @@ object Sink {
     new Sink(scaladsl.Sink.combine(output1.asScala, output2.asScala, seq: _*)(num => fanOutStrategy.apply(num)))
   }
 
-  /**
-   * Combine two sinks with fan-out strategy like `Broadcast` or `Balance` and returns `Sink` with 2 outlets.
-   */
+  /** Combine two sinks with fan-out strategy like `Broadcast` or `Balance` and returns `Sink` with 2 outlets. */
   def combineMat[T, U, M1, M2, M](
       first: Sink[U, M1],
       second: Sink[U, M2],
@@ -379,7 +366,8 @@ object Sink {
     val seq = if (sinks != null) Util.immutableSeq(sinks).collect {
       case sink: Sink[U @unchecked, M @unchecked] => sink.asScala
       case other                                  => other
-    } else immutable.Seq()
+    }
+    else immutable.Seq()
     import akka.util.ccompat.JavaConverters._
     new Sink(scaladsl.Sink.combine(seq)(size => fanOutStrategy(size)).mapMaterializedValue(_.asJava))
   }
@@ -496,7 +484,7 @@ object Sink {
    */
   def lazyCompletionStageSink[T, M](create: Creator[CompletionStage[Sink[T, M]]]): Sink[T, CompletionStage[M]] =
     new Sink(scaladsl.Sink.lazyFutureSink { () =>
-      create.create().toScala.map(_.asScala)((ExecutionContexts.parasitic))
+      create.create().toScala.map(_.asScala)(ExecutionContexts.parasitic)
     }).mapMaterializedValue(_.toJava)
 }
 
@@ -513,9 +501,7 @@ final class Sink[In, Mat](delegate: scaladsl.Sink[In, Mat]) extends Graph[SinkSh
 
   override def toString: String = delegate.toString
 
-  /**
-   * Converts this Sink to its Scala DSL counterpart.
-   */
+  /** Converts this Sink to its Scala DSL counterpart. */
   def asScala: scaladsl.Sink[In, Mat] = delegate
 
   /**
@@ -526,9 +512,7 @@ final class Sink[In, Mat](delegate: scaladsl.Sink[In, Mat]) extends Graph[SinkSh
   def runWith[M](source: Graph[SourceShape[In], M], systemProvider: ClassicActorSystemProvider): M =
     asScala.runWith(source)(SystemMaterializer(systemProvider.classicSystem).materializer)
 
-  /**
-   * Connect this `Sink` to a `Source` and run it.
-   */
+  /** Connect this `Sink` to a `Source` and run it. */
   def runWith[M](source: Graph[SourceShape[In], M], materializer: Materializer): M =
     asScala.runWith(source)(materializer)
 
@@ -543,9 +527,7 @@ final class Sink[In, Mat](delegate: scaladsl.Sink[In, Mat]) extends Graph[SinkSh
   def contramap[In2](f: function.Function[In2, In]): Sink[In2, Mat] =
     javadsl.Flow.fromFunction(f).toMat(this, Keep.right[NotUsed, Mat])
 
-  /**
-   * Transform only the materialized value of this Sink, leaving all other properties as they were.
-   */
+  /** Transform only the materialized value of this Sink, leaving all other properties as they were. */
   def mapMaterializedValue[Mat2](f: function.Function[Mat, Mat2]): Sink[In, Mat2] =
     new Sink(delegate.mapMaterializedValue(f.apply _))
 
@@ -597,15 +579,11 @@ final class Sink[In, Mat](delegate: scaladsl.Sink[In, Mat]) extends Graph[SinkSh
   override def addAttributes(attr: Attributes): javadsl.Sink[In, Mat] =
     new Sink(delegate.addAttributes(attr))
 
-  /**
-   * Add a ``name`` attribute to this Sink.
-   */
+  /** Add a ``name`` attribute to this Sink. */
   override def named(name: String): javadsl.Sink[In, Mat] =
     new Sink(delegate.named(name))
 
-  /**
-   * Put an asynchronous boundary around this `Sink`
-   */
+  /** Put an asynchronous boundary around this `Sink` */
   override def async: javadsl.Sink[In, Mat] =
     new Sink(delegate.async)
 

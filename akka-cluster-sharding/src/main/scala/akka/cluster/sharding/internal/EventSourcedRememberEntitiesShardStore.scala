@@ -22,32 +22,22 @@ import akka.persistence.SaveSnapshotSuccess
 import akka.persistence.SnapshotOffer
 import akka.persistence.SnapshotSelectionCriteria
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] object EventSourcedRememberEntitiesShardStore {
 
-  /**
-   * A case class which represents a state change for the Shard
-   */
+  /** A case class which represents a state change for the Shard */
   sealed trait StateChange extends ClusterShardingSerializable
 
-  /**
-   * Persistent state of the Shard.
-   */
+  /** Persistent state of the Shard. */
   final case class State private[akka] (entities: Set[EntityId] = Set.empty) extends ClusterShardingSerializable
 
-  /**
-   * `State` change for starting a set of entities in this `Shard`
-   */
+  /** `State` change for starting a set of entities in this `Shard` */
   final case class EntitiesStarted(entities: Set[EntityId]) extends StateChange
 
   case object StartedAck
 
-  /**
-   * `State` change for an entity which has terminated.
-   */
+  /** `State` change for an entity which has terminated. */
   final case class EntitiesStopped(entities: Set[EntityId]) extends StateChange
 
   def props(typeName: String, shardId: ShardRegion.ShardId, settings: ClusterShardingSettings): Props =

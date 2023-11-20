@@ -31,15 +31,15 @@ object StyleGuideDocExamples {
 
   object FunctionalStyle {
 
-    //#fun-style
+    // #fun-style
 
-    //#messages
+    // #messages
     object Counter {
       sealed trait Command
       case object Increment extends Command
       final case class GetValue(replyTo: ActorRef[Value]) extends Command
       final case class Value(n: Int)
-      //#messages
+      // #messages
 
       def apply(): Behavior[Command] =
         counter(0)
@@ -56,16 +56,16 @@ object StyleGuideDocExamples {
               Behaviors.same
           }
         }
-      //#messages
+      // #messages
     }
-    //#messages
-    //#fun-style
+    // #messages
+    // #fun-style
 
   }
 
   object OOStyle {
 
-    //#oo-style
+    // #oo-style
 
     object Counter {
       sealed trait Command
@@ -95,7 +95,7 @@ object StyleGuideDocExamples {
         }
       }
     }
-    //#oo-style
+    // #oo-style
 
   }
 
@@ -270,7 +270,7 @@ object StyleGuideDocExamples {
   }
 
   object FactoryMethod {
-    //#behavior-factory-method
+    // #behavior-factory-method
     object CountDown {
       sealed trait Command
       case object Down extends Command
@@ -284,37 +284,36 @@ object StyleGuideDocExamples {
       import CountDown._
 
       private def counter(remaining: Int): Behavior[Command] = {
-        //#exhastivness-check
-        Behaviors.receiveMessage {
-          case Down =>
-            if (remaining == 1) {
-              notifyWhenZero.tell(Done)
-              Behaviors.stopped
-            } else
-              counter(remaining - 1)
+        // #exhastivness-check
+        Behaviors.receiveMessage { case Down =>
+          if (remaining == 1) {
+            notifyWhenZero.tell(Done)
+            Behaviors.stopped
+          } else
+            counter(remaining - 1)
         }
-        //#exhastivness-check
+        // #exhastivness-check
       }
 
     }
-    //#behavior-factory-method
+    // #behavior-factory-method
 
     object Usage {
       val context: ActorContext[_] = ???
       val doneRef: ActorRef[Done] = ???
 
-      //#behavior-factory-method-spawn
+      // #behavior-factory-method-spawn
       val countDown = context.spawn(CountDown(100, doneRef), "countDown")
-      //#behavior-factory-method-spawn
+      // #behavior-factory-method-spawn
 
-      //#message-prefix-in-tell
+      // #message-prefix-in-tell
       countDown ! CountDown.Down
-      //#message-prefix-in-tell
+      // #message-prefix-in-tell
     }
   }
 
   object Messages {
-    //#message-protocol
+    // #message-protocol
     object CounterProtocol {
       sealed trait Command
 
@@ -325,11 +324,11 @@ object StyleGuideDocExamples {
       case object Confirmed extends OperationResult
       final case class Rejected(reason: String) extends OperationResult
     }
-    //#message-protocol
+    // #message-protocol
   }
 
   object PublicVsPrivateMessages1 {
-    //#public-private-messages-1
+    // #public-private-messages-1
     object Counter {
       sealed trait Command
       case object Increment extends Command
@@ -366,11 +365,11 @@ object StyleGuideDocExamples {
             Behaviors.same
         }
     }
-    //#public-private-messages-1
+    // #public-private-messages-1
   }
 
   object PublicVsPrivateMessages2 {
-    //#public-private-messages-2
+    // #public-private-messages-2
     // above example is preferred, but this is possible and not wrong
     object Counter {
       // The type of all public and private messages the Counter actor handles
@@ -417,7 +416,7 @@ object StyleGuideDocExamples {
             Behaviors.same
         }
     }
-    //#public-private-messages-2
+    // #public-private-messages-2
   }
 
   object Ask {
@@ -425,7 +424,7 @@ object StyleGuideDocExamples {
 
     implicit val system: ActorSystem[Nothing] = ???
 
-    //#ask-1
+    // #ask-1
     import akka.actor.typed.scaladsl.AskPattern._
     import akka.util.Timeout
 
@@ -433,11 +432,11 @@ object StyleGuideDocExamples {
     val counter: ActorRef[Command] = ???
 
     val result: Future[OperationResult] = counter.ask(replyTo => Increment(delta = 2, replyTo))
-    //#ask-1
+    // #ask-1
 
-    //#ask-2
+    // #ask-2
     val result2: Future[OperationResult] = counter.ask(Increment(delta = 2, _))
-    //#ask-2
+    // #ask-2
 
     /*
     //#ask-3
@@ -446,26 +445,26 @@ object StyleGuideDocExamples {
     //#ask-3
      */
 
-    //#ask-4
+    // #ask-4
     val result3: Future[OperationResult] = counter ? (Increment(delta = 2, _))
-    //#ask-4
+    // #ask-4
   }
 
   object ExhaustivenessCheck {
 
     object CountDown {
-      //#messages-sealed
+      // #messages-sealed
       sealed trait Command
       case object Down extends Command
       final case class GetValue(replyTo: ActorRef[Value]) extends Command
       final case class Value(n: Int)
-      //#messages-sealed
+      // #messages-sealed
     }
 
     class CountDown() {
       import CountDown._
 
-      //#pattern-match-unhandled
+      // #pattern-match-unhandled
       val zero: Behavior[Command] = {
         Behaviors.receiveMessage {
           case GetValue(replyTo) =>
@@ -475,19 +474,18 @@ object StyleGuideDocExamples {
             Behaviors.unhandled
         }
       }
-      //#pattern-match-unhandled
+      // #pattern-match-unhandled
 
       @nowarn
       object partial {
-        //#pattern-match-partial
+        // #pattern-match-partial
         val zero: Behavior[Command] = {
-          Behaviors.receiveMessagePartial {
-            case GetValue(replyTo) =>
-              replyTo ! Value(0)
-              Behaviors.same
+          Behaviors.receiveMessagePartial { case GetValue(replyTo) =>
+            replyTo ! Value(0)
+            Behaviors.same
           }
         }
-        //#pattern-match-partial
+        // #pattern-match-partial
       }
 
     }
@@ -495,40 +493,37 @@ object StyleGuideDocExamples {
 
   object BehaviorCompositionWithPartialFunction {
 
-    //#messages-sealed-composition
+    // #messages-sealed-composition
     sealed trait Command
     case object Down extends Command
     final case class GetValue(replyTo: ActorRef[Value]) extends Command
     final case class Value(n: Int)
-    //#messages-sealed-composition
+    // #messages-sealed-composition
 
-    //#get-handler-partial
-    def getHandler(value: Int): PartialFunction[Command, Behavior[Command]] = {
-      case GetValue(replyTo) =>
-        replyTo ! Value(value)
-        Behaviors.same
+    // #get-handler-partial
+    def getHandler(value: Int): PartialFunction[Command, Behavior[Command]] = { case GetValue(replyTo) =>
+      replyTo ! Value(value)
+      Behaviors.same
     }
-    //#get-handler-partial
+    // #get-handler-partial
 
-    //#set-handler-non-zero-partial
-    def setHandlerNotZero(value: Int): PartialFunction[Command, Behavior[Command]] = {
-      case Down =>
-        if (value == 1)
-          zero
-        else
-          nonZero(value - 1)
+    // #set-handler-non-zero-partial
+    def setHandlerNotZero(value: Int): PartialFunction[Command, Behavior[Command]] = { case Down =>
+      if (value == 1)
+        zero
+      else
+        nonZero(value - 1)
     }
-    //#set-handler-non-zero-partial
+    // #set-handler-non-zero-partial
 
-    //#set-handler-zero-partial
-    def setHandlerZero(log: Logger): PartialFunction[Command, Behavior[Command]] = {
-      case Down =>
-        log.error("Counter is already at zero!")
-        Behaviors.same
+    // #set-handler-zero-partial
+    def setHandlerZero(log: Logger): PartialFunction[Command, Behavior[Command]] = { case Down =>
+      log.error("Counter is already at zero!")
+      Behaviors.same
     }
-    //#set-handler-zero-partial
+    // #set-handler-zero-partial
 
-    //#top-level-behaviors-partial
+    // #top-level-behaviors-partial
     val zero: Behavior[Command] = Behaviors.setup { context =>
       Behaviors.receiveMessagePartial(getHandler(0).orElse(setHandlerZero(context.log)))
     }
@@ -538,13 +533,13 @@ object StyleGuideDocExamples {
 
     // Default Initial Behavior for this actor
     def apply(initialCapacity: Int): Behavior[Command] = nonZero(initialCapacity)
-    //#top-level-behaviors-partial
+    // #top-level-behaviors-partial
   }
 
   object NestingSample1 {
     sealed trait Command
 
-    //#nesting
+    // #nesting
     def apply(): Behavior[Command] =
       Behaviors.setup[Command](context =>
         Behaviors.withStash(100)(stash =>
@@ -552,19 +547,19 @@ object StyleGuideDocExamples {
             context.log.debug("Starting up")
 
             // behavior using context, stash and timers ...
-            //#nesting
+            // #nesting
             timers.isTimerActive("aa")
             stash.isEmpty
             Behaviors.empty
-          //#nesting
+          // #nesting
           }))
-    //#nesting
+    // #nesting
   }
 
   object NestingSample2 {
     sealed trait Command
 
-    //#nesting-supervise
+    // #nesting-supervise
     def apply(): Behavior[Command] =
       Behaviors.setup { context =>
         // only run on initial actor start, not on crash-restart
@@ -575,13 +570,13 @@ object StyleGuideDocExamples {
             // every time the actor crashes and restarts a new stash is created (previous stash is lost)
             context.log.debug("Starting up with stash")
             // Behaviors.receiveMessage { ... }
-            //#nesting-supervise
+            // #nesting-supervise
             stash.isEmpty
             Behaviors.empty
-            //#nesting-supervise
+            // #nesting-supervise
           })
           .onFailure[RuntimeException](SupervisorStrategy.restart)
       }
-    //#nesting-supervise
+    // #nesting-supervise
   }
 }

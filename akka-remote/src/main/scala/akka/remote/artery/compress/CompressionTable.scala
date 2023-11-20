@@ -55,7 +55,7 @@ private[remote] final class CompressionTable[T](
       val mit = _dictionary.entrySet().iterator
       while (i < tups.length) {
         val entry = mit.next()
-        tups(i) = (entry.getKey -> entry.getValue.intValue())
+        tups(i) = entry.getKey -> entry.getValue.intValue()
         i += 1
       }
       util.Arrays.sort(tups, CompressionTable.compareBy2ndValue[T])
@@ -105,8 +105,8 @@ private[remote] object CompressionTable {
 
   def apply[T](originUid: Long, version: Byte, dictionary: Map[T, Int]): CompressionTable[T] = {
     val _dictionary = newObject2IntHashMap[T](dictionary.size * 2)
-    dictionary.foreach {
-      case (key, value) => _dictionary.put(key, value)
+    dictionary.foreach { case (key, value) =>
+      _dictionary.put(key, value)
     }
     new CompressionTable[T](originUid, version, _dictionary)
   }

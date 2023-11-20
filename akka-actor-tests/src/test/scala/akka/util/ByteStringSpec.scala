@@ -312,12 +312,10 @@ class ByteStringSpec extends AnyWordSpec with Matchers with Checkers {
     val builder = ByteString.newBuilder
     for (i <- 0 until data.length) builder.putLongPart(data(i), nBytes)(byteOrder)
 
-    reference.zipWithIndex
-      .collect({ // Since there is no partial put on LongBuffer, we need to collect only the interesting bytes
-        case (r, i) if byteOrder == ByteOrder.LITTLE_ENDIAN && i % elemSize < nBytes            => r
-        case (r, i) if byteOrder == ByteOrder.BIG_ENDIAN && i % elemSize >= (elemSize - nBytes) => r
-      })
-      .toSeq == builder.result()
+    reference.zipWithIndex.collect { // Since there is no partial put on LongBuffer, we need to collect only the interesting bytes
+      case (r, i) if byteOrder == ByteOrder.LITTLE_ENDIAN && i % elemSize < nBytes            => r
+      case (r, i) if byteOrder == ByteOrder.BIG_ENDIAN && i % elemSize >= (elemSize - nBytes) => r
+    }.toSeq == builder.result()
   }
 
   def testFloatEncoding(slice: ArraySlice[Float], byteOrder: ByteOrder): Boolean = {
@@ -886,13 +884,13 @@ class ByteStringSpec extends AnyWordSpec with Matchers with Checkers {
 
       "calling span" in {
         check { (a: ByteString, b: Byte) =>
-          likeVector(a)({ _.span(_ != b) match { case (a, b) => (a, b) } })
+          likeVector(a) { _.span(_ != b) match { case (a, b) => (a, b) } }
         }
       }
 
       "calling takeWhile" in {
         check { (a: ByteString, b: Byte) =>
-          likeVector(a)({ _.takeWhile(_ != b) })
+          likeVector(a) { _.takeWhile(_ != b) }
         }
       }
       "calling dropWhile" in {
@@ -940,9 +938,9 @@ class ByteStringSpec extends AnyWordSpec with Matchers with Checkers {
         check { (slice: ByteStringSlice) =>
           slice match {
             case (xs, from, until) =>
-              likeVector(xs)({
+              likeVector(xs) {
                 _.slice(from, until)
-              })
+              }
           }
         }
       }
@@ -951,9 +949,9 @@ class ByteStringSpec extends AnyWordSpec with Matchers with Checkers {
         check { (slice: ByteStringSlice) =>
           slice match {
             case (xs, from, until) =>
-              likeVector(xs)({
+              likeVector(xs) {
                 _.drop(from).take(until - from)
-              })
+              }
           }
         }
       }
@@ -970,11 +968,11 @@ class ByteStringSpec extends AnyWordSpec with Matchers with Checkers {
         check { (slice: ByteStringSlice) =>
           slice match {
             case (xs, from, until) =>
-              likeVector(xs)({ it =>
+              likeVector(xs) { it =>
                 val array = new Array[Byte](xs.length)
                 it.copyToArray(array, from, until)
                 array.toSeq
-              })
+              }
           }
         }
       }
@@ -1113,9 +1111,11 @@ class ByteStringSpec extends AnyWordSpec with Matchers with Checkers {
         check { (slice: ByteStringSlice) =>
           slice match {
             case (xs, from, until) =>
-              likeVecIt(xs)({
-                _.slice(from, until).toSeq
-              }, strict = false)
+              likeVecIt(xs)(
+                {
+                  _.slice(from, until).toSeq
+                },
+                strict = false)
           }
         }
       }
@@ -1124,9 +1124,11 @@ class ByteStringSpec extends AnyWordSpec with Matchers with Checkers {
         check { (slice: ByteStringSlice) =>
           slice match {
             case (xs, from, until) =>
-              likeVecIt(xs)({
-                _.drop(from).take(until - from).toSeq
-              }, strict = false)
+              likeVecIt(xs)(
+                {
+                  _.drop(from).take(until - from).toSeq
+                },
+                strict = false)
           }
         }
       }
@@ -1135,11 +1137,13 @@ class ByteStringSpec extends AnyWordSpec with Matchers with Checkers {
         check { (slice: ByteStringSlice) =>
           slice match {
             case (xs, from, until) =>
-              likeVecIt(xs)({ it =>
-                val array = new Array[Byte](xs.length)
-                it.slice(from, until).copyToArray(array, from, until)
-                array.toSeq
-              }, strict = false)
+              likeVecIt(xs)(
+                { it =>
+                  val array = new Array[Byte](xs.length)
+                  it.slice(from, until).copyToArray(array, from, until)
+                  array.toSeq
+                },
+                strict = false)
           }
         }
       }

@@ -33,8 +33,7 @@ object LotsOfDataBot {
       // Override the configuration of the port
       val config = ConfigFactory
         .parseString("akka.remote.artery.canonical.port=" + port)
-        .withFallback(
-          ConfigFactory.load(ConfigFactory.parseString("""
+        .withFallback(ConfigFactory.load(ConfigFactory.parseString("""
             passive = off
             max-entries = 100000
             akka.actor.provider = "cluster"
@@ -113,7 +112,6 @@ class LotsOfDataBot extends Actor with ActorLogging {
       }
 
     case _: UpdateResponse[_] => // ignore
-
     case c @ Changed(ORSetKey(id)) =>
       val elements = c.dataValue match {
         case ORSet(e) => e

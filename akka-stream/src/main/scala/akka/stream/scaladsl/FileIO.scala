@@ -15,9 +15,7 @@ import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.io._
 import akka.util.ByteString
 
-/**
- * Factories to create sinks and sources from files
- */
+/** Factories to create sinks and sources from files */
 object FileIO {
 
   /**

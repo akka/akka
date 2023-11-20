@@ -18,9 +18,7 @@ import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.stage._
 import akka.util.OptionVal
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] final class UnfoldResourceSourceAsync[R, T](
     create: () => Future[R],
     readData: R => Future[Option[T]],
@@ -45,19 +43,18 @@ import akka.util.OptionVal
         case Failure(t) => failStage(t)
       }.invokeWithFeedback _
 
-      private val errorHandler: PartialFunction[Throwable, Unit] = {
-        case NonFatal(ex) =>
-          decider(ex) match {
-            case Supervision.Stop =>
-              failStage(ex)
-            case Supervision.Restart =>
-              try {
-                restartResource()
-              } catch {
-                case NonFatal(ex) => failStage(ex)
-              }
-            case Supervision.Resume => onPull()
-          }
+      private val errorHandler: PartialFunction[Throwable, Unit] = { case NonFatal(ex) =>
+        decider(ex) match {
+          case Supervision.Stop =>
+            failStage(ex)
+          case Supervision.Restart =>
+            try {
+              restartResource()
+            } catch {
+              case NonFatal(ex) => failStage(ex)
+            }
+          case Supervision.Resume => onPull()
+        }
       }
 
       private val readCallback = getAsyncCallback[Try[Option[T]]](handle).invoke _
@@ -104,7 +101,7 @@ import akka.util.OptionVal
 
       override def postStop(): Unit = maybeResource match {
         case OptionVal.Some(resource) => close(resource)
-        case _                        => //do nothing
+        case _                        => // do nothing
       }
 
       private def restartResource(): Unit = {

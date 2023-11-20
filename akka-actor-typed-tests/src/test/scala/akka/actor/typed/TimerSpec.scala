@@ -260,11 +260,10 @@ class TimerSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogC
       })
 
       var seen = Set.empty[String]
-      probe.fishForMessage(500.millis) {
-        case message =>
-          seen += message
-          if (seen.size == 2) FishingOutcomes.complete
-          else FishingOutcomes.continue
+      probe.fishForMessage(500.millis) { case message =>
+        seen += message
+        if (seen.size == 2) FishingOutcomes.complete
+        else FishingOutcomes.continue
       }
 
       ref ! "stop"
@@ -285,11 +284,10 @@ class TimerSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogC
 
       val ref = spawn(newBehavior(1))
       var seen = Set.empty[String]
-      probe.fishForMessage(500.millis) {
-        case message =>
-          seen += message
-          if (seen.size == 2) FishingOutcomes.complete
-          else FishingOutcomes.continue
+      probe.fishForMessage(500.millis) { case message =>
+        seen += message
+        if (seen.size == 2) FishingOutcomes.complete
+        else FishingOutcomes.continue
       }
 
       ref ! "stop"

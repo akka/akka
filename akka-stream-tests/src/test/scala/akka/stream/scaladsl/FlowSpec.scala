@@ -407,7 +407,9 @@ class FlowSpec extends StreamSpec(ConfigFactory.parseString("akka.actor.debug.re
 
         upstreamSubscription.sendNext("a3")
         downstream.expectNext("a3")
-        downstream2.expectNoMessage(100.millis.dilated) // as nothing was requested yet, fanOutBox needs to cache element in this case
+        downstream2.expectNoMessage(
+          100.millis.dilated
+        ) // as nothing was requested yet, fanOutBox needs to cache element in this case
 
         downstream2Subscription.request(1)
         downstream2.expectNext("a3")
@@ -481,7 +483,9 @@ class FlowSpec extends StreamSpec(ConfigFactory.parseString("akka.actor.debug.re
         downstream.expectNext("a3")
         downstream.expectComplete()
 
-        downstream2.expectNoMessage(100.millis.dilated) // as nothing was requested yet, fanOutBox needs to cache element in this case
+        downstream2.expectNoMessage(
+          100.millis.dilated
+        ) // as nothing was requested yet, fanOutBox needs to cache element in this case
 
         downstream2Subscription.request(1)
         downstream2.expectNext("a3")
@@ -531,9 +535,7 @@ class FlowSpec extends StreamSpec(ConfigFactory.parseString("akka.actor.debug.re
     }
   }
 
-  /**
-   * Count elements that passing by this flow
-   * */
+  /** Count elements that passing by this flow */
   private class CounterFlow[T] extends GraphStageWithMaterializedValue[FlowShape[T, T], AtomicLong] {
     private val in = Inlet[T]("ElementCounterFlow.in")
     private val out = Outlet[T]("ElementCounterFlow.out")

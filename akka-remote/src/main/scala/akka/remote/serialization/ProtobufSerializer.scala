@@ -73,8 +73,8 @@ class ProtobufSerializer(val system: ExtendedActorSystem) extends BaseSerializer
                 if (method eq null) clazz.getDeclaredMethod("parseFrom", ProtobufSerializer.ARRAY_OF_BYTE_ARRAY: _*)
                 else method
               if (parsingMethodBindingRef.compareAndSet(
-                    parsingMethodBinding,
-                    parsingMethodBinding.updated(clazz, unCachedParsingMethod)))
+                  parsingMethodBinding,
+                  parsingMethodBinding.updated(clazz, unCachedParsingMethod)))
                 unCachedParsingMethod
               else
                 parsingMethod(unCachedParsingMethod)
@@ -99,8 +99,8 @@ class ProtobufSerializer(val system: ExtendedActorSystem) extends BaseSerializer
             if (method eq null) clazz.getMethod("toByteArray")
             else method
           if (toByteArrayMethodBindingRef.compareAndSet(
-                toByteArrayMethodBinding,
-                toByteArrayMethodBinding.updated(clazz, unCachedtoByteArrayMethod)))
+              toByteArrayMethodBinding,
+              toByteArrayMethodBinding.updated(clazz, unCachedtoByteArrayMethod)))
             unCachedtoByteArrayMethod
           else
             toByteArrayMethod(unCachedtoByteArrayMethod)

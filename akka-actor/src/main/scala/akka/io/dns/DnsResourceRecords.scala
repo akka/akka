@@ -17,9 +17,7 @@ import akka.annotation.InternalApi
 import akka.io.dns.internal.{ DomainName, _ }
 import akka.util.{ unused, ByteIterator, ByteString }
 
-/**
- * Not for user extension
- */
+/** Not for user extension */
 @DoNotInherit
 sealed abstract class ResourceRecord(
     val name: String,
@@ -31,9 +29,7 @@ sealed abstract class ResourceRecord(
 final case class ARecord(override val name: String, override val ttl: CachePolicy.Ttl, ip: InetAddress)
     extends ResourceRecord(name, ttl, RecordType.A.code, RecordClass.IN.code) {}
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[io] object ARecord {
   def parseBody(name: String, ttl: Ttl, @unused length: Short, it: ByteIterator): ARecord = {
@@ -46,15 +42,11 @@ private[io] object ARecord {
 final case class AAAARecord(override val name: String, override val ttl: CachePolicy.Ttl, ip: Inet6Address)
     extends ResourceRecord(name, ttl, RecordType.AAAA.code, RecordClass.IN.code) {}
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[io] object AAAARecord {
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi
   def parseBody(name: String, ttl: Ttl, @unused length: Short, it: ByteIterator): AAAARecord = {
     val address = Array.ofDim[Byte](16)
@@ -69,9 +61,7 @@ final case class CNameRecord(override val name: String, override val ttl: Ttl, c
 @InternalApi
 private[dns] object CNameRecord {
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi
   def parseBody(name: String, ttl: Ttl, @unused length: Short, it: ByteIterator, msg: ByteString): CNameRecord = {
     CNameRecord(name, ttl, DomainName.parse(it, msg))
@@ -87,20 +77,16 @@ final case class SRVRecord(
     target: String)
     extends ResourceRecord(name, ttl, RecordType.SRV.code, RecordClass.IN.code) {}
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[dns] object SRVRecord {
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi
   def parseBody(name: String, ttl: Ttl, @unused length: Short, it: ByteIterator, msg: ByteString): SRVRecord = {
-    val priority = it.getShort.toInt & 0xFFFF
-    val weight = it.getShort.toInt & 0xFFFF
-    val port = it.getShort.toInt & 0xFFFF
+    val priority = it.getShort.toInt & 0xffff
+    val weight = it.getShort.toInt & 0xffff
+    val port = it.getShort.toInt & 0xffff
     SRVRecord(name, ttl, priority, weight, port, DomainName.parse(it, msg))
   }
 }
@@ -113,15 +99,11 @@ final case class UnknownRecord(
     data: ByteString)
     extends ResourceRecord(name, ttl, recType, recClass) {}
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[dns] object UnknownRecord {
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi
   def parseBody(
       name: String,
@@ -133,15 +115,11 @@ private[dns] object UnknownRecord {
     UnknownRecord(name, ttl, recType, recClass, it.toByteString)
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[dns] object ResourceRecord {
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi
   def parse(it: ByteIterator, msg: ByteString): ResourceRecord = {
     val name = DomainName.parse(it, msg)
@@ -150,7 +128,7 @@ private[dns] object ResourceRecord {
     // If the number of cases increase remember to add a `@switch` annotation e.g.:
     // val ttl = (it.getInt: @switch) match {
     // According to https://www.ietf.org/rfc/rfc1035.txt: "TTL: positive values of a signed 32 bit number."
-    val ttl = (it.getInt) match {
+    val ttl = it.getInt match {
       case 0       => Ttl.never
       case nonZero => Ttl.fromPositive(nonZero.seconds)
     }

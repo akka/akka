@@ -13,7 +13,7 @@ import akka.stream.scaladsl.Source
 
 object Conflate {
   def conflateExample(): Unit = {
-    //#conflate
+    // #conflate
     import scala.concurrent.duration._
 
     Source
@@ -21,11 +21,11 @@ object Conflate {
       .throttle(10, per = 1.second) // faster upstream
       .conflate((acc, el) => acc + el) // acc: Int, el: Int
       .throttle(1, per = 1.second) // slow downstream
-    //#conflate
+    // #conflate
   }
 
   def conflateWithSeedExample(): Unit = {
-    //#conflateWithSeed
+    // #conflateWithSeed
     import scala.concurrent.duration._
 
     case class Summed(i: Int) {
@@ -37,7 +37,7 @@ object Conflate {
       .throttle(10, per = 1.second) // faster upstream
       .conflateWithSeed(el => Summed(el))((acc, el) => acc.sum(Summed(el))) // (Summed, Int) => Summed
       .throttle(1, per = 1.second) // slow downstream
-    //#conflateWithSeed
+    // #conflateWithSeed
   }
 
 }

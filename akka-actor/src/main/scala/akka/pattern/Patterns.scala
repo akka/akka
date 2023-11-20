@@ -14,9 +14,7 @@ import scala.concurrent.ExecutionContext
 import akka.actor.{ ActorSelection, ClassicActorSystemProvider, Scheduler }
 import akka.util.JavaDurationConverters._
 
-/**
- * Java API: for Akka patterns such as `ask`, `pipe` and others which work with [[java.util.concurrent.CompletionStage]].
- */
+/** Java API: for Akka patterns such as `ask`, `pipe` and others which work with [[java.util.concurrent.CompletionStage]]. */
 object Patterns {
   import scala.concurrent.Future
   import scala.concurrent.duration._
@@ -486,7 +484,7 @@ object Patterns {
       shouldRetry: Predicate[Throwable],
       attempts: Int,
       ec: ExecutionContext): CompletionStage[T] =
-    scalaRetry(() => attempt.call().toScala, (ex) => shouldRetry.test(ex), attempts)(ec).toJava
+    scalaRetry(() => attempt.call().toScala, ex => shouldRetry.test(ex), attempts)(ec).toJava
 
   /**
    * Returns an internally retrying [[java.util.concurrent.CompletionStage]]
@@ -604,7 +602,7 @@ object Patterns {
       ec: ExecutionContext): CompletionStage[T] =
     scalaRetry(
       () => attempt.call().toScala,
-      (ex) => shouldRetry.test(ex),
+      ex => shouldRetry.test(ex),
       attempts,
       minBackoff.asScala,
       maxBackoff.asScala,
@@ -718,8 +716,8 @@ object Patterns {
 
     scalaRetry(
       () => attempt.call().toScala,
-      (ex) => shouldRetry.test(ex),
+      ex => shouldRetry.test(ex),
       attempts,
-      (attempted) => delayFunction.apply(attempted).asScala.map(_.asScala))(context, scheduler).toJava
+      attempted => delayFunction.apply(attempted).asScala.map(_.asScala))(context, scheduler).toJava
   }
 }

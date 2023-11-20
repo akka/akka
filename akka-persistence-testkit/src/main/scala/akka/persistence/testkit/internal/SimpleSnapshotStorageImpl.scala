@@ -8,9 +8,7 @@ import akka.annotation.InternalApi
 import akka.persistence.SnapshotMetadata
 import akka.persistence.testkit.SnapshotStorage
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[testkit] class SimpleSnapshotStorageImpl extends SnapshotStorage {
 

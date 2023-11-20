@@ -8,25 +8,25 @@ import akka.NotUsed
 import akka.stream.scaladsl.Flow
 
 object Collect {
-  //#collect-elements
+  // #collect-elements
   trait Message
   final case class Ping(id: Int) extends Message
   final case class Pong(id: Int)
-  //#collect-elements
+  // #collect-elements
 
   def collectExample(): Unit = {
-    //#collect
+    // #collect
     val flow: Flow[Message, Pong, NotUsed] =
       Flow[Message].collect {
         case Ping(id) if id != 0 => Pong(id)
       }
-    //#collect
+    // #collect
   }
 
   def collectType(): Unit = {
-    //#collectType
+    // #collectType
     val flow: Flow[Message, Pong, NotUsed] =
       Flow[Message].collectType[Ping].filter(_.id != 0).map(p => Pong(p.id))
-    //#collectType
+    // #collectType
   }
 }

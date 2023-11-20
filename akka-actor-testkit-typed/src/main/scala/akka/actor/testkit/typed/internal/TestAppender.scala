@@ -60,9 +60,7 @@ import akka.annotation.InternalApi
   }
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] class TestAppender extends AppenderBase[ILoggingEvent] {
   import LogbackUtil._
 

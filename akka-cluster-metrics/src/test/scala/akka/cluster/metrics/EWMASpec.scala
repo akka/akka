@@ -64,15 +64,15 @@ class EWMASpec extends AkkaSpec(MetricsConfig.defaultEnabled) with MetricsCollec
 
     "calculate sane alpha from short half-life" in {
       val alpha = EWMA.alpha(1.millis, 3.seconds)
-      alpha should be <= (1.0)
-      alpha should be >= (0.0)
+      alpha should be <= 1.0
+      alpha should be >= 0.0
       alpha should ===(1.0 +- 0.001)
     }
 
     "calculate sane alpha from long half-life" in {
       val alpha = EWMA.alpha(1.day, 3.seconds)
-      alpha should be <= (1.0)
-      alpha should be >= (0.0)
+      alpha should be <= 1.0
+      alpha should be >= 0.0
       alpha should ===(0.0 +- 0.001)
     }
 

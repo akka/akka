@@ -18,9 +18,7 @@ import akka.coordination.lease.LeaseSettings
 import akka.coordination.lease.javadsl.{ Lease => JavaLease }
 import akka.coordination.lease.scaladsl.{ Lease => ScalaLease }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 final private[akka] class LeaseAdapter(delegate: ScalaLease)(implicit val ec: ExecutionContext) extends JavaLease {
 
@@ -35,9 +33,7 @@ final private[akka] class LeaseAdapter(delegate: ScalaLease)(implicit val ec: Ex
   override def getSettings(): LeaseSettings = delegate.settings
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 final private[akka] class LeaseAdapterToScala(val delegate: JavaLease)(implicit val ec: ExecutionContext)
     extends ScalaLease(delegate.getSettings()) {

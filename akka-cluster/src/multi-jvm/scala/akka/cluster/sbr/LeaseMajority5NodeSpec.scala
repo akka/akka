@@ -76,9 +76,7 @@ class LeaseMajority5NodeSpec extends MultiNodeClusterSpec(LeaseMajority5NodeSpec
 
   def sortByAddress(roles: RoleName*): List[RoleName] = {
 
-    /**
-     * Sort the roles in the address order used by the cluster node ring.
-     */
+    /** Sort the roles in the address order used by the cluster node ring. */
     implicit val clusterOrdering: Ordering[RoleName] = new Ordering[RoleName] {
       import akka.cluster.Member.addressOrdering
       def compare(x: RoleName, y: RoleName): Int = addressOrdering.compare(node(x).address, node(y).address)

@@ -46,29 +46,27 @@ object ReplicatedEventSourcingTaggingSpec {
       ReplicatedEventSourcing.commonJournalConfig(
         ReplicationId("TaggingSpec", entityId, replica),
         allReplicas,
-        queryPluginId)(
-        replicationContext =>
-          EventSourcedBehavior[Command, String, State](
-            replicationContext.persistenceId,
-            State(Set.empty),
-            (state, command) =>
-              command match {
-                case Add(string, ack) =>
-                  if (state.strings.contains(string)) Effect.none.thenRun(_ => ack ! Done)
-                  else Effect.persist(string).thenRun(_ => ack ! Done)
-                case GetStrings(replyTo) =>
-                  replyTo ! state.strings
-                  Effect.none
-              },
-            (state, event) => state.copy(strings = state.strings + event))
+        queryPluginId)(replicationContext =>
+        EventSourcedBehavior[Command, String, State](
+          replicationContext.persistenceId,
+          State(Set.empty),
+          (state, command) =>
+            command match {
+              case Add(string, ack) =>
+                if (state.strings.contains(string)) Effect.none.thenRun(_ => ack ! Done)
+                else Effect.persist(string).thenRun(_ => ack ! Done)
+              case GetStrings(replyTo) =>
+                replyTo ! state.strings
+                Effect.none
+            },
+          (state, event) => state.copy(strings = state.strings + event))
           // use withTagger to define tagging logic
-            .withTagger(
-              event =>
-                // don't apply tags if event was replicated here, it already will appear in queries by tag
-                // as the origin replica would have tagged it already
-                if (replicationContext.origin != replicationContext.replicaId) Set.empty
-                else if (event.length > 10) Set("long-strings", "strings")
-                else Set("strings")))
+          .withTagger(event =>
+            // don't apply tags if event was replicated here, it already will appear in queries by tag
+            // as the origin replica would have tagged it already
+            if (replicationContext.origin != replicationContext.replicaId) Set.empty
+            else if (event.length > 10) Set("long-strings", "strings")
+            else Set("strings")))
       // #tagging
     }
   }
@@ -111,7 +109,7 @@ class ReplicatedEventSourcingTaggingSpec
       stringTaggedEvents.map(_.event).toSet should equal(allEvents)
 
       val longStrings = query.currentEventsByTag("long-strings", NoOffset).runWith(Sink.seq).futureValue
-      longStrings should have size (1)
+      longStrings should have size 1
 
     }
   }

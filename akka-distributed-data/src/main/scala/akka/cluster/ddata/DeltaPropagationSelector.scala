@@ -97,41 +97,40 @@ private[akka] trait DeltaPropagationSelector {
         // collect the deltas that have not already been sent to the node and merge
         // them into a delta group
         var deltas = Map.empty[KeyId, (ReplicatedData, Long, Long)]
-        deltaEntries.foreach {
-          case (key, entries) =>
-            val deltaSentToNodeForKey = deltaSentToNode.getOrElse(key, TreeMap.empty[UniqueAddress, Long])
-            val j = deltaSentToNodeForKey.getOrElse(node, 0L)
-            val deltaEntriesAfterJ = deltaEntriesAfter(entries, j)
-            if (deltaEntriesAfterJ.nonEmpty) {
-              val fromSeqNr = deltaEntriesAfterJ.head._1
-              val toSeqNr = deltaEntriesAfterJ.last._1
-              // in most cases the delta group merging will be the same for each node,
-              // so we cache the merged results
-              val cacheKey = (key, fromSeqNr, toSeqNr)
-              val deltaGroup = cache.get(cacheKey) match {
-                case None =>
-                  val group = deltaEntriesAfterJ.valuesIterator.reduceLeft { (d1, d2) =>
-                    val merged = d2 match {
-                      case NoDeltaPlaceholder => NoDeltaPlaceholder
-                      case _                  =>
-                        // this is fine also if d1 is a NoDeltaPlaceholder
-                        d1.merge(d2.asInstanceOf[d1.T])
-                    }
-                    merged match {
-                      case s: ReplicatedDeltaSize if s.deltaSize >= maxDeltaSize =>
-                        // discard too large deltas
-                        NoDeltaPlaceholder
-                      case _ => merged
-                    }
+        deltaEntries.foreach { case (key, entries) =>
+          val deltaSentToNodeForKey = deltaSentToNode.getOrElse(key, TreeMap.empty[UniqueAddress, Long])
+          val j = deltaSentToNodeForKey.getOrElse(node, 0L)
+          val deltaEntriesAfterJ = deltaEntriesAfter(entries, j)
+          if (deltaEntriesAfterJ.nonEmpty) {
+            val fromSeqNr = deltaEntriesAfterJ.head._1
+            val toSeqNr = deltaEntriesAfterJ.last._1
+            // in most cases the delta group merging will be the same for each node,
+            // so we cache the merged results
+            val cacheKey = (key, fromSeqNr, toSeqNr)
+            val deltaGroup = cache.get(cacheKey) match {
+              case None =>
+                val group = deltaEntriesAfterJ.valuesIterator.reduceLeft { (d1, d2) =>
+                  val merged = d2 match {
+                    case NoDeltaPlaceholder => NoDeltaPlaceholder
+                    case _                  =>
+                      // this is fine also if d1 is a NoDeltaPlaceholder
+                      d1.merge(d2.asInstanceOf[d1.T])
                   }
-                  cache = cache.updated(cacheKey, group)
-                  group
-                case Some(group) => group
-              }
-              deltas = deltas.updated(key, (deltaGroup, fromSeqNr, toSeqNr))
-              deltaSentToNode =
-                deltaSentToNode.updated(key, deltaSentToNodeForKey.updated(node, deltaEntriesAfterJ.lastKey))
+                  merged match {
+                    case s: ReplicatedDeltaSize if s.deltaSize >= maxDeltaSize =>
+                      // discard too large deltas
+                      NoDeltaPlaceholder
+                    case _ => merged
+                  }
+                }
+                cache = cache.updated(cacheKey, group)
+                group
+              case Some(group) => group
             }
+            deltas = deltas.updated(key, (deltaGroup, fromSeqNr, toSeqNr))
+            deltaSentToNode =
+              deltaSentToNode.updated(key, deltaSentToNodeForKey.updated(node, deltaEntriesAfterJ.lastKey))
+          }
         }
 
         if (deltas.nonEmpty) {
@@ -175,23 +174,21 @@ private[akka] trait DeltaPropagationSelector {
     if (all.isEmpty)
       deltaEntries = Map.empty
     else {
-      deltaEntries = deltaEntries.map {
-        case (key, entries) =>
-          val minVersion = findSmallestVersionPropagatedToAllNodes(key, all)
+      deltaEntries = deltaEntries.map { case (key, entries) =>
+        val minVersion = findSmallestVersionPropagatedToAllNodes(key, all)
 
-          val deltaEntriesAfterMin = deltaEntriesAfter(entries, minVersion)
+        val deltaEntriesAfterMin = deltaEntriesAfter(entries, minVersion)
 
-          // TODO perhaps also remove oldest when deltaCounter is too far ahead (e.g. 10 cycles)
+        // TODO perhaps also remove oldest when deltaCounter is too far ahead (e.g. 10 cycles)
 
-          key -> deltaEntriesAfterMin
+        key -> deltaEntriesAfterMin
       }
     }
   }
 
   def cleanupRemovedNode(address: UniqueAddress): Unit = {
-    deltaSentToNode = deltaSentToNode.map {
-      case (key, deltaSentToNodeForKey) =>
-        key -> (deltaSentToNodeForKey - address)
+    deltaSentToNode = deltaSentToNode.map { case (key, deltaSentToNodeForKey) =>
+      key -> (deltaSentToNodeForKey - address)
     }
   }
 }

@@ -43,7 +43,6 @@ import akka.actor.{ ActorLogging, Props }
  * If the connect request is rejected because the Tcp system is not able to register more channels (see the nr-of-selectors
  * and max-channels configuration options in the akka.io.tcp section of the configuration) the sender will be notified
  * with a [[akka.io.Tcp.CommandFailed]] message. This message contains the original command for reference.
- *
  */
 private[io] class TcpManager(tcp: TcpExt)
     extends SelectionHandler.SelectorBasedManager(tcp.Settings, tcp.Settings.NrOfSelectors)
@@ -52,11 +51,11 @@ private[io] class TcpManager(tcp: TcpExt)
   def receive = workerForCommandHandler {
     case c: Connect =>
       val commander = sender() // cache because we create a function that will run asynchly
-      (registry => Props(classOf[TcpOutgoingConnection], tcp, registry, commander, c))
+      registry => Props(classOf[TcpOutgoingConnection], tcp, registry, commander, c)
 
     case b: Bind =>
       val commander = sender() // cache because we create a function that will run asynchly
-      (registry => Props(classOf[TcpListener], selectorPool, tcp, registry, commander, b))
+      registry => Props(classOf[TcpListener], selectorPool, tcp, registry, commander, b)
   }
 
 }

@@ -31,18 +31,17 @@ object ManyRecoveriesSpec {
     EventSourcedBehavior[Cmd, Evt, String](
       persistenceId = PersistenceId.ofUniqueId(name),
       emptyState = "",
-      commandHandler = CommandHandler.command {
-        case Cmd(s) => Effect.persist(Evt(s)).thenRun(_ => probe.ref ! s"$name-$s")
+      commandHandler = CommandHandler.command { case Cmd(s) =>
+        Effect.persist(Evt(s)).thenRun(_ => probe.ref ! s"$name-$s")
       },
-      eventHandler = {
-        case (state, _) => latch.foreach(Await.ready(_, 10.seconds)); state
+      eventHandler = { case (state, _) =>
+        latch.foreach(Await.ready(_, 10.seconds)); state
       })
 
   def forwardBehavior(sender: TestProbe[String]): Behaviors.Receive[Int] =
-    Behaviors.receiveMessagePartial[Int] {
-      case value =>
-        sender.ref ! value.toString
-        Behaviors.same
+    Behaviors.receiveMessagePartial[Int] { case value =>
+      sender.ref ! value.toString
+      Behaviors.same
     }
 
   def forN(n: Int)(mapper: Int => String): Set[String] =

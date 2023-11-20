@@ -38,13 +38,15 @@ class ImportantSingleton(lifeCycleProbe: ActorRef) extends Actor with ActorLoggi
     lifeCycleProbe ! "postStop"
   }
 
-  override def receive: Receive = {
-    case msg =>
-      sender() ! msg
+  override def receive: Receive = { case msg =>
+    sender() ! msg
   }
 }
 
-class ClusterSingletonLeaseSpec extends AkkaSpec(ConfigFactory.parseString("""
+class ClusterSingletonLeaseSpec
+    extends AkkaSpec(
+      ConfigFactory
+        .parseString("""
      akka.loglevel = INFO
      akka.actor.provider = cluster
 

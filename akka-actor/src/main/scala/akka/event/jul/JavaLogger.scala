@@ -16,9 +16,7 @@ import akka.event.Logging._
 import akka.event.LoggingFilter
 import akka.util.unused
 
-/**
- * `java.util.logging` logger.
- */
+/** `java.util.logging` logger. */
 @deprecated("Use Slf4jLogger instead.", "2.6.0")
 class JavaLogger extends Actor with RequiresMessageQueue[LoggerMessageQueueSemantics] {
   import Logger.mapLevel
@@ -46,18 +44,14 @@ class JavaLogger extends Actor with RequiresMessageQueue[LoggerMessageQueueSeman
   }
 }
 
-/**
- * Base trait for all classes that wants to be able use the JUL logging infrastructure.
- */
+/** Base trait for all classes that wants to be able use the JUL logging infrastructure. */
 @deprecated("Use SLF4J or direct java.util.logging instead.", "2.6.0")
 trait JavaLogging {
   @transient
   lazy val log: logging.Logger = Logger(this.getClass.getName)
 }
 
-/**
- * Logger is a factory for obtaining JUL Loggers
- */
+/** Logger is a factory for obtaining JUL Loggers */
 @deprecated("Use SLF4J or direct java.util.logging instead.", "2.6.0")
 object Logger {
 
@@ -77,9 +71,7 @@ object Logger {
     case _                                             => logging.Logger.getLogger(logClass.getName)
   }
 
-  /**
-   * Returns the JUL Root Logger
-   */
+  /** Returns the JUL Root Logger */
   def root: logging.Logger = logging.Logger.getGlobal()
 
   def mapLevel(level: LogLevel): logging.Level = level.asInt match {

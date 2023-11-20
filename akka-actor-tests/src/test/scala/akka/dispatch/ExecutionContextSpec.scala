@@ -27,16 +27,16 @@ class ExecutionContextSpec extends AkkaSpec with DefaultTimeout {
       val es = Executors.newCachedThreadPool()
       try {
         val executor: Executor with ExecutionContext = ExecutionContext.fromExecutor(es)
-        executor should not be (null)
+        executor should not be null
 
         val executorService: ExecutorService with ExecutionContext = ExecutionContext.fromExecutorService(es)
-        executorService should not be (null)
+        executorService should not be null
 
         val jExecutor: ExecutionContextExecutor = ExecutionContext.fromExecutor(es)
-        jExecutor should not be (null)
+        jExecutor should not be null
 
         val jExecutorService: ExecutionContextExecutorService = ExecutionContexts.fromExecutorService(es)
-        jExecutorService should not be (null)
+        jExecutorService should not be null
       } finally {
         es.shutdown
       }
@@ -60,7 +60,7 @@ class ExecutionContextSpec extends AkkaSpec with DefaultTimeout {
         (1 to 100).foreach { _ =>
           batchable {
             if (callingThreadLock.get != 0) p.tryFailure(new IllegalStateException("Batch was executed inline!"))
-            else if (count.incrementAndGet == 100) p.trySuccess(()) //Done
+            else if (count.incrementAndGet == 100) p.trySuccess(()) // Done
             else if (lock.compareAndSet(0, 1)) {
               try Thread.sleep(10)
               finally lock.compareAndSet(1, 0)
@@ -157,16 +157,15 @@ class ExecutionContextSpec extends AkkaSpec with DefaultTimeout {
 
     "work with same-thread dispatcher plus blocking" in {
       val a = TestActorRef(Props(new Actor {
-        def receive = {
-          case msg =>
-            blocking {
-              sender() ! msg
-            }
+        def receive = { case msg =>
+          blocking {
+            sender() ! msg
+          }
         }
       }))
       val b = TestActorRef(Props(new Actor {
-        def receive = {
-          case msg => a.forward(msg)
+        def receive = { case msg =>
+          a.forward(msg)
         }
       }))
       val p = TestProbe()

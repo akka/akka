@@ -25,19 +25,19 @@ import akka.serialization.jackson.CborSerializable
 @nowarn
 object DurableStatePersistentBehaviorCompileOnly {
   object FirstExample {
-    //#command
+    // #command
     sealed trait Command[ReplyMessage] extends CborSerializable
     final case object Increment extends Command[Nothing]
     final case class IncrementBy(value: Int) extends Command[Nothing]
     final case class GetValue(replyTo: ActorRef[State]) extends Command[State]
     final case object Delete extends Command[Nothing]
-    //#command
+    // #command
 
-    //#state
+    // #state
     final case class State(value: Int) extends CborSerializable
-    //#state
+    // #state
 
-    //#command-handler
+    // #command-handler
     import akka.persistence.typed.state.scaladsl.Effect
 
     val commandHandler: (State, Command[_]) => Effect[State] = (state, command) =>
@@ -47,19 +47,19 @@ object DurableStatePersistentBehaviorCompileOnly {
         case GetValue(replyTo) => Effect.reply(replyTo)(state)
         case Delete            => Effect.delete[State]()
       }
-    //#command-handler
+    // #command-handler
 
-    //#behavior
+    // #behavior
     def counter(id: String): DurableStateBehavior[Command[_], State] = {
       DurableStateBehavior.apply[Command[_], State](
         persistenceId = PersistenceId.ofUniqueId(id),
         emptyState = State(0),
         commandHandler = commandHandler)
     }
-    //#behavior
+    // #behavior
   }
 
-  //#structure
+  // #structure
   object MyPersistentCounter {
     sealed trait Command[ReplyMessage] extends CborSerializable
 
@@ -73,13 +73,13 @@ object DurableStatePersistentBehaviorCompileOnly {
           (state, command) => throw new NotImplementedError("TODO: process the command & return an Effect"))
     }
   }
-  //#structure
+  // #structure
 
   import MyPersistentCounter._
 
   object MyPersistentCounterWithReplies {
 
-    //#effects
+    // #effects
     sealed trait Command[ReplyMessage] extends CborSerializable
     final case class IncrementWithConfirmation(replyTo: ActorRef[Done]) extends Command[Done]
     final case class GetValue(replyTo: ActorRef[State]) extends Command[State]
@@ -100,7 +100,7 @@ object DurableStatePersistentBehaviorCompileOnly {
               Effect.reply(replyTo)(state)
           })
     }
-    //#effects
+    // #effects
   }
 
   object BehaviorWithContext {
@@ -123,13 +123,13 @@ object DurableStatePersistentBehaviorCompileOnly {
 
   object TaggingBehavior {
     def apply(): Behavior[Command[_]] =
-      //#tagging
+      // #tagging
       DurableStateBehavior[Command[_], State](
         persistenceId = PersistenceId.ofUniqueId("abc"),
         emptyState = State(0),
         commandHandler = (state, cmd) => throw new NotImplementedError("TODO: process the command & return an Effect"))
         .withTag("tag1")
-    //#tagging
+    // #tagging
   }
 
   object WrapBehavior {
@@ -137,7 +137,7 @@ object DurableStatePersistentBehaviorCompileOnly {
     import akka.persistence.typed.state.scaladsl.DurableStateBehavior.CommandHandler
 
     def apply(): Behavior[Command[_]] =
-      //#wrapPersistentBehavior
+      // #wrapPersistentBehavior
       Behaviors.setup[Command[_]] { context =>
         DurableStateBehavior[Command[_], State](
           persistenceId = PersistenceId.ofUniqueId("abc"),
@@ -147,6 +147,6 @@ object DurableStatePersistentBehaviorCompileOnly {
             Effect.none
           })
       }
-    //#wrapPersistentBehavior
+    // #wrapPersistentBehavior
   }
 }

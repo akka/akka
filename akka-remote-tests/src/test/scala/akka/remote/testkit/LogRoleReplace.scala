@@ -81,9 +81,7 @@ object LogRoleReplace extends ClipboardOwner {
     }
   }
 
-  /**
-   * Empty implementation of the ClipboardOwner interface
-   */
+  /** Empty implementation of the ClipboardOwner interface */
   def lostOwnership(clipboard: Clipboard, contents: Transferable): Unit = ()
 }
 

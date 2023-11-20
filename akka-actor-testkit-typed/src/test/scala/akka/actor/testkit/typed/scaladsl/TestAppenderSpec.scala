@@ -14,8 +14,7 @@ import org.slf4j.LoggerFactory
 import akka.actor.testkit.typed.TestException
 
 class TestAppenderSpec
-    extends ScalaTestWithActorTestKit(
-      """
+    extends ScalaTestWithActorTestKit("""
   # increase to avoid spurious failures in "find unexpected async events withOccurrences(0)"
   akka.actor.testkit.typed.expect-no-message-default = 1000 ms
   """)
@@ -67,11 +66,10 @@ class TestAppenderSpec
     "only filter events for given logger name" in {
       val count = new AtomicInteger
       LoggingTestKit
-        .custom({
-          case logEvent =>
-            count.incrementAndGet()
-            logEvent.message == "Hello from right logger" && logEvent.loggerName == classOf[AnotherLoggerClass].getName
-        })
+        .custom { case logEvent =>
+          count.incrementAndGet()
+          logEvent.message == "Hello from right logger" && logEvent.loggerName == classOf[AnotherLoggerClass].getName
+        }
         .withOccurrences(2)
         .withLoggerName(classOf[AnotherLoggerClass].getName)
         .expect {

@@ -16,15 +16,11 @@ object Dispatchers {
    */
   final val DefaultDispatcherId = "akka.actor.default-dispatcher"
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi final val InternalDispatcherId = "akka.actor.internal-dispatcher"
 }
 
-/**
- * An [[ActorSystem]] looks up all its thread pools via a Dispatchers instance.
- */
+/** An [[ActorSystem]] looks up all its thread pools via a Dispatchers instance. */
 abstract class Dispatchers {
   def lookup(selector: DispatcherSelector): ExecutionContextExecutor
   def shutdown(): Unit

@@ -13,7 +13,8 @@ import akka.cluster.sharding.ShardRegion
 
 object LeastRecentlyUsedSpec {
 
-  val config: Config = ConfigFactory.parseString("""
+  val config: Config = ConfigFactory
+    .parseString("""
     akka.cluster.sharding {
       passivation {
         strategy = lru
@@ -23,9 +24,11 @@ object LeastRecentlyUsedSpec {
         }
       }
     }
-    """).withFallback(EntityPassivationSpec.config)
+    """)
+    .withFallback(EntityPassivationSpec.config)
 
-  val segmentedConfig: Config = ConfigFactory.parseString("""
+  val segmentedConfig: Config = ConfigFactory
+    .parseString("""
     akka.cluster.sharding {
       passivation {
         strategy = slru
@@ -43,14 +46,18 @@ object LeastRecentlyUsedSpec {
         }
       }
     }
-    """).withFallback(EntityPassivationSpec.config)
+    """)
+    .withFallback(EntityPassivationSpec.config)
 
   val segmentedInitialLimitConfig: Config =
-    ConfigFactory.parseString("""
+    ConfigFactory
+      .parseString("""
       akka.cluster.sharding.passivation.slru.active-entity-limit = 20
-    """).withFallback(segmentedConfig)
+    """)
+      .withFallback(segmentedConfig)
 
-  val idleConfig: Config = ConfigFactory.parseString("""
+  val idleConfig: Config = ConfigFactory
+    .parseString("""
     akka.cluster.sharding {
       passivation {
         strategy = lru-idle
@@ -61,7 +68,8 @@ object LeastRecentlyUsedSpec {
         }
       }
     }
-    """).withFallback(EntityPassivationSpec.config)
+    """)
+    .withFallback(EntityPassivationSpec.config)
 }
 
 class LeastRecentlyUsedSpec extends AbstractEntityPassivationSpec(LeastRecentlyUsedSpec.config, expectedEntities = 40) {

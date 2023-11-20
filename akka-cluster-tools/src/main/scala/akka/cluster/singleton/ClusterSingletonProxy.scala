@@ -56,9 +56,7 @@ object ClusterSingletonProxySettings {
    */
   def create(config: Config): ClusterSingletonProxySettings = apply(config)
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   private[akka] def roleOption(role: String): Option[String] =
     if (role == "") None else Option(role)
 
@@ -210,9 +208,7 @@ final class ClusterSingletonProxy(singletonManagerPath: String, settings: Cluste
     }
   }
 
-  /**
-   * Discard old singleton ActorRef and send a periodic message to self to identify the singleton.
-   */
+  /** Discard old singleton ActorRef and send a periodic message to self to identify the singleton. */
   def identifySingleton(): Unit = {
     import context.dispatcher
     log.debug("Creating singleton identification timer...")
@@ -272,7 +268,6 @@ final class ClusterSingletonProxy(singletonManagerPath: String, settings: Cluste
       else
         remove(m)
     case _: MemberEvent => // do nothing
-
     // singleton identification logic
     case ActorIdentity(_, Some(s)) =>
       // if the new singleton is defined, deliver all buffered messages

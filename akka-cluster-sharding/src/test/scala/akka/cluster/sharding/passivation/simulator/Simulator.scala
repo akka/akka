@@ -183,13 +183,12 @@ object Simulator {
       .map(simulation.strategyCreator.preprocess) // note: mutable state in strategy creator
       .fold(immutable.Queue.empty[Access])((collected, access) =>
         if (simulation.accessPattern.isSynthetic) collected.enqueue(access) else collected)
-      .flatMapConcat(
-        collectedAccesses =>
-          if (simulation.accessPattern.isSynthetic)
-            Source(collectedAccesses) // use the exact same randomly generated accesses
-          else
-            simulation.accessPattern.entityIds.via( // re-read the access pattern
-              ShardAllocation(simulation.numberOfShards, simulation.numberOfRegions)))
+      .flatMapConcat(collectedAccesses =>
+        if (simulation.accessPattern.isSynthetic)
+          Source(collectedAccesses) // use the exact same randomly generated accesses
+        else
+          simulation.accessPattern.entityIds.via( // re-read the access pattern
+            ShardAllocation(simulation.numberOfShards, simulation.numberOfRegions)))
       .via(ShardingState(simulation.strategyCreator))
       .runWith(SimulatorStats())
 

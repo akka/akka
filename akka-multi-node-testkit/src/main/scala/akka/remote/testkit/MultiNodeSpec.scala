@@ -31,9 +31,7 @@ import scala.concurrent.Awaitable
 import scala.language.implicitConversions
 import scala.util.control.NonFatal
 
-/**
- * Configure the role names and participants of the test, including configuration settings.
- */
+/** Configure the role names and participants of the test, including configuration settings. */
 @ccompatUsedUntil213
 abstract class MultiNodeConfig {
 
@@ -44,14 +42,10 @@ abstract class MultiNodeConfig {
   private var _allDeploy = Vector[String]()
   private var _testTransport = false
 
-  /**
-   * Register a common base config for all test participants, if so desired.
-   */
+  /** Register a common base config for all test participants, if so desired. */
   def commonConfig(config: Config): Unit = _commonConf = Some(config)
 
-  /**
-   * Register a config override for a specific participant.
-   */
+  /** Register a config override for a specific participant. */
   def nodeConfig(roles: RoleName*)(configs: Config*): Unit = {
     val c = configs.reduceLeft(_.withFallback(_))
     _nodeConf ++= roles.map { _ -> c }
@@ -118,8 +112,8 @@ abstract class MultiNodeConfig {
       else ConfigFactory.empty
 
     val configs = _nodeConf
-        .get(myself)
-        .toList ::: _commonConf.toList ::: transportConfig :: MultiNodeSpec.nodeConfig :: MultiNodeSpec.baseConfig :: Nil
+      .get(myself)
+      .toList ::: _commonConf.toList ::: transportConfig :: MultiNodeSpec.nodeConfig :: MultiNodeSpec.baseConfig :: Nil
     configs.reduceLeft(_.withFallback(_))
   }
 
@@ -277,9 +271,11 @@ object MultiNodeSpec {
   // are exposed in kubernetes
   def configureNextPortIfFixed(config: Config): Config = {
     val arteryPortConfig = getNextPortString("akka.remote.artery.canonical.port", config)
-    ConfigFactory.parseString(s"""{
+    ConfigFactory
+      .parseString(s"""{
       $arteryPortConfig
-      }""").withFallback(config)
+      }""")
+      .withFallback(config)
   }
 
   private def getNextPortString(key: String, config: Config): String = {
@@ -317,18 +313,19 @@ abstract class MultiNodeSpec(
     this(config.myself, actorSystemCreator(ConfigFactory.load(config.config)), config.roles, config.deployments)
 
   def this(config: MultiNodeConfig) =
-    this(config, {
-      val name = TestKitUtils.testNameFromCallStack(classOf[MultiNodeSpec], "".r)
-      config =>
-        try {
-          ActorSystem(name, config)
-        } catch {
-          // Retry creating the system once as when using port = 0 two systems may try and use the same one.
-          // RTE is for aeron, CE for netty
-          case _: RemoteTransportException => ActorSystem(name, config)
-          case _: ChannelException         => ActorSystem(name, config)
-        }
-    })
+    this(
+      config, {
+        val name = TestKitUtils.testNameFromCallStack(classOf[MultiNodeSpec], "".r)
+        config =>
+          try {
+            ActorSystem(name, config)
+          } catch {
+            // Retry creating the system once as when using port = 0 two systems may try and use the same one.
+            // RTE is for aeron, CE for netty
+            case _: RemoteTransportException => ActorSystem(name, config)
+            case _: ChannelException         => ActorSystem(name, config)
+          }
+      })
 
   val log: LoggingAdapter = Logging(system, this)(_.getClass.getName)
 
@@ -350,10 +347,12 @@ abstract class MultiNodeSpec(
     if (selfIndex == 0) {
       testConductor.removeNode(myself)
       within(testConductor.Settings.BarrierTimeout.duration) {
-        awaitCond({
-          // Await.result(testConductor.getNodes, remaining).filterNot(_ == myself).isEmpty
-          testConductor.getNodes.await.forall(_ == myself)
-        }, message = s"Nodes not shutdown: ${testConductor.getNodes.await}")
+        awaitCond(
+          {
+            // Await.result(testConductor.getNodes, remaining).filterNot(_ == myself).isEmpty
+            testConductor.getNodes.await.forall(_ == myself)
+          },
+          message = s"Nodes not shutdown: ${testConductor.getNodes.await}")
       }
     }
     shutdown(system, duration = shutdownTimeout)
@@ -372,19 +371,13 @@ abstract class MultiNodeSpec(
    * Test Class Interface
    */
 
-  /**
-   * Override this method to do something when the whole test is starting up.
-   */
+  /** Override this method to do something when the whole test is starting up. */
   protected def atStartup(): Unit = ()
 
-  /**
-   * Override this method to do something when the whole test is terminating.
-   */
+  /** Override this method to do something when the whole test is terminating. */
   protected def afterTermination(): Unit = ()
 
-  /**
-   * All registered roles
-   */
+  /** All registered roles */
   def roles: immutable.Seq[RoleName] = _roles
 
   /**
@@ -419,9 +412,7 @@ abstract class MultiNodeSpec(
     }
   }
 
-  /**
-   * Verify that the running node matches one of the given nodes
-   */
+  /** Verify that the running node matches one of the given nodes */
   def isNode(nodes: RoleName*): Boolean = nodes contains myself
 
   /**
@@ -493,12 +484,12 @@ abstract class MultiNodeSpec(
   protected def injectDeployments(sys: ActorSystem, role: RoleName): Unit = {
     val deployer = sys.asInstanceOf[ExtendedActorSystem].provider.deployer
     deployments(role).foreach { str =>
-      val deployString = replacements.foldLeft(str) {
-        case (base, r @ Replacement(tag, _)) =>
-          base.indexOf(tag) match {
-            case -1 => base
-            case _ =>
-              val replaceWith = try r.addr
+      val deployString = replacements.foldLeft(str) { case (base, r @ Replacement(tag, _)) =>
+        base.indexOf(tag) match {
+          case -1 => base
+          case _ =>
+            val replaceWith =
+              try r.addr
               catch {
                 case NonFatal(e) =>
                   // might happen if all test cases are ignored (excluded) and
@@ -508,8 +499,8 @@ abstract class MultiNodeSpec(
                   log.warning(unresolved + " due to: " + e.getMessage)
                   unresolved
               }
-              base.replace(tag, replaceWith)
-          }
+            base.replace(tag, replaceWith)
+        }
       }
       import akka.util.ccompat.JavaConverters._
       ConfigFactory.parseString(deployString).root.asScala.foreach {
@@ -565,13 +556,9 @@ abstract class MultiNodeSpec(
  */
 trait MultiNodeSpecCallbacks {
 
-  /**
-   * Call this before the start of the test run. NOT before every test case.
-   */
+  /** Call this before the start of the test run. NOT before every test case. */
   def multiNodeSpecBeforeAll(): Unit
 
-  /**
-   * Call this after the all test cases have run. NOT after every test case.
-   */
+  /** Call this after the all test cases have run. NOT after every test case. */
   def multiNodeSpecAfterAll(): Unit
 }

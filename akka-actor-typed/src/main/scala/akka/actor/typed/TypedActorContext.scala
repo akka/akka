@@ -16,13 +16,9 @@ import akka.annotation.DoNotInherit
 trait TypedActorContext[T] {
   // this should be a pure interface, i.e. only abstract methods
 
-  /**
-   * Get the `javadsl` of this `ActorContext`.
-   */
+  /** Get the `javadsl` of this `ActorContext`. */
   def asJava: javadsl.ActorContext[T]
 
-  /**
-   * Get the `scaladsl` of this `ActorContext`.
-   */
+  /** Get the `scaladsl` of this `ActorContext`. */
   def asScala: scaladsl.ActorContext[T]
 }

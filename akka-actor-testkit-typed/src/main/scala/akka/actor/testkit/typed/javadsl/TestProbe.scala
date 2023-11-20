@@ -21,24 +21,16 @@ import akka.util.unused
 
 object FishingOutcomes {
 
-  /**
-   * Consume this message and continue with the next
-   */
+  /** Consume this message and continue with the next */
   def continueAndCollect(): FishingOutcome = FishingOutcome.Continue
 
-  /**
-   * Consume this message and continue with the next
-   */
+  /** Consume this message and continue with the next */
   def continueAndIgnore(): FishingOutcome = akka.actor.testkit.typed.FishingOutcome.ContinueAndIgnore
 
-  /**
-   * Complete fishing and return this message
-   */
+  /** Complete fishing and return this message */
   def complete(): FishingOutcome = akka.actor.testkit.typed.FishingOutcome.Complete
 
-  /**
-   * Fail fishing with a custom error message
-   */
+  /** Fail fishing with a custom error message */
   def fail(error: String): FishingOutcome = akka.actor.testkit.typed.FishingOutcome.Fail(error)
 }
 
@@ -71,14 +63,10 @@ abstract class TestProbe[M] extends RecipientRef[M] { this: InternalRecipientRef
 
   implicit protected def settings: TestKitSettings
 
-  /**
-   * ActorRef for this TestProbe
-   */
+  /** ActorRef for this TestProbe */
   def ref: ActorRef[M]
 
-  /**
-   * ActorRef for this TestProbe
-   */
+  /** ActorRef for this TestProbe */
   def getRef(): ActorRef[M] = ref
 
   /**
@@ -119,9 +107,7 @@ abstract class TestProbe[M] extends RecipientRef[M] { this: InternalRecipientRef
    */
   def within[T](min: Duration, max: Duration)(f: Supplier[T]): T
 
-  /**
-   * Same as calling `within(0 seconds, max)(f)`.
-   */
+  /** Same as calling `within(0 seconds, max)(f)`. */
   def within[T](max: Duration)(f: Supplier[T]): T
 
   /**
@@ -173,9 +159,7 @@ abstract class TestProbe[M] extends RecipientRef[M] { this: InternalRecipientRef
    */
   def expectMessageClass[T <: M](clazz: Class[T], max: Duration): T
 
-  /**
-   * Receive one message of type `M` within the default timeout as deadline.
-   */
+  /** Receive one message of type `M` within the default timeout as deadline. */
   def receiveMessage(): M
 
   /**
@@ -184,9 +168,7 @@ abstract class TestProbe[M] extends RecipientRef[M] { this: InternalRecipientRef
    */
   def receiveMessage(max: Duration): M
 
-  /**
-   * Same as `receiveSeveralMessages(n, remaining)` but using the default timeout as deadline.
-   */
+  /** Same as `receiveSeveralMessages(n, remaining)` but using the default timeout as deadline. */
   def receiveSeveralMessages(n: Int): JList[M]
 
   /**
@@ -215,9 +197,7 @@ abstract class TestProbe[M] extends RecipientRef[M] { this: InternalRecipientRef
    */
   def fishForMessage(max: Duration, fisher: java.util.function.Function[M, FishingOutcome]): java.util.List[M]
 
-  /**
-   * Same as the other `fishForMessage` but includes the provided hint in all error messages
-   */
+  /** Same as the other `fishForMessage` but includes the provided hint in all error messages */
   def fishForMessage(
       max: Duration,
       hint: String,
@@ -231,9 +211,7 @@ abstract class TestProbe[M] extends RecipientRef[M] { this: InternalRecipientRef
    */
   def expectTerminated[U](actorRef: ActorRef[U], max: Duration): Unit
 
-  /**
-   * Expect the given actor to be stopped or stop within the default timeout.
-   */
+  /** Expect the given actor to be stopped or stop within the default timeout. */
   def expectTerminated[U](actorRef: ActorRef[U]): Unit
 
   /**
@@ -264,9 +242,7 @@ abstract class TestProbe[M] extends RecipientRef[M] { this: InternalRecipientRef
 
   // FIXME awaitAssert(Procedure): Unit would be nice for java people to not have to return null
 
-  /**
-   * Stops the [[TestProbe.getRef]], which is useful when testing watch and termination.
-   */
+  /** Stops the [[TestProbe.getRef]], which is useful when testing watch and termination. */
   def stop(): Unit
 
 }

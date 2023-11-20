@@ -50,8 +50,8 @@ object ClusterSingletonManagerSettings {
    */
   def apply(system: ActorSystem): ClusterSingletonManagerSettings =
     apply(system.settings.config.getConfig("akka.cluster.singleton"))
-    // note that this setting has some additional logic inside the ClusterSingletonManager
-    // falling back to DowningProvider.downRemovalMargin if it is off/Zero
+      // note that this setting has some additional logic inside the ClusterSingletonManager
+      // falling back to DowningProvider.downRemovalMargin if it is off/Zero
       .withRemovalMargin(Cluster(system).settings.DownRemovalMargin)
 
   /**
@@ -89,9 +89,7 @@ object ClusterSingletonManagerSettings {
    */
   def create(config: Config): ClusterSingletonManagerSettings = apply(config)
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   private[akka] def roleOption(role: String): Option[String] =
     if (role == "") None else Option(role)
 
@@ -169,16 +167,12 @@ final class ClusterSingletonManagerSettings(
     new ClusterSingletonManagerSettings(singletonName, role, removalMargin, handOverRetryInterval, leaseSettings)
 }
 
-/**
- * Marker trait for remote messages with special serializer.
- */
+/** Marker trait for remote messages with special serializer. */
 sealed trait ClusterSingletonMessage extends Serializable
 
 object ClusterSingletonManager {
 
-  /**
-   * Scala API: Factory method for `ClusterSingletonManager` [[akka.actor.Props]].
-   */
+  /** Scala API: Factory method for `ClusterSingletonManager` [[akka.actor.Props]]. */
   def props(singletonProps: Props, terminationMessage: Any, settings: ClusterSingletonManagerSettings): Props =
     Props(new ClusterSingletonManager(singletonProps, terminationMessage, settings))
       .withDispatcher(Dispatchers.InternalDispatcherId)
@@ -196,9 +190,7 @@ object ClusterSingletonManager {
    */
   sealed trait Data
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   private[akka] object Internal {
 
     /**
@@ -267,14 +259,10 @@ object ClusterSingletonManager {
 
     object OldestChangedBuffer {
 
-      /**
-       * Request to deliver one more event.
-       */
+      /** Request to deliver one more event. */
       case object GetNext
 
-      /**
-       * The first event, corresponding to CurrentClusterState.
-       */
+      /** The first event, corresponding to CurrentClusterState. */
       final case class InitialOldestState(oldest: List[UniqueAddress], safeToBeOldest: Boolean)
 
       final case class OldestChanged(oldest: Option[UniqueAddress])
@@ -479,7 +467,6 @@ class ClusterSingletonManagerIsStuck(message: String) extends AkkaException(mess
  * [[akka.actor.Props]] for the actor.
  *
  * Not intended for subclassing by user code.
- *
  *
  * @param singletonProps [[akka.actor.Props]] of the singleton actor instance.
  *
@@ -1198,12 +1185,12 @@ class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, se
       stay() // silence
   }
 
-  onTransition {
-    case from -> to => logInfo("ClusterSingletonManager state change [{} -> {}]", from, to)
+  onTransition { case from -> to =>
+    logInfo("ClusterSingletonManager state change [{} -> {}]", from, to)
   }
 
-  onTransition {
-    case _ -> BecomingOldest => startSingleTimer(HandOverRetryTimer, HandOverRetry(1), handOverRetryInterval)
+  onTransition { case _ -> BecomingOldest =>
+    startSingleTimer(HandOverRetryTimer, HandOverRetry(1), handOverRetryInterval)
   }
 
   onTransition {
@@ -1218,24 +1205,23 @@ class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, se
           logInfo("Releasing lease as leaving AcquiringLease going to [{}]", to)
           import context.dispatcher
           lease.foreach(l =>
-            pipe(l.release().map[Any](ReleaseLeaseResult(_)).recover {
-              case t => ReleaseLeaseFailure(t)
+            pipe(l.release().map[Any](ReleaseLeaseResult(_)).recover { case t =>
+              ReleaseLeaseFailure(t)
             }).to(self))
         case _ =>
       }
   }
 
-  onTransition {
-    case Oldest -> _ =>
-      lease.foreach { l =>
-        logInfo("Releasing lease as leaving Oldest")
-        import context.dispatcher
-        pipe(l.release().map(ReleaseLeaseResult(_))).to(self)
-      }
+  onTransition { case Oldest -> _ =>
+    lease.foreach { l =>
+      logInfo("Releasing lease as leaving Oldest")
+      import context.dispatcher
+      pipe(l.release().map(ReleaseLeaseResult(_))).to(self)
+    }
   }
 
-  onTransition {
-    case _ -> (Younger | Oldest) => getNextOldestChanged()
+  onTransition { case _ -> (Younger | Oldest) =>
+    getNextOldestChanged()
   }
 
   onTransition {

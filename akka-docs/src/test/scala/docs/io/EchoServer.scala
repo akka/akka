@@ -50,12 +50,12 @@ class EchoManager(handlerClass: Class[_]) extends Actor with ActorLogging {
       log.warning(s"cannot bind to [$local]")
       context.stop(self)
 
-    //#echo-manager
+    // #echo-manager
     case Connected(remote, local) =>
       log.info("received connection from {}", remote)
       val handler = context.actorOf(Props(handlerClass, sender(), remote))
       sender() ! Register(handler, keepOpenOnPeerClosed = true)
-    //#echo-manager
+    // #echo-manager
   }
 
 }
@@ -79,7 +79,7 @@ class EchoHandler(connection: ActorRef, remote: InetSocketAddress) extends Actor
   // start out in optimistic write-through mode
   def receive = writing
 
-  //#writing
+  // #writing
   def writing: Receive = {
     case Received(data) =>
       connection ! Write(data, Ack(currentOffset))
@@ -96,9 +96,9 @@ class EchoHandler(connection: ActorRef, remote: InetSocketAddress) extends Actor
       if (storage.isEmpty) context.stop(self)
       else context.become(closing)
   }
-  //#writing
+  // #writing
 
-  //#buffering
+  // #buffering
   def buffering(nack: Int): Receive = {
     var toAck = 10
     var peerClosed = false
@@ -124,33 +124,35 @@ class EchoHandler(connection: ActorRef, remote: InetSocketAddress) extends Actor
         else context.become(writing)
     }
   }
-  //#buffering
+  // #buffering
 
-  //#closing
+  // #closing
   def closing: Receive = {
     case CommandFailed(_: Write) =>
       connection ! ResumeWriting
-      context.become({
+      context.become(
+        {
 
-        case WritingResumed =>
-          writeAll()
-          context.unbecome()
+          case WritingResumed =>
+            writeAll()
+            context.unbecome()
 
-        case ack: Int => acknowledge(ack)
+          case ack: Int => acknowledge(ack)
 
-      }, discardOld = false)
+        },
+        discardOld = false)
 
     case Ack(ack) =>
       acknowledge(ack)
       if (storage.isEmpty) context.stop(self)
   }
-  //#closing
+  // #closing
 
   override def postStop(): Unit = {
     log.info(s"transferred $transferred bytes from/to [$remote]")
   }
 
-  //#storage-omitted
+  // #storage-omitted
   private var storageOffset = 0
   private var storage = Vector.empty[ByteString]
   private var stored = 0L
@@ -163,7 +165,7 @@ class EchoHandler(connection: ActorRef, remote: InetSocketAddress) extends Actor
 
   private def currentOffset = storageOffset + storage.size
 
-  //#helpers
+  // #helpers
   private def buffer(data: ByteString): Unit = {
     storage :+= data
     stored += data.size
@@ -196,7 +198,7 @@ class EchoHandler(connection: ActorRef, remote: InetSocketAddress) extends Actor
       suspended = false
     }
   }
-  //#helpers
+  // #helpers
 
   private def writeFirst(): Unit = {
     connection ! Write(storage(0), Ack(storageOffset))
@@ -208,7 +210,7 @@ class EchoHandler(connection: ActorRef, remote: InetSocketAddress) extends Actor
     }
   }
 
-  //#storage-omitted
+  // #storage-omitted
 }
 //#echo-handler
 
@@ -227,16 +229,18 @@ class SimpleEchoHandler(connection: ActorRef, remote: InetSocketAddress) extends
       buffer(data)
       connection ! Write(data, Ack)
 
-      context.become({
-        case Received(data) => buffer(data)
-        case Ack            => acknowledge()
-        case PeerClosed     => closing = true
-      }, discardOld = false)
+      context.become(
+        {
+          case Received(data) => buffer(data)
+          case Ack            => acknowledge()
+          case PeerClosed     => closing = true
+        },
+        discardOld = false)
 
     case PeerClosed => context.stop(self)
   }
 
-  //#storage-omitted
+  // #storage-omitted
   override def postStop(): Unit = {
     log.info(s"transferred $transferred bytes from/to [$remote]")
   }
@@ -251,7 +255,7 @@ class SimpleEchoHandler(connection: ActorRef, remote: InetSocketAddress) extends
   val lowWatermark = maxStored * 3 / 10
   var suspended = false
 
-  //#simple-helpers
+  // #simple-helpers
   private def buffer(data: ByteString): Unit = {
     storage :+= data
     stored += data.size
@@ -287,7 +291,7 @@ class SimpleEchoHandler(connection: ActorRef, remote: InetSocketAddress) extends
       else context.unbecome()
     } else connection ! Write(storage(0), Ack)
   }
-  //#simple-helpers
-  //#storage-omitted
+  // #simple-helpers
+  // #storage-omitted
 }
 //#simple-echo-handler

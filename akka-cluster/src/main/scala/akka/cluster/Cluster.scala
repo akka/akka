@@ -35,9 +35,7 @@ import akka.pattern._
 import akka.remote.{ UniqueAddress => _, _ }
 import akka.util.Version
 
-/**
- * Cluster Extension Id and factory for creating Cluster extension.
- */
+/** Cluster Extension Id and factory for creating Cluster extension. */
 object Cluster extends ExtensionId[Cluster] with ExtensionIdProvider {
   override def get(system: ActorSystem): Cluster = super.get(system)
 
@@ -47,9 +45,7 @@ object Cluster extends ExtensionId[Cluster] with ExtensionIdProvider {
 
   override def createExtension(system: ExtendedActorSystem): Cluster = new Cluster(system)
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   private[cluster] final val isAssertInvariantsEnabled: Boolean =
     System.getProperty("akka.cluster.assert", "off").toLowerCase match {
       case "on" | "true" => true
@@ -89,22 +85,16 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
         s"ActorSystem [${system}] needs to have 'akka.actor.provider' set to 'cluster' in the configuration, currently uses [${other.getClass.getName}]")
   }
 
-  /**
-   * The address of this cluster member.
-   */
+  /** The address of this cluster member. */
   def selfAddress: Address = selfUniqueAddress.address
 
   /** Data center to which this node belongs to (defaults to "default" if not configured explicitly) */
   def selfDataCenter: DataCenter = settings.SelfDataCenter
 
-  /**
-   * roles that this member has
-   */
+  /** roles that this member has */
   def selfRoles: Set[String] = settings.Roles
 
-  /**
-   * Java API: roles that this member has
-   */
+  /** Java API: roles that this member has */
   @nowarn("msg=deprecated")
   def getSelfRoles: java.util.Set[String] =
     scala.collection.JavaConverters.setAsJavaSetConverter(selfRoles).asJava
@@ -141,8 +131,8 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
 
   private def checkAutoDownUsage(): Unit = {
     if (settings.DowningProviderClassName == "akka.cluster.AutoDowning" ||
-        (settings.config.hasPath("auto-down-unreachable-after") && settings.config.getString(
-          "auto-down-unreachable-after") != "off"))
+      (settings.config.hasPath("auto-down-unreachable-after") && settings.config.getString(
+        "auto-down-unreachable-after") != "off"))
       logWarning(
         "auto-down has been removed in Akka 2.6.0. See " +
         "https://doc.akka.io/docs/akka/current/typed/cluster.html#downing for alternatives.")
@@ -152,9 +142,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
   // ===================== WORK DAEMONS =====================
   // ========================================================
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   private[cluster] val scheduler: Scheduler = {
     if (system.scheduler.maxFrequency < 1.second / SchedulerTickDuration) {
       logInfo(
@@ -185,12 +173,12 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
         override def maxFrequency: Double = systemScheduler.maxFrequency
 
         @nowarn("msg=deprecated")
-        override def schedule(initialDelay: FiniteDuration, interval: FiniteDuration, runnable: Runnable)(
-            implicit executor: ExecutionContext): Cancellable =
+        override def schedule(initialDelay: FiniteDuration, interval: FiniteDuration, runnable: Runnable)(implicit
+            executor: ExecutionContext): Cancellable =
           systemScheduler.schedule(initialDelay, interval, runnable)
 
-        override def scheduleOnce(delay: FiniteDuration, runnable: Runnable)(
-            implicit executor: ExecutionContext): Cancellable =
+        override def scheduleOnce(delay: FiniteDuration, runnable: Runnable)(implicit
+            executor: ExecutionContext): Cancellable =
           systemScheduler.scheduleOnce(delay, runnable)
       }
     }
@@ -203,9 +191,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
       name = "cluster")
   }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   private[cluster] val clusterCore: ActorRef = {
     implicit val timeout = system.settings.CreationTimeout
     try {
@@ -238,19 +224,13 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
   // ===================== PUBLIC API =====================
   // ======================================================
 
-  /**
-   * Returns true if this cluster instance has be shutdown.
-   */
+  /** Returns true if this cluster instance has be shutdown. */
   def isTerminated: Boolean = _isTerminated.get
 
-  /**
-   * Current snapshot state of the cluster.
-   */
+  /** Current snapshot state of the cluster. */
   def state: CurrentClusterState = readView.state
 
-  /**
-   * Current snapshot of the member itself
-   */
+  /** Current snapshot of the member itself */
   def selfMember: Member = readView.self
 
   /**
@@ -287,9 +267,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
     clusterCore ! InternalClusterAction.Subscribe(subscriber, initialStateMode, to.toSet)
   }
 
-  /**
-   * Unsubscribe to all cluster domain events.
-   */
+  /** Unsubscribe to all cluster domain events. */
   def unsubscribe(subscriber: ActorRef): Unit =
     clusterCore ! InternalClusterAction.Unsubscribe(subscriber, None)
 
@@ -325,9 +303,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
     clusterCore ! ClusterUserAction.JoinTo(fillLocal(address))
   }
 
-  /**
-   * Change the state of every member in preparation for a full cluster shutdown.
-   */
+  /** Change the state of every member in preparation for a full cluster shutdown. */
   def prepareForFullClusterShutdown(): Unit = {
     clusterCore ! ClusterUserAction.PrepareForShutdown
   }
@@ -509,14 +485,10 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
     case _            => // ignore, this is fine
   }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   private[cluster] object ClusterLogger extends ClusterLogger(log)
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   private[cluster] class ClusterLogger(log: MarkerLoggingAdapter) {
     def isDebugEnabled: Boolean =
       log.isDebugEnabled

@@ -20,15 +20,11 @@ import akka.pattern.StatusReply
 
 object BehaviorTestKit {
 
-  /**
-   * JAVA API
-   */
+  /** JAVA API */
   @ApiMayChange
   def applicationTestConfig: Config = akka.actor.testkit.typed.scaladsl.BehaviorTestKit.ApplicationTestConfig
 
-  /**
-   * JAVA API
-   */
+  /** JAVA API */
   @ApiMayChange
   def create[T](initialBehavior: Behavior[T], name: String, config: Config): BehaviorTestKit[T] = {
     val system = new ActorSystemStub("StubbedActorContext", config)
@@ -36,17 +32,13 @@ object BehaviorTestKit {
     new BehaviorTestKitImpl(system, (system.path / name).withUid(uid), initialBehavior)
   }
 
-  /**
-   * JAVA API
-   */
+  /** JAVA API */
   @ApiMayChange
   def create[T](initialBehavior: Behavior[T], name: String): BehaviorTestKit[T] = {
     create(initialBehavior, name, ActorSystemStub.config.defaultReference)
   }
 
-  /**
-   * JAVA API
-   */
+  /** JAVA API */
   @ApiMayChange
   def create[T](initialBehavior: Behavior[T]): BehaviorTestKit[T] =
     create(initialBehavior, "testkit")
@@ -87,9 +79,7 @@ abstract class BehaviorTestKit[T] {
   def runAsk[Res](responseClass: Class[Res], messageFactory: JFunction[ActorRef[Res], T]): ReplyInbox[Res] =
     runAsk(messageFactory)
 
-  /**
-   * The same as [[runAsk]] but only for requests that result in a response of type [[akka.pattern.StatusReply]].
-   */
+  /** The same as [[runAsk]] but only for requests that result in a response of type [[akka.pattern.StatusReply]]. */
   def runAskWithStatus[Res](messageFactory: JFunction[ActorRef[StatusReply[Res]], T]): StatusReplyInbox[Res]
 
   /**
@@ -127,19 +117,13 @@ abstract class BehaviorTestKit[T] {
    */
   def childInbox[U](child: ActorRef[U]): TestInbox[U]
 
-  /**
-   * Get the [[akka.actor.typed.Behavior]] testkit for the given child [[akka.actor.typed.ActorRef]].
-   */
+  /** Get the [[akka.actor.typed.Behavior]] testkit for the given child [[akka.actor.typed.ActorRef]]. */
   def childTestKit[U](child: ActorRef[U]): BehaviorTestKit[U]
 
-  /**
-   * The self inbox contains messages the behavior sent to `context.self`
-   */
+  /** The self inbox contains messages the behavior sent to `context.self` */
   def selfInbox(): TestInbox[T]
 
-  /**
-   * The self reference of the actor living inside this testkit.
-   */
+  /** The self reference of the actor living inside this testkit. */
   def getRef(): ActorRef[T] = selfInbox().getRef()
 
   /**
@@ -148,9 +132,7 @@ abstract class BehaviorTestKit[T] {
    */
   def getAllEffects(): java.util.List[Effect]
 
-  /**
-   * Returns if there have been any effects.
-   */
+  /** Returns if there have been any effects. */
   def hasEffects(): Boolean
 
   /**
@@ -165,9 +147,7 @@ abstract class BehaviorTestKit[T] {
    */
   def expectEffectClass[U <: Effect](effectClass: Class[U]): U
 
-  /**
-   * The current behavior, can change any time `run` is called
-   */
+  /** The current behavior, can change any time `run` is called */
   def currentBehavior: Behavior[T]
 
   /**
@@ -177,38 +157,24 @@ abstract class BehaviorTestKit[T] {
    */
   def returnedBehavior: Behavior[T]
 
-  /**
-   * Is the current behavior alive or stopped
-   */
+  /** Is the current behavior alive or stopped */
   def isAlive: Boolean
 
-  /**
-   * Send the message to the behavior and record any [[Effect]]s
-   */
+  /** Send the message to the behavior and record any [[Effect]]s */
   def run(message: T): Unit
 
-  /**
-   * Send the first message in the selfInbox to the behavior and run it, recording [[Effect]]s.
-   */
+  /** Send the first message in the selfInbox to the behavior and run it, recording [[Effect]]s. */
   def runOne(): Unit
 
-  /**
-   * Send the signal to the beheavior and record any [[Effect]]s
-   */
+  /** Send the signal to the beheavior and record any [[Effect]]s */
   def signal(signal: Signal): Unit
 
-  /**
-   * Returns all the [[CapturedLogEvent]] issued by this behavior(s)
-   */
+  /** Returns all the [[CapturedLogEvent]] issued by this behavior(s) */
   def getAllLogEntries(): java.util.List[CapturedLogEvent]
 
-  /**
-   * Clear the log entries
-   */
+  /** Clear the log entries */
   def clearLog(): Unit
 
-  /**
-   * The receptionist inbox contains messages sent to `system.receptionist`
-   */
+  /** The receptionist inbox contains messages sent to `system.receptionist` */
   def receptionistInbox(): TestInbox[Receptionist.Command]
 }

@@ -19,9 +19,7 @@ import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.io.{ InputStreamSinkStage, InputStreamSource, OutputStreamGraphStage, OutputStreamSourceStage }
 import akka.util.ByteString
 
-/**
- * Converters for interacting with the blocking `java.io` streams APIs and Java 8 Streams
- */
+/** Converters for interacting with the blocking `java.io` streams APIs and Java 8 Streams */
 object StreamConverters {
 
   /**
@@ -108,9 +106,8 @@ object StreamConverters {
   def javaCollector[T, R](collectorFactory: () => java.util.stream.Collector[T, _ <: Any, R]): Sink[T, Future[R]] =
     Flow[T]
       .fold {
-        new FirstCollectorState[T, R](collectorFactory.asInstanceOf[() => java.util.stream.Collector[T, Any, R]]): CollectorState[
-          T,
-          R]
+        new FirstCollectorState[T, R](
+          collectorFactory.asInstanceOf[() => java.util.stream.Collector[T, Any, R]]): CollectorState[T, R]
       } { (state, elem) =>
         state.update(elem)
       }
@@ -178,29 +175,28 @@ object StreamConverters {
     // TODO removing the QueueSink name, see issue #22523
     Sink
       .fromGraph(new QueueSink[T](1).withAttributes(Attributes.none))
-      .mapMaterializedValue(
-        queue =>
-          StreamSupport
-            .stream(
-              Spliterators.spliteratorUnknownSize(
-                new java.util.Iterator[T] {
-                  var nextElementFuture: Future[Option[T]] = queue.pull()
-                  var nextElement: Option[T] = _
+      .mapMaterializedValue(queue =>
+        StreamSupport
+          .stream(
+            Spliterators.spliteratorUnknownSize(
+              new java.util.Iterator[T] {
+                var nextElementFuture: Future[Option[T]] = queue.pull()
+                var nextElement: Option[T] = _
 
-                  override def hasNext: Boolean = {
-                    nextElement = Await.result(nextElementFuture, Inf)
-                    nextElement.isDefined
-                  }
+                override def hasNext: Boolean = {
+                  nextElement = Await.result(nextElementFuture, Inf)
+                  nextElement.isDefined
+                }
 
-                  override def next(): T = {
-                    val next = nextElement.get
-                    nextElementFuture = queue.pull()
-                    next
-                  }
-                },
-                0),
-              false)
-            .onClose(new Runnable { def run = queue.cancel() }))
+                override def next(): T = {
+                  val next = nextElement.get
+                  nextElementFuture = queue.pull()
+                  next
+                }
+              },
+              0),
+            false)
+          .onClose(new Runnable { def run = queue.cancel() }))
       .withAttributes(DefaultAttributes.asJavaStream)
   }
 

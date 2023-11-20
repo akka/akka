@@ -27,9 +27,7 @@ import akka.util.ccompat._
 @ccompatUsedUntil213
 object Serialization {
 
-  /**
-   * Tuple that represents mapping from Class to Serializer
-   */
+  /** Tuple that represents mapping from Class to Serializer */
   type ClassSerializer = (Class[_], Serializer)
 
   /**
@@ -48,7 +46,7 @@ object Serialization {
 
     private final def configToMap(cfg: Config): Map[String, String] = {
       import akka.util.ccompat.JavaConverters._
-      cfg.root.unwrapped.asScala.toMap.map { case (k, v) => (k -> v.toString) }
+      cfg.root.unwrapped.asScala.toMap.map { case (k, v) => k -> v.toString }
     }
   }
 
@@ -176,14 +174,15 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
   @deprecated("Use deserialize that accepts the `manifest` as a class name.", since = "2.6.0")
   def deserialize[T](bytes: Array[Byte], serializerId: Int, clazz: Option[Class[_ <: T]]): Try[T] =
     Try {
-      val serializer = try getSerializerById(serializerId)
-      catch {
-        case _: NoSuchElementException =>
-          throw new NotSerializableException(
-            s"Cannot find serializer with id [$serializerId]${clazz.map(c => " (class [" + c.getName + "])").getOrElse("")}. " +
-            "The most probable reason is that the configuration entry " +
-            "akka.actor.serializers is not in sync between the two systems.")
-      }
+      val serializer =
+        try getSerializerById(serializerId)
+        catch {
+          case _: NoSuchElementException =>
+            throw new NotSerializableException(
+              s"Cannot find serializer with id [$serializerId]${clazz.map(c => " (class [" + c.getName + "])").getOrElse("")}. " +
+              "The most probable reason is that the configuration entry " +
+              "akka.actor.serializers is not in sync between the two systems.")
+        }
       withTransportInformation { () =>
         serializer.fromBinary(bytes, clazz).asInstanceOf[T]
       }
@@ -196,13 +195,14 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
    */
   def deserialize(bytes: Array[Byte], serializerId: Int, manifest: String): Try[AnyRef] =
     Try {
-      val serializer = try getSerializerById(serializerId)
-      catch {
-        case _: NoSuchElementException =>
-          throw new NotSerializableException(
-            s"Cannot find serializer with id [$serializerId] (manifest [$manifest]). The most probable reason is that the configuration entry " +
-            "akka.actor.serializers is not in sync between the two systems.")
-      }
+      val serializer =
+        try getSerializerById(serializerId)
+        catch {
+          case _: NoSuchElementException =>
+            throw new NotSerializableException(
+              s"Cannot find serializer with id [$serializerId] (manifest [$manifest]). The most probable reason is that the configuration entry " +
+              "akka.actor.serializers is not in sync between the two systems.")
+        }
       deserializeByteArray(bytes, serializer, manifest)
     }
 
@@ -246,13 +246,14 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
    */
   @throws(classOf[NotSerializableException])
   def deserializeByteBuffer(buf: ByteBuffer, serializerId: Int, manifest: String): AnyRef = {
-    val serializer = try getSerializerById(serializerId)
-    catch {
-      case _: NoSuchElementException =>
-        throw new NotSerializableException(
-          s"Cannot find serializer with id [$serializerId] (manifest [$manifest]). The most probable reason is that the configuration entry " +
-          "akka.actor.serializers is not in synch between the two systems.")
-    }
+    val serializer =
+      try getSerializerById(serializerId)
+      catch {
+        case _: NoSuchElementException =>
+          throw new NotSerializableException(
+            s"Cannot find serializer with id [$serializerId] (manifest [$manifest]). The most probable reason is that the configuration entry " +
+            "akka.actor.serializers is not in synch between the two systems.")
+      }
 
     // not using `withTransportInformation { () =>` because deserializeByteBuffer is supposed to be the
     // possibility for allocation free serialization
@@ -310,8 +311,8 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
           (possibilities.forall(_._2 == possibilities(0)._2))
 
         val ser = {
-          bindings.filter {
-            case (c, _) => c.isAssignableFrom(clazz)
+          bindings.filter { case (c, _) =>
+            c.isAssignableFrom(clazz)
           } match {
             case immutable.Seq() =>
               throw new NotSerializableException(s"No configured serialization-bindings for class [${clazz.getName}]")
@@ -393,50 +394,42 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
           case _: NoSuchMethodException =>
             system.dynamicAccess
               .createInstanceFor[Serializer](fqn, List(classOf[ClassicActorSystemProvider] -> system))
-              .recoverWith {
-                case _: NoSuchMethodException =>
-                  system.dynamicAccess.createInstanceFor[Serializer](fqn, Nil).recoverWith {
-                    case _: NoSuchMethodException =>
-                      if (bindingName == "") {
-                        // compatibility with (public) serializerOf method without bindingName
-                        throw new NoSuchMethodException(s"The serializer [$fqn] doesn't have a matching constructor, " +
+              .recoverWith { case _: NoSuchMethodException =>
+                system.dynamicAccess.createInstanceFor[Serializer](fqn, Nil).recoverWith {
+                  case _: NoSuchMethodException =>
+                    if (bindingName == "") {
+                      // compatibility with (public) serializerOf method without bindingName
+                      throw new NoSuchMethodException(s"The serializer [$fqn] doesn't have a matching constructor, " +
                         s"see API documentation of ${classOf[Serializer].getName}")
-                      } else
-                        system.dynamicAccess
-                          .createInstanceFor[Serializer](
-                            fqn,
-                            List(classOf[ExtendedActorSystem] -> system, classOf[String] -> bindingName))
-                          .recoverWith {
-                            case _: NoSuchMethodException =>
+                    } else
+                      system.dynamicAccess
+                        .createInstanceFor[Serializer](
+                          fqn,
+                          List(classOf[ExtendedActorSystem] -> system, classOf[String] -> bindingName))
+                        .recoverWith { case _: NoSuchMethodException =>
+                          system.dynamicAccess
+                            .createInstanceFor[Serializer](
+                              fqn,
+                              List(classOf[ActorSystem] -> system, classOf[String] -> bindingName))
+                            .recoverWith { case _: NoSuchMethodException =>
                               system.dynamicAccess
                                 .createInstanceFor[Serializer](
                                   fqn,
-                                  List(classOf[ActorSystem] -> system, classOf[String] -> bindingName))
-                                .recoverWith {
-                                  case _: NoSuchMethodException =>
-                                    system.dynamicAccess
-                                      .createInstanceFor[Serializer](
-                                        fqn,
-                                        List(
-                                          classOf[ClassicActorSystemProvider] -> system,
-                                          classOf[String] -> bindingName))
-                                      .recoverWith {
-                                        case _: NoSuchMethodException =>
-                                          Failure(new NoSuchMethodException(
-                                            s"The serializer [$fqn] for binding [$bindingName] doesn't have a matching " +
-                                            s"constructor, see API documentation of ${classOf[Serializer].getName}"))
-                                      }
+                                  List(classOf[ClassicActorSystemProvider] -> system, classOf[String] -> bindingName))
+                                .recoverWith { case _: NoSuchMethodException =>
+                                  Failure(new NoSuchMethodException(
+                                    s"The serializer [$fqn] for binding [$bindingName] doesn't have a matching " +
+                                    s"constructor, see API documentation of ${classOf[Serializer].getName}"))
                                 }
-                          }
-                  }
+                            }
+                        }
+                }
               }
         }
     }
   }
 
-  /**
-   * Programmatically defined serializers
-   */
+  /** Programmatically defined serializers */
   private val serializerDetails: immutable.Seq[SerializerDetails] =
     (system.settings.setup.get[SerializationSetup] match {
       case None          => Vector.empty
@@ -490,8 +483,8 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
   private def warnUnexpectedNonAkkaSerializer(clazz: Class[_], ser: Serializer): Boolean = {
     val className = clazz.getName
     if (className.startsWith("akka.") && !ser.getClass.getName.startsWith("akka.") &&
-        // no serializers for these in Akka
-        !(className.startsWith("akka.grpc") || className.startsWith("akka.http"))) {
+      // no serializers for these in Akka
+      !(className.startsWith("akka.grpc") || className.startsWith("akka.http"))) {
       log.warning(
         "Using serializer [{}] for message [{}]. Note that this serializer " +
         "is not implemented by Akka. It's not recommended to replace serializers for messages " +
@@ -523,15 +516,13 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
    * obeying any order between unrelated subtypes (insert sort).
    */
   private def sort(in: Iterable[ClassSerializer]): immutable.Seq[ClassSerializer] =
-    (in
-      .foldLeft(new ArrayBuffer[ClassSerializer](in.size)) { (buf, ca) =>
-        buf.indexWhere(_._1.isAssignableFrom(ca._1)) match {
-          case -1 => buf.append(ca)
-          case x  => buf.insert(x, ca)
-        }
-        buf
-      })
-      .to(immutable.Seq)
+    in.foldLeft(new ArrayBuffer[ClassSerializer](in.size)) { (buf, ca) =>
+      buf.indexWhere(_._1.isAssignableFrom(ca._1)) match {
+        case -1 => buf.append(ca)
+        case x  => buf.insert(x, ca)
+      }
+      buf
+    }.to(immutable.Seq)
 
   /**
    * serializerMap is a Map whose keys is the class that is serializable and values is the serializer
@@ -540,40 +531,33 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
   private val serializerMap: ConcurrentHashMap[Class[_], Serializer] =
     bindings.foldLeft(new ConcurrentHashMap[Class[_], Serializer]) { case (map, (c, s)) => map.put(c, s); map }
 
-  /**
-   * Maps from a Serializer Identity (Int) to a Serializer instance (optimization)
-   */
+  /** Maps from a Serializer Identity (Int) to a Serializer instance (optimization) */
   val serializerByIdentity: Map[Int, Serializer] = {
     val zero: Map[Int, Serializer] = Map(NullSerializer.identifier -> NullSerializer)
-    serializers.foldLeft(zero) {
-      case (acc, (_, ser)) =>
-        val id = ser.identifier
-        acc.get(id) match {
-          case Some(existing) if existing != ser =>
-            throw new IllegalArgumentException(
-              s"Serializer identifier [$id] of [${ser.getClass.getName}] " +
-              s"is not unique. It is also used by [${acc(id).getClass.getName}].")
-          case _ =>
-            acc.updated(id, ser)
-        }
+    serializers.foldLeft(zero) { case (acc, (_, ser)) =>
+      val id = ser.identifier
+      acc.get(id) match {
+        case Some(existing) if existing != ser =>
+          throw new IllegalArgumentException(
+            s"Serializer identifier [$id] of [${ser.getClass.getName}] " +
+            s"is not unique. It is also used by [${acc(id).getClass.getName}].")
+        case _ =>
+          acc.updated(id, ser)
+      }
     }
   }
 
-  /**
-   * Serializers with id 0 - 1023 are stored in an array for quick allocation free access
-   */
+  /** Serializers with id 0 - 1023 are stored in an array for quick allocation free access */
   private val quickSerializerByIdentity: Array[Serializer] = {
     val size = 1024
     val table = new Array[Serializer](size)
-    serializerByIdentity.foreach {
-      case (id, ser) => if (0 <= id && id < size) table(id) = ser
+    serializerByIdentity.foreach { case (id, ser) =>
+      if (0 <= id && id < size) table(id) = ser
     }
     table
   }
 
-  /**
-   * @throws `NoSuchElementException` if no serializer with given `id`
-   */
+  /** @throws `NoSuchElementException` if no serializer with given `id` */
   private def getSerializerById(id: Int): Serializer = {
     if (0 <= id && id < quickSerializerByIdentity.length) {
       quickSerializerByIdentity(id) match {
@@ -593,13 +577,11 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
     serializer.isInstanceOf[JavaSerializer] && !system.settings.AllowJavaSerialization
   }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[akka] def shouldWarnAboutJavaSerializer(serializedClass: Class[_], serializer: Serializer) = {
 
     def suppressWarningOnNonSerializationVerification(serializedClass: Class[_]) = {
-      //suppressed, only when warn-on-no-serialization-verification = off, and extending NoSerializationVerificationNeeded
+      // suppressed, only when warn-on-no-serialization-verification = off, and extending NoSerializationVerificationNeeded
       !isWarningOnNoVerificationEnabled && classOf[NoSerializationVerificationNeeded].isAssignableFrom(serializedClass)
     }
 

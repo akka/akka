@@ -27,7 +27,7 @@ class MessageContainerSerializer(val system: ExtendedActorSystem) extends BaseSe
 
   def toBinary(obj: AnyRef): Array[Byte] = obj match {
     case sel: ActorSelectionMessage => serializeSelection(sel)
-    case _                          => throw new IllegalArgumentException(s"Cannot serialize object of type [${obj.getClass.getName}]")
+    case _ => throw new IllegalArgumentException(s"Cannot serialize object of type [${obj.getClass.getName}]")
   }
 
   import ContainerFormats.PatternType._

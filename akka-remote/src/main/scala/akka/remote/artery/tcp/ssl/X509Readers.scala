@@ -11,9 +11,7 @@ import javax.naming.ldap.LdapName
 import akka.annotation.InternalApi
 import akka.util.ccompat.JavaConverters._
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] object X509Readers {
 

@@ -23,18 +23,12 @@ trait BoundedSourceQueue[T] {
    */
   def offer(elem: T): QueueOfferResult
 
-  /**
-   * Completes the stream normally.
-   */
+  /** Completes the stream normally. */
   def complete(): Unit
 
-  /**
-   * Completes the stream with a failure.
-   */
+  /** Completes the stream with a failure. */
   def fail(ex: Throwable): Unit
 
-  /**
-   * Returns the approximate number of elements in this queue.
-   */
+  /** Returns the approximate number of elements in this queue. */
   def size(): Int
 }

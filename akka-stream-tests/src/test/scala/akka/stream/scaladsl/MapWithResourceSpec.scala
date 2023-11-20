@@ -84,12 +84,14 @@ class MapWithResourceSpec extends StreamSpec(UnboundedMailboxConfig) {
   "MapWithResource" must {
     "can read contents from a file" in {
       val p = Source(List(1, 10, 20, 30))
-        .mapWithResource(() => newBufferedReader())((reader, count) => {
-          readLines(reader, count)
-        }, reader => {
-          reader.close()
-          None
-        })
+        .mapWithResource(() => newBufferedReader())(
+          (reader, count) => {
+            readLines(reader, count)
+          },
+          reader => {
+            reader.close()
+            None
+          })
         .mapConcat(identity)
         .runWith(Sink.asPublisher(false))
 
@@ -118,13 +120,15 @@ class MapWithResourceSpec extends StreamSpec(UnboundedMailboxConfig) {
       val p = Source
         .repeat(1)
         .take(100)
-        .mapWithResource(() => newBufferedReader())((reader, _) => {
-          val s = reader.readLine()
-          if (s != null && s.contains("b")) throw TE("") else s
-        }, reader => {
-          reader.close()
-          None
-        })
+        .mapWithResource(() => newBufferedReader())(
+          (reader, _) => {
+            val s = reader.readLine()
+            if (s != null && s.contains("b")) throw TE("") else s
+          },
+          reader => {
+            reader.close()
+            None
+          })
         .withAttributes(supervisionStrategy(resumingDecider))
         .runWith(Sink.asPublisher(false))
       val c = TestSubscriber.manualProbe[String]()
@@ -144,13 +148,15 @@ class MapWithResourceSpec extends StreamSpec(UnboundedMailboxConfig) {
       val p = Source
         .repeat(1)
         .take(100)
-        .mapWithResource(() => newBufferedReader())((reader, _) => {
-          val s = reader.readLine()
-          if (s != null && s.contains("b")) throw TE("") else s
-        }, reader => {
-          reader.close()
-          None
-        })
+        .mapWithResource(() => newBufferedReader())(
+          (reader, _) => {
+            val s = reader.readLine()
+            if (s != null && s.contains("b")) throw TE("") else s
+          },
+          reader => {
+            reader.close()
+            None
+          })
         .withAttributes(supervisionStrategy(restartingDecider))
         .runWith(Sink.asPublisher(false))
       val c = TestSubscriber.manualProbe[String]()
@@ -170,16 +176,18 @@ class MapWithResourceSpec extends StreamSpec(UnboundedMailboxConfig) {
       val buffer = new Array[Char](chunkSize)
       val p = Source
         .repeat(1)
-        .mapWithResource(() => newBufferedReader())((reader, _) => {
-          val s = reader.read(buffer)
-          if (s > 0) Some(ByteString(buffer.mkString("")).take(s)) else None
-        }, reader => {
-          reader.close()
-          None
-        })
+        .mapWithResource(() => newBufferedReader())(
+          (reader, _) => {
+            val s = reader.read(buffer)
+            if (s > 0) Some(ByteString(buffer.mkString("")).take(s)) else None
+          },
+          reader => {
+            reader.close()
+            None
+          })
         .takeWhile(_.isDefined)
-        .collect {
-          case Some(bytes) => bytes
+        .collect { case Some(bytes) =>
+          bytes
         }
         .runWith(Sink.asPublisher(false))
       val c = TestSubscriber.manualProbe[ByteString]()
@@ -205,10 +213,12 @@ class MapWithResourceSpec extends StreamSpec(UnboundedMailboxConfig) {
     "use dedicated blocking-io-dispatcher by default" in {
       val p = Source
         .single(1)
-        .mapWithResource(() => newBufferedReader())((reader, _) => Option(reader.readLine()), reader => {
-          reader.close()
-          None
-        })
+        .mapWithResource(() => newBufferedReader())(
+          (reader, _) => Option(reader.readLine()),
+          reader => {
+            reader.close()
+            None
+          })
         .runWith(TestSink())
 
       SystemMaterializer(system).materializer
@@ -224,10 +234,12 @@ class MapWithResourceSpec extends StreamSpec(UnboundedMailboxConfig) {
       EventFilter[TE](occurrences = 1).intercept {
         val p = Source
           .single(1)
-          .mapWithResource[BufferedReader, String](() => throw TE(""))((reader, _) => reader.readLine(), reader => {
-            reader.close()
-            None
-          })
+          .mapWithResource[BufferedReader, String](() => throw TE(""))(
+            (reader, _) => reader.readLine(),
+            reader => {
+              reader.close()
+              None
+            })
           .runWith(Sink.asPublisher(false))
         val c = TestSubscriber.manualProbe[String]()
         p.subscribe(c)
@@ -274,11 +286,13 @@ class MapWithResourceSpec extends StreamSpec(UnboundedMailboxConfig) {
       val closedCounter = new AtomicInteger(0)
       val probe = Source
         .repeat(1)
-        .mapWithResource(() => 23)((_, _) => throw TE("failing read"), _ => {
-          closedCounter.incrementAndGet()
-          if (closedCounter.get == 1) throw TE("boom")
-          None
-        })
+        .mapWithResource(() => 23)(
+          (_, _) => throw TE("failing read"),
+          _ => {
+            closedCounter.incrementAndGet()
+            if (closedCounter.get == 1) throw TE("boom")
+            None
+          })
         .runWith(TestSink[Int]())
 
       EventFilter[TE](occurrences = 1).intercept {
@@ -291,11 +305,13 @@ class MapWithResourceSpec extends StreamSpec(UnboundedMailboxConfig) {
     "will close the resource when upstream complete" in {
       val closedCounter = new AtomicInteger(0)
       val (pub, sub) = TestSource[Int]()
-        .mapWithResource(() => newBufferedReader())((reader, count) => readLines(reader, count), reader => {
-          reader.close()
-          closedCounter.incrementAndGet()
-          Some(List("End"))
-        })
+        .mapWithResource(() => newBufferedReader())(
+          (reader, count) => readLines(reader, count),
+          reader => {
+            reader.close()
+            closedCounter.incrementAndGet()
+            Some(List("End"))
+          })
         .mapConcat(identity)
         .toMat(TestSink())(Keep.both)
         .run()
@@ -305,17 +321,19 @@ class MapWithResourceSpec extends StreamSpec(UnboundedMailboxConfig) {
       pub.sendComplete()
       sub.expectNext("End")
       sub.expectComplete()
-      closedCounter.get shouldBe (1)
+      closedCounter.get shouldBe 1
     }
 
     "will close the resource when upstream fail" in {
       val closedCounter = new AtomicInteger(0)
       val (pub, sub) = TestSource[Int]()
-        .mapWithResource(() => newBufferedReader())((reader, count) => readLines(reader, count), reader => {
-          reader.close()
-          closedCounter.incrementAndGet()
-          Some(List("End"))
-        })
+        .mapWithResource(() => newBufferedReader())(
+          (reader, count) => readLines(reader, count),
+          reader => {
+            reader.close()
+            closedCounter.incrementAndGet()
+            Some(List("End"))
+          })
         .mapConcat(identity)
         .toMat(TestSink())(Keep.both)
         .run()
@@ -325,17 +343,19 @@ class MapWithResourceSpec extends StreamSpec(UnboundedMailboxConfig) {
       pub.sendError(ex)
       sub.expectNext("End")
       sub.expectError(ex)
-      closedCounter.get shouldBe (1)
+      closedCounter.get shouldBe 1
     }
 
     "will close the resource when downstream cancel" in {
       val closedCounter = new AtomicInteger(0)
       val (pub, sub) = TestSource[Int]()
-        .mapWithResource(() => newBufferedReader())((reader, count) => readLines(reader, count), reader => {
-          reader.close()
-          closedCounter.incrementAndGet()
-          Some(List("End"))
-        })
+        .mapWithResource(() => newBufferedReader())(
+          (reader, count) => readLines(reader, count),
+          reader => {
+            reader.close()
+            closedCounter.incrementAndGet()
+            Some(List("End"))
+          })
         .mapConcat(identity)
         .toMat(TestSink())(Keep.both)
         .run()
@@ -345,17 +365,19 @@ class MapWithResourceSpec extends StreamSpec(UnboundedMailboxConfig) {
       sub.expectNext(manyLinesArray(0))
       subscription.cancel()
       pub.expectCancellation()
-      closedCounter.get shouldBe (1)
+      closedCounter.get shouldBe 1
     }
 
     "will close the resource when downstream fail" in {
       val closedCounter = new AtomicInteger(0)
       val (pub, sub) = TestSource[Int]()
-        .mapWithResource(() => newBufferedReader())((reader, count) => readLines(reader, count), reader => {
-          reader.close()
-          closedCounter.incrementAndGet()
-          Some(List("End"))
-        })
+        .mapWithResource(() => newBufferedReader())(
+          (reader, count) => readLines(reader, count),
+          reader => {
+            reader.close()
+            closedCounter.incrementAndGet()
+            Some(List("End"))
+          })
         .mapConcat(identity)
         .toMat(TestSink())(Keep.both)
         .run()
@@ -365,7 +387,7 @@ class MapWithResourceSpec extends StreamSpec(UnboundedMailboxConfig) {
       sub.expectNext(manyLinesArray(1))
       sub.cancel(ex)
       pub.expectCancellationWithCause(ex)
-      closedCounter.get shouldBe (1)
+      closedCounter.get shouldBe 1
     }
 
     "will close the resource on abrupt materializer termination" in {
@@ -376,11 +398,13 @@ class MapWithResourceSpec extends StreamSpec(UnboundedMailboxConfig) {
         .single(1)
         .mapWithResource(() => {
           newBufferedReader()
-        })((reader, count) => readLines(reader, count), reader => {
-          reader.close()
-          promise.complete(Success(Done))
-          Some(List("End"))
-        })
+        })(
+          (reader, count) => readLines(reader, count),
+          reader => {
+            reader.close()
+            promise.complete(Success(Done))
+            Some(List("End"))
+          })
         .mapConcat(identity)
         .runWith(Sink.never)(mat)
       mat.shutdown()

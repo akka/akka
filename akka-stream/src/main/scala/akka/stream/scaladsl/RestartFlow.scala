@@ -220,15 +220,14 @@ private final class RestartWithBackoffFlow[In, Out](
 
         // We need to ensure that the other end of the sub flow is also completed, so that we don't
         // receive any callbacks from it.
-        activeOutIn.foreach {
-          case (sourceOut, sinkIn) =>
-            if (!sourceOut.isClosed) {
-              sourceOut.complete()
-            }
-            if (!sinkIn.isClosed) {
-              sinkIn.cancel()
-            }
-            activeOutIn = None
+        activeOutIn.foreach { case (sourceOut, sinkIn) =>
+          if (!sourceOut.isClosed) {
+            sourceOut.complete()
+          }
+          if (!sinkIn.isClosed) {
+            sinkIn.cancel()
+          }
+          activeOutIn = None
         }
       }
 
@@ -236,9 +235,7 @@ private final class RestartWithBackoffFlow[In, Out](
     }
 }
 
-/**
- * Shared logic for all restart with backoff logics.
- */
+/** Shared logic for all restart with backoff logics. */
 private abstract class RestartWithBackoffLogic[S <: Shape](
     name: String,
     shape: S,
@@ -301,13 +298,15 @@ private abstract class RestartWithBackoffLogic[S <: Shape](
       }
     })
 
-    setHandler(out, new OutHandler {
-      override def onPull() = sinkIn.pull()
-      override def onDownstreamFinish(cause: Throwable) = {
-        finishing = true
-        sinkIn.cancel(cause)
-      }
-    })
+    setHandler(
+      out,
+      new OutHandler {
+        override def onPull() = sinkIn.pull()
+        override def onDownstreamFinish(cause: Throwable) = {
+          finishing = true
+          sinkIn.cancel(cause)
+        }
+      })
     sinkIn
   }
 

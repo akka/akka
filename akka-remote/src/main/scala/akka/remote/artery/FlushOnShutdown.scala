@@ -13,9 +13,7 @@ import akka.actor.{ Actor, ActorLogging, Props }
 import akka.annotation.InternalApi
 import akka.remote.UniqueAddress
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[remote] object FlushOnShutdown {
   def props(done: Promise[Done], timeout: FiniteDuration, associations: Set[Association]): Props = {
@@ -26,9 +24,7 @@ private[remote] object FlushOnShutdown {
   private case object Timeout
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[remote] class FlushOnShutdown(done: Promise[Done], timeout: FiniteDuration, associations: Set[Association])
     extends Actor

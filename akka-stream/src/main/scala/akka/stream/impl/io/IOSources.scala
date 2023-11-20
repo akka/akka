@@ -19,9 +19,7 @@ import akka.stream.Attributes.InputBuffer
 import akka.stream.stage._
 import akka.util.ByteString
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[akka] object FileSource {
 
   val completionHandler = new CompletionHandler[Integer, Try[Int] => Unit] {
@@ -82,7 +80,7 @@ private[akka] final class FileSource(path: Path, chunkSize: Int, startPosition: 
       override def onPull(): Unit = {
         if (availableChunks.size < maxReadAhead && !eofEncountered)
           availableChunks = readAhead(maxReadAhead, availableChunks)
-        //if already read something and try
+        // if already read something and try
         if (availableChunks.nonEmpty) {
           emitMultiple(out, availableChunks.iterator, () => if (eofEncountered) success() else setHandler(out, handler))
           availableChunks = Vector.empty[ByteString]
@@ -97,13 +95,14 @@ private[akka] final class FileSource(path: Path, chunkSize: Int, startPosition: 
       /** BLOCKING I/O READ */
       @tailrec def readAhead(maxChunks: Int, chunks: Vector[ByteString]): Vector[ByteString] =
         if (chunks.size < maxChunks && !eofEncountered) {
-          val readBytes = try channel.read(buffer, position)
-          catch {
-            case NonFatal(ex) =>
-              failStage(ex)
-              ioResultPromise.trySuccess(IOResult(position, Failure(ex)))
-              throw ex
-          }
+          val readBytes =
+            try channel.read(buffer, position)
+            catch {
+              case NonFatal(ex) =>
+                failStage(ex)
+                ioResultPromise.trySuccess(IOResult(position, Failure(ex)))
+                throw ex
+            }
 
           if (readBytes > 0) {
             buffer.flip()

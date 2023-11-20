@@ -24,9 +24,7 @@ object AkkaVersion {
     require(libraryName, requiredVersion, Version.current)
   }
 
-  /**
-   * Internal API:
-   */
+  /** Internal API: */
   @InternalApi
   private[akka] def require(libraryName: String, requiredVersion: String, currentVersion: String): Unit = {
     if (requiredVersion != currentVersion) {

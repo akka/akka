@@ -13,7 +13,7 @@ class StreamBuffersRateSpec extends AkkaSpec {
 
   "Demonstrate pipelining" in {
     def println(s: Any) = ()
-    //#pipelining
+    // #pipelining
     Source(1 to 3)
       .map { i =>
         println(s"A: $i"); i
@@ -28,22 +28,25 @@ class StreamBuffersRateSpec extends AkkaSpec {
       }
       .async
       .runWith(Sink.ignore)
-    //#pipelining
+    // #pipelining
   }
 
   "Demonstrate buffer sizes" in {
-    //#section-buffer
-    val section = Flow[Int].map(_ * 2).async.addAttributes(Attributes.inputBuffer(initial = 1, max = 1)) // the buffer size of this map is 1
+    // #section-buffer
+    val section = Flow[Int]
+      .map(_ * 2)
+      .async
+      .addAttributes(Attributes.inputBuffer(initial = 1, max = 1)) // the buffer size of this map is 1
     val flow = section.via(Flow[Int].map(_ / 2)).async // the buffer size of this map is the default
     val runnableGraph =
       Source(1 to 10).via(flow).to(Sink.foreach(elem => println(elem)))
 
     val withOverriddenDefaults = runnableGraph.withAttributes(Attributes.inputBuffer(initial = 64, max = 64))
-    //#section-buffer
+    // #section-buffer
   }
 
   "buffering abstraction leak" in {
-    //#buffering-abstraction-leak
+    // #buffering-abstraction-leak
     import scala.concurrent.duration._
     case class Tick()
 
@@ -57,42 +60,42 @@ class StreamBuffersRateSpec extends AkkaSpec {
 
       Source
         .tick(initialDelay = 1.second, interval = 1.second, "message!")
-        .conflateWithSeed(seed = (_) => 1)((count, _) => count + 1) ~> zipper.in1
+        .conflateWithSeed(seed = _ => 1)((count, _) => count + 1) ~> zipper.in1
 
       zipper.out ~> Sink.foreach(println)
       ClosedShape
     })
-    //#buffering-abstraction-leak
+    // #buffering-abstraction-leak
   }
 
   "explicit buffers" in {
     trait Job
     def inboundJobsConnector(): Source[Job, NotUsed] = Source.empty
-    //#explicit-buffers-backpressure
+    // #explicit-buffers-backpressure
     // Getting a stream of jobs from an imaginary external system as a Source
     val jobs: Source[Job, NotUsed] = inboundJobsConnector()
     jobs.buffer(1000, OverflowStrategy.backpressure)
-    //#explicit-buffers-backpressure
+    // #explicit-buffers-backpressure
 
-    //#explicit-buffers-droptail
+    // #explicit-buffers-droptail
     jobs.buffer(1000, OverflowStrategy.dropTail)
-    //#explicit-buffers-droptail
+    // #explicit-buffers-droptail
 
-    //#explicit-buffers-dropnew
+    // #explicit-buffers-dropnew
     jobs.buffer(1000, OverflowStrategy.dropNew)
-    //#explicit-buffers-dropnew
+    // #explicit-buffers-dropnew
 
-    //#explicit-buffers-drophead
+    // #explicit-buffers-drophead
     jobs.buffer(1000, OverflowStrategy.dropHead)
-    //#explicit-buffers-drophead
+    // #explicit-buffers-drophead
 
-    //#explicit-buffers-dropbuffer
+    // #explicit-buffers-dropbuffer
     jobs.buffer(1000, OverflowStrategy.dropBuffer)
-    //#explicit-buffers-dropbuffer
+    // #explicit-buffers-dropbuffer
 
-    //#explicit-buffers-fail
+    // #explicit-buffers-fail
     jobs.buffer(1000, OverflowStrategy.fail)
-    //#explicit-buffers-fail
+    // #explicit-buffers-fail
 
   }
 

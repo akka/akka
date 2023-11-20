@@ -12,8 +12,8 @@ import akka.stream.scaladsl._
 
 object ContraMap {
 
-  //#contramap
+  // #contramap
   val flow: Flow[Int, Int, NotUsed] = Flow[Int]
   val newFlow: Flow[String, Int, NotUsed] = flow.contramap(_.toInt)
-  //#contramap
+  // #contramap
 }

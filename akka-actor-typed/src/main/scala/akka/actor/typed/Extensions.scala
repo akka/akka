@@ -107,22 +107,16 @@ trait Extension
  */
 abstract class ExtensionId[T <: Extension] {
 
-  /**
-   * Create the extension, will be invoked at most one time per actor system where the extension is registered.
-   */
+  /** Create the extension, will be invoked at most one time per actor system where the extension is registered. */
   def createExtension(system: ActorSystem[_]): T
 
-  /**
-   * Lookup or create an instance of the extension identified by this id.
-   */
+  /** Lookup or create an instance of the extension identified by this id. */
   final def apply(system: ActorSystem[_]): T = system.registerExtension(this)
 
   override final def hashCode: Int = System.identityHashCode(this)
   override final def equals(other: Any): Boolean = this eq other.asInstanceOf[AnyRef]
 
-  /**
-   * Java API: The identifier of the extension
-   */
+  /** Java API: The identifier of the extension */
   def id: ExtensionId[T] = this
 }
 

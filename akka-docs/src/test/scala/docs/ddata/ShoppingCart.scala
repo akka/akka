@@ -26,11 +26,11 @@ object ShoppingCart {
   final case class Cart(items: Set[LineItem])
   final case class LineItem(productId: String, title: String, quantity: Int)
 
-  //#read-write-majority
+  // #read-write-majority
   private val timeout = 3.seconds
   private val readMajority = ReadMajority(timeout)
   private val writeMajority = WriteMajority(timeout)
-  //#read-write-majority
+  // #read-write-majority
 
 }
 
@@ -49,7 +49,7 @@ class ShoppingCart(userId: String) extends Actor {
       .orElse[Any, Unit](receiveRemoveItem)
       .orElse[Any, Unit](receiveOther)
 
-  //#get-cart
+  // #get-cart
   def receiveGetCart: Receive = {
     case GetCart =>
       replicator ! Get(DataKey, readMajority, Some(sender()))
@@ -66,17 +66,16 @@ class ShoppingCart(userId: String) extends Actor {
       // ReadMajority failure, try again with local read
       replicator ! Get(DataKey, ReadLocal, Some(replyTo))
   }
-  //#get-cart
+  // #get-cart
 
-  //#add-item
-  def receiveAddItem: Receive = {
-    case cmd @ AddItem(item) =>
-      val update = Update(DataKey, LWWMap.empty[String, LineItem], writeMajority, Some(cmd)) { cart =>
-        updateCart(cart, item)
-      }
-      replicator ! update
+  // #add-item
+  def receiveAddItem: Receive = { case cmd @ AddItem(item) =>
+    val update = Update(DataKey, LWWMap.empty[String, LineItem], writeMajority, Some(cmd)) { cart =>
+      updateCart(cart, item)
+    }
+    replicator ! update
   }
-  //#add-item
+  // #add-item
 
   def updateCart(data: LWWMap[String, LineItem], item: LineItem): LWWMap[String, LineItem] =
     data.get(item.productId) match {
@@ -85,7 +84,7 @@ class ShoppingCart(userId: String) extends Actor {
       case None => data :+ (item.productId -> item)
     }
 
-  //#remove-item
+  // #remove-item
   def receiveRemoveItem: Receive = {
     case cmd @ RemoveItem(productId) =>
       // Try to fetch latest from a majority of nodes first, since ORMap
@@ -106,7 +105,7 @@ class ShoppingCart(userId: String) extends Actor {
     case NotFound(DataKey, Some(RemoveItem(productId))) =>
     // nothing to remove
   }
-  //#remove-item
+  // #remove-item
 
   def receiveOther: Receive = {
     case _: UpdateSuccess[_] | _: UpdateTimeout[_] =>

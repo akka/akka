@@ -11,9 +11,7 @@ import akka.actor.typed.scaladsl.adapter._
 import akka.annotation.InternalApi
 import akka.cluster.{ ddata => dd }
 
-/**
- * @see [[akka.cluster.ddata.ReplicatorSettings]].
- */
+/** @see [[akka.cluster.ddata.ReplicatorSettings]]. */
 object ReplicatorSettings {
 
   /**

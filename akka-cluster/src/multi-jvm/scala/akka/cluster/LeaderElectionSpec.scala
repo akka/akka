@@ -58,7 +58,7 @@ abstract class LeaderElectionSpec(multiNodeConfig: LeaderElectionMultiNodeConfig
 
     def shutdownLeaderAndVerifyNewLeader(alreadyShutdown: Int): Unit = {
       val currentRoles = sortedRoles.drop(alreadyShutdown)
-      currentRoles.size should be >= (2)
+      currentRoles.size should be >= 2
       val leader = currentRoles.head
       val aUser = currentRoles.last
       val remainingRoles = currentRoles.tail
@@ -87,7 +87,7 @@ abstract class LeaderElectionSpec(multiNodeConfig: LeaderElectionMultiNodeConfig
           // user marks the shutdown leader as DOWN
           cluster.down(leaderAddress)
           // removed
-          awaitAssert(clusterView.unreachableMembers.map(_.address) should not contain (leaderAddress))
+          awaitAssert(clusterView.unreachableMembers.map(_.address) should not contain leaderAddress)
           enterBarrier("after-down" + n, "completed" + n)
 
         case _ if remainingRoles.contains(myself) =>
@@ -116,7 +116,8 @@ abstract class LeaderElectionSpec(multiNodeConfig: LeaderElectionMultiNodeConfig
       enterBarrier("after-2")
     }
 
-    "be able to 're-elect' a single leader after leader has left (again)" taggedAs LongRunningTest in within(30 seconds) {
+    "be able to 're-elect' a single leader after leader has left (again)" taggedAs LongRunningTest in within(
+      30 seconds) {
       shutdownLeaderAndVerifyNewLeader(alreadyShutdown = 1)
       enterBarrier("after-3")
     }

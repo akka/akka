@@ -22,9 +22,7 @@ object ArterySpecSupport {
       }
     }""")
 
-  /**
-   * Artery enabled, flight recorder enabled, dynamic selection of port on localhost.
-   */
+  /** Artery enabled, flight recorder enabled, dynamic selection of port on localhost. */
   def defaultConfig: Config =
     staticArteryRemotingConfig.withFallback(tlsConfig) // TLS only used if transport=tls-tcp
 

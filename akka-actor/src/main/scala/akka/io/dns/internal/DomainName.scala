@@ -7,9 +7,7 @@ package akka.io.dns.internal
 import akka.annotation.InternalApi
 import akka.util.{ ByteIterator, ByteString, ByteStringBuilder }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] object DomainName {
   def length(name: String): Short = {

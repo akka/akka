@@ -43,7 +43,7 @@ class DeviceGroup(context: ActorContext[DeviceGroup.Command], groupId: String)
 
   override def onMessage(msg: Command): Behavior[Command] =
     msg match {
-      //#query-added
+      // #query-added
       case trackMsg @ RequestTrackDevice(`groupId`, deviceId, replyTo) =>
         deviceIdToActor.get(deviceId) match {
           case Some(deviceActor) =>
@@ -51,9 +51,9 @@ class DeviceGroup(context: ActorContext[DeviceGroup.Command], groupId: String)
           case None =>
             context.log.info("Creating device actor for {}", trackMsg.deviceId)
             val deviceActor = context.spawn(Device(groupId, deviceId), s"device-$deviceId")
-            //#device-group-register
+            // #device-group-register
             context.watchWith(deviceActor, DeviceTerminated(deviceActor, groupId, deviceId))
-            //#device-group-register
+            // #device-group-register
             deviceIdToActor += deviceId -> deviceActor
             replyTo ! DeviceRegistered(deviceActor)
         }
@@ -69,14 +69,14 @@ class DeviceGroup(context: ActorContext[DeviceGroup.Command], groupId: String)
           this
         } else
           Behaviors.unhandled
-      //#device-group-remove
+      // #device-group-remove
 
       case DeviceTerminated(_, _, deviceId) =>
         context.log.info("Device actor for {} has been terminated", deviceId)
         deviceIdToActor -= deviceId
         this
 
-      //#query-added
+      // #query-added
       // ... other cases omitted
 
       case RequestAllTemperatures(requestId, gId, replyTo) =>
@@ -88,10 +88,9 @@ class DeviceGroup(context: ActorContext[DeviceGroup.Command], groupId: String)
           Behaviors.unhandled
     }
 
-  override def onSignal: PartialFunction[Signal, Behavior[Command]] = {
-    case PostStop =>
-      context.log.info("DeviceGroup {} stopped", groupId)
-      this
+  override def onSignal: PartialFunction[Signal, Behavior[Command]] = { case PostStop =>
+    context.log.info("DeviceGroup {} stopped", groupId)
+    this
   }
 }
 //#query-added

@@ -17,9 +17,7 @@ import akka.serialization.DisabledJavaSerializer
 import akka.serialization.Serialization
 import akka.serialization.SerializerWithStringManifest
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[akka] class WrappedPayloadSupport(system: ExtendedActorSystem) {
 
   private lazy val serialization = SerializationExtension(system)

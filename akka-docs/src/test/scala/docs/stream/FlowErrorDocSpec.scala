@@ -14,12 +14,12 @@ import scala.concurrent.duration._
 class FlowErrorDocSpec extends AkkaSpec {
 
   "demonstrate fail stream" in {
-    //#stop
+    // #stop
     val source = Source(0 to 5).map(100 / _)
     val result = source.runWith(Sink.fold(0)(_ + _))
     // division by zero will fail the stream and the
     // result here will be a Future completed with Failure(ArithmeticException)
-    //#stop
+    // #stop
 
     intercept[ArithmeticException] {
       Await.result(result, 3.seconds)
@@ -27,7 +27,7 @@ class FlowErrorDocSpec extends AkkaSpec {
   }
 
   "demonstrate resume stream" in {
-    //#resume
+    // #resume
     val decider: Supervision.Decider = {
       case _: ArithmeticException => Supervision.Resume
       case _                      => Supervision.Stop
@@ -41,13 +41,13 @@ class FlowErrorDocSpec extends AkkaSpec {
     val result = withCustomSupervision.run()
     // the element causing division by zero will be dropped
     // result here will be a Future completed with Success(228)
-    //#resume
+    // #resume
 
     Await.result(result, 3.seconds) should be(228)
   }
 
   "demonstrate resume section" in {
-    //#resume-section
+    // #resume-section
     val decider: Supervision.Decider = {
       case _: ArithmeticException => Supervision.Resume
       case _                      => Supervision.Stop
@@ -61,13 +61,13 @@ class FlowErrorDocSpec extends AkkaSpec {
     val result = source.runWith(Sink.fold(0)(_ + _))
     // the elements causing division by zero will be dropped
     // result here will be a Future completed with Success(150)
-    //#resume-section
+    // #resume-section
 
     Await.result(result, 3.seconds) should be(150)
   }
 
   "demonstrate restart section" in {
-    //#restart-section
+    // #restart-section
     val decider: Supervision.Decider = {
       case _: IllegalArgumentException => Supervision.Restart
       case _                           => Supervision.Stop
@@ -83,24 +83,23 @@ class FlowErrorDocSpec extends AkkaSpec {
     // the negative element cause the scan stage to be restarted,
     // i.e. start from 0 again
     // result here will be a Future completed with Success(Vector(0, 1, 4, 0, 5, 12))
-    //#restart-section
+    // #restart-section
 
     Await.result(result, 3.seconds) should be(Vector(0, 1, 4, 0, 5, 12))
   }
 
   "demonstrate recover" in {
-    //#recover
+    // #recover
     Source(0 to 6)
-      .map(
-        n =>
-          // assuming `4` and `5` are unexpected values that could throw exception
-          if (List(4, 5).contains(n)) throw new RuntimeException(s"Boom! Bad value found: $n")
-          else n.toString)
-      .recover {
-        case e: RuntimeException => e.getMessage
+      .map(n =>
+        // assuming `4` and `5` are unexpected values that could throw exception
+        if (List(4, 5).contains(n)) throw new RuntimeException(s"Boom! Bad value found: $n")
+        else n.toString)
+      .recover { case e: RuntimeException =>
+        e.getMessage
       }
       .runForeach(println)
-    //#recover
+    // #recover
 
     /*
 Output:
@@ -111,22 +110,24 @@ Output:
 3                         // last element before failure
 Boom! Bad value found: 4  // first element on failure
 //#recover-output
-   */
+     */
   }
 
   "demonstrate recoverWithRetries" in {
-    //#recoverWithRetries
+    // #recoverWithRetries
     val planB = Source(List("five", "six", "seven", "eight"))
 
     Source(0 to 10)
       .map(n =>
         if (n < 5) n.toString
         else throw new RuntimeException("Boom!"))
-      .recoverWithRetries(attempts = 1, {
-        case _: RuntimeException => planB
-      })
+      .recoverWithRetries(
+        attempts = 1,
+        { case _: RuntimeException =>
+          planB
+        })
       .runForeach(println)
-    //#recoverWithRetries
+    // #recoverWithRetries
 
     /*
 Output:
@@ -141,7 +142,7 @@ six
 seven
 eight
 //#recoverWithRetries-output
-   */
+     */
   }
 
 }

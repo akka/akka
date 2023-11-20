@@ -31,16 +31,16 @@ final case class MulticastGroup(address: String, interface: String) extends Sock
 //#multicast-group
 
 class Listener(iface: String, group: String, port: Int, sink: ActorRef) extends Actor with ActorLogging {
-  //#bind
+  // #bind
   import context.system
   val opts = List(Inet6ProtocolFamily(), MulticastGroup(group, iface))
   IO(Udp) ! Udp.Bind(self, new InetSocketAddress(port), opts)
-  //#bind
+  // #bind
 
   def receive = {
     case b @ Udp.Bound(to) =>
       log.info("Bound to {}", to)
-      sink ! (b)
+      sink ! b
     case Udp.Received(data, remote) =>
       val msg = data.decodeString("utf-8")
       log.info("Received '{}' from {}", msg, remote)

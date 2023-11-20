@@ -26,7 +26,7 @@ object ClassicWatchingTypedSpec {
     def props() = classic.Props(new Classic)
   }
 
-  //#classic-watch
+  // #classic-watch
   class Classic extends classic.Actor with ActorLogging {
     // context.spawn is an implicit extension method
     val second: ActorRef[Typed.Command] =
@@ -51,9 +51,9 @@ object ClassicWatchingTypedSpec {
         context.stop(self)
     }
   }
-  //#classic-watch
+  // #classic-watch
 
-  //#typed
+  // #typed
   object Typed {
     sealed trait Command
     final case class Ping(replyTo: ActorRef[Pong.type]) extends Command
@@ -70,7 +70,7 @@ object ClassicWatchingTypedSpec {
         }
       }
   }
-  //#typed
+  // #typed
 }
 
 class ClassicWatchingTypedSpec extends AnyWordSpec with LogCapturing {
@@ -80,9 +80,9 @@ class ClassicWatchingTypedSpec extends AnyWordSpec with LogCapturing {
   "Classic -> Typed" must {
     "support creating, watching and messaging" in {
       val system = classic.ActorSystem("Coexistence")
-      //#create-classic
+      // #create-classic
       val classicActor = system.actorOf(Classic.props())
-      //#create-classic
+      // #create-classic
       val probe = TestProbe()(system)
       probe.watch(classicActor)
       probe.expectTerminated(classicActor, 200.millis)
@@ -90,11 +90,11 @@ class ClassicWatchingTypedSpec extends AnyWordSpec with LogCapturing {
     }
 
     "support converting a classic actor system to an actor system" in {
-      //#convert-classic
+      // #convert-classic
 
       val system = akka.actor.ActorSystem("ClassicToTypedSystem")
       val typedSystem: ActorSystem[Nothing] = system.toTyped
-      //#convert-classic
+      // #convert-classic
       typedSystem.scheduler // remove compile warning
       TestKit.shutdownActorSystem(system)
     }

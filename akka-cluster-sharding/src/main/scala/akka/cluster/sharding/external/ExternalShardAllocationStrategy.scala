@@ -34,15 +34,11 @@ object ExternalShardAllocationStrategy {
 
   type ShardRegion = ActorRef
 
-  /**
-   * Scala API
-   */
+  /** Scala API */
   def apply(systemProvider: ClassicActorSystemProvider, typeName: String): ExternalShardAllocationStrategy =
     new ExternalShardAllocationStrategy(systemProvider, typeName)
 
-  /**
-   * Java API
-   */
+  /** Java API */
   def create(systemProvider: ClassicActorSystemProvider, typeName: String): ExternalShardAllocationStrategy =
     apply(systemProvider, typeName)
 
@@ -168,13 +164,12 @@ class ExternalShardAllocationStrategy(systemProvider: ClassicActorSystemProvider
             }
           }
       }
-      .recover {
-        case _: AskTimeoutException =>
-          log.warning(
-            "allocate timed out waiting for shard allocation state [{}]. Allocating to requester [{}]",
-            shardId,
-            requester)
-          requester
+      .recover { case _: AskTimeoutException =>
+        log.warning(
+          "allocate timed out waiting for shard allocation state [{}]. Allocating to requester [{}]",
+          shardId,
+          requester)
+        requester
       }
 
   }
@@ -227,10 +222,9 @@ class ExternalShardAllocationStrategy(systemProvider: ClassicActorSystemProvider
         }
         done
       }
-      .recover {
-        case _: AskTimeoutException =>
-          log.warning("rebalance timed out waiting for shard allocation state. Keeping existing allocations")
-          Set.empty
+      .recover { case _: AskTimeoutException =>
+        log.warning("rebalance timed out waiting for shard allocation state. Keeping existing allocations")
+        Set.empty
       }
   }
 

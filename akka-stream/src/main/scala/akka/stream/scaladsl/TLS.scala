@@ -66,7 +66,9 @@ object TLS {
    */
   def apply(
       createSSLEngine: () => SSLEngine, // we don't offer the internal `ActorSystem => SSLEngine` API here, see #21753
-      verifySession: SSLSession => Try[Unit], // we don't offer the internal API that provides `ActorSystem` here, see #21753
+      verifySession: SSLSession => Try[
+        Unit
+      ], // we don't offer the internal API that provides `ActorSystem` here, see #21753
       closing: TLSClosing): scaladsl.BidiFlow[SslTlsOutbound, ByteString, ByteString, SslTlsInbound, NotUsed] =
     scaladsl.BidiFlow.fromGraph(TlsModule(Attributes.none, createSSLEngine, verifySession, closing))
 
@@ -111,9 +113,7 @@ import javax.net.ssl.SSLPeerUnverifiedException
 /** Allows access to an SSLSession with Scala types */
 trait ScalaSessionAPI {
 
-  /**
-   * The underlying [[javax.net.ssl.SSLSession]].
-   */
+  /** The underlying [[javax.net.ssl.SSLSession]]. */
   def session: SSLSession
 
   /**

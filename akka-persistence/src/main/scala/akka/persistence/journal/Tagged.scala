@@ -18,9 +18,7 @@ import akka.util.ccompat.JavaConverters._
  */
 case class Tagged(payload: Any, tags: Set[String]) {
 
-  /**
-   * Java API
-   */
+  /** Java API */
   def this(payload: Any, tags: java.util.Set[String]) = {
     this(payload, tags.asScala.toSet)
   }

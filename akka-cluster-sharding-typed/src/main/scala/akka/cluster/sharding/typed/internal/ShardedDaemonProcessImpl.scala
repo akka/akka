@@ -32,9 +32,7 @@ import akka.cluster.typed.ClusterSingleton
 import akka.cluster.typed.ClusterSingletonSettings
 import akka.cluster.typed.SingletonActor
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
     extends javadsl.ShardedDaemonProcess
@@ -50,8 +48,8 @@ private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
       revision: Long)
       extends ShardedDaemonProcessContext
 
-  def init[T](name: String, numberOfInstances: Int, behaviorFactory: Int => Behavior[T])(
-      implicit classTag: ClassTag[T]): Unit =
+  def init[T](name: String, numberOfInstances: Int, behaviorFactory: Int => Behavior[T])(implicit
+      classTag: ClassTag[T]): Unit =
     init(name, numberOfInstances, behaviorFactory, ShardedDaemonProcessSettings(system), None, None)(classTag)
 
   override def init[T](name: String, numberOfInstances: Int, behaviorFactory: Int => Behavior[T], stopMessage: T)(
@@ -86,8 +84,8 @@ private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
   override def initWithContext[T](
       name: EntityId,
       initialNumberOfInstances: Int,
-      behaviorFactory: ShardedDaemonProcessContext => Behavior[T])(
-      implicit classTag: ClassTag[T]): ActorRef[ShardedDaemonProcessCommand] =
+      behaviorFactory: ShardedDaemonProcessContext => Behavior[T])(implicit
+      classTag: ClassTag[T]): ActorRef[ShardedDaemonProcessCommand] =
     internalInitWithContext(name, initialNumberOfInstances, behaviorFactory, None, None, None, true)
 
   override def initWithContext[T](
@@ -111,8 +109,8 @@ private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
       behaviorFactory: ShardedDaemonProcessContext => Behavior[T],
       settings: ShardedDaemonProcessSettings,
       stopMessage: Option[T],
-      shardAllocationStrategy: Option[ShardAllocationStrategy])(
-      implicit classTag: ClassTag[T]): ActorRef[ShardedDaemonProcessCommand] =
+      shardAllocationStrategy: Option[ShardAllocationStrategy])(implicit
+      classTag: ClassTag[T]): ActorRef[ShardedDaemonProcessCommand] =
     internalInitWithContext(
       name,
       numberOfInstances,

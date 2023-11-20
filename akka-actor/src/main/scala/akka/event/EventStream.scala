@@ -55,9 +55,7 @@ class EventStream(sys: ActorSystem, private val debug: Boolean) extends LoggingB
     super.subscribe(subscriber, channel)
   }
 
-  /**
-   * Unsubscribe specific types subscriptions created by this actor from the event stream.
-   */
+  /** Unsubscribe specific types subscriptions created by this actor from the event stream. */
   override def unsubscribe(subscriber: ActorRef, channel: Class[_]): Boolean = {
     if (subscriber eq null) throw new IllegalArgumentException("subscriber is null")
     val ret = super.unsubscribe(subscriber, channel)
@@ -68,9 +66,7 @@ class EventStream(sys: ActorSystem, private val debug: Boolean) extends LoggingB
     ret
   }
 
-  /**
-   * Unsubscribe all subscriptions created by this actor from the event stream.
-   */
+  /** Unsubscribe all subscriptions created by this actor from the event stream. */
   override def unsubscribe(subscriber: ActorRef): Unit = {
     if (subscriber eq null) throw new IllegalArgumentException("subscriber is null")
     super.unsubscribe(subscriber)
@@ -87,9 +83,7 @@ class EventStream(sys: ActorSystem, private val debug: Boolean) extends LoggingB
     // sys may be null for backwards compatibility reasons
     if (sys ne null) EventStreamUnsubscriber.start(sys, this)
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @tailrec
   final private[akka] def initUnsubscriber(unsubscriber: ActorRef): Boolean = {
     // sys may be null for backwards compatibility reasons
@@ -123,9 +117,7 @@ class EventStream(sys: ActorSystem, private val debug: Boolean) extends LoggingB
       }
   }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @tailrec
   private def registerWithUnsubscriber(subscriber: ActorRef): Unit = {
     // sys may be null for backwards compatibility reasons

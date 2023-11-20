@@ -23,18 +23,18 @@ class FlowDocSpec extends AkkaSpec with CompileOnlySpec {
   implicit val ec: ExecutionContext = system.dispatcher
 
   "source is immutable" in {
-    //#source-immutable
+    // #source-immutable
     val source = Source(1 to 10)
     source.map(_ => 0) // has no effect on source, since it's immutable
     source.runWith(Sink.fold(0)(_ + _)) // 55
 
     val zeroes = source.map(_ => 0) // returns new Source[Int], with `map()` appended
     zeroes.runWith(Sink.fold(0)(_ + _)) // 0
-    //#source-immutable
+    // #source-immutable
   }
 
   "materialization in steps" in {
-    //#materialization-in-steps
+    // #materialization-in-steps
     val source = Source(1 to 10)
     val sink = Sink.fold[Int, Int](0)(_ + _)
 
@@ -44,21 +44,21 @@ class FlowDocSpec extends AkkaSpec with CompileOnlySpec {
     // materialize the flow and get the value of the sink
     val sum: Future[Int] = runnable.run()
 
-    //#materialization-in-steps
+    // #materialization-in-steps
   }
 
   "materialization runWith" in {
-    //#materialization-runWith
+    // #materialization-runWith
     val source = Source(1 to 10)
     val sink = Sink.fold[Int, Int](0)(_ + _)
 
     // materialize the flow, getting the Sink's materialized value
     val sum: Future[Int] = source.runWith(sink)
-    //#materialization-runWith
+    // #materialization-runWith
   }
 
   "materialization is unique" in {
-    //#stream-reuse
+    // #stream-reuse
     // connect the Source to the Sink, obtaining a RunnableGraph
     val sink = Sink.fold[Int, Int](0)(_ + _)
     val runnable: RunnableGraph[Future[Int]] =
@@ -69,7 +69,7 @@ class FlowDocSpec extends AkkaSpec with CompileOnlySpec {
     val sum2: Future[Int] = runnable.run()
 
     // sum1 and sum2 are different Futures!
-    //#stream-reuse
+    // #stream-reuse
   }
 
   "compound source cannot be used as key" in {
@@ -91,7 +91,7 @@ class FlowDocSpec extends AkkaSpec with CompileOnlySpec {
   }
 
   "creating sources, sinks" in {
-    //#source-sink
+    // #source-sink
     // Create a source from an Iterable
     Source(List(1, 2, 3))
 
@@ -117,11 +117,11 @@ class FlowDocSpec extends AkkaSpec with CompileOnlySpec {
 
     // A Sink that executes a side-effecting call for every element of the stream
     Sink.foreach[String](println(_))
-    //#source-sink
+    // #source-sink
   }
 
   "various ways of connecting source, sink, flow" in {
-    //#flow-connecting
+    // #flow-connecting
     // Explicitly creating and wiring up a Source, Sink and Flow
     Source(1 to 6).via(Flow[Int].map(_ * 2)).to(Sink.foreach(println(_)))
 
@@ -138,21 +138,21 @@ class FlowDocSpec extends AkkaSpec with CompileOnlySpec {
       Flow[Int].alsoTo(Sink.foreach(println(_))).to(Sink.ignore)
     Source(1 to 6).to(otherSink)
 
-    //#flow-connecting
+    // #flow-connecting
   }
 
   "various ways of transforming materialized values" in {
     import scala.concurrent.duration._
 
-    val throttler = Flow.fromGraph(GraphDSL.createGraph(Source.tick(1.second, 1.second, "test")) {
-      implicit builder => tickSource =>
+    val throttler =
+      Flow.fromGraph(GraphDSL.createGraph(Source.tick(1.second, 1.second, "test")) { implicit builder => tickSource =>
         import GraphDSL.Implicits._
         val zip = builder.add(ZipWith[String, Int, Int](Keep.right))
         tickSource ~> zip.in0
         FlowShape(zip.in1, zip.out)
-    })
+      })
 
-    //#flow-mat-combine
+    // #flow-mat-combine
     // A source that can be signalled explicitly from the outside
     val source: Source[Int, Promise[Option[Int]]] = Source.maybe[Int]
 
@@ -192,9 +192,8 @@ class FlowDocSpec extends AkkaSpec with CompileOnlySpec {
     // It is also possible to map over the materialized values. In r9 we had a
     // doubly nested pair, but we want to flatten it out
     val r11: RunnableGraph[(Promise[Option[Int]], Cancellable, Future[Int])] =
-      r9.mapMaterializedValue {
-        case ((promise, cancellable), future) =>
-          (promise, cancellable, future)
+      r9.mapMaterializedValue { case ((promise, cancellable), future) =>
+        (promise, cancellable, future)
       }
 
     // Now we can use pattern matching to get the resulting materialized values
@@ -213,17 +212,17 @@ class FlowDocSpec extends AkkaSpec with CompileOnlySpec {
         ClosedShape
       })
 
-    //#flow-mat-combine
+    // #flow-mat-combine
   }
 
   "defining asynchronous boundaries" in {
-    //#flow-async
+    // #flow-async
     Source(List(1, 2, 3)).map(_ + 1).async.map(_ * 2).to(Sink.ignore)
-    //#flow-async
+    // #flow-async
   }
 
   "source pre-materialization" in {
-    //#source-prematerialization
+    // #source-prematerialization
     val completeWithDone: PartialFunction[Any, CompletionStrategy] = { case Done => CompletionStrategy.immediately }
     val matValuePoweredSource =
       Source.actorRef[String](
@@ -238,13 +237,13 @@ class FlowDocSpec extends AkkaSpec with CompileOnlySpec {
 
     // pass source around for materialization
     source.runWith(Sink.foreach(println))
-    //#source-prematerialization
+    // #source-prematerialization
   }
 }
 
 object FlowDocSpec {
 
-  //#materializer-from-actor-context
+  // #materializer-from-actor-context
   final class RunWithMyself extends Actor {
     implicit val mat: Materializer = Materializer(context)
 
@@ -253,14 +252,13 @@ object FlowDocSpec {
       case Failure(ex)   => println(s"Failed: ${ex.getMessage}")
     })
 
-    def receive = {
-      case "boom" =>
-        context.stop(self) // will also terminate the stream
+    def receive = { case "boom" =>
+      context.stop(self) // will also terminate the stream
     }
   }
-  //#materializer-from-actor-context
+  // #materializer-from-actor-context
 
-  //#materializer-from-system-in-actor
+  // #materializer-from-system-in-actor
   final class RunForever(implicit val mat: Materializer) extends Actor {
 
     Source.maybe.runWith(Sink.onComplete {
@@ -268,11 +266,10 @@ object FlowDocSpec {
       case Failure(ex)   => println(s"Failed: ${ex.getMessage}")
     })
 
-    def receive = {
-      case "boom" =>
-        context.stop(self) // will NOT terminate the stream (it's bound to the system!)
+    def receive = { case "boom" =>
+      context.stop(self) // will NOT terminate the stream (it's bound to the system!)
     }
   }
-  //#materializer-from-system-in-actor
+  // #materializer-from-system-in-actor
 
 }

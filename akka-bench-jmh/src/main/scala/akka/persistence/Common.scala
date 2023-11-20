@@ -8,8 +8,8 @@ import akka.actor.Actor
 
 /** only as a "the best we could possibly get" baseline, does not persist anything */
 class BaselineActor(respondAfter: Int) extends Actor {
-  override def receive = {
-    case n: Int => if (n == respondAfter) sender() ! n
+  override def receive = { case n: Int =>
+    if (n == respondAfter) sender() ! n
   }
 }
 

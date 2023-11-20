@@ -61,17 +61,21 @@ class GraphStageLogicSpec extends StreamSpec with GraphInterpreterSpecKit with S
     val out = Outlet[Int]("out")
     override val shape = FlowShape(in, out)
     override def createLogic(attr: Attributes) = new GraphStageLogic(shape) {
-      setHandler(in, new InHandler {
-        override def onPush(): Unit = push(out, grab(in))
-        override def onUpstreamFinish(): Unit = {
-          emit(out, 5, () => emit(out, 6))
-          emit(out, 7, () => emit(out, 8))
-          completeStage()
-        }
-      })
-      setHandler(out, new OutHandler {
-        override def onPull(): Unit = pull(in)
-      })
+      setHandler(
+        in,
+        new InHandler {
+          override def onPush(): Unit = push(out, grab(in))
+          override def onUpstreamFinish(): Unit = {
+            emit(out, 5, () => emit(out, 6))
+            emit(out, 7, () => emit(out, 8))
+            completeStage()
+          }
+        })
+      setHandler(
+        out,
+        new OutHandler {
+          override def onPull(): Unit = pull(in)
+        })
     }
   }
 
@@ -80,15 +84,19 @@ class GraphStageLogicSpec extends StreamSpec with GraphInterpreterSpecKit with S
     val out = Outlet[Int]("out")
     override val shape = FlowShape(in, out)
     override def createLogic(attr: Attributes) = new GraphStageLogic(shape) {
-      setHandler(in, new InHandler {
-        override def onPush(): Unit = push(out, grab(in))
-        override def onUpstreamFinish(): Unit = complete(out)
-        override def toString = "InHandler"
-      })
-      setHandler(out, new OutHandler {
-        override def onPull(): Unit = pull(in)
-        override def toString = "OutHandler"
-      })
+      setHandler(
+        in,
+        new InHandler {
+          override def onPush(): Unit = push(out, grab(in))
+          override def onUpstreamFinish(): Unit = complete(out)
+          override def toString = "InHandler"
+        })
+      setHandler(
+        out,
+        new OutHandler {
+          override def onPull(): Unit = pull(in)
+          override def toString = "OutHandler"
+        })
       override def toString = "GraphStageLogicSpec.passthroughLogic"
     }
     override def toString = "GraphStageLogicSpec.passthrough"
@@ -99,9 +107,11 @@ class GraphStageLogicSpec extends StreamSpec with GraphInterpreterSpecKit with S
     override val shape = SourceShape(out)
     override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
 
-      setHandler(out, new OutHandler {
-        override def onPull(): Unit = emitMultiple(out, Iterator.empty, () => emit(out, 42, () => completeStage()))
-      })
+      setHandler(
+        out,
+        new OutHandler {
+          override def onPull(): Unit = emitMultiple(out, Iterator.empty, () => emit(out, 42, () => completeStage()))
+        })
     }
     override def toString = "GraphStageLogicSpec.emitEmptyIterable"
   }
@@ -114,7 +124,7 @@ class GraphStageLogicSpec extends StreamSpec with GraphInterpreterSpecKit with S
         setHandler(shape.in, EagerTerminateInput)
         setHandler(shape.out, EagerTerminateOutput)
         override def preStart(): Unit =
-          readN(shape.in, n)(e => emitMultiple(shape.out, e.iterator, () => completeStage()), (_) => ())
+          readN(shape.in, n)(e => emitMultiple(shape.out, e.iterator, () => completeStage()), _ => ())
       }
   }
 
@@ -168,7 +178,7 @@ class GraphStageLogicSpec extends StreamSpec with GraphInterpreterSpecKit with S
         .runWith(TestSink())
         .request(5)
         .expectNext(1)
-        //emitting with callback gives nondeterminism whether 2 or 3 will be pushed first
+        // emitting with callback gives nondeterminism whether 2 or 3 will be pushed first
         .expectNextUnordered(2, 3)
         .expectNext(4)
         .expectComplete()
@@ -188,12 +198,14 @@ class GraphStageLogicSpec extends StreamSpec with GraphInterpreterSpecKit with S
         override val shape = FlowShape(in, out)
         override def createLogic(attr: Attributes) = new GraphStageLogic(shape) {
           setHandler(in, eagerTerminateInput)
-          setHandler(out, new OutHandler {
-            override def onPull(): Unit = {
-              completeStage()
-              testActor ! "pulled"
-            }
-          })
+          setHandler(
+            out,
+            new OutHandler {
+              override def onPull(): Unit = {
+                completeStage()
+                testActor ! "pulled"
+              }
+            })
           override def preStart(): Unit = testActor ! "preStart"
           override def postStop(): Unit = testActor ! "postStop"
         }
@@ -295,9 +307,11 @@ class GraphStageLogicSpec extends StreamSpec with GraphInterpreterSpecKit with S
 
             override def createLogic(inheritedAttributes: Attributes) =
               new GraphStageLogic(shape) {
-                setHandler(in, new InHandler {
-                  override def onPush() = ???
-                })
+                setHandler(
+                  in,
+                  new InHandler {
+                    override def onPush() = ???
+                  })
                 // ups we forgot the out handler
               }
 
@@ -321,9 +335,11 @@ class GraphStageLogicSpec extends StreamSpec with GraphInterpreterSpecKit with S
 
             override def createLogic(inheritedAttributes: Attributes) =
               new GraphStageLogic(shape) {
-                setHandler(in, new InHandler {
-                  override def onPush() = ???
-                })
+                setHandler(
+                  in,
+                  new InHandler {
+                    override def onPush() = ???
+                  })
                 // ups we forgot the out handler
               }
 
@@ -346,9 +362,11 @@ class GraphStageLogicSpec extends StreamSpec with GraphInterpreterSpecKit with S
 
             override def createLogic(inheritedAttributes: Attributes) =
               new GraphStageLogic(shape) {
-                setHandler(in, new InHandler {
-                  override def onPush() = ???
-                })
+                setHandler(
+                  in,
+                  new InHandler {
+                    override def onPush() = ???
+                  })
                 // ups we forgot the out handler
               }
 
@@ -370,9 +388,11 @@ class GraphStageLogicSpec extends StreamSpec with GraphInterpreterSpecKit with S
 
             override def createLogic(inheritedAttributes: Attributes) =
               new GraphStageLogic(shape) {
-                setHandler(in, new InHandler {
-                  override def onPush() = ???
-                })
+                setHandler(
+                  in,
+                  new InHandler {
+                    override def onPush() = ???
+                  })
                 // ups we forgot the out handler
               }
 

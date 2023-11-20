@@ -23,9 +23,7 @@ import akka.persistence.typed.state.internal.Running.WithRevisionAccessible
 import akka.util.ConstantFun.{ scalaAnyToUnit => doNothing }
 import akka.util.ccompat.JavaConverters._
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] object Unpersistent {
 
@@ -122,7 +120,7 @@ private[akka] object Unpersistent {
         val snapshotFromRetention = retention match {
           case DisabledRetentionCriteria             => false
           case s: SnapshotCountRetentionCriteriaImpl => s.snapshotWhen(sequenceNr)
-          case unexpected                            => throw new IllegalStateException(s"Unexpected retention criteria: $unexpected")
+          case unexpected => throw new IllegalStateException(s"Unexpected retention criteria: $unexpected")
         }
 
         snapshotFromRetention || snapshotWhen(state, evt, sequenceNr)
@@ -150,11 +148,10 @@ private[akka] object Unpersistent {
                 (event, sequenceNr, tags)
               }
 
-            eventsWithSeqNrsAndTags.foreach {
-              case (event, seqNr, tags) =>
-                // technically doesn't persist them atomically, but in tests that shouldn't matter
-                onEvent(event, seqNr, tags)
-                shouldSnapshot = shouldSnapshot || snapshotRequested(event)
+            eventsWithSeqNrsAndTags.foreach { case (event, seqNr, tags) =>
+              // technically doesn't persist them atomically, but in tests that shouldn't matter
+              onEvent(event, seqNr, tags)
+              shouldSnapshot = shouldSnapshot || snapshotRequested(event)
             }
 
             sideEffect(sideEffects)
@@ -297,9 +294,7 @@ private[akka] object Unpersistent {
   }
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] class PersistenceProbeImpl[T] {
   type Element = (T, Long, Set[String])

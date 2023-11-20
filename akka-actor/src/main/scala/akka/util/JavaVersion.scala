@@ -6,9 +6,7 @@ package akka.util
 
 import akka.annotation.InternalApi
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object JavaVersion {
 
   val majorVersion: Int = {

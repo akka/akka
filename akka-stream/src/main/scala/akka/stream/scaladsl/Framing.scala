@@ -84,7 +84,6 @@ object Framing {
    *                           Then computeFrameSize can be used to compute the frame size: `(offset bytes, computed size) => (actual frame size)`.
    *                           ''Actual frame size'' must be equal or bigger than sum of `fieldOffset` and `fieldLength`, the operator fails otherwise.
    *                           Must not mutate the given byte array.
-   *
    */
   def lengthField(
       fieldLength: Int,
@@ -135,15 +134,11 @@ object Framing {
       simpleFramingProtocolDecoder(maximumMessageLength))(Keep.left)
   }
 
-  /**
-   * Protocol decoder that is used by [[Framing#simpleFramingProtocol]]
-   */
+  /** Protocol decoder that is used by [[Framing#simpleFramingProtocol]] */
   def simpleFramingProtocolDecoder(maximumMessageLength: Int): Flow[ByteString, ByteString, NotUsed] =
     lengthField(4, 0, maximumMessageLength + 4, ByteOrder.BIG_ENDIAN).map(_.drop(4))
 
-  /**
-   * Protocol encoder that is used by [[Framing#simpleFramingProtocol]]
-   */
+  /** Protocol encoder that is used by [[Framing#simpleFramingProtocol]] */
   def simpleFramingProtocolEncoder(maximumMessageLength: Int): Flow[ByteString, ByteString, NotUsed] =
     Flow[ByteString].via(new SimpleFramingProtocolEncoder(maximumMessageLength))
 
@@ -154,7 +149,7 @@ object Framing {
     var decoded = 0
     while (count > 0) {
       decoded <<= 8
-      decoded |= bs.next().toInt & 0xFF
+      decoded |= bs.next().toInt & 0xff
       count -= 1
     }
     decoded
@@ -167,7 +162,7 @@ object Framing {
     var decoded = 0
     while (count > 0) {
       decoded >>>= 8
-      decoded += (bs.next().toInt & 0xFF) << highestOctet
+      decoded += (bs.next().toInt & 0xff) << highestOctet
       count -= 1
     }
     decoded & Mask
@@ -188,7 +183,7 @@ object Framing {
                 s"Maximum allowed message size is $maximumMessageLength but tried to send $msgSize bytes"))
           else {
             val header =
-              ByteString((msgSize >> 24) & 0xFF, (msgSize >> 16) & 0xFF, (msgSize >> 8) & 0xFF, msgSize & 0xFF)
+              ByteString((msgSize >> 24) & 0xff, (msgSize >> 16) & 0xff, (msgSize >> 8) & 0xff, msgSize & 0xff)
             push(out, header ++ message)
           }
         }
@@ -307,10 +302,13 @@ object Framing {
             if (isClosed(in) && buffer.isEmpty) completeStage()
           } else {
             // Emit results and compact buffer
-            emitMultiple(out, new FrameIterator(), () => {
-              reset()
-              if (isClosed(in) && buffer.isEmpty) completeStage()
-            })
+            emitMultiple(
+              out,
+              new FrameIterator(),
+              () => {
+                reset()
+                if (isClosed(in) && buffer.isEmpty) completeStage()
+              })
           }
 
         private def reset(): Unit = {
@@ -371,7 +369,7 @@ object Framing {
       computeFrameSize: Option[(Array[Byte], Int) => Int])
       extends GraphStage[FlowShape[ByteString, ByteString]] {
 
-    //for the sake of binary compatibility
+    // for the sake of binary compatibility
     def this(lengthFieldLength: Int, lengthFieldOffset: Int, maximumFrameLength: Int, byteOrder: ByteOrder) =
       this(lengthFieldLength, lengthFieldOffset, maximumFrameLength, byteOrder, None)
 
@@ -379,7 +377,7 @@ object Framing {
     private val intDecoder = byteOrder match {
       case ByteOrder.BIG_ENDIAN    => bigEndianDecoder
       case ByteOrder.LITTLE_ENDIAN => littleEndianDecoder
-      case _                       => throw new RuntimeException() // won't happen, compiler exhaustiveness check pleaser
+      case _ => throw new RuntimeException() // won't happen, compiler exhaustiveness check pleaser
     }
 
     val in = Inlet[ByteString]("LengthFieldFramingStage.in")
@@ -391,10 +389,7 @@ object Framing {
         private var buffer = ByteString.empty
         private var frameSize = Int.MaxValue
 
-        /**
-         * push, and reset frameSize and buffer
-         *
-         */
+        /** push, and reset frameSize and buffer */
         private def pushFrame() = {
           val emit = buffer.take(frameSize).compact
           buffer = buffer.drop(frameSize)
@@ -405,10 +400,7 @@ object Framing {
           }
         }
 
-        /**
-         * try to push downstream, if failed then try to pull upstream
-         *
-         */
+        /** try to push downstream, if failed then try to pull upstream */
         private def tryPushFrame() = {
           val buffSize = buffer.size
           if (buffSize >= frameSize) {

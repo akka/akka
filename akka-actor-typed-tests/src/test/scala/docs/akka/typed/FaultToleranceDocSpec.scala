@@ -78,10 +78,12 @@ object FaultToleranceDocSpec {
 }
 
 @nowarn("msg=never used")
-class FaultToleranceDocSpec extends ScalaTestWithActorTestKit("""
+class FaultToleranceDocSpec
+    extends ScalaTestWithActorTestKit("""
       # silenced to not put noise in test logs
       akka.loglevel = off
-    """) with AnyWordSpecLike {
+    """)
+    with AnyWordSpecLike {
   import FaultToleranceDocSpec._
 
   "Bubbling of failures" must {

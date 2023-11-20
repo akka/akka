@@ -19,14 +19,10 @@ import akka.cluster.ClusterEvent
 import akka.cluster.Member
 import akka.cluster.MemberStatus
 
-/**
- *  Runtime collection management commands.
- */
+/** Runtime collection management commands. */
 sealed abstract class CollectionControlMessage extends Serializable
 
-/**
- * Command for [[ClusterMetricsSupervisor]] to start metrics collection.
- */
+/** Command for [[ClusterMetricsSupervisor]] to start metrics collection. */
 @SerialVersionUID(1L)
 case object CollectionStartMessage extends CollectionControlMessage {
 
@@ -34,9 +30,7 @@ case object CollectionStartMessage extends CollectionControlMessage {
   def getInstance = CollectionStartMessage
 }
 
-/**
- * Command for [[ClusterMetricsSupervisor]] to stop metrics collection.
- */
+/** Command for [[ClusterMetricsSupervisor]] to stop metrics collection. */
 @SerialVersionUID(1L)
 case object CollectionStopMessage extends CollectionControlMessage {
 
@@ -89,9 +83,7 @@ private[metrics] class ClusterMetricsSupervisor extends Actor with ActorLogging 
  */
 trait ClusterMetricsEvent
 
-/**
- * Current snapshot of cluster node metrics.
- */
+/** Current snapshot of cluster node metrics. */
 final case class ClusterMetricsChanged(nodeMetrics: Set[NodeMetrics]) extends ClusterMetricsEvent {
 
   /** Java API */
@@ -119,9 +111,7 @@ private[metrics] final case class MetricsGossipEnvelope(from: Address, gossip: M
     extends ClusterMetricsMessage
     with DeadLetterSuppression
 
-/**
- * INTERNAL API.
- */
+/** INTERNAL API. */
 private[metrics] object ClusterMetricsCollector {
   case object MetricsTick
   case object GossipTick
@@ -143,24 +133,16 @@ private[metrics] class ClusterMetricsCollector extends Actor with ActorLogging {
   val metrics = ClusterMetricsExtension(context.system)
   import metrics.settings._
 
-  /**
-   * The node ring gossipped that contains only members that are Up.
-   */
+  /** The node ring gossipped that contains only members that are Up. */
   var nodes: immutable.SortedSet[Address] = immutable.SortedSet.empty
 
-  /**
-   * The latest metric values with their statistical data.
-   */
+  /** The latest metric values with their statistical data. */
   var latestGossip: MetricsGossip = MetricsGossip.empty
 
-  /**
-   * The metrics collector that samples data on the node.
-   */
+  /** The metrics collector that samples data on the node. */
   val collector: MetricsCollector = MetricsCollector(context.system)
 
-  /**
-   * Start periodic gossip to random nodes in cluster
-   */
+  /** Start periodic gossip to random nodes in cluster */
   val gossipTask =
     scheduler.scheduleWithFixedDelay(
       PeriodicTasksInitialDelay max CollectorGossipInterval,
@@ -168,9 +150,7 @@ private[metrics] class ClusterMetricsCollector extends Actor with ActorLogging {
       self,
       GossipTick)
 
-  /**
-   * Start periodic metrics collection
-   */
+  /** Start periodic metrics collection */
   val sampleTask = scheduler.scheduleWithFixedDelay(
     PeriodicTasksInitialDelay max CollectorSampleInterval,
     CollectorSampleInterval,
@@ -196,7 +176,6 @@ private[metrics] class ClusterMetricsCollector extends Actor with ActorLogging {
       if (m.status == MemberStatus.Up || m.status == MemberStatus.WeaklyUp)
         addMember(m)
     case _: MemberEvent => // not interested in other types of MemberEvent
-
   }
 
   override def postStop(): Unit = {
@@ -206,25 +185,19 @@ private[metrics] class ClusterMetricsCollector extends Actor with ActorLogging {
     collector.close()
   }
 
-  /**
-   * Adds a member to the node ring.
-   */
+  /** Adds a member to the node ring. */
   def addMember(member: Member): Unit = nodes += member.address
 
-  /**
-   * Removes a member from the member node ring.
-   */
+  /** Removes a member from the member node ring. */
   def removeMember(member: Member): Unit = {
     nodes -= member.address
     latestGossip = latestGossip.remove(member.address)
     publish()
   }
 
-  /**
-   * Updates the initial node ring for those nodes that are [[akka.cluster.MemberStatus]] `Up`.
-   */
+  /** Updates the initial node ring for those nodes that are [[akka.cluster.MemberStatus]] `Up`. */
   def receiveState(state: CurrentClusterState): Unit =
-    nodes = (state.members.diff(state.unreachable)).collect {
+    nodes = state.members.diff(state.unreachable).collect {
       case m if m.status == MemberStatus.Up || m.status == MemberStatus.WeaklyUp => m.address
     }
 
@@ -253,9 +226,7 @@ private[metrics] class ClusterMetricsCollector extends Actor with ActorLogging {
       replyGossipTo(envelope.from)
   }
 
-  /**
-   * Gossip to peer nodes.
-   */
+  /** Gossip to peer nodes. */
   def gossip(): Unit = selectRandomNode((nodes - selfAddress).toVector).foreach(gossipTo)
 
   def gossipTo(address: Address): Unit =
@@ -270,9 +241,7 @@ private[metrics] class ClusterMetricsCollector extends Actor with ActorLogging {
   def selectRandomNode(addresses: immutable.IndexedSeq[Address]): Option[Address] =
     if (addresses.isEmpty) None else Some(addresses(ThreadLocalRandom.current.nextInt(addresses.size)))
 
-  /**
-   * Publishes to the event stream.
-   */
+  /** Publishes to the event stream. */
   def publish(): Unit = context.system.eventStream.publish(ClusterMetricsChanged(latestGossip.nodes))
 
 }

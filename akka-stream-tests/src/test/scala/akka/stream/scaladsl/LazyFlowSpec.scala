@@ -217,7 +217,7 @@ class LazyFlowSpec extends StreamSpec("""
       val deferredMatVal = result._1
       val list = result._2
       list.failed.futureValue shouldBe a[TE]
-      //futureFlow's behaviour in case of mat failure (follows flatMapPrefix)
+      // futureFlow's behaviour in case of mat failure (follows flatMapPrefix)
       deferredMatVal.failed.futureValue shouldBe a[NeverMaterializedException]
       deferredMatVal.failed.futureValue.getCause shouldEqual TE("mat-failed")
     }

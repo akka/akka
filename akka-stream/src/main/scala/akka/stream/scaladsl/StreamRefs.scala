@@ -8,9 +8,7 @@ import akka.stream.{ SinkRef, SourceRef }
 import akka.stream.impl.streamref.{ SinkRefStageImpl, SourceRefStageImpl }
 import akka.util.OptionVal
 
-/**
- * Factories for creating stream refs.
- */
+/** Factories for creating stream refs. */
 object StreamRefs {
 
   /**

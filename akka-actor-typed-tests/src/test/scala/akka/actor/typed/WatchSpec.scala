@@ -25,8 +25,8 @@ object WatchSpec {
   case object Stop
 
   val terminatorBehavior =
-    Behaviors.receive[Stop.type] {
-      case (_, Stop) => Behaviors.stopped
+    Behaviors.receive[Stop.type] { case (_, Stop) =>
+      Behaviors.stopped
     }
 
   val mutableTerminatorBehavior = Behaviors.setup[Stop.type] { context =>
@@ -58,18 +58,17 @@ class WatchSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogC
 
     val watcher = spawn(
       Behaviors
-        .supervise(Behaviors
-          .receive[StartWatching] {
-            case (context, StartWatching(watchee)) =>
+        .supervise(
+          Behaviors
+            .receive[StartWatching] { case (context, StartWatching(watchee)) =>
               context.watch(watchee)
               watchProbe.ref ! Done
               Behaviors.same
-          }
-          .receiveSignal {
-            case (_, t: Terminated) =>
+            }
+            .receiveSignal { case (_, t: Terminated) =>
               receivedTerminationSignal.success(t)
               Behaviors.stopped
-          })
+            })
         .onFailure[Throwable](SupervisorStrategy.stop))
   }
 
@@ -159,15 +158,17 @@ class WatchSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogC
       val grossoBosso =
         spawn(
           Behaviors.setup[Any] { context =>
-            val middleManagement = context.spawn(Behaviors.setup[Any] { context =>
-              val sixPackJoe = context.spawn(Behaviors.receive[Any]((_, _) => throw ex), "joe")
-              context.watch(sixPackJoe)
+            val middleManagement = context.spawn(
+              Behaviors.setup[Any] { context =>
+                val sixPackJoe = context.spawn(Behaviors.receive[Any]((_, _) => throw ex), "joe")
+                context.watch(sixPackJoe)
 
-              Behaviors.receive[Any] { (_, message) =>
-                sixPackJoe ! message
-                Behaviors.same
-              } // no handling of terminated, even though we watched!!!
-            }, "middle-management")
+                Behaviors.receive[Any] { (_, message) =>
+                  sixPackJoe ! message
+                  Behaviors.same
+                } // no handling of terminated, even though we watched!!!
+              },
+              "middle-management")
 
             context.watch(middleManagement)
 
@@ -176,10 +177,9 @@ class WatchSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogC
                 middleManagement ! message
                 Behaviors.same
               }
-              .receiveSignal {
-                case (_, t: Terminated) =>
-                  probe.ref ! Failed(t)
-                  Behaviors.stopped
+              .receiveSignal { case (_, t: Terminated) =>
+                probe.ref ! Failed(t)
+                Behaviors.stopped
               }
 
           },
@@ -303,21 +303,21 @@ class WatchSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogC
 
       val watcher = spawn(
         Behaviors
-          .supervise(Behaviors
-            .receive[Message] {
-              case (context, StartWatchingWith(watchee, message)) =>
-                context.watchWith(watchee, message)
-                Behaviors.same
-              case (context, StartWatching(watchee)) =>
-                context.watch(watchee)
-                Behaviors.same
-              case (_, _) =>
+          .supervise(
+            Behaviors
+              .receive[Message] {
+                case (context, StartWatchingWith(watchee, message)) =>
+                  context.watchWith(watchee, message)
+                  Behaviors.same
+                case (context, StartWatching(watchee)) =>
+                  context.watch(watchee)
+                  Behaviors.same
+                case (_, _) =>
+                  Behaviors.stopped
+              }
+              .receiveSignal { case (_, PostStop) =>
                 Behaviors.stopped
-            }
-            .receiveSignal {
-              case (_, PostStop) =>
-                Behaviors.stopped
-            })
+              })
           .onFailure[Throwable](SupervisorStrategy.stop))
 
       def expectStopped(): Unit = stopProbe.expectTerminated(watcher, 1.second)

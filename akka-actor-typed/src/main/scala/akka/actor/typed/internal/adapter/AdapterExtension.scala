@@ -16,9 +16,7 @@ import akka.annotation.InternalApi
   val adapter = ActorSystemAdapter(sys)
 }
 
-/**
- * Internal API
- */
+/** Internal API */
 @InternalApi object AdapterExtension extends akka.actor.ExtensionId[AdapterExtension] {
   def createExtension(sys: ExtendedActorSystem): AdapterExtension = new AdapterExtension(sys)
 }

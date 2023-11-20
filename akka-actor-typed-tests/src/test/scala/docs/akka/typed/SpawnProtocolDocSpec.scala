@@ -34,7 +34,7 @@ object SpawnProtocolDocSpec {
 
   // Silent because we want to name the unused 'context' parameter
   @nowarn("msg=never used")
-  //#main
+  // #main
   object HelloWorldMain {
     def apply(): Behavior[SpawnProtocol.Command] =
       Behaviors.setup { context =>
@@ -44,7 +44,7 @@ object SpawnProtocolDocSpec {
         SpawnProtocol()
       }
   }
-  //#main
+  // #main
 }
 
 class SpawnProtocolDocSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCapturing {
@@ -53,7 +53,7 @@ class SpawnProtocolDocSpec extends ScalaTestWithActorTestKit with AnyWordSpecLik
 
   "ActorSystem with SpawnProtocol" must {
     "be able to spawn actors" in {
-      //#system-spawn
+      // #system-spawn
 
       implicit val system: ActorSystem[SpawnProtocol.Command] =
         ActorSystem(HelloWorldMain(), "hello")
@@ -78,7 +78,7 @@ class SpawnProtocolDocSpec extends ScalaTestWithActorTestKit with AnyWordSpecLik
         greeterRef ! HelloWorld.Greet("Akka", replyToRef)
       }
 
-      //#system-spawn
+      // #system-spawn
 
       Thread.sleep(500) // it will not fail if too short
       ActorTestKit.shutdown(system)

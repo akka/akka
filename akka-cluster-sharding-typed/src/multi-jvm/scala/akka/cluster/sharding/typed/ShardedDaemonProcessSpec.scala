@@ -39,15 +39,16 @@ object ShardedDaemonProcessSpec extends MultiNodeConfig {
       val snitchRouter = ctx.spawn(Routers.group(SnitchServiceKey), "router")
       snitchRouter ! ProcessActorEvent(id, "Started")
 
-      Behaviors.receiveMessagePartial {
-        case Stop =>
-          snitchRouter ! ProcessActorEvent(id, "Stopped")
-          Behaviors.stopped
+      Behaviors.receiveMessagePartial { case Stop =>
+        snitchRouter ! ProcessActorEvent(id, "Stopped")
+        Behaviors.stopped
       }
     }
   }
 
-  commonConfig(ConfigFactory.parseString("""
+  commonConfig(
+    ConfigFactory
+      .parseString("""
         akka.loglevel = DEBUG
         akka.cluster.sharded-daemon-process {
           sharding {
@@ -57,7 +58,8 @@ object ShardedDaemonProcessSpec extends MultiNodeConfig {
           # quick ping to make test swift
           keep-alive-interval = 1s
         }
-      """).withFallback(MultiNodeClusterSpec.clusterConfig))
+      """)
+      .withFallback(MultiNodeClusterSpec.clusterConfig))
 
 }
 
@@ -83,10 +85,12 @@ abstract class ShardedDaemonProcessSpec
       }
       enterBarrier("snitch-registered")
 
-      probe.awaitAssert({
-        typedSystem.receptionist ! Receptionist.Find(SnitchServiceKey, probe.ref)
-        probe.expectMessageType[Receptionist.Listing].serviceInstances(SnitchServiceKey).size should ===(1)
-      }, 5.seconds)
+      probe.awaitAssert(
+        {
+          typedSystem.receptionist ! Receptionist.Find(SnitchServiceKey, probe.ref)
+          probe.expectMessageType[Receptionist.Listing].serviceInstances(SnitchServiceKey).size should ===(1)
+        },
+        5.seconds)
       enterBarrier("snitch-seen")
     }
 

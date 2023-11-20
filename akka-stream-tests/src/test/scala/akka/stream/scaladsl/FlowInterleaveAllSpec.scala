@@ -100,7 +100,7 @@ class FlowInterleaveAllSpec extends StreamSpec("""
     }
 
     "work in example" in {
-      //#interleaveAll
+      // #interleaveAll
       val sourceA = Source(List(1, 2, 7, 8))
       val sourceB = Source(List(3, 4, 9))
       val sourceC = Source(List(5, 6))
@@ -109,8 +109,8 @@ class FlowInterleaveAllSpec extends StreamSpec("""
         .interleaveAll(List(sourceB, sourceC), 2, eagerClose = false)
         .fold(new StringJoiner(","))((joiner, input) => joiner.add(String.valueOf(input)))
         .runWith(Sink.foreach(println))
-      //prints 1,2,3,4,5,6,7,8,9
-      //#interleaveAll
+      // prints 1,2,3,4,5,6,7,8,9
+      // #interleaveAll
     }
   }
 

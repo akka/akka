@@ -23,45 +23,48 @@ import akka.pattern.ask
  */
 @nowarn // 'early initializers' are deprecated on 2.13 and will be replaced with trait parameters on 2.14. https://github.com/akka/akka/issues/26753
 class TestActorRef[T <: Actor](_system: ActorSystem, _props: Props, _supervisor: ActorRef, name: String)
-    extends LocalActorRef({
-      val disregard = _supervisor match {
-        case l: LocalActorRef => l.underlying.reserveChild(name)
-        case r: RepointableActorRef =>
-          r.underlying match {
-            case _: UnstartedCell =>
-              throw new IllegalStateException(
-                "cannot attach a TestActor to an unstarted top-level actor, ensure that it is started by sending a message and observing the reply")
-            case c: ActorCell => c.reserveChild(name)
-            case o =>
-              _system.log.error(
-                "trying to attach child {} to unknown type of supervisor cell {}, this is not going to end well",
-                name,
-                o.getClass)
-          }
-        case s =>
-          _system.log.error(
-            "trying to attach child {} to unknown type of supervisor {}, this is not going to end well",
-            name,
-            s.getClass)
-      }
+    extends LocalActorRef(
+      {
+        val disregard = _supervisor match {
+          case l: LocalActorRef => l.underlying.reserveChild(name)
+          case r: RepointableActorRef =>
+            r.underlying match {
+              case _: UnstartedCell =>
+                throw new IllegalStateException(
+                  "cannot attach a TestActor to an unstarted top-level actor, ensure that it is started by sending a message and observing the reply")
+              case c: ActorCell => c.reserveChild(name)
+              case o =>
+                _system.log.error(
+                  "trying to attach child {} to unknown type of supervisor cell {}, this is not going to end well",
+                  name,
+                  o.getClass)
+            }
+          case s =>
+            _system.log.error(
+              "trying to attach child {} to unknown type of supervisor {}, this is not going to end well",
+              name,
+              s.getClass)
+        }
 
-      _system.asInstanceOf[ActorSystemImpl]
-    }, {
-      _props.withDispatcher(
-        if (_props.deploy.dispatcher == Deploy.NoDispatcherGiven) CallingThreadDispatcher.Id
-        else _props.dispatcher)
-    }, {
-      val props = _props.withDispatcher(
-        if (_props.deploy.dispatcher == Deploy.NoDispatcherGiven) CallingThreadDispatcher.Id
-        else _props.dispatcher)
-      _system.dispatchers.lookup(props.dispatcher)
-    }, {
-      val props = _props.withDispatcher(
-        if (_props.deploy.dispatcher == Deploy.NoDispatcherGiven) CallingThreadDispatcher.Id
-        else _props.dispatcher)
-      val dispatcher = _system.dispatchers.lookup(props.dispatcher)
-      _system.mailboxes.getMailboxType(props, dispatcher.configurator.config)
-    }, _supervisor.asInstanceOf[InternalActorRef], _supervisor.path / name) {
+        _system.asInstanceOf[ActorSystemImpl]
+      }, {
+        _props.withDispatcher(
+          if (_props.deploy.dispatcher == Deploy.NoDispatcherGiven) CallingThreadDispatcher.Id
+          else _props.dispatcher)
+      }, {
+        val props = _props.withDispatcher(
+          if (_props.deploy.dispatcher == Deploy.NoDispatcherGiven) CallingThreadDispatcher.Id
+          else _props.dispatcher)
+        _system.dispatchers.lookup(props.dispatcher)
+      }, {
+        val props = _props.withDispatcher(
+          if (_props.deploy.dispatcher == Deploy.NoDispatcherGiven) CallingThreadDispatcher.Id
+          else _props.dispatcher)
+        val dispatcher = _system.dispatchers.lookup(props.dispatcher)
+        _system.mailboxes.getMailboxType(props, dispatcher.configurator.config)
+      },
+      _supervisor.asInstanceOf[InternalActorRef],
+      _supervisor.path / name) {
 
   val props = _props.withDispatcher(
     if (_props.deploy.dispatcher == Deploy.NoDispatcherGiven) CallingThreadDispatcher.Id
@@ -172,57 +175,60 @@ object TestActorRef {
     new TestActorRef(sysImpl, props, supervisor.asInstanceOf[InternalActorRef], randomName)
   }
 
-  def apply[T <: Actor](props: Props, supervisor: ActorRef, name: String)(
-      implicit system: ActorSystem): TestActorRef[T] = {
+  def apply[T <: Actor](props: Props, supervisor: ActorRef, name: String)(implicit
+      system: ActorSystem): TestActorRef[T] = {
     val sysImpl = system.asInstanceOf[ActorSystemImpl]
     new TestActorRef(sysImpl, props, supervisor.asInstanceOf[InternalActorRef], name)
   }
 
   def apply[T <: Actor](implicit t: ClassTag[T], system: ActorSystem): TestActorRef[T] = apply[T](randomName)
 
-  private def dynamicCreateRecover[U]: PartialFunction[Throwable, U] = {
-    case exception =>
-      throw ActorInitializationException(
-        null,
-        "Could not instantiate Actor" +
-        "\nMake sure Actor is NOT defined inside a class/trait," +
-        "\nif so put it outside the class/trait, f.e. in a companion object," +
-        "\nOR try to change: 'actorOf(Props[MyActor]' to 'actorOf(Props(new MyActor)'.",
-        exception)
+  private def dynamicCreateRecover[U]: PartialFunction[Throwable, U] = { case exception =>
+    throw ActorInitializationException(
+      null,
+      "Could not instantiate Actor" +
+      "\nMake sure Actor is NOT defined inside a class/trait," +
+      "\nif so put it outside the class/trait, f.e. in a companion object," +
+      "\nOR try to change: 'actorOf(Props[MyActor]' to 'actorOf(Props(new MyActor)'.",
+      exception)
   }
 
   def apply[T <: Actor](name: String)(implicit t: ClassTag[T], system: ActorSystem): TestActorRef[T] =
-    apply[T](Props({
-      system
-        .asInstanceOf[ExtendedActorSystem]
-        .dynamicAccess
-        .createInstanceFor[T](t.runtimeClass, Nil)
-        .recover(dynamicCreateRecover)
-        .get
-    }), name)
-
-  def apply[T <: Actor](supervisor: ActorRef)(implicit t: ClassTag[T], system: ActorSystem): TestActorRef[T] =
-    apply[T](Props({
-      system
-        .asInstanceOf[ExtendedActorSystem]
-        .dynamicAccess
-        .createInstanceFor[T](t.runtimeClass, Nil)
-        .recover(dynamicCreateRecover)
-        .get
-    }), supervisor)
-
-  def apply[T <: Actor](supervisor: ActorRef, name: String)(
-      implicit t: ClassTag[T],
-      system: ActorSystem): TestActorRef[T] =
     apply[T](
-      Props({
+      Props {
         system
           .asInstanceOf[ExtendedActorSystem]
           .dynamicAccess
           .createInstanceFor[T](t.runtimeClass, Nil)
           .recover(dynamicCreateRecover)
           .get
-      }),
+      },
+      name)
+
+  def apply[T <: Actor](supervisor: ActorRef)(implicit t: ClassTag[T], system: ActorSystem): TestActorRef[T] =
+    apply[T](
+      Props {
+        system
+          .asInstanceOf[ExtendedActorSystem]
+          .dynamicAccess
+          .createInstanceFor[T](t.runtimeClass, Nil)
+          .recover(dynamicCreateRecover)
+          .get
+      },
+      supervisor)
+
+  def apply[T <: Actor](supervisor: ActorRef, name: String)(implicit
+      t: ClassTag[T],
+      system: ActorSystem): TestActorRef[T] =
+    apply[T](
+      Props {
+        system
+          .asInstanceOf[ExtendedActorSystem]
+          .dynamicAccess
+          .createInstanceFor[T](t.runtimeClass, Nil)
+          .recover(dynamicCreateRecover)
+          .get
+      },
       supervisor,
       name)
 

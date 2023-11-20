@@ -129,12 +129,12 @@ object EventSourcedBehaviorSpec {
   def counter(persistenceId: PersistenceId)(implicit system: ActorSystem[_]): Behavior[Command] =
     Behaviors.setup(ctx => counter(ctx, persistenceId))
 
-  def counter(persistenceId: PersistenceId, logging: ActorRef[String])(
-      implicit system: ActorSystem[_]): Behavior[Command] =
+  def counter(persistenceId: PersistenceId, logging: ActorRef[String])(implicit
+      system: ActorSystem[_]): Behavior[Command] =
     Behaviors.setup(ctx => counter(ctx, persistenceId, logging))
 
-  def counter(ctx: ActorContext[Command], persistenceId: PersistenceId)(
-      implicit system: ActorSystem[_]): EventSourcedBehavior[Command, Event, State] =
+  def counter(ctx: ActorContext[Command], persistenceId: PersistenceId)(implicit
+      system: ActorSystem[_]): EventSourcedBehavior[Command, Event, State] =
     counter(
       ctx,
       persistenceId,
@@ -142,8 +142,8 @@ object EventSourcedBehaviorSpec {
       probe = TestProbe[(State, Event)]().ref,
       snapshotProbe = TestProbe[Try[SnapshotMetadata]]().ref)
 
-  def counter(ctx: ActorContext[Command], persistenceId: PersistenceId, logging: ActorRef[String])(
-      implicit system: ActorSystem[_]): EventSourcedBehavior[Command, Event, State] =
+  def counter(ctx: ActorContext[Command], persistenceId: PersistenceId, logging: ActorRef[String])(implicit
+      system: ActorSystem[_]): EventSourcedBehavior[Command, Event, State] =
     counter(
       ctx,
       persistenceId,
@@ -155,8 +155,8 @@ object EventSourcedBehaviorSpec {
       ctx: ActorContext[Command],
       persistenceId: PersistenceId,
       probe: ActorRef[(State, Event)],
-      snapshotProbe: ActorRef[Try[SnapshotMetadata]])(
-      implicit system: ActorSystem[_]): EventSourcedBehavior[Command, Event, State] =
+      snapshotProbe: ActorRef[Try[SnapshotMetadata]])(implicit
+      system: ActorSystem[_]): EventSourcedBehavior[Command, Event, State] =
     counter(ctx, persistenceId, TestProbe[String]().ref, probe, snapshotProbe)
 
   def counterWithProbe(ctx: ActorContext[Command], persistenceId: PersistenceId, probe: ActorRef[(State, Event)])(
@@ -166,8 +166,8 @@ object EventSourcedBehaviorSpec {
   def counterWithSnapshotProbe(
       ctx: ActorContext[Command],
       persistenceId: PersistenceId,
-      probe: ActorRef[Try[SnapshotMetadata]])(
-      implicit system: ActorSystem[_]): EventSourcedBehavior[Command, Event, State] =
+      probe: ActorRef[Try[SnapshotMetadata]])(implicit
+      system: ActorSystem[_]): EventSourcedBehavior[Command, Event, State] =
     counter(ctx, persistenceId, TestProbe[String]().ref, TestProbe[(State, Event)]().ref, snapshotProbe = probe)
 
   def counter(
@@ -796,7 +796,7 @@ class EventSourcedBehaviorSpec
       firstThree.size shouldBe 3
       val others = queries.currentPersistenceIds(Some(firstThree.last), Long.MaxValue).runWith(Sink.seq).futureValue
 
-      firstThree ++ others should contain theSameElementsInOrderAs (all)
+      firstThree ++ others should contain theSameElementsInOrderAs all
     }
 
     def watcher(toWatch: ActorRef[_]): TestProbe[String] = {
@@ -807,10 +807,9 @@ class EventSourcedBehaviorSpec
           .receive[Any] { (_, _) =>
             Behaviors.same
           }
-          .receiveSignal {
-            case (_, _: Terminated) =>
-              probe.ref ! "Terminated"
-              Behaviors.stopped
+          .receiveSignal { case (_, _: Terminated) =>
+            probe.ref ! "Terminated"
+            Behaviors.stopped
           }
       }
       spawn(w)

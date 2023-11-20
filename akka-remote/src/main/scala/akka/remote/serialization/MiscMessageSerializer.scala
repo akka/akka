@@ -69,7 +69,7 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
     case sgp: ScatterGatherFirstCompletedPool  => serializeScatterGatherFirstCompletedPool(sgp)
     case tp: TailChoppingPool                  => serializeTailChoppingPool(tp)
     case rrc: RemoteRouterConfig               => serializeRemoteRouterConfig(rrc)
-    case _                                     => throw new IllegalArgumentException(s"Cannot serialize object of type [${obj.getClass.getName}]")
+    case _ => throw new IllegalArgumentException(s"Cannot serialize object of type [${obj.getClass.getName}]")
   }
 
   private def serializeIdentify(identify: Identify): Array[Byte] =
@@ -342,7 +342,7 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
     ActorIdentityManifest -> deserializeActorIdentity,
     StatusSuccessManifest -> deserializeStatusSuccess,
     StatusFailureManifest -> deserializeStatusFailure,
-    StatusReplyAckManifest -> ((_) => StatusReply.Ack),
+    StatusReplyAckManifest -> (_ => StatusReply.Ack),
     StatusReplySuccessManifest -> deserializeStatusReplySuccess,
     StatusReplyErrorMessageManifest -> deserializeStatusReplyErrorMessage,
     StatusReplyErrorExceptionManifest -> deserializeStatusReplyErrorException,
@@ -350,17 +350,17 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
     ActorRefManifest -> deserializeActorRefBytes,
     OptionManifest -> deserializeOption,
     OptionalManifest -> deserializeOptional,
-    PoisonPillManifest -> ((_) => PoisonPill),
-    KillManifest -> ((_) => Kill),
-    RemoteWatcherHBManifest -> ((_) => RemoteWatcher.Heartbeat),
-    DoneManifest -> ((_) => Done),
-    NotUsedManifest -> ((_) => NotUsed),
+    PoisonPillManifest -> (_ => PoisonPill),
+    KillManifest -> (_ => Kill),
+    RemoteWatcherHBManifest -> (_ => RemoteWatcher.Heartbeat),
+    DoneManifest -> (_ => Done),
+    NotUsedManifest -> (_ => NotUsed),
     AddressManifest -> deserializeAddressData,
     UniqueAddressManifest -> deserializeUniqueAddress,
     RemoteWatcherHBRespManifest -> deserializeHeartbeatRsp,
     ActorInitializationExceptionManifest -> deserializeActorInitializationException,
     ThrowableNotSerializableExceptionManifest -> deserializeThrowableNotSerializableException,
-    LocalScopeManifest -> ((_) => LocalScope),
+    LocalScopeManifest -> (_ => LocalScope),
     RemoteScopeManifest -> deserializeRemoteScope,
     ConfigManifest -> deserializeConfig,
     FromConfigManifest -> deserializeFromConfig,

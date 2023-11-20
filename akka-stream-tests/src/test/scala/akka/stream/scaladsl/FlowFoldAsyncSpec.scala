@@ -129,12 +129,11 @@ class FlowFoldAsyncSpec extends StreamSpec {
       val probe = TestSubscriber.probe[(Int, Int)]()
       implicit val ec = system.dispatcher
       Source(1 to 5)
-        .foldAsync(0 -> 1) {
-          case ((i, res), n) =>
-            Future {
-              if (n == 3) throw new RuntimeException("err3") with NoStackTrace
-              else n -> (i + (res * n))
-            }
+        .foldAsync(0 -> 1) { case ((i, res), n) =>
+          Future {
+            if (n == 3) throw new RuntimeException("err3") with NoStackTrace
+            else n -> (i + (res * n))
+          }
         }
         .withAttributes(supervisionStrategy(resumingDecider))
         .to(Sink.fromSubscriber(probe))
@@ -150,12 +149,11 @@ class FlowFoldAsyncSpec extends StreamSpec {
       val probe = TestSubscriber.probe[(Int, Int)]()
       implicit val ec = system.dispatcher
       Source(1 to 5)
-        .foldAsync(0 -> 1) {
-          case ((i, res), n) =>
-            Future {
-              if (n == 3) throw new RuntimeException("err3") with NoStackTrace
-              else n -> (i + (res * n))
-            }
+        .foldAsync(0 -> 1) { case ((i, res), n) =>
+          Future {
+            if (n == 3) throw new RuntimeException("err3") with NoStackTrace
+            else n -> (i + (res * n))
+          }
         }
         .withAttributes(supervisionStrategy(restartingDecider))
         .to(Sink.fromSubscriber(probe))
@@ -203,10 +201,9 @@ class FlowFoldAsyncSpec extends StreamSpec {
       val c = TestSubscriber.manualProbe[(Int, Int)]()
       implicit val ec = system.dispatcher
       Source(1 to 5)
-        .foldAsync(0 -> 1) {
-          case ((i, res), n) =>
-            if (n == 3) throw new RuntimeException("err4") with NoStackTrace
-            else Future(n -> (i + (res * n)))
+        .foldAsync(0 -> 1) { case ((i, res), n) =>
+          if (n == 3) throw new RuntimeException("err4") with NoStackTrace
+          else Future(n -> (i + (res * n)))
         }
         .withAttributes(supervisionStrategy(resumingDecider))
         .to(Sink.fromSubscriber(c))
@@ -221,10 +218,9 @@ class FlowFoldAsyncSpec extends StreamSpec {
       val c = TestSubscriber.manualProbe[(Int, Int)]()
       implicit val ec = system.dispatcher
       Source(1 to 5)
-        .foldAsync(0 -> 1) {
-          case ((i, res), n) =>
-            if (n == 3) throw new RuntimeException("err4") with NoStackTrace
-            else Future(n -> (i + (res * n)))
+        .foldAsync(0 -> 1) { case ((i, res), n) =>
+          if (n == 3) throw new RuntimeException("err4") with NoStackTrace
+          else Future(n -> (i + (res * n)))
         }
         .withAttributes(supervisionStrategy(restartingDecider))
         .to(Sink.fromSubscriber(c))

@@ -21,8 +21,7 @@ object TransitionMultiJvmSpec extends MultiNodeConfig {
 
   commonConfig(
     debugConfig(on = false)
-      .withFallback(
-        ConfigFactory.parseString("""
+      .withFallback(ConfigFactory.parseString("""
       akka.cluster.periodic-tasks-initial-delay = 300 s # turn off all periodic tasks
       akka.cluster.publish-stats-interval = 0 s # always, when it happens
       """))

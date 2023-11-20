@@ -155,15 +155,16 @@ class StageActorRefSpec extends StreamSpec with ImplicitSender {
 
       stageRef ! PoisonPill // should log a warning, and NOT stop the stage.
       val actorName = """StageActorRef-[\d+]"""
-      val expectedMsg = s"[PoisonPill|Kill] message sent to StageActorRef($actorName) will be ignored,since it is not a real Actor. " +
+      val expectedMsg =
+        s"[PoisonPill|Kill] message sent to StageActorRef($actorName) will be ignored,since it is not a real Actor. " +
         "Use a custom message type to communicate with it instead."
-      expectMsgPF(1.second, expectedMsg) {
-        case Logging.Warning(_, _, msg) => expectedMsg.r.pattern.matcher(msg.toString).matches()
+      expectMsgPF(1.second, expectedMsg) { case Logging.Warning(_, _, msg) =>
+        expectedMsg.r.pattern.matcher(msg.toString).matches()
       }
 
       stageRef ! Kill // should log a warning, and NOT stop the stage.
-      expectMsgPF(1.second, expectedMsg) {
-        case Logging.Warning(_, _, msg) => expectedMsg.r.pattern.matcher(msg.toString).matches()
+      expectMsgPF(1.second, expectedMsg) { case Logging.Warning(_, _, msg) =>
+        expectedMsg.r.pattern.matcher(msg.toString).matches()
       }
 
       source.success(Some(2))
@@ -209,8 +210,8 @@ object StageActorRefSpec {
             case (_, PullNow)                    => pull(in)
             case (sender, CallInitStageActorRef) => sender ! getStageActor(behavior).ref
             case (_, BecomeStringEcho) =>
-              getStageActor {
-                case (theSender, msg) => theSender ! msg.toString
+              getStageActor { case (theSender, msg) =>
+                theSender ! msg.toString
               }
             case (_, StopNow) =>
               p.trySuccess(sum)

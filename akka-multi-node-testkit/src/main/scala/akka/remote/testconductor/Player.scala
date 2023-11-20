@@ -53,7 +53,8 @@ object Player {
     def receive = {
       case fsm: ActorRef =>
         waiting = sender(); fsm ! SubscribeTransitionCallBack(self)
-      case Transition(_, f: ClientFSM.State, t: ClientFSM.State) if f == Connecting && t == AwaitDone => // step 1, not there yet // // SI-5900 workaround
+      case Transition(_, f: ClientFSM.State, t: ClientFSM.State)
+          if f == Connecting && t == AwaitDone => // step 1, not there yet // // SI-5900 workaround
       case Transition(_, f: ClientFSM.State, t: ClientFSM.State)
           if f == AwaitDone && t == Connected => // SI-5900 workaround
         waiting ! Done; context.stop(self)
@@ -136,18 +137,14 @@ trait Player { this: TestConductorExt =>
     }
   }
 
-  /**
-   * Query remote transport address of named node.
-   */
+  /** Query remote transport address of named node. */
   def getAddressFor(name: RoleName): Future[Address] = {
     import Settings.QueryTimeout
     (client ? ToServer(GetAddress(name))).mapTo(classTag[Address])
   }
 }
 
-/**
- * INTERNAL API.
- */
+/** INTERNAL API. */
 private[akka] object ClientFSM {
   sealed trait State
   case object Connecting extends State
@@ -281,8 +278,9 @@ private[akka] class ClientFSM(name: RoleName, controllerAddr: InetSocketAddress)
           cmdFuture.foreach {
             case true => self ! ToServer(Done)
             case _ =>
-              throw new RuntimeException("Throttle was requested from the TestConductor, but no transport " +
-              "adapters available that support throttling. Specify `testTransport(on = true)` in your MultiNodeConfig")
+              throw new RuntimeException(
+                "Throttle was requested from the TestConductor, but no transport " +
+                "adapters available that support throttling. Specify `testTransport(on = true)` in your MultiNodeConfig")
           }
           stay()
         case _: DisconnectMsg =>
@@ -297,7 +295,7 @@ private[akka] class ClientFSM(name: RoleName, controllerAddr: InetSocketAddress)
         case TerminateMsg(Right(exitValue)) =>
           System.exit(exitValue)
           stay() // needed because Java doesn’t have Nothing
-        case _: Done => stay() //FIXME what should happen?
+        case _: Done => stay() // FIXME what should happen?
       }
   }
 
@@ -309,15 +307,14 @@ private[akka] class ClientFSM(name: RoleName, controllerAddr: InetSocketAddress)
       stay()
   }
 
-  onTermination {
-    case StopEvent(_, _, Data(Some(channel), _)) =>
-      try {
-        channel.close()
-      } catch {
-        case NonFatal(ex) =>
-          // silence this one to not make tests look like they failed, it's not really critical
-          log.debug(s"Failed closing channel with ${ex.getClass.getName} ${ex.getMessage}")
-      }
+  onTermination { case StopEvent(_, _, Data(Some(channel), _)) =>
+    try {
+      channel.close()
+    } catch {
+      case NonFatal(ex) =>
+        // silence this one to not make tests look like they failed, it's not really critical
+        log.debug(s"Failed closing channel with ${ex.getClass.getName} ${ex.getMessage}")
+    }
   }
 
   initialize()

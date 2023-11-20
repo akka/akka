@@ -8,9 +8,7 @@ import java.io.{ ByteArrayOutputStream, InputStream }
 
 package object serialization {
 
-  /**
-   * Converts an input stream to a byte array.
-   */
+  /** Converts an input stream to a byte array. */
   def streamToBytes(inputStream: InputStream): Array[Byte] = {
     val len = 16384
     val buf = new Array[Byte](len)

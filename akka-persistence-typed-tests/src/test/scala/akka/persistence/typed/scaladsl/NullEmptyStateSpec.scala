@@ -42,9 +42,8 @@ class NullEmptyStateSpec
       eventHandler = (state, event) => {
         probe.tell("eventHandler:" + state + ":" + event)
         if (state == null) event else state + event
-      }).receiveSignal {
-      case (state, RecoveryCompleted) =>
-        probe.tell("onRecoveryCompleted:" + state)
+      }).receiveSignal { case (state, RecoveryCompleted) =>
+      probe.tell("onRecoveryCompleted:" + state)
     }
 
   "A typed persistent actor with null empty state" must {

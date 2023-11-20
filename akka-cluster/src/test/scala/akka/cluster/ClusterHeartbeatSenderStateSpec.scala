@@ -182,13 +182,13 @@ class ClusterHeartbeatSenderStateSpec extends AnyWordSpec with Matchers {
                 val oldUnreachable = state.oldReceiversNowUnreachable
                 state = state.removeMember(node)
                 // keep unreachable, unless it was the removed
-                if (oldUnreachable(node))(oldUnreachable.diff(state.activeReceivers)) should ===(Set(node))
+                if (oldUnreachable(node)) (oldUnreachable.diff(state.activeReceivers)) should ===(Set(node))
                 else
                   (oldUnreachable.diff(state.activeReceivers)) should ===(Set.empty)
 
                 state.failureDetector.isMonitoring(node.address) should ===(false)
                 state.failureDetector.isAvailable(node.address) should ===(true)
-                state.activeReceivers should not contain (node)
+                state.activeReceivers should not contain node
               }
 
             case Unreachable =>
@@ -207,7 +207,7 @@ class ClusterHeartbeatSenderStateSpec extends AnyWordSpec with Matchers {
                 state = state.heartbeatRsp(node)
 
                 if (oldUnreachable(node))
-                  state.oldReceiversNowUnreachable should not contain (node)
+                  state.oldReceiversNowUnreachable should not contain node
 
                 if (oldUnreachable(node) && !oldRingReceivers(node))
                   state.failureDetector.isMonitoring(node.address) should ===(false)

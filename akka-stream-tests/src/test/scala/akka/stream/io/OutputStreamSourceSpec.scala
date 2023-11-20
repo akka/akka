@@ -44,12 +44,11 @@ class OutputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
       ManagementFactory.getThreadMXBean
         .dumpAllThreads(true, true)
         .toSeq
-        .filter(
-          t =>
-            t.getThreadName.startsWith("OutputStreamSourceSpec") &&
-            t.getLockName != null &&
-            t.getLockName.startsWith("java.util.concurrent.locks.AbstractQueuedSynchronizer") &&
-            t.getStackTrace.exists(s => s.getClassName.startsWith(classOf[OutputStreamSourceStage].getName)))
+        .filter(t =>
+          t.getThreadName.startsWith("OutputStreamSourceSpec") &&
+          t.getLockName != null &&
+          t.getLockName.startsWith("java.util.concurrent.locks.AbstractQueuedSynchronizer") &&
+          t.getStackTrace.exists(s => s.getClassName.startsWith(classOf[OutputStreamSourceStage].getName)))
 
     awaitAssert(threadsBlocked should ===(Seq()), 5.seconds, interval = 500.millis)
   }
@@ -110,7 +109,7 @@ class OutputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
         outputStream.write(bytesArray)
       }
 
-      //blocked call
+      // blocked call
       val f = Future(outputStream.write(bytesArray))
 
       expectTimeout(f, timeout)
@@ -157,7 +156,7 @@ class OutputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
              itself throws an exception when being materialized. If
              Sink.ignore is used, the same exception is thrown by
              Materializer.
-       */
+         */
       }
     }
 

@@ -8,10 +8,7 @@ import scala.concurrent.duration.FiniteDuration
 
 import akka.util.JavaDurationConverters._
 
-/**
- * Java API: compatible with lambda expressions
- *
- */
+/** Java API: compatible with lambda expressions */
 object AbstractFSM {
 
   /**
@@ -29,7 +26,6 @@ object AbstractFSM {
  * Java API: compatible with lambda expressions
  *
  * Finite State Machine actor abstract base class.
- *
  */
 abstract class AbstractFSM[S, D] extends FSM[S, D] {
   import java.util.{ List => JList }
@@ -537,9 +533,7 @@ abstract class AbstractFSM[S, D] extends FSM[S, D] {
     setTimer(name, msg, timeout.asScala, repeat)
   }
 
-  /**
-   * Default reason if calling `stop()`.
-   */
+  /** Default reason if calling `stop()`. */
   val Normal: FSM.Reason = FSM.Normal
 
   /**
@@ -553,7 +547,6 @@ abstract class AbstractFSM[S, D] extends FSM[S, D] {
  * Java API: compatible with lambda expressions
  *
  * Finite State Machine actor abstract base class.
- *
  */
 abstract class AbstractLoggingFSM[S, D] extends AbstractFSM[S, D] with LoggingFSM[S, D]
 
@@ -561,6 +554,5 @@ abstract class AbstractLoggingFSM[S, D] extends AbstractFSM[S, D] with LoggingFS
  * Java API: compatible with lambda expressions
  *
  * Finite State Machine actor abstract base class with Stash support.
- *
  */
 abstract class AbstractFSMWithStash[S, D] extends AbstractFSM[S, D] with Stash

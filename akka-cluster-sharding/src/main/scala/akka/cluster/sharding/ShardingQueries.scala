@@ -31,7 +31,8 @@ private[sharding] object ShardingQueries {
       total: Int,
       timeout: FiniteDuration) {
 
-    /** The number of shards queried, which could equal the `total` or,
+    /**
+     * The number of shards queried, which could equal the `total` or,
      * be a subset if this was a retry of those that failed.
      */
     val queried: Int = failed.size + responses.size

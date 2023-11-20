@@ -18,15 +18,13 @@ object LargeMessagesStreamSpec {
   case class Pong(bytesReceived: Long) extends JavaSerializable
 
   class EchoSize extends Actor {
-    def receive = {
-      case Ping(bytes) => sender() ! Pong(bytes.size)
+    def receive = { case Ping(bytes) =>
+      sender() ! Pong(bytes.size)
     }
   }
 }
 
-class LargeMessagesStreamSpec
-    extends ArteryMultiNodeSpec(
-      """
+class LargeMessagesStreamSpec extends ArteryMultiNodeSpec("""
     akka {
       remote.artery.large-message-destinations = [ "/user/large1", "/user/large2", "/user/large3" , "/user/largeWildcard*" ]
     }

@@ -13,14 +13,10 @@ import akka.cluster.ddata.Key
 import akka.cluster.ddata.ReplicatedData
 import akka.cluster.ddata.typed.internal.ReplicatorBehavior
 
-/**
- * @see [[akka.cluster.ddata.Replicator]].
- */
+/** @see [[akka.cluster.ddata.Replicator]]. */
 object Replicator {
 
-  /**
-   * The `Behavior` for the `Replicator` actor.
-   */
+  /** The `Behavior` for the `Replicator` actor. */
   def behavior(settings: ReplicatorSettings): Behavior[Command] =
     ReplicatorBehavior(settings, underlyingReplicator = None)
 
@@ -75,9 +71,7 @@ object Replicator {
 
   object Get {
 
-    /**
-     * Convenience for `ask`.
-     */
+    /** Convenience for `ask`. */
     def apply[A <: ReplicatedData](key: Key[A], consistency: ReadConsistency): ActorRef[GetResponse[A]] => Get[A] =
       replyTo => Get(key, consistency, replyTo)
   }
@@ -92,9 +86,7 @@ object Replicator {
       replyTo: ActorRef[GetResponse[A]])
       extends Command
 
-  /**
-   * Reply from `Get`. The data value is retrieved with [[dd.Replicator.GetSuccess.get]] using the typed key.
-   */
+  /** Reply from `Get`. The data value is retrieved with [[dd.Replicator.GetSuccess.get]] using the typed key. */
   type GetResponse[A <: ReplicatedData] = dd.Replicator.GetResponse[A]
   object GetSuccess {
     def unapply[A <: ReplicatedData](rsp: GetSuccess[A]): Option[Key[A]] = Some(rsp.key)
@@ -114,9 +106,7 @@ object Replicator {
     def unapply[A <: ReplicatedData](rsp: GetFailure[A]): Option[Key[A]] = Some(rsp.key)
   }
 
-  /**
-   * The [[Get]] request couldn't be performed because the entry has been deleted.
-   */
+  /** The [[Get]] request couldn't be performed because the entry has been deleted. */
   type GetDataDeleted[A <: ReplicatedData] = dd.Replicator.GetDataDeleted[A]
   object GetDataDeleted {
     def unapply[A <: ReplicatedData](rsp: GetDataDeleted[A]): Option[Key[A]] =
@@ -139,9 +129,7 @@ object Replicator {
         replyTo: ActorRef[UpdateResponse[A]])(modify: A => A): Update[A] =
       Update(key, writeConsistency, replyTo)(modifyWithInitial(initial, modify))
 
-    /**
-     * Convenience for `ask`.
-     */
+    /** Convenience for `ask`. */
     def apply[A <: ReplicatedData](key: Key[A], initial: A, writeConsistency: WriteConsistency)(
         modify: A => A): ActorRef[UpdateResponse[A]] => Update[A] =
       replyTo => Update(key, writeConsistency, replyTo)(modifyWithInitial(initial, modify))
@@ -201,9 +189,7 @@ object Replicator {
       Some(rsp.key)
   }
 
-  /**
-   * The [[Update]] couldn't be performed because the entry has been deleted.
-   */
+  /** The [[Update]] couldn't be performed because the entry has been deleted. */
   type UpdateDataDeleted[A <: ReplicatedData] = dd.Replicator.UpdateDataDeleted[A]
   object UpdateDataDeleted {
     def unapply[A <: ReplicatedData](rsp: UpdateDataDeleted[A]): Option[Key[A]] =
@@ -261,9 +247,7 @@ object Replicator {
   final case class Unsubscribe[A <: ReplicatedData](key: Key[A], subscriber: ActorRef[SubscribeResponse[A]])
       extends Command
 
-  /**
-   * @see [[Subscribe]]
-   */
+  /** @see [[Subscribe]] */
   type SubscribeResponse[A <: ReplicatedData] = dd.Replicator.SubscribeResponse[A]
 
   /**
@@ -286,25 +270,19 @@ object Replicator {
     def unapply[A <: ReplicatedData](del: Deleted[A]): Option[Key[A]] = Some(del.key)
   }
 
-  /**
-   * @see [[Delete]]
-   */
+  /** @see [[Delete]] */
   type Deleted[A <: ReplicatedData] = dd.Replicator.Deleted[A]
 
   object Expired {
     def unapply[A <: ReplicatedData](exp: Expired[A]): Option[Key[A]] = Some(exp.key)
   }
 
-  /**
-   * @see [[Expired]]
-   */
+  /** @see [[Expired]] */
   type Expired[A <: ReplicatedData] = dd.Replicator.Expired[A]
 
   object Delete {
 
-    /**
-     * Convenience for `ask`.
-     */
+    /** Convenience for `ask`. */
     def apply[A <: ReplicatedData](
         key: Key[A],
         consistency: WriteConsistency): ActorRef[DeleteResponse[A]] => Delete[A] =
@@ -340,9 +318,7 @@ object Replicator {
 
   object GetReplicaCount {
 
-    /**
-     * Convenience for `ask`.
-     */
+    /** Convenience for `ask`. */
     def apply(): ActorRef[ReplicaCount] => GetReplicaCount =
       replyTo => GetReplicaCount(replyTo)
   }
@@ -353,9 +329,7 @@ object Replicator {
    */
   final case class GetReplicaCount(replyTo: ActorRef[ReplicaCount]) extends Command
 
-  /**
-   * Current number of replicas. Reply to `GetReplicaCount`.
-   */
+  /** Current number of replicas. Reply to `GetReplicaCount`. */
   type ReplicaCount = dd.Replicator.ReplicaCount
   object ReplicaCount {
     def unapply[A <: ReplicatedData](rsp: ReplicaCount): Option[Int] =

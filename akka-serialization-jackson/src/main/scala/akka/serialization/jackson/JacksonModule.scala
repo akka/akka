@@ -21,9 +21,7 @@ import com.fasterxml.jackson.databind.ser.Serializers
 
 import akka.annotation.InternalApi
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object JacksonModule {
 
   lazy val version: Version = {
@@ -62,16 +60,12 @@ import akka.annotation.InternalApi
   }
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object VersionExtractor {
   def unapply(v: Version) = Some((v.getMajorVersion, v.getMinorVersion))
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] trait JacksonModule extends Module {
   import JacksonModule._
 

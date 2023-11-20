@@ -27,20 +27,19 @@ import scala.util.Success
 import scala.util.Try
 
 object AsyncTestingExampleSpec {
-  //#under-test
+  // #under-test
   object Echo {
     case class Ping(message: String, response: ActorRef[Pong])
     case class Pong(message: String)
 
-    def apply(): Behavior[Ping] = Behaviors.receiveMessage {
-      case Ping(m, replyTo) =>
-        replyTo ! Pong(m)
-        Behaviors.same
+    def apply(): Behavior[Ping] = Behaviors.receiveMessage { case Ping(m, replyTo) =>
+      replyTo ! Pong(m)
+      Behaviors.same
     }
   }
-  //#under-test
+  // #under-test
 
-  //#under-test-2
+  // #under-test-2
   case class Message(i: Int, replyTo: ActorRef[Try[Int]])
 
   class Producer(publisher: ActorRef[Message])(implicit scheduler: Scheduler) {
@@ -54,7 +53,7 @@ object AsyncTestingExampleSpec {
     }
 
   }
-  //#under-test-2
+  // #under-test-2
 
 }
 
@@ -62,29 +61,29 @@ object AsyncTestingExampleSpec {
 class AsyncTestingExampleSpec
     extends AnyWordSpec
     with BeforeAndAfterAll
-    //#test-header
+    // #test-header
     with LogCapturing
-    //#test-header
+    // #test-header
     with Matchers {
   val testKit = ActorTestKit()
-  //#test-header
+  // #test-header
 
   import AsyncTestingExampleSpec._
 
   "A testkit" must {
     "support verifying a response" in {
-      //#test-spawn
+      // #test-spawn
       val pinger = testKit.spawn(Echo(), "ping")
       val probe = testKit.createTestProbe[Echo.Pong]()
       pinger ! Echo.Ping("hello", probe.ref)
       probe.expectMessage(Echo.Pong("hello"))
-      //#test-spawn
+      // #test-spawn
     }
 
     "support verifying a response - anonymous" in {
-      //#test-spawn-anonymous
+      // #test-spawn-anonymous
       val pinger = testKit.spawn(Echo())
-      //#test-spawn-anonymous
+      // #test-spawn-anonymous
       val probe = testKit.createTestProbe[Echo.Pong]()
       pinger ! Echo.Ping("hello", probe.ref)
       probe.expectMessage(Echo.Pong("hello"))
@@ -93,7 +92,7 @@ class AsyncTestingExampleSpec
     "be able to stop actors under test" in {
       // Will fail with 'name not unique' exception if the first actor is not fully stopped
       val probe = testKit.createTestProbe[Echo.Pong]()
-      //#test-stop-actors
+      // #test-stop-actors
       val pinger1 = testKit.spawn(Echo(), "pinger")
       pinger1 ! Echo.Ping("hello", probe.ref)
       probe.expectMessage(Echo.Pong("hello"))
@@ -104,12 +103,12 @@ class AsyncTestingExampleSpec
       pinger2 ! Echo.Ping("hello", probe.ref)
       probe.expectMessage(Echo.Pong("hello"))
       testKit.stop(pinger2, 10.seconds) // Custom timeout
-      //#test-stop-actors
+      // #test-stop-actors
     }
 
     "support observing mocked behavior" in {
 
-      //#test-observe-mocked-behavior
+      // #test-observe-mocked-behavior
       import testKit._
 
       // simulate the happy path
@@ -130,13 +129,13 @@ class AsyncTestingExampleSpec
         val msg = probe.expectMessageType[Message]
         msg.i shouldBe i
       }
-      //#test-observe-mocked-behavior
+      // #test-observe-mocked-behavior
     }
   }
 
-  //#test-shutdown
+  // #test-shutdown
   override def afterAll(): Unit = testKit.shutdownTestKit()
-  //#test-shutdown
+  // #test-shutdown
 //#test-header
 }
 //#test-header

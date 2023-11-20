@@ -13,11 +13,11 @@ object Reduce {
   implicit val system: ActorSystem = ???
   implicit val ec: ExecutionContextExecutor = system.dispatcher
   def reduceExample: Future[Unit] = {
-    //#reduceExample
+    // #reduceExample
     val source = Source(1 to 100).reduce((acc, element) => acc + element)
     val result: Future[Int] = source.runWith(Sink.head)
     result.map(println)
-    //5050
-    //#reduceExample
+    // 5050
+    // #reduceExample
   }
 }

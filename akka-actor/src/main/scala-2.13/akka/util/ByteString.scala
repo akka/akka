@@ -19,50 +19,32 @@ import scala.reflect.ClassTag
 
 object ByteString {
 
-  /**
-   * Creates a new ByteString by copying a byte array.
-   */
+  /** Creates a new ByteString by copying a byte array. */
   def apply(bytes: Array[Byte]): ByteString = CompactByteString(bytes)
 
-  /**
-   * Creates a new ByteString by copying bytes.
-   */
+  /** Creates a new ByteString by copying bytes. */
   def apply(bytes: Byte*): ByteString = CompactByteString(bytes: _*)
 
-  /**
-   * Creates a new ByteString by iterating over bytes.
-   */
+  /** Creates a new ByteString by iterating over bytes. */
   def apply(bytes: IterableOnce[Byte]): ByteString = CompactByteString(bytes)
 
-  /**
-   * Creates a new ByteString by converting from integral numbers to bytes.
-   */
+  /** Creates a new ByteString by converting from integral numbers to bytes. */
   def apply[T](bytes: T*)(implicit num: Integral[T]): ByteString =
     CompactByteString(bytes: _*)(num)
 
-  /**
-   * Creates a new ByteString by copying bytes from a ByteBuffer.
-   */
+  /** Creates a new ByteString by copying bytes from a ByteBuffer. */
   def apply(bytes: ByteBuffer): ByteString = CompactByteString(bytes)
 
-  /**
-   * Creates a new ByteString by encoding a String as UTF-8.
-   */
+  /** Creates a new ByteString by encoding a String as UTF-8. */
   def apply(string: String): ByteString = apply(string, StandardCharsets.UTF_8)
 
-  /**
-   * Creates a new ByteString by encoding a String with a charset.
-   */
+  /** Creates a new ByteString by encoding a String with a charset. */
   def apply(string: String, charset: String): ByteString = CompactByteString(string, charset)
 
-  /**
-   * Creates a new ByteString by encoding a String with a charset.
-   */
+  /** Creates a new ByteString by encoding a String with a charset. */
   def apply(string: String, charset: Charset): ByteString = CompactByteString(string, charset)
 
-  /**
-   * Creates a new ByteString by copying a byte array.
-   */
+  /** Creates a new ByteString by copying a byte array. */
   def fromArray(array: Array[Byte]): ByteString = apply(array)
 
   /**
@@ -79,7 +61,6 @@ object ByteString {
    * want wrap it into an ByteArray, and from there on only use that reference (the ByteString)
    * to operate on the wrapped data. For all other intents and purposes, please use the usual
    * apply and create methods - which provide the immutability guarantees by copying the array.
-   *
    */
   def fromArrayUnsafe(array: Array[Byte]): ByteString = ByteString1C(array)
 
@@ -104,7 +85,6 @@ object ByteString {
    * want wrap it into an ByteArray, and from there on only use that reference (the ByteString)
    * to operate on the wrapped data. For all other intents and purposes, please use the usual
    * apply and create methods - which provide the immutability guarantees by copying the array.
-   *
    */
   def fromArrayUnsafe(array: Array[Byte], offset: Int, length: Int): ByteString = ByteString1(array, offset, length)
 
@@ -116,29 +96,19 @@ object ByteString {
   def fromInts(array: Int*): ByteString =
     apply(array: _*)(scala.math.Numeric.IntIsIntegral)
 
-  /**
-   * Creates a new ByteString which will contain the UTF-8 representation of the given String
-   */
+  /** Creates a new ByteString which will contain the UTF-8 representation of the given String */
   def fromString(string: String): ByteString = apply(string)
 
-  /**
-   * Creates a new ByteString which will contain the representation of the given String in the given charset
-   */
+  /** Creates a new ByteString which will contain the representation of the given String in the given charset */
   def fromString(string: String, charset: String): ByteString = apply(string, charset)
 
-  /**
-   * Creates a new ByteString which will contain the representation of the given String in the given charset
-   */
+  /** Creates a new ByteString which will contain the representation of the given String in the given charset */
   def fromString(string: String, charset: Charset): ByteString = apply(string, charset)
 
-  /**
-   * Standard "UTF-8" charset
-   */
+  /** Standard "UTF-8" charset */
   val UTF_8: String = StandardCharsets.UTF_8.name()
 
-  /**
-   * Creates a new ByteString by copying bytes out of a ByteBuffer.
-   */
+  /** Creates a new ByteString by copying bytes out of a ByteBuffer. */
   def fromByteBuffer(buffer: ByteBuffer): ByteString = apply(buffer)
 
   val empty: ByteString = ByteString1C.empty
@@ -171,9 +141,7 @@ object ByteString {
     }
   }
 
-  /**
-   * A compact (unsliced) and unfragmented ByteString, implementation of ByteString1C.
-   */
+  /** A compact (unsliced) and unfragmented ByteString, implementation of ByteString1C. */
   @SerialVersionUID(3956956327691936932L)
   final class ByteString1C private (private val bytes: Array[Byte]) extends CompactByteString {
     def apply(idx: Int): Byte = bytes(idx)
@@ -289,9 +257,7 @@ object ByteString {
       ByteString1C.readFromInputStream(is).toByteString1
   }
 
-  /**
-   * An unfragmented ByteString.
-   */
+  /** An unfragmented ByteString. */
   final class ByteString1 private (private val bytes: Array[Byte], private val startIndex: Int, val length: Int)
       extends ByteString
       with Serializable {
@@ -314,7 +280,7 @@ object ByteString {
       os.write(bytes, startIndex, length)
     }
 
-    def isCompact: Boolean = (length == bytes.length)
+    def isCompact: Boolean = length == bytes.length
 
     private[akka] def byteStringCompanion = ByteString1
 
@@ -505,9 +471,7 @@ object ByteString {
     }
   }
 
-  /**
-   * A ByteString with 2 or more fragments.
-   */
+  /** A ByteString with 2 or more fragments. */
   final class ByteStrings private (private[akka] val bytestrings: Vector[ByteString1], val length: Int)
       extends ByteString
       with Serializable {
@@ -874,14 +838,10 @@ sealed abstract class ByteString
 
   private[akka] def writeToOutputStream(os: ObjectOutputStream): Unit
 
-  /**
-   * Efficiently concatenate another ByteString.
-   */
+  /** Efficiently concatenate another ByteString. */
   def ++(that: ByteString): ByteString
 
-  /**
-   * Java API: efficiently concatenate another ByteString.
-   */
+  /** Java API: efficiently concatenate another ByteString. */
   def concat(that: ByteString): ByteString = this ++ that
 
   /**
@@ -937,9 +897,7 @@ sealed abstract class ByteString
    */
   def toByteBuffer: ByteBuffer = ByteBuffer.wrap(toArray)
 
-  /**
-   * Decodes this ByteString as a UTF-8 encoded String.
-   */
+  /** Decodes this ByteString as a UTF-8 encoded String. */
   final def utf8String: String = decodeString(StandardCharsets.UTF_8)
 
   /**
@@ -960,14 +918,10 @@ sealed abstract class ByteString
    */
   def decodeBase64: ByteString
 
-  /**
-   * Returns a ByteString which is the Base64 representation of this ByteString
-   */
+  /** Returns a ByteString which is the Base64 representation of this ByteString */
   def encodeBase64: ByteString
 
-  /**
-   * map method that will automatically cast Int back into Byte.
-   */
+  /** map method that will automatically cast Int back into Byte. */
   final def mapI(f: Byte => Int): ByteString = map(f.andThen(_.toByte))
 
   def map[A](f: Byte => Byte): ByteString = fromSpecific(super.map(f))
@@ -975,15 +929,11 @@ sealed abstract class ByteString
 
 object CompactByteString {
 
-  /**
-   * Creates a new CompactByteString by copying a byte array.
-   */
+  /** Creates a new CompactByteString by copying a byte array. */
   def apply(bytes: Array[Byte]): CompactByteString =
     if (bytes.isEmpty) empty else ByteString.ByteString1C(bytes.clone)
 
-  /**
-   * Creates a new CompactByteString by copying bytes.
-   */
+  /** Creates a new CompactByteString by copying bytes. */
   def apply(bytes: Byte*): CompactByteString = {
     if (bytes.isEmpty) empty
     else {
@@ -993,26 +943,20 @@ object CompactByteString {
     }
   }
 
-  /**
-   * Creates a new CompactByteString by traversing bytes.
-   */
+  /** Creates a new CompactByteString by traversing bytes. */
   def apply(bytes: IterableOnce[Byte]): CompactByteString = {
     val it = bytes.iterator
     if (it.isEmpty) empty
     else ByteString.ByteString1C(it.toArray)
   }
 
-  /**
-   * Creates a new CompactByteString by converting from integral numbers to bytes.
-   */
+  /** Creates a new CompactByteString by converting from integral numbers to bytes. */
   def apply[T](bytes: T*)(implicit num: Integral[T]): CompactByteString = {
     if (bytes.isEmpty) empty
     else ByteString.ByteString1C(bytes.iterator.map(x => num.toInt(x).toByte).to(Array))
   }
 
-  /**
-   * Creates a new CompactByteString by copying bytes from a ByteBuffer.
-   */
+  /** Creates a new CompactByteString by copying bytes from a ByteBuffer. */
   def apply(bytes: ByteBuffer): CompactByteString = {
     if (bytes.remaining < 1) empty
     else {
@@ -1022,20 +966,14 @@ object CompactByteString {
     }
   }
 
-  /**
-   * Creates a new CompactByteString by encoding a String as UTF-8.
-   */
+  /** Creates a new CompactByteString by encoding a String as UTF-8. */
   def apply(string: String): CompactByteString = apply(string, StandardCharsets.UTF_8)
 
-  /**
-   * Creates a new CompactByteString by encoding a String with a charset.
-   */
+  /** Creates a new CompactByteString by encoding a String with a charset. */
   def apply(string: String, charset: String): CompactByteString =
     if (string.isEmpty) empty else ByteString.ByteString1C(string.getBytes(charset))
 
-  /**
-   * Creates a new CompactByteString by encoding a String with a charset.
-   */
+  /** Creates a new CompactByteString by encoding a String with a charset. */
   def apply(string: String, charset: Charset): CompactByteString =
     if (string.isEmpty) empty else ByteString.ByteString1C(string.getBytes(charset))
 
@@ -1092,11 +1030,10 @@ final class ByteStringBuilder extends Builder[Byte, ByteString] {
   }
 
   @inline protected final def fillByteBuffer(len: Int, byteOrder: ByteOrder)(fill: ByteBuffer => Unit): this.type = {
-    fillArray(len) {
-      case (array, start) =>
-        val buffer = ByteBuffer.wrap(array, start, len)
-        buffer.order(byteOrder)
-        fill(buffer)
+    fillArray(len) { case (array, start) =>
+      val buffer = ByteBuffer.wrap(array, start, len)
+      buffer.order(byteOrder)
+      fill(buffer)
     }
   }
 
@@ -1196,19 +1133,13 @@ final class ByteStringBuilder extends Builder[Byte, ByteString] {
     this
   }
 
-  /**
-   * Java API: append a ByteString to this builder.
-   */
+  /** Java API: append a ByteString to this builder. */
   def append(bs: ByteString): this.type = if (bs.isEmpty) this else this ++= bs
 
-  /**
-   * Add a single Byte to this builder.
-   */
+  /** Add a single Byte to this builder. */
   def putByte(x: Byte): this.type = this += x
 
-  /**
-   * Add a single Short to this builder.
-   */
+  /** Add a single Short to this builder. */
   def putShort(x: Int)(implicit byteOrder: ByteOrder): this.type = {
     if (byteOrder == ByteOrder.BIG_ENDIAN) {
       this += (x >>> 8).toByte
@@ -1219,9 +1150,7 @@ final class ByteStringBuilder extends Builder[Byte, ByteString] {
     } else throw new IllegalArgumentException("Unknown byte order " + byteOrder)
   }
 
-  /**
-   * Add a single Int to this builder.
-   */
+  /** Add a single Int to this builder. */
   def putInt(x: Int)(implicit byteOrder: ByteOrder): this.type = {
     fillArray(4) { (target, offset) =>
       if (byteOrder == ByteOrder.BIG_ENDIAN) {
@@ -1239,9 +1168,7 @@ final class ByteStringBuilder extends Builder[Byte, ByteString] {
     this
   }
 
-  /**
-   * Add a single Long to this builder.
-   */
+  /** Add a single Long to this builder. */
   def putLong(x: Long)(implicit byteOrder: ByteOrder): this.type = {
     fillArray(8) { (target, offset) =>
       if (byteOrder == ByteOrder.BIG_ENDIAN) {
@@ -1267,9 +1194,7 @@ final class ByteStringBuilder extends Builder[Byte, ByteString] {
     this
   }
 
-  /**
-   * Add the `n` least significant bytes of the given Long to this builder.
-   */
+  /** Add the `n` least significant bytes of the given Long to this builder. */
   def putLongPart(x: Long, n: Int)(implicit byteOrder: ByteOrder): this.type = {
     fillArray(n) { (target, offset) =>
       if (byteOrder == ByteOrder.BIG_ENDIAN) {
@@ -1285,87 +1210,59 @@ final class ByteStringBuilder extends Builder[Byte, ByteString] {
     }
   }
 
-  /**
-   * Add a single Float to this builder.
-   */
+  /** Add a single Float to this builder. */
   def putFloat(x: Float)(implicit byteOrder: ByteOrder): this.type =
     putInt(java.lang.Float.floatToRawIntBits(x))(byteOrder)
 
-  /**
-   * Add a single Double to this builder.
-   */
+  /** Add a single Double to this builder. */
   def putDouble(x: Double)(implicit byteOrder: ByteOrder): this.type =
     putLong(java.lang.Double.doubleToRawLongBits(x))(byteOrder)
 
-  /**
-   * Add a number of Bytes from an array to this builder.
-   */
+  /** Add a number of Bytes from an array to this builder. */
   def putBytes(array: Array[Byte]): this.type =
     putBytes(array, 0, array.length)
 
-  /**
-   * Add a number of Bytes from an array to this builder.
-   */
+  /** Add a number of Bytes from an array to this builder. */
   def putBytes(array: Array[Byte], start: Int, len: Int): this.type =
     fillArray(len) { case (target, targetOffset) => Array.copy(array, start, target, targetOffset, len) }
 
-  /**
-   * Add a number of Shorts from an array to this builder.
-   */
+  /** Add a number of Shorts from an array to this builder. */
   def putShorts(array: Array[Short])(implicit byteOrder: ByteOrder): this.type =
     putShorts(array, 0, array.length)(byteOrder)
 
-  /**
-   * Add a number of Shorts from an array to this builder.
-   */
+  /** Add a number of Shorts from an array to this builder. */
   def putShorts(array: Array[Short], start: Int, len: Int)(implicit byteOrder: ByteOrder): this.type =
     fillByteBuffer(len * 2, byteOrder) { _.asShortBuffer.put(array, start, len) }
 
-  /**
-   * Add a number of Ints from an array to this builder.
-   */
+  /** Add a number of Ints from an array to this builder. */
   def putInts(array: Array[Int])(implicit byteOrder: ByteOrder): this.type =
     putInts(array, 0, array.length)(byteOrder)
 
-  /**
-   * Add a number of Ints from an array to this builder.
-   */
+  /** Add a number of Ints from an array to this builder. */
   def putInts(array: Array[Int], start: Int, len: Int)(implicit byteOrder: ByteOrder): this.type =
     fillByteBuffer(len * 4, byteOrder) { _.asIntBuffer.put(array, start, len) }
 
-  /**
-   * Add a number of Longs from an array to this builder.
-   */
+  /** Add a number of Longs from an array to this builder. */
   def putLongs(array: Array[Long])(implicit byteOrder: ByteOrder): this.type =
     putLongs(array, 0, array.length)(byteOrder)
 
-  /**
-   * Add a number of Longs from an array to this builder.
-   */
+  /** Add a number of Longs from an array to this builder. */
   def putLongs(array: Array[Long], start: Int, len: Int)(implicit byteOrder: ByteOrder): this.type =
     fillByteBuffer(len * 8, byteOrder) { _.asLongBuffer.put(array, start, len) }
 
-  /**
-   * Add a number of Floats from an array to this builder.
-   */
+  /** Add a number of Floats from an array to this builder. */
   def putFloats(array: Array[Float])(implicit byteOrder: ByteOrder): this.type =
     putFloats(array, 0, array.length)(byteOrder)
 
-  /**
-   * Add a number of Floats from an array to this builder.
-   */
+  /** Add a number of Floats from an array to this builder. */
   def putFloats(array: Array[Float], start: Int, len: Int)(implicit byteOrder: ByteOrder): this.type =
     fillByteBuffer(len * 4, byteOrder) { _.asFloatBuffer.put(array, start, len) }
 
-  /**
-   * Add a number of Doubles from an array to this builder.
-   */
+  /** Add a number of Doubles from an array to this builder. */
   def putDoubles(array: Array[Double])(implicit byteOrder: ByteOrder): this.type =
     putDoubles(array, 0, array.length)(byteOrder)
 
-  /**
-   * Add a number of Doubles from an array to this builder.
-   */
+  /** Add a number of Doubles from an array to this builder. */
   def putDoubles(array: Array[Double], start: Int, len: Int)(implicit byteOrder: ByteOrder): this.type =
     fillByteBuffer(len * 8, byteOrder) { _.asDoubleBuffer.put(array, start, len) }
 
@@ -1396,13 +1293,9 @@ final class ByteStringBuilder extends Builder[Byte, ByteString] {
     override def write(b: Array[Byte], off: Int, len: Int): Unit = { builder.putBytes(b, off, len) }
   }
 
-  /**
-   * Tests whether this ByteStringBuilder is empty.
-   */
+  /** Tests whether this ByteStringBuilder is empty. */
   def isEmpty: Boolean = _length == 0
 
-  /**
-   * Tests whether this ByteStringBuilder is not empty.
-   */
+  /** Tests whether this ByteStringBuilder is not empty. */
   def nonEmpty: Boolean = _length > 0
 }

@@ -18,14 +18,14 @@ import scala.concurrent.Await
 class RateTransformationDocSpec extends AkkaSpec {
 
   "conflate should summarize" in {
-    //#conflate-summarize
+    // #conflate-summarize
     val statsFlow = Flow[Double].conflateWithSeed(immutable.Seq(_))(_ :+ _).map { s =>
       val μ = s.sum / s.size
       val se = s.map(x => pow(x - μ, 2))
       val σ = sqrt(se.sum / se.size)
       (σ, μ, s.size)
     }
-    //#conflate-summarize
+    // #conflate-summarize
 
     val fut =
       Source
@@ -38,7 +38,7 @@ class RateTransformationDocSpec extends AkkaSpec {
   }
 
   "conflate should sample" in {
-    //#conflate-sample
+    // #conflate-sample
     val p = 0.01
     val sampleFlow = Flow[Double]
       .conflateWithSeed(immutable.Seq(_)) {
@@ -46,7 +46,7 @@ class RateTransformationDocSpec extends AkkaSpec {
         case (acc, _)                               => acc
       }
       .mapConcat(identity)
-    //#conflate-sample
+    // #conflate-sample
 
     val fut = Source(1 to 1000).map(_.toDouble).via(sampleFlow).runWith(Sink.fold(Seq.empty[Double])(_ :+ _))
 
@@ -54,9 +54,9 @@ class RateTransformationDocSpec extends AkkaSpec {
   }
 
   "extrapolate should repeat last" in {
-    //#extrapolate-last
+    // #extrapolate-last
     val lastFlow = Flow[Double].extrapolate(Iterator.continually(_))
-    //#extrapolate-last
+    // #extrapolate-last
 
     val (probe, fut) = TestSource[Double]().via(lastFlow).grouped(10).toMat(Sink.head)(Keep.both).run()
 
@@ -67,10 +67,10 @@ class RateTransformationDocSpec extends AkkaSpec {
   }
 
   "extrapolate should send seed first" in {
-    //#extrapolate-seed
+    // #extrapolate-seed
     val initial = 2.0
     val seedFlow = Flow[Double].extrapolate(Iterator.continually(_), Some(initial))
-    //#extrapolate-seed
+    // #extrapolate-seed
 
     val fut = TestSource[Double]().via(seedFlow).grouped(10).runWith(Sink.head)
 
@@ -80,9 +80,9 @@ class RateTransformationDocSpec extends AkkaSpec {
   }
 
   "extrapolate should track drift" in {
-    //#extrapolate-drift
+    // #extrapolate-drift
     val driftFlow = Flow[Double].map(_ -> 0).extrapolate[(Double, Int)] { case (i, _) => Iterator.from(1).map(i -> _) }
-    //#extrapolate-drift
+    // #extrapolate-drift
     val latch = TestLatch(2)
     val realDriftFlow = Flow[Double].map(d => { latch.countDown(); d -> 0; }).extrapolate[(Double, Int)] {
       case (d, _) => latch.countDown(); Iterator.from(1).map(d -> _)
@@ -103,9 +103,9 @@ class RateTransformationDocSpec extends AkkaSpec {
   }
 
   "expand should track drift" in {
-    //#expand-drift
+    // #expand-drift
     val driftFlow = Flow[Double].expand(i => Iterator.from(0).map(i -> _))
-    //#expand-drift
+    // #expand-drift
     val latch = TestLatch(2)
     val realDriftFlow = Flow[Double].expand(d => { latch.countDown(); Iterator.from(0).map(d -> _) })
 

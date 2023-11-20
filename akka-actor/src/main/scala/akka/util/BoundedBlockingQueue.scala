@@ -38,7 +38,7 @@ class BoundedBlockingQueue[E <: AnyRef](val maxCapacity: Int, private val backin
   protected def createNotEmptyCondition(): Condition = lock.newCondition()
   protected def createNotFullCondition(): Condition = lock.newCondition()
 
-  def put(e: E): Unit = { //Blocks until not full
+  def put(e: E): Unit = { // Blocks until not full
     if (e eq null) throw new NullPointerException
     lock.lockInterruptibly()
 
@@ -56,7 +56,7 @@ class BoundedBlockingQueue[E <: AnyRef](val maxCapacity: Int, private val backin
     } finally lock.unlock()
   }
 
-  def take(): E = { //Blocks until not empty
+  def take(): E = { // Blocks until not empty
     lock.lockInterruptibly()
     try {
       @tailrec def takeElement(): E = {
@@ -74,26 +74,26 @@ class BoundedBlockingQueue[E <: AnyRef](val maxCapacity: Int, private val backin
     } finally lock.unlock()
   }
 
-  def offer(e: E): Boolean = { //Tries to do it immediately, if fail return false
+  def offer(e: E): Boolean = { // Tries to do it immediately, if fail return false
     if (e eq null) throw new NullPointerException
     lock.lock()
     try {
       if (backing.size() == maxCapacity) false
       else {
-        require(backing.offer(e)) //Should never fail
+        require(backing.offer(e)) // Should never fail
         notEmpty.signal()
         true
       }
     } finally lock.unlock()
   }
 
-  def offer(e: E, timeout: Long, unit: TimeUnit): Boolean = { //Tries to do it within the timeout, return false if fail
+  def offer(e: E, timeout: Long, unit: TimeUnit): Boolean = { // Tries to do it within the timeout, return false if fail
     if (e eq null) throw new NullPointerException
     lock.lockInterruptibly()
     try {
       @tailrec def offerElement(remainingNanos: Long): Boolean = {
         if (backing.size() < maxCapacity) {
-          require(backing.offer(e)) //Should never fail
+          require(backing.offer(e)) // Should never fail
           notEmpty.signal()
           true
         } else if (remainingNanos <= 0) false
@@ -103,7 +103,7 @@ class BoundedBlockingQueue[E <: AnyRef](val maxCapacity: Int, private val backin
     } finally lock.unlock()
   }
 
-  def poll(timeout: Long, unit: TimeUnit): E = { //Tries to do it within the timeout, returns null if fail
+  def poll(timeout: Long, unit: TimeUnit): E = { // Tries to do it within the timeout, returns null if fail
     lock.lockInterruptibly()
     try {
       @tailrec def pollElement(remainingNanos: Long): E = {
@@ -120,7 +120,7 @@ class BoundedBlockingQueue[E <: AnyRef](val maxCapacity: Int, private val backin
     } finally lock.unlock()
   }
 
-  def poll(): E = { //Tries to remove the head of the queue immediately, if fail, return null
+  def poll(): E = { // Tries to remove the head of the queue immediately, if fail, return null
     lock.lock()
     try {
       backing.poll() match {
@@ -132,7 +132,7 @@ class BoundedBlockingQueue[E <: AnyRef](val maxCapacity: Int, private val backin
     } finally lock.unlock()
   }
 
-  override def remove(e: AnyRef): Boolean = { //Tries to do it immediately, if fail, return false
+  override def remove(e: AnyRef): Boolean = { // Tries to do it immediately, if fail, return false
     if (e eq null) throw new NullPointerException
     lock.lock()
     try {
@@ -252,7 +252,7 @@ class BoundedBlockingQueue[E <: AnyRef](val maxCapacity: Int, private val backin
         override def remove(): Unit = {
           if (last < 0) throw new IllegalStateException
           val target = elements(last)
-          last = -1 //To avoid 2 subsequent removes without a next in between
+          last = -1 // To avoid 2 subsequent removes without a next in between
           lock.lock()
           try {
             @tailrec def removeTarget(i: Iterator[E] = backing.iterator()): Unit =

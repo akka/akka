@@ -79,10 +79,13 @@ class UnfoldResourceSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
 
     "continue when Strategy is Resume and exception happened" in {
       val p = Source
-        .unfoldResource[String, BufferedReader](() => newBufferedReader(), reader => {
-          val s = reader.readLine()
-          if (s != null && s.contains("b")) throw TE("") else Option(s)
-        }, reader => reader.close())
+        .unfoldResource[String, BufferedReader](
+          () => newBufferedReader(),
+          reader => {
+            val s = reader.readLine()
+            if (s != null && s.contains("b")) throw TE("") else Option(s)
+          },
+          reader => reader.close())
         .withAttributes(supervisionStrategy(resumingDecider))
         .runWith(Sink.asPublisher(false))
       val c = TestSubscriber.manualProbe[String]()
@@ -100,10 +103,13 @@ class UnfoldResourceSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
 
     "close and open stream again when Strategy is Restart" in {
       val p = Source
-        .unfoldResource[String, BufferedReader](() => newBufferedReader(), reader => {
-          val s = reader.readLine()
-          if (s != null && s.contains("b")) throw TE("") else Option(s)
-        }, reader => reader.close())
+        .unfoldResource[String, BufferedReader](
+          () => newBufferedReader(),
+          reader => {
+            val s = reader.readLine()
+            if (s != null && s.contains("b")) throw TE("") else Option(s)
+          },
+          reader => reader.close())
         .withAttributes(supervisionStrategy(restartingDecider))
         .runWith(Sink.asPublisher(false))
       val c = TestSubscriber.manualProbe[String]()
@@ -122,10 +128,13 @@ class UnfoldResourceSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
       val chunkSize = 50
       val buffer = new Array[Char](chunkSize)
       val p = Source
-        .unfoldResource[ByteString, Reader](() => newBufferedReader(), reader => {
-          val s = reader.read(buffer)
-          if (s > 0) Some(ByteString(buffer.mkString("")).take(s)) else None
-        }, reader => reader.close())
+        .unfoldResource[ByteString, Reader](
+          () => newBufferedReader(),
+          reader => {
+            val s = reader.read(buffer)
+            if (s > 0) Some(ByteString(buffer.mkString("")).take(s)) else None
+          },
+          reader => reader.close())
         .runWith(Sink.asPublisher(false))
       val c = TestSubscriber.manualProbe[ByteString]()
 
@@ -218,7 +227,8 @@ class UnfoldResourceSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
       val probe = Source
         .unfoldResource[Int, Int](
           () => 23, // the best resource there is
-          _ => throw TE("failing read"), { _ =>
+          _ => throw TE("failing read"),
+          { _ =>
             closedCounter.incrementAndGet()
             if (closedCounter.get == 1) throw TE("boom")
           })

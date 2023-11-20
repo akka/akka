@@ -53,9 +53,7 @@ object TransientSerializationErrorSpec {
 }
 
 class TransientSerializationErrorSpec
-    extends AkkaSpec(
-      ArterySpecSupport.defaultConfig.withFallback(
-        ConfigFactory.parseString("""
+    extends AkkaSpec(ArterySpecSupport.defaultConfig.withFallback(ConfigFactory.parseString("""
     akka {
       loglevel = info
       actor {

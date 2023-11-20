@@ -16,9 +16,8 @@ object DeadLetterSuspensionSpec {
   }
 
   class Dropping extends Actor {
-    override def receive: Receive = {
-      case n: Int =>
-        context.system.eventStream.publish(Dropped(n, "Don't like numbers", self))
+    override def receive: Receive = { case n: Int =>
+      context.system.eventStream.publish(Dropped(n, "Don't like numbers", self))
     }
   }
 
@@ -27,17 +26,19 @@ object DeadLetterSuspensionSpec {
   }
 
   class Unandled extends Actor {
-    override def receive: Receive = {
-      case n: Int => unhandled(n)
+    override def receive: Receive = { case n: Int =>
+      unhandled(n)
     }
   }
 }
 
-class DeadLetterSuspensionSpec extends AkkaSpec("""
+class DeadLetterSuspensionSpec
+    extends AkkaSpec("""
   akka.loglevel = INFO
   akka.log-dead-letters = 4
   akka.log-dead-letters-suspend-duration = 2s
-  """) with ImplicitSender {
+  """)
+    with ImplicitSender {
   import DeadLetterSuspensionSpec._
 
   private val deadActor = system.actorOf(TestActors.echoActorProps)

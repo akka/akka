@@ -64,14 +64,16 @@ abstract class SunnyWeatherSpec extends MultiNodeClusterSpec(SunnyWeatherMultiJv
       log.debug("5 joined")
 
       val unexpected = new AtomicReference[SortedSet[Member]](SortedSet.empty)
-      cluster.subscribe(system.actorOf(Props(new Actor {
-        def receive = {
-          case event: MemberEvent =>
-            // we don't expected any changes to the cluster
-            unexpected.set(unexpected.get + event.member)
-          case _: CurrentClusterState => // ignore
-        }
-      })), classOf[MemberEvent])
+      cluster.subscribe(
+        system.actorOf(Props(new Actor {
+          def receive = {
+            case event: MemberEvent =>
+              // we don't expected any changes to the cluster
+              unexpected.set(unexpected.get + event.member)
+            case _: CurrentClusterState => // ignore
+          }
+        })),
+        classOf[MemberEvent])
 
       for (n <- 1 to 30) {
         enterBarrier("period-" + n)

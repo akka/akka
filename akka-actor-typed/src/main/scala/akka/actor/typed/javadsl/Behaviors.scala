@@ -5,7 +5,7 @@
 package akka.actor.typed.javadsl
 
 import java.util.Collections
-import java.util.function.{ Supplier, Function => JFunction }
+import java.util.function.{ Function => JFunction, Supplier }
 
 import scala.reflect.ClassTag
 
@@ -22,9 +22,7 @@ import akka.japi.pf.PFBuilder
 import akka.util.ccompat.JavaConverters._
 import akka.util.unused
 
-/**
- * Factories for [[akka.actor.typed.Behavior]].
- */
+/** Factories for [[akka.actor.typed.Behavior]]. */
 object Behaviors {
 
   private[this] val _two2same = new JapiFunction2[ActorContext[Any], Any, Behavior[Any]] {
@@ -46,9 +44,7 @@ object Behaviors {
   def setup[T](factory: akka.japi.function.Function[ActorContext[T], Behavior[T]]): Behavior[T] =
     BehaviorImpl.DeferredBehavior(ctx => factory.apply(ctx.asJava))
 
-  /**
-   * Support for stashing messages to unstash at a later time.
-   */
+  /** Support for stashing messages to unstash at a later time. */
   def withStash[T](capacity: Int, factory: java.util.function.Function[StashBuffer[T], Behavior[T]]): Behavior[T] =
     setup(ctx => {
       factory(StashBufferImpl[T](ctx.asScala, capacity))
@@ -95,14 +91,10 @@ object Behaviors {
    */
   def stopped[T](postStop: Effect): Behavior[T] = BehaviorImpl.stopped(postStop.apply _)
 
-  /**
-   * A behavior that treats every incoming message as unhandled.
-   */
+  /** A behavior that treats every incoming message as unhandled. */
   def empty[T]: Behavior[T] = BehaviorImpl.empty
 
-  /**
-   * A behavior that ignores every incoming message and returns “same”.
-   */
+  /** A behavior that ignores every incoming message and returns “same”. */
   def ignore[T]: Behavior[T] = BehaviorImpl.ignore
 
   /**
@@ -154,9 +146,11 @@ object Behaviors {
   def receive[T](
       onMessage: JapiFunction2[ActorContext[T], T, Behavior[T]],
       onSignal: JapiFunction2[ActorContext[T], Signal, Behavior[T]]): Behavior[T] = {
-    new BehaviorImpl.ReceiveBehavior((ctx, msg) => onMessage.apply(ctx.asJava, msg), {
-      case (ctx, sig) => onSignal.apply(ctx.asJava, sig)
-    })
+    new BehaviorImpl.ReceiveBehavior(
+      (ctx, msg) => onMessage.apply(ctx.asJava, msg),
+      { case (ctx, sig) =>
+        onSignal.apply(ctx.asJava, sig)
+      })
   }
 
   /**
@@ -173,9 +167,7 @@ object Behaviors {
    */
   def receive[T](@unused `type`: Class[T]): BehaviorBuilder[T] = BehaviorBuilder.create[T]
 
-  /**
-   * Construct an actor behavior that can react to lifecycle signals only.
-   */
+  /** Construct an actor behavior that can react to lifecycle signals only. */
   def receiveSignal[T](handler: JapiFunction2[ActorContext[T], Signal, Behavior[T]]): Behavior[T] = {
     receive(two2same, handler)
   }
@@ -327,7 +319,6 @@ object Behaviors {
    *                 each message processing by the inner behavior is done.
    * @param behavior The actual behavior handling the messages, the MDC is used for the log entries logged through
    *                 `ActorContext.log`
-   *
    */
   def withMdc[T](
       interceptMessageClass: Class[T],
@@ -344,7 +335,6 @@ object Behaviors {
    * @param staticMdc This MDC is setup in the logging context for every message
    * @param behavior The actual behavior handling the messages, the MDC is used for the log entries logged through
    *                 `ActorContext.log`
-   *
    */
   def withMdc[T](
       interceptMessageClass: Class[T],
@@ -369,7 +359,6 @@ object Behaviors {
    *                 each message processing by the inner behavior is done.
    * @param behavior The actual behavior handling the messages, the MDC is used for the log entries logged through
    *                 `ActorContext.log`
-   *
    */
   def withMdc[T](
       interceptMessageClass: Class[T],

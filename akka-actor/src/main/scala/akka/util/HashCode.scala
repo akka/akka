@@ -4,7 +4,7 @@
 
 package akka.util
 
-import java.lang.{ Float => JFloat, Double => JDouble }
+import java.lang.{ Double => JDouble, Float => JFloat }
 import java.lang.reflect.{ Array => JArray }
 
 /**
@@ -41,7 +41,9 @@ object HashCode {
       else for (id <- 0 until JArray.getLength(value)) result = hash(result, JArray.get(value, id)) // is an array
       result
     case unexpected =>
-      throw new IllegalArgumentException(s"Unexpected hash parameter: $unexpected") // will not happen, for exhaustiveness check
+      throw new IllegalArgumentException(
+        s"Unexpected hash parameter: $unexpected"
+      ) // will not happen, for exhaustiveness check
   }
   def hash(seed: Int, value: Boolean): Int = firstTerm(seed) + (if (value) 1 else 0)
   def hash(seed: Int, value: Char): Int = firstTerm(seed) + value.asInstanceOf[Int]

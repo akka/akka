@@ -74,10 +74,9 @@ private[testkit] class CallingThreadDispatcherQueues extends Extension {
   // we have to forget about long-gone threads sometime
   private def gc(): Unit = {
     queues = queues
-      .foldLeft(Map.newBuilder[CallingThreadMailbox, Set[WeakReference[MessageQueue]]]) {
-        case (m, (k, v)) =>
-          val nv = v.filter(_.get ne null)
-          if (nv.isEmpty) m else m += (k -> nv)
+      .foldLeft(Map.newBuilder[CallingThreadMailbox, Set[WeakReference[MessageQueue]]]) { case (m, (k, v)) =>
+        val nv = v.filter(_.get ne null)
+        if (nv.isEmpty) m else m += (k -> nv)
       }
       .result()
   }
@@ -302,20 +301,22 @@ class CallingThreadDispatcher(_configurator: MessageDispatcherConfigurator) exte
     // this actors mailbox at some other level on our call stack
     if (!mbox.ctdLock.isHeldByCurrentThread) {
       var intex = interruptedEx
-      val gotLock = try {
-        mbox.ctdLock.tryLock(50, TimeUnit.MILLISECONDS)
-      } catch {
-        case ie: InterruptedException =>
-          Thread.interrupted() // clear interrupted flag before we continue, exception will be thrown later
-          intex = ie
-          false
-      }
-      if (gotLock) {
-        val ie = try {
-          process(intex)
-        } finally {
-          mbox.ctdLock.unlock
+      val gotLock =
+        try {
+          mbox.ctdLock.tryLock(50, TimeUnit.MILLISECONDS)
+        } catch {
+          case ie: InterruptedException =>
+            Thread.interrupted() // clear interrupted flag before we continue, exception will be thrown later
+            intex = ie
+            false
         }
+      if (gotLock) {
+        val ie =
+          try {
+            process(intex)
+          } finally {
+            mbox.ctdLock.unlock
+          }
         throwInterruptionIfExistsOrSet(ie)
       } else {
         // if we didn't get the lock and our mailbox still has messages, then we need to try again

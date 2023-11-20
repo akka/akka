@@ -104,7 +104,9 @@ class FlowSplitWhenSpec extends StreamSpec("""
           .mapAsync(1)(_.runWith(Sink.headOption))
           .grouped(10)
           .runWith(Sink.headOption),
-        3.seconds) should ===(None) // rather tricky way of saying that no empty substream should be emitted (vs.  Some(None))
+        3.seconds) should ===(
+        None
+      ) // rather tricky way of saying that no empty substream should be emitted (vs.  Some(None))
 
     }
 
@@ -267,10 +269,10 @@ class FlowSplitWhenSpec extends StreamSpec("""
       import system.dispatcher
       val stream =
         Source(1 to 5)
-        // Need to drop to internal API to get a plain Source[Source[Int]] instead of a SubFlow.
-        // `lift` doesn't cut here because it will prevent the behavior we'd like to see.
-        // In fact, this test is somewhat useless, as a user cannot trigger double materialization using
-        // the public splitWhen => SubFlow API.
+          // Need to drop to internal API to get a plain Source[Source[Int]] instead of a SubFlow.
+          // `lift` doesn't cut here because it will prevent the behavior we'd like to see.
+          // In fact, this test is somewhat useless, as a user cannot trigger double materialization using
+          // the public splitWhen => SubFlow API.
           .via(Split.when(_ => true, SubstreamCancelStrategy.drain))
           .map { source =>
             // run twice, but make sure we return the result of the materialization that ran second

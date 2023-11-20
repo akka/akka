@@ -21,7 +21,6 @@ package object scaladsl {
    *
    * Uses the scaling factor from the `TestTimeFactor` in the [[TestKitSettings]]
    * (in implicit scope).
-   *
    */
   implicit class TestDuration(val duration: FiniteDuration) extends AnyVal {
     def dilated(implicit settings: TestKitSettings): FiniteDuration = settings.dilated(duration)

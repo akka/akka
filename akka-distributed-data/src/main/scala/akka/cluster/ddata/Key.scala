@@ -8,9 +8,7 @@ import akka.cluster.ddata.Key.UnspecificKey
 
 object Key {
 
-  /**
-   * Extract the [[Key#id]].
-   */
+  /** Extract the [[Key#id]]. */
   def unapply(k: Key[_]): Option[String] = Some(k.id)
 
   private[akka] type KeyR = Key[ReplicatedData]

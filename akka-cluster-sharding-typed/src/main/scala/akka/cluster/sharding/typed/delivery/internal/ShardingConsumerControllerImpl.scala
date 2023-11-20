@@ -16,9 +16,7 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.InternalApi
 import akka.cluster.sharding.typed.delivery.ShardingConsumerController
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object ShardingConsumerControllerImpl {
   def apply[A, B](
       consumerBehavior: ActorRef[ConsumerController.Start[A]] => Behavior[B],
@@ -50,10 +48,9 @@ import akka.cluster.sharding.typed.delivery.ShardingConsumerController
             stashBuffer.stash(other)
             Behaviors.same
         }
-        .receiveSignal {
-          case (_, Terminated(`consumer`)) =>
-            context.log.debug("Consumer terminated before initialized.")
-            Behaviors.stopped
+        .receiveSignal { case (_, Terminated(`consumer`)) =>
+          context.log.debug("Consumer terminated before initialized.")
+          Behaviors.stopped
         }
     }
   }

@@ -14,9 +14,11 @@ import akka.stream.impl.ActorSubscriberMessage.OnNext
 import akka.stream.impl.RequestMore
 import akka.stream.testkit._
 
-class FlowTakeSpec extends StreamSpec("""
+class FlowTakeSpec
+    extends StreamSpec("""
     akka.stream.materializer.initial-input-buffer-size = 2
-  """) with ScriptedTest {
+  """)
+    with ScriptedTest {
 
   muteDeadLetters(classOf[OnNext], OnComplete.getClass, classOf[RequestMore[_]])()
 

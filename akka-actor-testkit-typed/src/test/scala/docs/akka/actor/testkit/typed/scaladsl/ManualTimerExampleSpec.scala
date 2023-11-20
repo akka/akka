@@ -43,7 +43,7 @@ class ManualTimerExampleSpec
 
       manualTime.expectNoMessageFor(10.seconds, probe)
     }
-    //#manual-scheduling-simple
+    // #manual-scheduling-simple
 
     "schedule repeated ticks" in {
       case object Tick
@@ -113,7 +113,7 @@ class ManualTimerExampleSpec
       probe.expectMessage(Tock(2))
     }
 
-    //#manual-scheduling-simple
+    // #manual-scheduling-simple
   }
 }
 //#manual-scheduling-simple

@@ -191,42 +191,30 @@ object ProducerController {
     def withDurableQueueRetryAttempts(newDurableQueueRetryAttempts: Int): Settings =
       copy(durableQueueRetryAttempts = newDurableQueueRetryAttempts)
 
-    /**
-     * Scala API
-     */
+    /** Scala API */
     def withDurableQueueRequestTimeout(newDurableQueueRequestTimeout: FiniteDuration): Settings =
       copy(durableQueueRequestTimeout = newDurableQueueRequestTimeout)
 
-    /**
-     * Scala API
-     */
+    /** Scala API */
     def withDurableQueueResendFirstInterval(newDurableQueueResendFirstInterval: FiniteDuration): Settings =
       copy(durableQueueResendFirstInterval = newDurableQueueResendFirstInterval)
 
-    /**
-     * Java API
-     */
+    /** Java API */
     def withDurableQueueRequestTimeout(newDurableQueueRequestTimeout: JavaDuration): Settings =
       copy(durableQueueRequestTimeout = newDurableQueueRequestTimeout.asScala)
 
-    /**
-     * Java API
-     */
+    /** Java API */
     def withDurableQueueResendFirstInterval(newDurableQueueResendFirstInterval: JavaDuration): Settings =
       copy(durableQueueResendFirstInterval = newDurableQueueResendFirstInterval.asScala)
 
-    /**
-     * Java API
-     */
+    /** Java API */
     def getDurableQueueRequestTimeout(): JavaDuration =
       durableQueueRequestTimeout.asJava
 
     def withChunkLargeMessagesBytes(newChunkLargeMessagesBytes: Int): Settings =
       copy(chunkLargeMessagesBytes = newChunkLargeMessagesBytes)
 
-    /**
-     * Private copy method for internal use only.
-     */
+    /** Private copy method for internal use only. */
     private def copy(
         durableQueueRequestTimeout: FiniteDuration = durableQueueRequestTimeout,
         durableQueueRetryAttempts: Int = durableQueueRetryAttempts,
@@ -277,9 +265,7 @@ object ProducerController {
     ProducerControllerImpl(producerId, durableQueueBehavior, settings, send)
   }
 
-  /**
-   * Java API
-   */
+  /** Java API */
   def create[A](
       messageClass: Class[A],
       producerId: String,
@@ -287,9 +273,7 @@ object ProducerController {
     apply(producerId, durableQueueBehavior.asScala)(ClassTag(messageClass))
   }
 
-  /**
-   * Java API
-   */
+  /** Java API */
   def create[A](
       messageClass: Class[A],
       producerId: String,

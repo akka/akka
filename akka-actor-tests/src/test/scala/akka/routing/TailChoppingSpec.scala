@@ -16,18 +16,20 @@ import akka.testkit._
 
 object TailChoppingSpec {
   def newActor(id: Int, sleepTime: Duration)(implicit system: ActorSystem) =
-    system.actorOf(Props(new Actor {
-      var times: Int = _
+    system.actorOf(
+      Props(new Actor {
+        var times: Int = _
 
-      def receive = {
-        case "stop"  => context.stop(self)
-        case "times" => sender() ! times
-        case _ =>
-          times += 1
-          Thread.sleep(sleepTime.toMillis)
-          sender() ! "ack"
-      }
-    }), "Actor:" + id)
+        def receive = {
+          case "stop"  => context.stop(self)
+          case "times" => sender() ! times
+          case _ =>
+            times += 1
+            Thread.sleep(sleepTime.toMillis)
+            sender() ! "ack"
+        }
+      }),
+      "Actor:" + id)
 }
 
 class TailChoppingSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
@@ -100,8 +102,7 @@ class TailChoppingSpec extends AkkaSpec with DefaultTimeout with ImplicitSender 
         system.actorOf(TailChoppingGroup(paths, within = 300.milliseconds, interval = 50.milliseconds).props())
 
       probe.send(routedActor, "")
-      probe.expectMsgPF() {
-        case Failure(_: AskTimeoutException) =>
+      probe.expectMsgPF() { case Failure(_: AskTimeoutException) =>
       }
 
       allShouldEqual(1, actor1, actor2)(ref => Await.result(ref ? "times", timeout.duration))

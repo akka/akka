@@ -25,7 +25,8 @@ import akka.stream.scaladsl._
 @BenchmarkMode(Array(Mode.Throughput))
 class FlowMapBenchmark {
 
-  val config = ConfigFactory.parseString("""
+  val config = ConfigFactory
+    .parseString("""
       akka {
         log-config-on-start = off
         log-dead-letters-during-shutdown = off
@@ -49,7 +50,8 @@ class FlowMapBenchmark {
             type = akka.testkit.CallingThreadDispatcherConfigurator
           }
         }
-      }""".stripMargin).withFallback(ConfigFactory.load())
+      }""".stripMargin)
+    .withFallback(ConfigFactory.load())
 
   implicit val system: ActorSystem = ActorSystem("test", config)
 

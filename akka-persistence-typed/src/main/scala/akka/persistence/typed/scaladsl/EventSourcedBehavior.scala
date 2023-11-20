@@ -99,9 +99,7 @@ object EventSourcedBehavior {
 
   }
 
-  /**
-   * The last sequence number that was persisted, can only be called from inside the handlers of an `EventSourcedBehavior`
-   */
+  /** The last sequence number that was persisted, can only be called from inside the handlers of an `EventSourcedBehavior` */
   def lastSequenceNumber(context: ActorContext[_]): Long = {
     @tailrec
     def extractConcreteBehavior(beh: Behavior[_]): Behavior[_] =
@@ -137,19 +135,13 @@ object EventSourcedBehavior {
    */
   def receiveSignal(signalHandler: PartialFunction[(State, Signal), Unit]): EventSourcedBehavior[Command, Event, State]
 
-  /**
-   * @return The currently defined signal handler or an empty handler if no custom handler previously defined
-   */
+  /** @return The currently defined signal handler or an empty handler if no custom handler previously defined */
   def signalHandler: PartialFunction[(State, Signal), Unit]
 
-  /**
-   * Change the journal plugin id that this actor should use.
-   */
+  /** Change the journal plugin id that this actor should use. */
   def withJournalPluginId(id: String): EventSourcedBehavior[Command, Event, State]
 
-  /**
-   * Change the snapshot store plugin id that this actor should use.
-   */
+  /** Change the snapshot store plugin id that this actor should use. */
   def withSnapshotPluginId(id: String): EventSourcedBehavior[Command, Event, State]
 
   /**
@@ -185,9 +177,7 @@ object EventSourcedBehavior {
    */
   def withRetention(criteria: RetentionCriteria): EventSourcedBehavior[Command, Event, State]
 
-  /**
-   * The `tagger` function should give event tags, which will be used in persistence query
-   */
+  /** The `tagger` function should give event tags, which will be used in persistence query */
   def withTagger(tagger: Event => Set[String]): EventSourcedBehavior[Command, Event, State]
 
   /**
@@ -228,15 +218,11 @@ object EventSourcedBehavior {
    */
   def withRecovery(recovery: Recovery): EventSourcedBehavior[Command, Event, State]
 
-  /**
-   * Publish events to the system event stream as [[akka.persistence.typed.PublishedEvent]] after they have been persisted
-   */
+  /** Publish events to the system event stream as [[akka.persistence.typed.PublishedEvent]] after they have been persisted */
   @ApiMayChange
   def withEventPublishing(enabled: Boolean): EventSourcedBehavior[Command, Event, State]
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi
   private[akka] def withReplication(context: ReplicationContextImpl): EventSourcedBehavior[Command, Event, State]
 

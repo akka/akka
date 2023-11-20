@@ -32,9 +32,7 @@ import akka.event.Logging
 import akka.pattern.pipe
 import akka.remote.artery.ThisActorSystemQuarantinedEvent
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[sbr] object SplitBrainResolver {
 
   def props(stableAfter: FiniteDuration, strategy: DowningStrategy): Props =
@@ -42,19 +40,13 @@ import akka.remote.artery.ThisActorSystemQuarantinedEvent
 
   case object Tick
 
-  /**
-   * Response (result) of the acquire lease request.
-   */
+  /** Response (result) of the acquire lease request. */
   final case class AcquireLeaseResult(holdingLease: Boolean)
 
-  /**
-   * Response (result) of the release lease request.
-   */
+  /** Response (result) of the release lease request. */
   final case class ReleaseLeaseResult(released: Boolean)
 
-  /**
-   * For delayed acquire of the lease.
-   */
+  /** For delayed acquire of the lease. */
   case object AcquireLease
 
   sealed trait ReleaseLeaseCondition
@@ -369,10 +361,9 @@ import akka.remote.artery.ThisActorSystemQuarantinedEvent
     implicit val ec: ExecutionContext = internalDispatcher
     strategy.lease.foreach(
       _.acquire()
-        .recover {
-          case t =>
-            log.error(t, "SBR acquire of lease failed")
-            false
+        .recover { case t =>
+          log.error(t, "SBR acquire of lease failed")
+          false
         }
         .map(AcquireLeaseResult.apply)
         .pipeTo(self))
@@ -427,9 +418,7 @@ import akka.remote.artery.ThisActorSystemQuarantinedEvent
     }
   }
 
-  /**
-   * @return the nodes that were downed
-   */
+  /** @return the nodes that were downed */
   def actOnDecision(decision: Decision): Set[UniqueAddress] = {
     val nodesToDown =
       try {
@@ -475,7 +464,7 @@ import akka.remote.artery.ThisActorSystemQuarantinedEvent
     log.warning(
       ClusterLogMarker.sbrDowning(decision),
       s"SBR took decision $decision and is downing [${nodesToDown.map(_.address).mkString(", ")}]${if (downMyself) " including myself"
-      else ""}, " +
+        else ""}, " +
       s"[${strategy.unreachable.size}] unreachable of [${strategy.members.size}] members" +
       indirectlyConnectedLogMessage +
       s", all members in DC [${strategy.allMembersInDC.mkString(", ")}], full reachability status: [${strategy.reachability}]" +

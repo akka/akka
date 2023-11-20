@@ -38,9 +38,7 @@ object ClusterSingletonManagerDownedSpec extends MultiNodeConfig {
   case object EchoStarted
   case object EchoStopped
 
-  /**
-   * The singleton actor
-   */
+  /** The singleton actor */
   class Echo(testActor: ActorRef) extends Actor {
     testActor ! EchoStarted
 
@@ -48,8 +46,8 @@ object ClusterSingletonManagerDownedSpec extends MultiNodeConfig {
       testActor ! EchoStopped
     }
 
-    def receive = {
-      case _ => sender() ! self
+    def receive = { case _ =>
+      sender() ! self
     }
   }
 }

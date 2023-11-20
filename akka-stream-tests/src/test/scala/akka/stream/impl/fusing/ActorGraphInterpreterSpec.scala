@@ -57,25 +57,33 @@ class ActorGraphInterpreterSpec extends StreamSpec {
         val shape = BidiShape(in1, out1, in2, out2)
 
         override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
-          setHandler(in1, new InHandler {
-            override def onPush(): Unit = push(out1, grab(in1))
-            override def onUpstreamFinish(): Unit = complete(out1)
-          })
+          setHandler(
+            in1,
+            new InHandler {
+              override def onPush(): Unit = push(out1, grab(in1))
+              override def onUpstreamFinish(): Unit = complete(out1)
+            })
 
-          setHandler(in2, new InHandler {
-            override def onPush(): Unit = push(out2, grab(in2))
-            override def onUpstreamFinish(): Unit = complete(out2)
-          })
+          setHandler(
+            in2,
+            new InHandler {
+              override def onPush(): Unit = push(out2, grab(in2))
+              override def onUpstreamFinish(): Unit = complete(out2)
+            })
 
-          setHandler(out1, new OutHandler {
-            override def onPull(): Unit = pull(in1)
-            override def onDownstreamFinish(cause: Throwable): Unit = cancel(in1, cause)
-          })
+          setHandler(
+            out1,
+            new OutHandler {
+              override def onPull(): Unit = pull(in1)
+              override def onDownstreamFinish(cause: Throwable): Unit = cancel(in1, cause)
+            })
 
-          setHandler(out2, new OutHandler {
-            override def onPull(): Unit = pull(in2)
-            override def onDownstreamFinish(cause: Throwable): Unit = cancel(in2, cause)
-          })
+          setHandler(
+            out2,
+            new OutHandler {
+              override def onPull(): Unit = pull(in2)
+              override def onDownstreamFinish(cause: Throwable): Unit = cancel(in2, cause)
+            })
         }
 
         override def toString = "IdentityBidi"
@@ -100,29 +108,37 @@ class ActorGraphInterpreterSpec extends StreamSpec {
         val shape = BidiShape(in1, out1, in2, out2)
 
         override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
-          setHandler(in1, new InHandler {
-            override def onPush(): Unit = push(out1, grab(in1))
+          setHandler(
+            in1,
+            new InHandler {
+              override def onPush(): Unit = push(out1, grab(in1))
 
-            override def onUpstreamFinish(): Unit = complete(out1)
-          })
+              override def onUpstreamFinish(): Unit = complete(out1)
+            })
 
-          setHandler(in2, new InHandler {
-            override def onPush(): Unit = push(out2, grab(in2))
+          setHandler(
+            in2,
+            new InHandler {
+              override def onPush(): Unit = push(out2, grab(in2))
 
-            override def onUpstreamFinish(): Unit = complete(out2)
-          })
+              override def onUpstreamFinish(): Unit = complete(out2)
+            })
 
-          setHandler(out1, new OutHandler {
-            override def onPull(): Unit = pull(in1)
+          setHandler(
+            out1,
+            new OutHandler {
+              override def onPull(): Unit = pull(in1)
 
-            override def onDownstreamFinish(cause: Throwable): Unit = cancel(in1, cause)
-          })
+              override def onDownstreamFinish(cause: Throwable): Unit = cancel(in1, cause)
+            })
 
-          setHandler(out2, new OutHandler {
-            override def onPull(): Unit = pull(in2)
+          setHandler(
+            out2,
+            new OutHandler {
+              override def onPull(): Unit = pull(in2)
 
-            override def onDownstreamFinish(cause: Throwable): Unit = cancel(in2, cause)
-          })
+              override def onDownstreamFinish(cause: Throwable): Unit = cancel(in2, cause)
+            })
         }
 
         override def toString = "IdentityBidi"
@@ -149,29 +165,37 @@ class ActorGraphInterpreterSpec extends StreamSpec {
         val shape = BidiShape(in1, out1, in2, out2)
 
         override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
-          setHandler(in1, new InHandler {
-            override def onPush(): Unit = push(out1, grab(in1))
+          setHandler(
+            in1,
+            new InHandler {
+              override def onPush(): Unit = push(out1, grab(in1))
 
-            override def onUpstreamFinish(): Unit = complete(out1)
-          })
+              override def onUpstreamFinish(): Unit = complete(out1)
+            })
 
-          setHandler(in2, new InHandler {
-            override def onPush(): Unit = push(out2, grab(in2))
+          setHandler(
+            in2,
+            new InHandler {
+              override def onPush(): Unit = push(out2, grab(in2))
 
-            override def onUpstreamFinish(): Unit = complete(out2)
-          })
+              override def onUpstreamFinish(): Unit = complete(out2)
+            })
 
-          setHandler(out1, new OutHandler {
-            override def onPull(): Unit = pull(in1)
+          setHandler(
+            out1,
+            new OutHandler {
+              override def onPull(): Unit = pull(in1)
 
-            override def onDownstreamFinish(cause: Throwable): Unit = cancel(in1, cause)
-          })
+              override def onDownstreamFinish(cause: Throwable): Unit = cancel(in1, cause)
+            })
 
-          setHandler(out2, new OutHandler {
-            override def onPull(): Unit = pull(in2)
+          setHandler(
+            out2,
+            new OutHandler {
+              override def onPull(): Unit = pull(in2)
 
-            override def onDownstreamFinish(cause: Throwable): Unit = cancel(in2, cause)
-          })
+              override def onDownstreamFinish(cause: Throwable): Unit = cancel(in2, cause)
+            })
         }
 
         override def toString = "IdentityBidi"
@@ -201,29 +225,37 @@ class ActorGraphInterpreterSpec extends StreamSpec {
         val shape = BidiShape(in1, out1, in2, out2)
 
         override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
-          setHandler(in1, new InHandler {
-            override def onPush(): Unit = push(out2, grab(in1))
+          setHandler(
+            in1,
+            new InHandler {
+              override def onPush(): Unit = push(out2, grab(in1))
 
-            override def onUpstreamFinish(): Unit = complete(out2)
-          })
+              override def onUpstreamFinish(): Unit = complete(out2)
+            })
 
-          setHandler(in2, new InHandler {
-            override def onPush(): Unit = push(out1, grab(in2))
+          setHandler(
+            in2,
+            new InHandler {
+              override def onPush(): Unit = push(out1, grab(in2))
 
-            override def onUpstreamFinish(): Unit = complete(out1)
-          })
+              override def onUpstreamFinish(): Unit = complete(out1)
+            })
 
-          setHandler(out1, new OutHandler {
-            override def onPull(): Unit = pull(in2)
+          setHandler(
+            out1,
+            new OutHandler {
+              override def onPull(): Unit = pull(in2)
 
-            override def onDownstreamFinish(cause: Throwable): Unit = cancel(in2, cause)
-          })
+              override def onDownstreamFinish(cause: Throwable): Unit = cancel(in2, cause)
+            })
 
-          setHandler(out2, new OutHandler {
-            override def onPull(): Unit = pull(in1)
+          setHandler(
+            out2,
+            new OutHandler {
+              override def onPull(): Unit = pull(in1)
 
-            override def onDownstreamFinish(cause: Throwable): Unit = cancel(in1, cause)
-          })
+              override def onDownstreamFinish(cause: Throwable): Unit = cancel(in1, cause)
+            })
         }
 
         override def toString = "IdentityBidi"
@@ -256,13 +288,15 @@ class ActorGraphInterpreterSpec extends StreamSpec {
 
         override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
 
-          setHandler(shape.out, new OutHandler {
-            override def onPull(): Unit = {
-              completeStage()
-              // This cannot be propagated now since the stage is already closed
-              push(shape.out, -1)
-            }
-          })
+          setHandler(
+            shape.out,
+            new OutHandler {
+              override def onPull(): Unit = {
+                completeStage()
+                // This cannot be propagated now since the stage is already closed
+                push(shape.out, -1)
+              }
+            })
 
         }
       }
@@ -304,8 +338,8 @@ class ActorGraphInterpreterSpec extends StreamSpec {
             fail(shape.out0, te)
           }
 
-          setHandler(shape.out0, ignoreTerminateOutput) //We fail in preStart anyway
-          setHandler(shape.out1, ignoreTerminateOutput) //We fail in preStart anyway
+          setHandler(shape.out0, ignoreTerminateOutput) // We fail in preStart anyway
+          setHandler(shape.out1, ignoreTerminateOutput) // We fail in preStart anyway
           passAlong(shape.in, shape.out1)
         }
       }
@@ -408,12 +442,16 @@ class ActorGraphInterpreterSpec extends StreamSpec {
 
       object PostStopSnitchFlow extends SimpleLinearGraphStage[String] {
         override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
-          setHandler(in, new InHandler {
-            override def onPush(): Unit = push(out, grab(in))
-          })
-          setHandler(out, new OutHandler {
-            override def onPull(): Unit = pull(in)
-          })
+          setHandler(
+            in,
+            new InHandler {
+              override def onPush(): Unit = push(out, grab(in))
+            })
+          setHandler(
+            out,
+            new OutHandler {
+              override def onPull(): Unit = pull(in)
+            })
 
           override def postStop(): Unit = {
             gotStop.countDown()

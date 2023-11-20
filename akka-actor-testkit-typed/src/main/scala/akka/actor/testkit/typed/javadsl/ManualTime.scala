@@ -22,9 +22,7 @@ import akka.util.JavaDurationConverters._
  */
 object ManualTime {
 
-  /**
-   * Config that needs to be in place for the actor system to use the manual
-   */
+  /** Config that needs to be in place for the actor system to use the manual */
   def config(): Config = akka.actor.testkit.typed.scaladsl.ManualTime.config
 
   /**
@@ -48,9 +46,7 @@ object ManualTime {
 
 }
 
-/**
- * Not for user instantiation, see [[ManualTime#get]]
- */
+/** Not for user instantiation, see [[ManualTime#get]] */
 final class ManualTime(delegate: akka.testkit.ExplicitlyTriggeredScheduler) {
 
   /**

@@ -12,9 +12,7 @@ import akka.actor.typed.scaladsl.{ ActorContext => SAC }
 import akka.annotation.InternalApi
 import akka.util.{ LineNumbers, OptionVal }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] object BehaviorTags {
 
@@ -32,9 +30,7 @@ private[akka] object BehaviorTags {
 
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object BehaviorImpl {
 
   implicit class ContextAs[T](val ctx: AC[T]) extends AnyVal {

@@ -16,17 +16,17 @@ import scala.concurrent.duration._
 
 class RecipeAdhocSource extends RecipeSpec {
 
-  //#adhoc-source
+  // #adhoc-source
   def adhocSource[T](source: Source[T, _], timeout: FiniteDuration, maxRetries: Int): Source[T, _] =
-    Source.lazySource(
-      () =>
-        source
-          .backpressureTimeout(timeout)
-          .recoverWithRetries(maxRetries, {
-            case t: TimeoutException =>
-              Source.lazySource(() => source.backpressureTimeout(timeout)).mapMaterializedValue(_ => NotUsed)
+    Source.lazySource(() =>
+      source
+        .backpressureTimeout(timeout)
+        .recoverWithRetries(
+          maxRetries,
+          { case t: TimeoutException =>
+            Source.lazySource(() => source.backpressureTimeout(timeout)).mapMaterializedValue(_ => NotUsed)
           }))
-  //#adhoc-source
+  // #adhoc-source
 
   "Recipe for adhoc source" must {
     "not start the source if there is no demand" taggedAs TimingTest in {
@@ -44,9 +44,12 @@ class RecipeAdhocSource extends RecipeSpec {
 
     "shut down the source when the next demand times out" taggedAs TimingTest in {
       val shutdown = Promise[Done]()
-      val sink = adhocSource(Source.repeat("a").watchTermination() { (_, term) =>
-        shutdown.completeWith(term)
-      }, 200.milliseconds, 3).runWith(TestSink[String]())
+      val sink = adhocSource(
+        Source.repeat("a").watchTermination() { (_, term) =>
+          shutdown.completeWith(term)
+        },
+        200.milliseconds,
+        3).runWith(TestSink[String]())
 
       sink.requestNext("a")
       Thread.sleep(200)
@@ -55,9 +58,12 @@ class RecipeAdhocSource extends RecipeSpec {
 
     "not shut down the source when there are still demands" taggedAs TimingTest in {
       val shutdown = Promise[Done]()
-      val sink = adhocSource(Source.repeat("a").watchTermination() { (_, term) =>
-        shutdown.completeWith(term)
-      }, 200.milliseconds, 3).runWith(TestSink[String]())
+      val sink = adhocSource(
+        Source.repeat("a").watchTermination() { (_, term) =>
+          shutdown.completeWith(term)
+        },
+        200.milliseconds,
+        3).runWith(TestSink[String]())
 
       sink.requestNext("a")
       Thread.sleep(100)
@@ -79,9 +85,12 @@ class RecipeAdhocSource extends RecipeSpec {
 
       val source = Source.empty.mapMaterializedValue(_ => startedCount.incrementAndGet()).concat(Source.repeat("a"))
 
-      val sink = adhocSource(source.watchTermination() { (_, term) =>
-        shutdown.completeWith(term)
-      }, 200.milliseconds, 3).runWith(TestSink[String]())
+      val sink = adhocSource(
+        source.watchTermination() { (_, term) =>
+          shutdown.completeWith(term)
+        },
+        200.milliseconds,
+        3).runWith(TestSink[String]())
 
       sink.requestNext("a")
       startedCount.get() should be(1)
@@ -95,9 +104,12 @@ class RecipeAdhocSource extends RecipeSpec {
 
       val source = Source.empty.mapMaterializedValue(_ => startedCount.incrementAndGet()).concat(Source.repeat("a"))
 
-      val sink = adhocSource(source.watchTermination() { (_, term) =>
-        shutdown.completeWith(term)
-      }, 200.milliseconds, 3).runWith(TestSink[String]())
+      val sink = adhocSource(
+        source.watchTermination() { (_, term) =>
+          shutdown.completeWith(term)
+        },
+        200.milliseconds,
+        3).runWith(TestSink[String]())
 
       sink.requestNext("a")
       startedCount.get() should be(1)
@@ -115,12 +127,12 @@ class RecipeAdhocSource extends RecipeSpec {
 
       Thread.sleep(500)
       sink.requestNext("a")
-      startedCount.get() should be(4) //startCount == 4, which means "re"-tried 3 times
+      startedCount.get() should be(4) // startCount == 4, which means "re"-tried 3 times
 
       Thread.sleep(500)
       sink.expectError() shouldBe a[TimeoutException]
-      sink.request(1) //send demand
-      sink.expectNoMessage(200.milliseconds) //but no more restart
+      sink.request(1) // send demand
+      sink.expectNoMessage(200.milliseconds) // but no more restart
     }
   }
 }

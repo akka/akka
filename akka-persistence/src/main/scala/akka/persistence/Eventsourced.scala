@@ -113,9 +113,7 @@ private[persistence] trait Eventsourced
     case _                      => true
   }
 
-  /**
-   * Returns `persistenceId`.
-   */
+  /** Returns `persistenceId`. */
   override def snapshotterId: String = persistenceId
 
   /**
@@ -124,9 +122,7 @@ private[persistence] trait Eventsourced
    */
   def lastSequenceNr: Long = _lastSequenceNr
 
-  /**
-   * Returns `lastSequenceNr`.
-   */
+  /** Returns `lastSequenceNr`. */
   def snapshotSequenceNr: Long = lastSequenceNr
 
   /**
@@ -381,9 +377,7 @@ private[persistence] trait Eventsourced
    */
   def receiveCommand: Receive
 
-  /**
-   * Internal API
-   */
+  /** Internal API */
   @InternalApi
   final private[akka] def internalPersist[A](event: A)(handler: A => Unit): Unit = {
     if (recoveryRunning)
@@ -401,9 +395,7 @@ private[persistence] trait Eventsourced
           sender = sender())))
   }
 
-  /**
-   * Internal API
-   */
+  /** Internal API */
   @InternalApi
   final private[akka] def internalPersistAll[A](events: immutable.Seq[A])(handler: A => Unit): Unit = {
     if (recoveryRunning)
@@ -431,9 +423,7 @@ private[persistence] trait Eventsourced
     eventBatch ::= atomicWrite
   }
 
-  /**
-   * Internal API
-   */
+  /** Internal API */
   @InternalApi
   final private[akka] def internalPersistAsync[A](event: A)(handler: A => Unit): Unit = {
     if (recoveryRunning)
@@ -449,9 +439,7 @@ private[persistence] trait Eventsourced
         sender = sender()))
   }
 
-  /**
-   * Internal API
-   */
+  /** Internal API */
   @InternalApi
   final private[akka] def internalPersistAllAsync[A](events: immutable.Seq[A])(handler: A => Unit): Unit = {
     if (recoveryRunning)
@@ -472,9 +460,7 @@ private[persistence] trait Eventsourced
     }
   }
 
-  /**
-   * Internal API
-   */
+  /** Internal API */
   @InternalApi
   final private[akka] def internalDeferAsync[A](event: A)(handler: A => Unit): Unit = {
     if (recoveryRunning)
@@ -488,9 +474,7 @@ private[persistence] trait Eventsourced
     }
   }
 
-  /**
-   * Internal API
-   */
+  /** Internal API */
   @InternalApi
   final private[akka] def internalDefer[A](event: A)(handler: A => Unit): Unit = {
     if (recoveryRunning)
@@ -551,17 +535,13 @@ private[persistence] trait Eventsourced
     if (sequenceNr > 0) deleteMessages(sequenceNr)
   }
 
-  /**
-   * Returns `true` if this persistent actor is currently recovering.
-   */
+  /** Returns `true` if this persistent actor is currently recovering. */
   def recoveryRunning: Boolean = {
     // currentState is null if this is called from constructor
     if (currentState == null) true else currentState.recoveryRunning
   }
 
-  /**
-   * Returns `true` if this persistent actor has successfully finished recovery.
-   */
+  /** Returns `true` if this persistent actor has successfully finished recovery. */
   def recoveryFinished: Boolean = !recoveryRunning
 
   override def stash(): Unit = {
@@ -625,14 +605,15 @@ private[persistence] trait Eventsourced
     }
 
     private val recoveryBehavior: Receive = {
-      val _receiveRecover = try receiveRecover
-      catch {
-        case NonFatal(e) =>
-          try onRecoveryFailure(e, Some(e))
-          finally context.stop(self)
-          returnRecoveryPermit()
-          Actor.emptyBehavior
-      }
+      val _receiveRecover =
+        try receiveRecover
+        catch {
+          case NonFatal(e) =>
+            try onRecoveryFailure(e, Some(e))
+            finally context.stop(self)
+            returnRecoveryPermit()
+            Actor.emptyBehavior
+        }
 
       {
         case PersistentRepr(FilteredPayload, _) => // ignore
@@ -653,23 +634,22 @@ private[persistence] trait Eventsourced
     override def stateReceive(receive: Receive, message: Any): Unit = {
       def loadSnapshotResult(snapshot: Option[SelectedSnapshot], toSnr: Long): Unit = {
         timeoutCancellable.cancel()
-        snapshot.foreach {
-          case SelectedSnapshot(metadata, snapshot) =>
-            val offer = SnapshotOffer(metadata, snapshot)
-            if (recoveryBehavior.isDefinedAt(offer)) {
-              try {
-                setLastSequenceNr(metadata.sequenceNr)
-                // Since we are recovering we can ignore the receive behavior from the stack
-                Eventsourced.super.aroundReceive(recoveryBehavior, offer)
-              } catch {
-                case NonFatal(t) =>
-                  try onRecoveryFailure(t, None)
-                  finally context.stop(self)
-                  returnRecoveryPermit()
-              }
-            } else {
-              unhandled(offer)
+        snapshot.foreach { case SelectedSnapshot(metadata, snapshot) =>
+          val offer = SnapshotOffer(metadata, snapshot)
+          if (recoveryBehavior.isDefinedAt(offer)) {
+            try {
+              setLastSequenceNr(metadata.sequenceNr)
+              // Since we are recovering we can ignore the receive behavior from the stack
+              Eventsourced.super.aroundReceive(recoveryBehavior, offer)
+            } catch {
+              case NonFatal(t) =>
+                try onRecoveryFailure(t, None)
+                finally context.stop(self)
+                returnRecoveryPermit()
             }
+          } else {
+            unhandled(offer)
+          }
         }
         changeState(recovering(recoveryBehavior, timeout))
         journal ! ReplayMessages(lastSequenceNr + 1L, toSnr, replayMax, persistenceId, self)
@@ -685,33 +665,36 @@ private[persistence] trait Eventsourced
         }
       }
 
-      try message match {
-        case LoadSnapshotResult(snapshot, toSnr) =>
-          loadSnapshotResult(snapshot, toSnr)
+      try
+        message match {
+          case LoadSnapshotResult(snapshot, toSnr) =>
+            loadSnapshotResult(snapshot, toSnr)
 
-        case LoadSnapshotFailed(cause) =>
-          if (isSnapshotOptional) {
-            log.info(
-              "Snapshot load error for persistenceId [{}]. Replaying all events since snapshot-is-optional=true",
-              persistenceId)
-            loadSnapshotResult(snapshot = None, recovery.toSequenceNr)
-          } else {
-            timeoutCancellable.cancel()
-            try onRecoveryFailure(cause, event = None)
+          case LoadSnapshotFailed(cause) =>
+            if (isSnapshotOptional) {
+              log.info(
+                "Snapshot load error for persistenceId [{}]. Replaying all events since snapshot-is-optional=true",
+                persistenceId)
+              loadSnapshotResult(snapshot = None, recovery.toSequenceNr)
+            } else {
+              timeoutCancellable.cancel()
+              try onRecoveryFailure(cause, event = None)
+              finally context.stop(self)
+              returnRecoveryPermit()
+            }
+
+          case RecoveryTick(true) =>
+            try
+              onRecoveryFailure(
+                new RecoveryTimedOut(s"Recovery timed out, didn't get snapshot within $timeout"),
+                event = None)
             finally context.stop(self)
             returnRecoveryPermit()
-          }
 
-        case RecoveryTick(true) =>
-          try onRecoveryFailure(
-            new RecoveryTimedOut(s"Recovery timed out, didn't get snapshot within $timeout"),
-            event = None)
-          finally context.stop(self)
-          returnRecoveryPermit()
-
-        case other =>
-          stashInternally(other)
-      } catch {
+          case other =>
+            stashInternally(other)
+        }
+      catch {
         case NonFatal(e) =>
           returnRecoveryPermit()
           throw e
@@ -749,50 +732,53 @@ private[persistence] trait Eventsourced
       override def recoveryRunning: Boolean = _recoveryRunning
 
       override def stateReceive(receive: Receive, message: Any) =
-        try message match {
-          case ReplayedMessage(p) =>
-            try {
-              eventSeenInInterval = true
-              updateLastSequenceNr(p)
-              Eventsourced.super.aroundReceive(recoveryBehavior, p)
-            } catch {
-              case NonFatal(t) =>
-                timeoutCancellable.cancel()
-                try onRecoveryFailure(t, Some(p.payload))
-                finally context.stop(self)
-                returnRecoveryPermit()
-            }
-          case RecoverySuccess(highestJournalSeqNr) =>
-            timeoutCancellable.cancel()
-            onReplaySuccess() // callback for subclass implementation
-            val highestSeqNr = Math.max(highestJournalSeqNr, lastSequenceNr)
-            sequenceNr = highestSeqNr
-            setLastSequenceNr(highestSeqNr)
-            _recoveryRunning = false
-            try Eventsourced.super.aroundReceive(recoveryBehavior, RecoveryCompleted)
-            finally transitToProcessingState() // in finally in case exception and resume strategy
-            // if exception from RecoveryCompleted the permit is returned in below catch
-            returnRecoveryPermit()
-          case ReplayMessagesFailure(cause) =>
-            timeoutCancellable.cancel()
-            try onRecoveryFailure(cause, event = None)
-            finally context.stop(self)
-            returnRecoveryPermit()
-          case RecoveryTick(false) if !eventSeenInInterval =>
-            timeoutCancellable.cancel()
-            try onRecoveryFailure(
-              new RecoveryTimedOut(
-                s"Recovery timed out, didn't get event within $timeout, highest sequence number seen $lastSequenceNr"),
-              event = None)
-            finally context.stop(self)
-            returnRecoveryPermit()
-          case RecoveryTick(false) =>
-            eventSeenInInterval = false
-          case RecoveryTick(true) =>
-          // snapshot tick, ignore
-          case other =>
-            stashInternally(other)
-        } catch {
+        try
+          message match {
+            case ReplayedMessage(p) =>
+              try {
+                eventSeenInInterval = true
+                updateLastSequenceNr(p)
+                Eventsourced.super.aroundReceive(recoveryBehavior, p)
+              } catch {
+                case NonFatal(t) =>
+                  timeoutCancellable.cancel()
+                  try onRecoveryFailure(t, Some(p.payload))
+                  finally context.stop(self)
+                  returnRecoveryPermit()
+              }
+            case RecoverySuccess(highestJournalSeqNr) =>
+              timeoutCancellable.cancel()
+              onReplaySuccess() // callback for subclass implementation
+              val highestSeqNr = Math.max(highestJournalSeqNr, lastSequenceNr)
+              sequenceNr = highestSeqNr
+              setLastSequenceNr(highestSeqNr)
+              _recoveryRunning = false
+              try Eventsourced.super.aroundReceive(recoveryBehavior, RecoveryCompleted)
+              finally transitToProcessingState() // in finally in case exception and resume strategy
+              // if exception from RecoveryCompleted the permit is returned in below catch
+              returnRecoveryPermit()
+            case ReplayMessagesFailure(cause) =>
+              timeoutCancellable.cancel()
+              try onRecoveryFailure(cause, event = None)
+              finally context.stop(self)
+              returnRecoveryPermit()
+            case RecoveryTick(false) if !eventSeenInInterval =>
+              timeoutCancellable.cancel()
+              try
+                onRecoveryFailure(
+                  new RecoveryTimedOut(
+                    s"Recovery timed out, didn't get event within $timeout, highest sequence number seen $lastSequenceNr"),
+                  event = None)
+              finally context.stop(self)
+              returnRecoveryPermit()
+            case RecoveryTick(false) =>
+              eventSeenInInterval = false
+            case RecoveryTick(true) =>
+            // snapshot tick, ignore
+            case other =>
+              stashInternally(other)
+          }
+        catch {
           case NonFatal(e) =>
             returnRecoveryPermit()
             throw e
@@ -841,9 +827,7 @@ private[persistence] trait Eventsourced
     onPersistFailure(cause, p.payload, p.sequenceNr)
   }
 
-  /**
-   * Common receive handler for processingCommands and persistingEvents
-   */
+  /** Common receive handler for processingCommands and persistingEvents */
   private abstract class ProcessingState extends State {
     override def recoveryRunning: Boolean = false
 

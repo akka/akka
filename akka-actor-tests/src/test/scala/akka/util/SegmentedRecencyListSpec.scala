@@ -13,11 +13,10 @@ class SegmentedRecencyListSpec extends AnyWordSpec with Matchers {
 
   private def check(recency: SegmentedRecencyList[String], expectedSegments: List[List[String]]): Unit = {
     recency.size shouldBe expectedSegments.map(_.size).sum
-    expectedSegments.zipWithIndex.foreach {
-      case (expectedSegment, level) =>
-        expectedSegment.forall(recency.contains)
-        recency.leastToMostRecentOf(level).toList shouldBe expectedSegment
-        recency.sizeOf(level) shouldBe expectedSegment.size
+    expectedSegments.zipWithIndex.foreach { case (expectedSegment, level) =>
+      expectedSegment.forall(recency.contains)
+      recency.leastToMostRecentOf(level).toList shouldBe expectedSegment
+      recency.sizeOf(level) shouldBe expectedSegment.size
     }
   }
 

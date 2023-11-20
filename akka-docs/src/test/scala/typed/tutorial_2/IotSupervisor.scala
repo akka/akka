@@ -32,10 +32,9 @@ class IotSupervisor(context: ActorContext[Nothing]) extends AbstractBehavior[Not
     Behaviors.unhandled
   }
 
-  override def onSignal: PartialFunction[Signal, Behavior[Nothing]] = {
-    case PostStop =>
-      context.log.info("IoT Application stopped")
-      this
+  override def onSignal: PartialFunction[Signal, Behavior[Nothing]] = { case PostStop =>
+    context.log.info("IoT Application stopped")
+    this
   }
 }
 //#iot-supervisor

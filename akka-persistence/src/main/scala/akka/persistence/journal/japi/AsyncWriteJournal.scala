@@ -14,9 +14,7 @@ import akka.persistence.journal.{ AsyncWriteJournal => SAsyncWriteJournal }
 import akka.util.ccompat._
 import akka.util.ccompat.JavaConverters._
 
-/**
- * Java API: abstract journal, optimized for asynchronous, non-blocking writes.
- */
+/** Java API: abstract journal, optimized for asynchronous, non-blocking writes. */
 @ccompatUsedUntil213
 abstract class AsyncWriteJournal extends AsyncRecovery with SAsyncWriteJournal with AsyncWritePlugin {
   import SAsyncWriteJournal.successUnit

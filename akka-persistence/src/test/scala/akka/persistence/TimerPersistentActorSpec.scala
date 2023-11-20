@@ -27,8 +27,7 @@ object TimerPersistentActorSpec {
 
     override def persistenceId = name
 
-    override def receiveRecover: Receive = {
-      case _ =>
+    override def receiveRecover: Receive = { case _ =>
     }
 
     override def receiveCommand: Receive = {
@@ -45,11 +44,10 @@ object TimerPersistentActorSpec {
   // this should fail in constructor
   class WrongOrder extends PersistentActor with Timers {
     override def persistenceId = "notused"
-    override def receiveRecover: Receive = {
-      case _ =>
+    override def receiveRecover: Receive = { case _ =>
     }
-    override def receiveCommand: Receive = {
-      case _ => ()
+    override def receiveCommand: Receive = { case _ =>
+      ()
     }
   }
 
@@ -70,9 +68,11 @@ object TimerPersistentActorSpec {
           BoxedUnit.UNIT
         case msg =>
           timers.startSingleTimer("key", Scheduled(msg, sender()), Duration.Zero)
-          persist(msg, new Procedure[Any] {
-            override def apply(evt: Any): Unit = ()
-          })
+          persist(
+            msg,
+            new Procedure[Any] {
+              override def apply(evt: Any): Unit = ()
+            })
           BoxedUnit.UNIT
       })
   }

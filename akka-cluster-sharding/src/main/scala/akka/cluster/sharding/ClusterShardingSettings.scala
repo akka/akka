@@ -31,15 +31,11 @@ object ClusterShardingSettings {
   @InternalApi
   private[akka] val RememberEntitiesStoreCustom = "custom"
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi
   private[akka] val RememberEntitiesStoreDData = "ddata"
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi
   private[akka] val RememberEntitiesStoreEventsourced = "eventsourced"
 
@@ -131,15 +127,11 @@ object ClusterShardingSettings {
    */
   def create(config: Config): ClusterShardingSettings = apply(config)
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   private[akka] def roleOption(role: String): Option[String] =
     if (role == "") None else Option(role)
 
-  /**
-   * API MAY CHANGE: Settings for passivation strategies may change after additional testing and feedback.
-   */
+  /** API MAY CHANGE: Settings for passivation strategies may change after additional testing and feedback. */
   @ApiMayChange
   final class PassivationStrategySettings private[akka] (
       val idleEntitySettings: Option[PassivationStrategySettings.IdleSettings],
@@ -232,9 +224,7 @@ object ClusterShardingSettings {
         oldSettingUsed)
   }
 
-  /**
-   * API MAY CHANGE: Settings for passivation strategies may change after additional testing and feedback.
-   */
+  /** API MAY CHANGE: Settings for passivation strategies may change after additional testing and feedback. */
   @ApiMayChange
   object PassivationStrategySettings {
     val defaults = new PassivationStrategySettings(
@@ -610,37 +600,27 @@ object ClusterShardingSettings {
       defaults.withOldIdleStrategy(idleTimeout)
   }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi
   private[akka] sealed trait PassivationStrategy
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi
   private[akka] case object NoPassivationStrategy extends PassivationStrategy
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi
   private[akka] object IdlePassivationStrategy {
     def apply(settings: PassivationStrategySettings.IdleSettings): IdlePassivationStrategy =
       IdlePassivationStrategy(settings.timeout, settings.interval.getOrElse(settings.timeout / 2))
   }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi
   private[akka] case class IdlePassivationStrategy(timeout: FiniteDuration, interval: FiniteDuration)
       extends PassivationStrategy
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi
   private[akka] object LeastRecentlyUsedPassivationStrategy {
     def apply(
@@ -659,9 +639,7 @@ object ClusterShardingSettings {
     }
   }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi
   private[akka] case class LeastRecentlyUsedPassivationStrategy(
       limit: Int,
@@ -669,16 +647,12 @@ object ClusterShardingSettings {
       idle: Option[IdlePassivationStrategy])
       extends PassivationStrategy
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi
   private[akka] case class MostRecentlyUsedPassivationStrategy(limit: Int, idle: Option[IdlePassivationStrategy])
       extends PassivationStrategy
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi
   private[akka] object LeastFrequentlyUsedPassivationStrategy {
     def apply(
@@ -688,9 +662,7 @@ object ClusterShardingSettings {
       LeastFrequentlyUsedPassivationStrategy(limit, settings.dynamicAging, idle)
   }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi
   private[akka] case class LeastFrequentlyUsedPassivationStrategy(
       limit: Int,
@@ -698,9 +670,7 @@ object ClusterShardingSettings {
       idle: Option[IdlePassivationStrategy])
       extends PassivationStrategy
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi
   private[akka] object CompositePassivationStrategy {
     object AdmissionFilter {
@@ -777,9 +747,7 @@ object ClusterShardingSettings {
     }
   }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi
   private[akka] case class CompositePassivationStrategy(
       limit: Int,
@@ -859,15 +827,15 @@ object ClusterShardingSettings {
           (if (dynamicAging) " (with dynamic aging)" else "") +
           idle.fold("")(idle => " and " + describe(idle))
         case CompositePassivationStrategy(
-            limit,
-            mainStrategy,
-            windowStrategy,
-            initialWindowProportion,
-            minimumWindowProportion,
-            maximumWindowProportion,
-            windowOptimizer,
-            admissionFilter,
-            idle) =>
+              limit,
+              mainStrategy,
+              windowStrategy,
+              initialWindowProportion,
+              minimumWindowProportion,
+              maximumWindowProportion,
+              windowOptimizer,
+              admissionFilter,
+              idle) =>
           val describeWindow = windowStrategy match {
             case NoPassivationStrategy => "no admission window"
             case _ =>
@@ -876,10 +844,10 @@ object ClusterShardingSettings {
                 case CompositePassivationStrategy.NoAdmissionOptimizer =>
                   s" with proportion [$initialWindowProportion]"
                 case CompositePassivationStrategy.HillClimbingAdmissionOptimizer(
-                    adjustMultiplier,
-                    initialStep,
-                    restartThreshold,
-                    stepDecay) =>
+                      adjustMultiplier,
+                      initialStep,
+                      restartThreshold,
+                      stepDecay) =>
                   s" with proportions [initial = $initialWindowProportion, min = $minimumWindowProportion, max = $maximumWindowProportion]" +
                   " adapting with hill-climbing optimizer [" +
                   s"adjust multiplier = $adjustMultiplier, " +
@@ -891,10 +859,10 @@ object ClusterShardingSettings {
           val describeFilter = admissionFilter match {
             case CompositePassivationStrategy.AlwaysAdmissionFilter => "always admit"
             case CompositePassivationStrategy.FrequencySketchAdmissionFilter(
-                widthMultiplier,
-                resetMultiplier,
-                depth,
-                counterBits) =>
+                  widthMultiplier,
+                  resetMultiplier,
+                  depth,
+                  counterBits) =>
               "admit using frequency sketch [" +
               s"width multiplier = $widthMultiplier, " +
               s"reset multiplier = $resetMultiplier, " +
@@ -1264,9 +1232,7 @@ final class ClusterShardingSettings(
   private[akka] def shouldHostCoordinator(cluster: Cluster): Boolean =
     coordinatorSingletonRole.forall(cluster.selfMember.roles.contains)
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[akka] def coordinatorSingletonRole: Option[String] =
     if (coordinatorSingletonOverrideRole) role else coordinatorSingletonSettings.role
 
@@ -1305,9 +1271,7 @@ final class ClusterShardingSettings(
   def withPassivateIdleAfter(duration: java.time.Duration): ClusterShardingSettings =
     copy(passivationStrategySettings = passivationStrategySettings.withOldIdleStrategy(duration.asScala))
 
-  /**
-   * API MAY CHANGE: Settings for passivation strategies may change after additional testing and feedback.
-   */
+  /** API MAY CHANGE: Settings for passivation strategies may change after additional testing and feedback. */
   @ApiMayChange
   def withPassivationStrategy(settings: ClusterShardingSettings.PassivationStrategySettings): ClusterShardingSettings =
     copy(passivationStrategySettings = settings)

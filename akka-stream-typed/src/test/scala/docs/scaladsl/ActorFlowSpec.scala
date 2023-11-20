@@ -24,13 +24,13 @@ import scala.concurrent.duration._
 import scala.concurrent.{ Await, Future }
 
 object ActorFlowSpec {
-  //#ask-actor
+  // #ask-actor
   final case class Asking(s: String, replyTo: ActorRef[Reply])
   final case class Reply(msg: String)
 
   final case class AskingWithStatus(s: String, replyTo: ActorRef[StatusReply[String]])
 
-  //#ask-actor
+  // #ask-actor
 }
 
 class ActorFlowSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike {
@@ -143,15 +143,15 @@ class ActorFlowSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike {
     }
 
     "produce asked elements in order" in {
-      //#ask-actor
+      // #ask-actor
       val ref = spawn(Behaviors.receiveMessage[Asking] { asking =>
         asking.replyTo ! Reply(asking.s + "!!!")
         Behaviors.same
       })
 
-      //#ask-actor
+      // #ask-actor
 
-      //#ask
+      // #ask
       implicit val timeout: Timeout = 1.second
 
       val askFlow: Flow[String, Reply, NotUsed] =
@@ -163,7 +163,7 @@ class ActorFlowSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike {
 
       val in: Future[immutable.Seq[String]] =
         Source(1 to 50).map(_.toString).via(askFlow).map(_.msg).runWith(Sink.seq)
-      //#ask
+      // #ask
       askFlowExplicit.map(identity)
 
       in.futureValue shouldEqual List.tabulate(51)(i => s"$i!!!").drop(1)

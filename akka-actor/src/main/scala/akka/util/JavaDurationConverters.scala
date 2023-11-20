@@ -9,9 +9,7 @@ import scala.concurrent.duration.{ Duration, FiniteDuration }
 
 import akka.annotation.InternalStableApi
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalStableApi
 private[akka] object JavaDurationConverters {
   def asFiniteDuration(duration: JDuration): FiniteDuration = duration.asScala

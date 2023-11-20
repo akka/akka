@@ -11,9 +11,7 @@ import scala.collection.immutable
 import akka.annotation.InternalApi
 import akka.persistence.testkit.ProcessingPolicy
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 sealed trait InternalReprSupport[R] {
 
@@ -25,9 +23,7 @@ sealed trait InternalReprSupport[R] {
 
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 sealed trait InMemStorage[K, R] extends InternalReprSupport[R] {
 
@@ -41,11 +37,10 @@ sealed trait InMemStorage[K, R] extends InternalReprSupport[R] {
   def reprToSeqNum(repr: R): Long
 
   def findMany(key: K, fromInclusive: Int, maxNum: Int): Option[Vector[R]] =
-    read(key).flatMap(
-      value =>
-        if (value.size > fromInclusive)
-          Some(value.drop(fromInclusive).take(maxNum))
-        else None)
+    read(key).flatMap(value =>
+      if (value.size > fromInclusive)
+        Some(value.drop(fromInclusive).take(maxNum))
+      else None)
 
   def removeFirstInExpectNextQueue(key: K): Unit = lock.synchronized {
     expectNextQueue.get(key).foreach { item =>
@@ -62,8 +57,8 @@ sealed trait InMemStorage[K, R] extends InternalReprSupport[R] {
   def findOneByIndex(key: K, index: Int): Option[R] = lock.synchronized {
     eventsMap
       .get(key)
-      .flatMap {
-        case (_, value) => if (value.size > index) Some(value(index)) else None
+      .flatMap { case (_, value) =>
+        if (value.size > index) Some(value(index)) else None
       }
       .map(toRepr)
   }
@@ -82,21 +77,15 @@ sealed trait InMemStorage[K, R] extends InternalReprSupport[R] {
     }
   }
 
-  /**
-   * Adds elements ordered by seqnum, sets new seqnum as max(old, max(newElemsSeqNums)))
-   */
+  /** Adds elements ordered by seqnum, sets new seqnum as max(old, max(newElemsSeqNums))) */
   def add(key: K, elems: immutable.Seq[R]): Unit =
     updateOrSetNew(key, v => v ++ elems)
 
-  /**
-   * Deletes elements preserving highest sequence number.
-   */
+  /** Deletes elements preserving highest sequence number. */
   def delete(key: K, needsToBeDeleted: R => Boolean): Vector[R] =
     updateOrSetNew(key, v => v.filterNot(needsToBeDeleted))
 
-  /**
-   * Sets new elements returned by updater ordered by seqnum. Sets new seqnum as max(old, max(newElemsFromUpdaterSeqNums))
-   */
+  /** Sets new elements returned by updater ordered by seqnum. Sets new seqnum as max(old, max(newElemsFromUpdaterSeqNums)) */
   def updateOrSetNew(key: K, updater: Vector[R] => Vector[R]): Vector[R] = lock.synchronized {
     val (oldSn, oldElems) = eventsMap.getOrElse(key, (0L, Vector.empty))
     val newValue = {
@@ -120,18 +109,14 @@ sealed trait InMemStorage[K, R] extends InternalReprSupport[R] {
     eventsMap = Map.empty
   }
 
-  /**
-   * Removes key and the whole value including seqnum.
-   */
+  /** Removes key and the whole value including seqnum. */
   def removeKey(key: K): Vector[R] = lock.synchronized {
     val ret = eventsMap.get(key)
     eventsMap = eventsMap - key
     ret.map(_._2).getOrElse(Vector.empty).map(toRepr)
   }
 
-  /**
-   * Reads elems within the range of seqnums.
-   */
+  /** Reads elems within the range of seqnums. */
   def read(key: K, fromInclusive: Long, toInclusive: Long, maxNumber: Long): immutable.Seq[R] = lock.synchronized {
     read(key)
       .getOrElse(Vector.empty)
@@ -149,9 +134,11 @@ sealed trait InMemStorage[K, R] extends InternalReprSupport[R] {
   }
 
   def deleteToSeqNumber(key: K, toSeqNumberInclusive: Long): Unit =
-    updateOrSetNew(key, value => {
-      value.dropWhile(reprToSeqNum(_) <= toSeqNumberInclusive)
-    })
+    updateOrSetNew(
+      key,
+      value => {
+        value.dropWhile(reprToSeqNum(_) <= toSeqNumberInclusive)
+      })
 
   def clearAllPreservingSeqNumbers(): Unit = lock.synchronized {
     eventsMap.keys.foreach(removePreservingSeqNumber)
@@ -164,9 +151,7 @@ sealed trait InMemStorage[K, R] extends InternalReprSupport[R] {
 
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 sealed trait PolicyOps[U] {
 
@@ -185,8 +170,6 @@ sealed trait PolicyOps[U] {
 
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[testkit] trait TestKitStorage[P, R] extends InMemStorage[String, R] with PolicyOps[P]

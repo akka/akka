@@ -13,9 +13,7 @@ import akka.testkit.TestDuration
 import akka.testkit.TestEvent.Mute
 import akka.util.Timeout
 
-/**
- * Reproducer of issue #29828
- */
+/** Reproducer of issue #29828 */
 class ActorRefResolveCacheQuarantineSpec
     extends ArteryMultiNodeSpec("""
       akka.remote.artery.advanced.remove-quarantined-association-after = 2 seconds

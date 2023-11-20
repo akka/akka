@@ -55,10 +55,9 @@ object ShardedDaemonProcessRescaleSpec {
     def apply(id: Int, totalCount: Int, probe: ActorRef[Any]): Behavior[Command] = Behaviors.setup { ctx =>
       probe ! Started(id, totalCount, ctx.self)
 
-      Behaviors.receiveMessage {
-        case Stop =>
-          probe ! Stopping(ctx.self)
-          Behaviors.stopped
+      Behaviors.receiveMessage { case Stop =>
+        probe ! Stopping(ctx.self)
+        Behaviors.stopped
       }
     }
 
@@ -81,9 +80,11 @@ class ShardedDaemonProcessRescaleSpec
     "have a single node cluster running first" in {
       val probe = createTestProbe()
       Cluster(system).manager ! Join(Cluster(system).selfMember.address)
-      probe.awaitAssert({
-        Cluster(system).selfMember.status == MemberStatus.Up
-      }, 3.seconds)
+      probe.awaitAssert(
+        {
+          Cluster(system).selfMember.status == MemberStatus.Up
+        },
+        3.seconds)
     }
 
     "start 4 workers" in {

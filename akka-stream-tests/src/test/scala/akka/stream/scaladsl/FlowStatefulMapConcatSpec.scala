@@ -11,9 +11,11 @@ import akka.stream.Supervision
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.TestSink
 
-class FlowStatefulMapConcatSpec extends StreamSpec("""
+class FlowStatefulMapConcatSpec
+    extends StreamSpec("""
     akka.stream.materializer.initial-input-buffer-size = 2
-  """) with ScriptedTest {
+  """)
+    with ScriptedTest {
 
   val ex = new Exception("TEST") with NoStackTrace
 

@@ -16,7 +16,7 @@ import scala.concurrent.duration._
 
 class CoordinatedActorShutdownSpec {
 
-  //#coordinated-shutdown-addTask
+  // #coordinated-shutdown-addTask
   object MyActor {
 
     trait Messages
@@ -33,19 +33,19 @@ class CoordinatedActorShutdownSpec {
       }
   }
 
-  //#coordinated-shutdown-addTask
+  // #coordinated-shutdown-addTask
 
   trait Message
 
   def root: Behavior[Message] = Behaviors.setup[Message] { context =>
     implicit val system = context.system
     val myActor = context.spawn(MyActor.behavior, "my-actor")
-    //#coordinated-shutdown-addTask
+    // #coordinated-shutdown-addTask
     CoordinatedShutdown(context.system).addTask(CoordinatedShutdown.PhaseBeforeServiceUnbind, "someTaskName") { () =>
       implicit val timeout: Timeout = 5.seconds
       myActor.ask(MyActor.Stop(_))
     }
-    //#coordinated-shutdown-addTask
+    // #coordinated-shutdown-addTask
 
     Behaviors.empty
 
@@ -56,7 +56,7 @@ class CoordinatedActorShutdownSpec {
 
     def cleanup(): Unit = {}
     import system.executionContext
-    //#coordinated-shutdown-cancellable
+    // #coordinated-shutdown-cancellable
     val c: Cancellable =
       CoordinatedShutdown(system).addCancellableTask(CoordinatedShutdown.PhaseBeforeServiceUnbind, "cleanup") { () =>
         Future {
@@ -67,17 +67,17 @@ class CoordinatedActorShutdownSpec {
 
     // much later...
     c.cancel()
-    //#coordinated-shutdown-cancellable
+    // #coordinated-shutdown-cancellable
 
-    //#coordinated-shutdown-jvm-hook
+    // #coordinated-shutdown-jvm-hook
     CoordinatedShutdown(system).addJvmShutdownHook {
       println("custom JVM shutdown hook...")
     }
-    //#coordinated-shutdown-jvm-hook
+    // #coordinated-shutdown-jvm-hook
 
     // don't run this
     def dummy(): Unit = {
-      //#coordinated-shutdown-run
+      // #coordinated-shutdown-run
       // shut down with `ActorSystemTerminateReason`
       system.terminate()
 
@@ -85,7 +85,7 @@ class CoordinatedActorShutdownSpec {
       case object UserInitiatedShutdown extends CoordinatedShutdown.Reason
 
       val done: Future[Done] = CoordinatedShutdown(system).run(UserInitiatedShutdown)
-      //#coordinated-shutdown-run
+      // #coordinated-shutdown-run
     }
   }
 }

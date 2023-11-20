@@ -15,9 +15,7 @@ import akka.event.LogMarker
  */
 object ShardingLogMarker {
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[akka] object Properties {
     val ShardTypeName = "akkaShardTypeName"
     val ShardId = "akkaShardId"

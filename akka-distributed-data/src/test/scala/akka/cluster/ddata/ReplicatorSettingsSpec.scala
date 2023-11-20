@@ -35,12 +35,15 @@ class ReplicatorSettingsSpec
     }
 
     "be able to configure expiry for certain keys" in {
-      val settings = ReplicatorSettings(ConfigFactory.parseString("""
+      val settings = ReplicatorSettings(
+        ConfigFactory
+          .parseString("""
         expire-keys-after-inactivity {
           "key-1" = 10 minutes
           "cache-*" = 2 minutes
         }
-        """).withFallback(system.settings.config.getConfig("akka.cluster.distributed-data")))
+        """)
+          .withFallback(system.settings.config.getConfig("akka.cluster.distributed-data")))
       settings.expiryKeys("key-1") should ===(10.minutes)
       settings.expiryKeys("cache-*") should ===(2.minutes)
       settings.expiryKeys.size should ===(2)

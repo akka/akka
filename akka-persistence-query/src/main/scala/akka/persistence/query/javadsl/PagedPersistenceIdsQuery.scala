@@ -9,9 +9,7 @@ import java.util.Optional
 import akka.NotUsed
 import akka.stream.javadsl.Source
 
-/**
- * A ReadJournal may optionally support this query by implementing this trait.
- */
+/** A ReadJournal may optionally support this query by implementing this trait. */
 trait PagedPersistenceIdsQuery extends ReadJournal {
 
   /**

@@ -17,8 +17,8 @@ class SlowInMemorySnapshotStore extends SnapshotStore {
   private var state = Map.empty[String, (Any, ClassicSnapshotMetadata)]
 
   def loadAsync(persistenceId: String, criteria: ClassicSnapshotSelectionCriteria): Future[Option[SelectedSnapshot]] = {
-    Future.successful(state.get(persistenceId).map {
-      case (snap, meta) => SelectedSnapshot(meta, snap)
+    Future.successful(state.get(persistenceId).map { case (snap, meta) =>
+      SelectedSnapshot(meta, snap)
     })
   }
 
@@ -38,15 +38,15 @@ class SlowInMemorySnapshotStore extends SnapshotStore {
   }
 
   override def deleteAsync(metadata: ClassicSnapshotMetadata): Future[Unit] = {
-    state = state.filterNot {
-      case (pid, (_, meta)) => pid == metadata.persistenceId && meta.sequenceNr == metadata.sequenceNr
+    state = state.filterNot { case (pid, (_, meta)) =>
+      pid == metadata.persistenceId && meta.sequenceNr == metadata.sequenceNr
     }
     Future.successful(())
   }
 
   override def deleteAsync(persistenceId: String, criteria: ClassicSnapshotSelectionCriteria): Future[Unit] = {
-    state = state.filterNot {
-      case (pid, (_, meta)) => pid == persistenceId && criteria.matches(meta)
+    state = state.filterNot { case (pid, (_, meta)) =>
+      pid == persistenceId && criteria.matches(meta)
     }
     Future.successful(())
   }

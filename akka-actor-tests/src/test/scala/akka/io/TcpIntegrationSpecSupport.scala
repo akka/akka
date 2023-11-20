@@ -50,7 +50,7 @@ trait TcpIntegrationSpecSupport { this: AkkaSpec =>
       connectCommander.sender() ! Register(clientHandler.ref)
 
       bindHandler.expectMsgType[Connected] match {
-        case Connected(`localAddress`, `endpoint`) => //ok
+        case Connected(`localAddress`, `endpoint`) => // ok
         case other                                 => fail(s"No match: ${other}")
       }
       val serverHandler = TestProbe()

@@ -15,9 +15,7 @@ import akka.pattern.StatusReply
 import akka.stream.javadsl.Flow
 import akka.util.JavaDurationConverters
 
-/**
- * Collection of Flows aimed at integrating with typed Actors.
- */
+/** Collection of Flows aimed at integrating with typed Actors. */
 object ActorFlow {
 
   /**
@@ -136,9 +134,7 @@ object ActorFlow {
       .askWithStatus[I, Q, A](parallelism)(ref)((i, ref) => makeMessage(i, ref))(timeout.toMillis.millis)
       .asJava
 
-  /**
-   * Use the `ask` pattern to send a request-reply message to the target `ref` actor without including the context.
-   */
+  /** Use the `ask` pattern to send a request-reply message to the target `ref` actor without including the context. */
   def askWithContext[I, Q, A, Ctx](
       ref: ActorRef[Q],
       timeout: java.time.Duration,
@@ -172,9 +168,7 @@ object ActorFlow {
           .map { case (a, ctx) => Pair(a, ctx) })
       .asJava
 
-  /**
-   * Use the `ask` pattern to send a request-reply message to the target `ref` actor without including the context.
-   */
+  /** Use the `ask` pattern to send a request-reply message to the target `ref` actor without including the context. */
   def askWithContext[I, Q, A, Ctx](
       parallelism: Int,
       ref: ActorRef[Q],

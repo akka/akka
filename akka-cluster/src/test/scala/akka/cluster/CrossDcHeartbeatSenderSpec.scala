@@ -29,7 +29,8 @@ object CrossDcHeartbeatSenderSpec {
   }
 }
 
-class CrossDcHeartbeatSenderSpec extends AkkaSpec("""
+class CrossDcHeartbeatSenderSpec
+    extends AkkaSpec("""
     akka.loglevel = DEBUG
     akka.actor.provider = cluster
     # should not be used here
@@ -39,7 +40,8 @@ class CrossDcHeartbeatSenderSpec extends AkkaSpec("""
       failure-detector.heartbeat-interval = 0.2s
     }
     akka.remote.artery.canonical.port = 0
-  """) with ImplicitSender {
+  """)
+    with ImplicitSender {
   "CrossDcHeartBeatSender" should {
     "increment heart beat sequence nr" in {
 
@@ -48,11 +50,10 @@ class CrossDcHeartbeatSenderSpec extends AkkaSpec("""
       awaitAssert(Cluster(system).selfMember.status == MemberStatus.Up)
       val underTest = system.actorOf(Props(new TestCrossDcHeartbeatSender(heartbeatProbe)))
 
-      underTest ! CurrentClusterState(
-        members = SortedSet(
-          Cluster(system).selfMember,
-          Member(UniqueAddress(Address("akka", system.name), 2L), Set("dc-dc2"), Version.Zero)
-            .copy(status = MemberStatus.Up)))
+      underTest ! CurrentClusterState(members = SortedSet(
+        Cluster(system).selfMember,
+        Member(UniqueAddress(Address("akka", system.name), 2L), Set("dc-dc2"), Version.Zero).copy(status =
+          MemberStatus.Up)))
 
       awaitAssert {
         underTest ! ReportStatus()

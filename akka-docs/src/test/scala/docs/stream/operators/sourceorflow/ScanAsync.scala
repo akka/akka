@@ -17,7 +17,7 @@ object ScanAsync {
     implicit val system: ActorSystem = ActorSystem()
     implicit val ec: ExecutionContext = system.dispatcher
 
-    //#scan-async
+    // #scan-async
     def asyncFunction(acc: Int, next: Int): Future[Int] = Future {
       acc + next
     }
@@ -30,7 +30,7 @@ object ScanAsync {
     // 6  (= 0 + 1 + 2 + 3)
     // 10 (= 0 + 1 + 2 + 3 + 4)
     // 15 (= 0 + 1 + 2 + 3 + 4 + 5)
-    //#scan-async
+    // #scan-async
   }
 
 }

@@ -15,7 +15,6 @@ package akka.persistence.query
  * and even though those types can easily be converted to each other it is most convenient
  * for the end user to get access to the Java or Scala `Source` directly.
  * One of the implementations can delegate to the other.
- *
  */
 trait ReadJournalProvider {
 

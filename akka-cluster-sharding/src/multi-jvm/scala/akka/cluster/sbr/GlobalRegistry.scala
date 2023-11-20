@@ -27,8 +27,8 @@ object GlobalRegistry {
     def props(registry: ActorRef): Props =
       Props(new SingletonActor(registry))
 
-    val extractEntityId: ShardRegion.ExtractEntityId = {
-      case id: Int => (id.toString, id)
+    val extractEntityId: ShardRegion.ExtractEntityId = { case id: Int =>
+      (id.toString, id)
     }
 
     val extractShardId: ShardRegion.ExtractShardId = {
@@ -54,8 +54,8 @@ object GlobalRegistry {
       registry ! Unregister(key, Cluster(context.system).selfAddress)
     }
 
-    override def receive = {
-      case i: Int => sender() ! i
+    override def receive = { case i: Int =>
+      sender() ! i
     }
   }
 }

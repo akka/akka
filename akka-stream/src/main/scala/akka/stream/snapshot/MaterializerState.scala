@@ -28,9 +28,7 @@ import akka.util.Timeout
  */
 object MaterializerState {
 
-  /**
-   * Dump stream snapshots of all streams of the default system materializer.
-   */
+  /** Dump stream snapshots of all streams of the default system materializer. */
   def streamSnapshots(system: ActorSystem): Future[immutable.Seq[StreamSnapshot]] = {
     SystemMaterializer(system).materializer match {
       case impl: PhasedFusingActorMaterializer =>
@@ -39,9 +37,7 @@ object MaterializerState {
     }
   }
 
-  /**
-   * Dump stream snapshots of all streams of the given materializer.
-   */
+  /** Dump stream snapshots of all streams of the given materializer. */
   def streamSnapshots(mat: Materializer): Future[immutable.Seq[StreamSnapshot]] = {
     mat match {
       case impl: PhasedFusingActorMaterializer =>
@@ -52,8 +48,8 @@ object MaterializerState {
 
   /** INTERNAL API */
   @InternalApi
-  private[akka] def requestFromSupervisor(supervisor: ActorRef)(
-      implicit ec: ExecutionContext): Future[immutable.Seq[StreamSnapshot]] = {
+  private[akka] def requestFromSupervisor(supervisor: ActorRef)(implicit
+      ec: ExecutionContext): Future[immutable.Seq[StreamSnapshot]] = {
     // Arbitrary timeout: operation should always be quick, when it times out it will be because the materializer stopped
     implicit val timeout: Timeout = 10.seconds
     supervisor
@@ -80,14 +76,10 @@ object MaterializerState {
 @DoNotInherit
 sealed trait StreamSnapshot {
 
-  /**
-   * Running interpreters
-   */
+  /** Running interpreters */
   def activeInterpreters: Seq[RunningInterpreter]
 
-  /**
-   * Interpreters that has been created but not yet initialized - the stream is not yet running
-   */
+  /** Interpreters that has been created but not yet initialized - the stream is not yet running */
   def newShells: Seq[UninitializedInterpreter]
 }
 
@@ -110,36 +102,24 @@ sealed trait InterpreterSnapshot {
 @DoNotInherit
 sealed trait UninitializedInterpreter extends InterpreterSnapshot
 
-/**
- * A stream interpreter that is running/has been started
- */
+/** A stream interpreter that is running/has been started */
 @DoNotInherit
 sealed trait RunningInterpreter extends InterpreterSnapshot {
 
-  /**
-   * Each of the materialized graph stage logics running inside the interpreter
-   */
+  /** Each of the materialized graph stage logics running inside the interpreter */
   def logics: immutable.Seq[LogicSnapshot]
 
-  /**
-   * Each connection between logics in the interpreter
-   */
+  /** Each connection between logics in the interpreter */
   def connections: immutable.Seq[ConnectionSnapshot]
 
-  /**
-   * Total number of non-stopped logics in the interpreter
-   */
+  /** Total number of non-stopped logics in the interpreter */
   def runningLogicsCount: Int
 
-  /**
-   * All logics that has completed and is no longer executing
-   */
+  /** All logics that has completed and is no longer executing */
   def stoppedLogics: immutable.Seq[LogicSnapshot]
 }
 
-/**
- * Not for user extension
- */
+/** Not for user extension */
 @DoNotInherit
 sealed trait LogicSnapshot {
   def label: String
@@ -148,9 +128,7 @@ sealed trait LogicSnapshot {
 
 object ConnectionSnapshot {
 
-  /**
-   * Not for user extension
-   */
+  /** Not for user extension */
   @DoNotInherit
   sealed trait ConnectionState
   case object ShouldPull extends ConnectionState
@@ -158,9 +136,7 @@ object ConnectionSnapshot {
   case object Closed extends ConnectionState
 }
 
-/**
- * Not for user extension
- */
+/** Not for user extension */
 @DoNotInherit
 sealed trait ConnectionSnapshot {
   def in: LogicSnapshot
@@ -168,9 +144,7 @@ sealed trait ConnectionSnapshot {
   def state: ConnectionSnapshot.ConnectionState
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 final private[akka] case class StreamSnapshotImpl(
     self: ActorPath,
@@ -180,16 +154,12 @@ final private[akka] case class StreamSnapshotImpl(
   override def toString: String = s"StreamSnapshot($self, $activeInterpreters, $newShells)"
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] final case class UninitializedInterpreterImpl(logics: immutable.Seq[LogicSnapshot])
     extends UninitializedInterpreter
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] final case class RunningInterpreterImpl(
     logics: immutable.Seq[LogicSnapshot],
@@ -200,9 +170,7 @@ private[akka] final case class RunningInterpreterImpl(
     extends RunningInterpreter
     with HideImpl
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] final case class LogicSnapshotImpl(index: Int, label: String, attributes: Attributes)
     extends LogicSnapshot
@@ -211,9 +179,7 @@ private[akka] final case class LogicSnapshotImpl(index: Int, label: String, attr
   override def toString: String = s"Logic($label)"
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] final case class ConnectionSnapshotImpl(
     id: Int,
@@ -223,9 +189,7 @@ private[akka] final case class ConnectionSnapshotImpl(
     extends ConnectionSnapshot
     with HideImpl
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 trait HideImpl {
   override def toString: String = super.toString.replaceFirst("Impl", "")

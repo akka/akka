@@ -250,9 +250,7 @@ trait ActorContext[T] extends TypedActorContext[T] with ClassicActorContextProvi
    */
   @InternalApi private[akka] def spawnMessageAdapter[U](f: U => T, name: String): ActorRef[U]
 
-  /**
-   * INTERNAL API: See `spawnMessageAdapter` with name parameter
-   */
+  /** INTERNAL API: See `spawnMessageAdapter` with name parameter */
   @InternalApi private[akka] def spawnMessageAdapter[U](f: U => T): ActorRef[U]
 
   /**
@@ -327,49 +325,33 @@ trait ActorContext[T] extends TypedActorContext[T] with ClassicActorContextProvi
    */
   def pipeToSelf[Value](future: Future[Value])(mapResult: Try[Value] => T): Unit
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi
   private[akka] def onUnhandled(msg: T): Unit
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi
   private[akka] def currentBehavior: Behavior[T]
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi
   private[akka] def hasTimer: Boolean
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi
   private[akka] def cancelAllTimers(): Unit
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi
   private[akka] def clearMdc(): Unit
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[akka] def setCurrentActorThread(): Unit
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[akka] def clearCurrentActorThread(): Unit
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[akka] def checkCurrentActorThread(): Unit
 
 }

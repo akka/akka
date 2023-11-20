@@ -18,15 +18,11 @@ object SignalHandler {
 
 final class SignalHandler[State](_handler: PartialFunction[(State, Signal), Unit]) {
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi
   private[akka] def isEmpty: Boolean = _handler eq PartialFunction.empty
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi
   private[akka] def handler: PartialFunction[(State, Signal), Unit] = _handler
 }
@@ -44,9 +40,7 @@ final class SignalHandlerBuilder[State] {
 
   private var handler: PartialFunction[(State, Signal), Unit] = PartialFunction.empty
 
-  /**
-   * If the behavior receives a signal of type `T`, `callback` is invoked with the signal instance as input.
-   */
+  /** If the behavior receives a signal of type `T`, `callback` is invoked with the signal instance as input. */
   def onSignal[T <: Signal](signalType: Class[T], callback: BiConsumer[State, T]): SignalHandlerBuilder[State] = {
     val newPF: PartialFunction[(State, Signal), Unit] = {
       case (state, t) if signalType.isInstance(t) =>
@@ -56,13 +50,10 @@ final class SignalHandlerBuilder[State] {
     this
   }
 
-  /**
-   * If the behavior receives exactly the signal `signal`, `callback` is invoked.
-   */
+  /** If the behavior receives exactly the signal `signal`, `callback` is invoked. */
   def onSignal[T <: Signal](signal: T, callback: Consumer[State]): SignalHandlerBuilder[State] = {
-    val newPF: PartialFunction[(State, Signal), Unit] = {
-      case (state, `signal`) =>
-        callback.accept(state)
+    val newPF: PartialFunction[(State, Signal), Unit] = { case (state, `signal`) =>
+      callback.accept(state)
     }
     handler = newPF.orElse(handler)
     this

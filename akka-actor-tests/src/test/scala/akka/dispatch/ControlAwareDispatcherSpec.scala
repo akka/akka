@@ -47,8 +47,8 @@ class ControlAwareDispatcherSpec extends AkkaSpec(ControlAwareDispatcherSpec.con
         self ! "test2"
         self ! ImportantMessage
 
-        def receive = {
-          case x => testActor ! x
+        def receive = { case x =>
+          testActor ! x
         }
       }).withDispatcher(dispatcherKey))
 

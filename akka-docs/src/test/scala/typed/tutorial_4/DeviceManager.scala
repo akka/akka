@@ -17,28 +17,28 @@ object DeviceManager {
   def apply(): Behavior[Command] =
     Behaviors.setup(context => new DeviceManager(context))
 
-  //#device-manager-msgs
+  // #device-manager-msgs
 
   sealed trait Command
 
-  //#device-registration-msgs
+  // #device-registration-msgs
   final case class RequestTrackDevice(groupId: String, deviceId: String, replyTo: ActorRef[DeviceRegistered])
       extends DeviceManager.Command
       with DeviceGroup.Command
 
   final case class DeviceRegistered(device: ActorRef[Device.Command])
-  //#device-registration-msgs
+  // #device-registration-msgs
 
-  //#device-list-msgs
+  // #device-list-msgs
   final case class RequestDeviceList(requestId: Long, groupId: String, replyTo: ActorRef[ReplyDeviceList])
       extends DeviceManager.Command
       with DeviceGroup.Command
 
   final case class ReplyDeviceList(requestId: Long, ids: Set[String])
-  //#device-list-msgs
+  // #device-list-msgs
 
   private final case class DeviceGroupTerminated(groupId: String) extends DeviceManager.Command
-  //#device-manager-msgs
+  // #device-manager-msgs
 }
 
 class DeviceManager(context: ActorContext[DeviceManager.Command])
@@ -79,10 +79,9 @@ class DeviceManager(context: ActorContext[DeviceManager.Command])
         this
     }
 
-  override def onSignal: PartialFunction[Signal, Behavior[Command]] = {
-    case PostStop =>
-      context.log.info("DeviceManager stopped")
-      this
+  override def onSignal: PartialFunction[Signal, Behavior[Command]] = { case PostStop =>
+    context.log.info("DeviceManager stopped")
+    this
   }
 
 }

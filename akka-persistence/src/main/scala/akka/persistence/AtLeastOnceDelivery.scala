@@ -29,9 +29,7 @@ object AtLeastOnceDelivery {
       unconfirmedDeliveries: immutable.Seq[UnconfirmedDelivery])
       extends Message {
 
-    /**
-     * Java API
-     */
+    /** Java API */
     def getUnconfirmedDeliveries: java.util.List[UnconfirmedDelivery] = {
       import akka.util.ccompat.JavaConverters._
       unconfirmedDeliveries.asJava
@@ -39,15 +37,11 @@ object AtLeastOnceDelivery {
 
   }
 
-  /**
-   * @see [[AtLeastOnceDeliveryLike#warnAfterNumberOfUnconfirmedAttempts]]
-   */
+  /** @see [[AtLeastOnceDeliveryLike#warnAfterNumberOfUnconfirmedAttempts]] */
   @SerialVersionUID(1L)
   case class UnconfirmedWarning(unconfirmedDeliveries: immutable.Seq[UnconfirmedDelivery]) {
 
-    /**
-     * Java API
-     */
+    /** Java API */
     def getUnconfirmedDeliveries: java.util.List[UnconfirmedDelivery] = {
       import akka.util.ccompat.JavaConverters._
       unconfirmedDeliveries.asJava
@@ -60,20 +54,14 @@ object AtLeastOnceDelivery {
    */
   case class UnconfirmedDelivery(deliveryId: Long, destination: ActorPath, message: Any) {
 
-    /**
-     * Java API
-     */
+    /** Java API */
     def getMessage(): AnyRef = message.asInstanceOf[AnyRef]
   }
 
-  /**
-   * @see [[AtLeastOnceDeliveryLike#maxUnconfirmedMessages]]
-   */
+  /** @see [[AtLeastOnceDeliveryLike#maxUnconfirmedMessages]] */
   class MaxUnconfirmedMessagesExceededException(message: String) extends RuntimeException(message)
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   private[akka] object Internal {
     case class Delivery(destination: ActorPath, message: Any, timestamp: Long, attempt: Int)
     case object RedeliveryTick extends NotInfluenceReceiveTimeout with DeadLetterSuppression
@@ -167,9 +155,7 @@ trait AtLeastOnceDelivery extends PersistentActor with AtLeastOnceDeliveryLike {
 
 }
 
-/**
- * @see [[AtLeastOnceDelivery]]
- */
+/** @see [[AtLeastOnceDelivery]] */
 trait AtLeastOnceDeliveryLike extends Eventsourced {
   import AtLeastOnceDelivery._
   import AtLeastOnceDelivery.Internal._
@@ -256,9 +242,7 @@ trait AtLeastOnceDeliveryLike extends Eventsourced {
     deliverySequenceNr
   }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi
   private[akka] final def internalDeliver(destination: ActorPath)(deliveryIdToMessage: Long => Any): Unit = {
     if (unconfirmed.size >= maxUnconfirmedMessages)
@@ -277,9 +261,7 @@ trait AtLeastOnceDeliveryLike extends Eventsourced {
       send(deliveryId, d, now)
   }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi
   private[akka] final def internalDeliver(destination: ActorSelection)(deliveryIdToMessage: Long => Any): Unit = {
     val isWildcardSelection = destination.pathString.contains("*")
@@ -306,9 +288,7 @@ trait AtLeastOnceDeliveryLike extends Eventsourced {
     } else false
   }
 
-  /**
-   * Number of messages that have not been confirmed yet.
-   */
+  /** Number of messages that have not been confirmed yet. */
   def numberOfUnconfirmed: Int = unconfirmed.size
 
   private def redeliverOverdue(): Unit = {
@@ -319,12 +299,11 @@ trait AtLeastOnceDeliveryLike extends Eventsourced {
     unconfirmed.iterator
       .filter { case (_, delivery) => delivery.timestamp <= deadline }
       .take(redeliveryBurstLimit)
-      .foreach {
-        case (deliveryId, delivery) =>
-          send(deliveryId, delivery, now)
+      .foreach { case (deliveryId, delivery) =>
+        send(deliveryId, delivery, now)
 
-          if (delivery.attempt == warnAfterNumberOfUnconfirmedAttempts)
-            warnings :+= UnconfirmedDelivery(deliveryId, delivery.destination, delivery.message)
+        if (delivery.attempt == warnAfterNumberOfUnconfirmedAttempts)
+          warnings :+= UnconfirmedDelivery(deliveryId, delivery.destination, delivery.message)
       }
 
     if (warnings.nonEmpty)
@@ -367,17 +346,13 @@ trait AtLeastOnceDeliveryLike extends Eventsourced {
       d.deliveryId -> Delivery(d.destination, d.message, now, 0)))
   }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   override protected[akka] def aroundPreRestart(reason: Throwable, message: Option[Any]): Unit = {
     cancelRedeliveryTask()
     super.aroundPreRestart(reason, message)
   }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   override protected[akka] def aroundPostStop(): Unit = {
     cancelRedeliveryTask()
     super.aroundPostStop()
@@ -391,9 +366,7 @@ trait AtLeastOnceDeliveryLike extends Eventsourced {
     super.onReplaySuccess()
   }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   override protected[akka] def aroundReceive(receive: Receive, message: Any): Unit =
     message match {
       case RedeliveryTick =>

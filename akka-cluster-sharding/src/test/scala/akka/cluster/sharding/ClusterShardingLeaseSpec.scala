@@ -19,7 +19,8 @@ import akka.testkit.{ AkkaSpec, ImplicitSender, WithLogCapturing }
 import akka.testkit.TestActors.EchoActor
 
 object ClusterShardingLeaseSpec {
-  val config = ConfigFactory.parseString("""
+  val config = ConfigFactory
+    .parseString("""
     akka.loglevel = DEBUG
     akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
     akka.actor.provider = "cluster"
@@ -33,7 +34,8 @@ object ClusterShardingLeaseSpec {
        verbose-debug-logging = on
        fail-on-invalid-entity-state-transition = on
      }
-    """).withFallback(TestLease.config)
+    """)
+    .withFallback(TestLease.config)
 
   val persistenceConfig = ConfigFactory.parseString("""
       akka.cluster.sharding {
@@ -48,8 +50,8 @@ object ClusterShardingLeaseSpec {
       }
     """)
 
-  val extractEntityId: ShardRegion.ExtractEntityId = {
-    case msg: Int => (msg.toString, msg)
+  val extractEntityId: ShardRegion.ExtractEntityId = { case msg: Int =>
+    (msg.toString, msg)
   }
 
   val numOfShards = 10
@@ -136,10 +138,12 @@ class ClusterShardingLeaseSpec(config: Config, rememberEntities: Boolean)
       testLease.initialPromise.complete(Success(true))
       expectMsg(4)
       testLease.getCurrentCallback()(Option(LeaseFailed("oh dear")))
-      awaitAssert({
-        region ! 4
-        expectMsg(4)
-      }, max = 10.seconds)
+      awaitAssert(
+        {
+          region ! 4
+          expectMsg(4)
+        },
+        max = 10.seconds)
     }
   }
 }

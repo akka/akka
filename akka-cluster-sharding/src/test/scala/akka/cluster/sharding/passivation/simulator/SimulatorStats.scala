@@ -83,14 +83,18 @@ object DataTable {
       f"${stats.passivations}%,d")
 
   def apply(stats: RegionStats): DataTable =
-    DataTable(Headers.RegionStats, stats.shardStats.toSeq.sortBy(_._1).flatMap {
-      case (shardId, stats) => DataTable(stats).rows.map(shardId +: _)
-    })
+    DataTable(
+      Headers.RegionStats,
+      stats.shardStats.toSeq.sortBy(_._1).flatMap { case (shardId, stats) =>
+        DataTable(stats).rows.map(shardId +: _)
+      })
 
   def apply(stats: ShardingStats): DataTable =
-    DataTable(Headers.ShardingStats, stats.regionStats.toSeq.sortBy(_._1).flatMap {
-      case (regionId, stats) => DataTable(stats).rows.map(regionId +: _)
-    })
+    DataTable(
+      Headers.ShardingStats,
+      stats.regionStats.toSeq.sortBy(_._1).flatMap { case (regionId, stats) =>
+        DataTable(stats).rows.map(regionId +: _)
+      })
 }
 
 object PrintData {
@@ -133,7 +137,7 @@ object PrintData {
     columnWidths.map(width => line * (width + 2)).mkString(start, separator, end) + "\n"
 
   private def line(row: DataTable.Row, columnWidths: Seq[Int]): String =
-    row.zip(columnWidths).map({ case (cell, width) => pad(cell, width) }).mkString("║ ", " │ ", " ║") + "\n"
+    row.zip(columnWidths).map { case (cell, width) => pad(cell, width) }.mkString("║ ", " │ ", " ║") + "\n"
 
   private def pad(string: String, width: Int): String =
     " " * (width - string.length) + string

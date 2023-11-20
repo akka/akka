@@ -8,9 +8,11 @@ import java.util.concurrent.ThreadLocalRandom.{ current => random }
 
 import akka.stream.testkit._
 
-class FlowMapSpec extends StreamSpec("""
+class FlowMapSpec
+    extends StreamSpec("""
     akka.stream.materializer.initial-input-buffer-size = 2
-  """) with ScriptedTest {
+  """)
+    with ScriptedTest {
 
   "A Map" must {
 

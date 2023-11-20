@@ -16,10 +16,10 @@ import org.scalatest.wordspec.AnyWordSpecLike
 
 object FSMDocSpec {
 
-  //#simple-state
-  //#simple-events
+  // #simple-state
+  // #simple-events
   object Buncher {
-    //#simple-state
+    // #simple-state
 
     // FSM event becomes the type of the message Actor supports
     sealed trait Event
@@ -27,17 +27,17 @@ object FSMDocSpec {
     final case class Queue(obj: Any) extends Event
     case object Flush extends Event
     private case object Timeout extends Event
-    //#simple-events
+    // #simple-events
 
-    //#storing-state
+    // #storing-state
     sealed trait Data
     case object Uninitialized extends Data
     final case class Todo(target: ActorRef[Batch], queue: immutable.Seq[Any]) extends Data
 
     final case class Batch(obj: immutable.Seq[Any])
-    //#storing-state
+    // #storing-state
 
-    //#simple-state
+    // #simple-state
     // states of the FSM represented as behaviors
 
     // initial state
@@ -67,10 +67,10 @@ object FSMDocSpec {
         }
       }
 
-    //#simple-events
+    // #simple-events
   }
-  //#simple-events
-  //#simple-state
+  // #simple-events
+  // #simple-state
 }
 
 class FSMDocSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCapturing {

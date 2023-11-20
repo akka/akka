@@ -17,9 +17,7 @@ import akka.cluster.ddata.Replicator.WriteConsistency
 import akka.cluster.ddata.ReplicatorSettings
 import akka.util.Helpers.toRootLowerCase
 
-/**
- * Internal API
- */
+/** Internal API */
 @InternalApi
 private[akka] object ClusterReceptionistSettings {
   def apply(system: ActorSystem[_]): ClusterReceptionistSettings =
@@ -52,9 +50,7 @@ private[akka] object ClusterReceptionistSettings {
   }
 }
 
-/**
- * Internal API
- */
+/** Internal API */
 @InternalApi
 private[akka] case class ClusterReceptionistSettings(
     writeConsistency: WriteConsistency,

@@ -87,10 +87,12 @@ private[akka] object DirectByteBufferPool {
       cleanMethod.setAccessible(true)
 
       { (bb: ByteBuffer) =>
-        try if (bb.isDirect) {
-          val cleaner = cleanerMethod.invoke(bb)
-          cleanMethod.invoke(cleaner)
-        } catch { case NonFatal(_) => /* ok, best effort attempt to cleanup failed */ }
+        try
+          if (bb.isDirect) {
+            val cleaner = cleanerMethod.invoke(bb)
+            cleanMethod.invoke(cleaner)
+          }
+        catch { case NonFatal(_) => /* ok, best effort attempt to cleanup failed */ }
       }
     } catch { case NonFatal(_) => _ => () /* reflection failed, use no-op fallback */ }
 

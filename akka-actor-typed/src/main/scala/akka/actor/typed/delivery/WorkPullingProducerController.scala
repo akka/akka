@@ -131,9 +131,7 @@ object WorkPullingProducerController {
    */
   final case class MessageWithConfirmation[A](message: A, replyTo: ActorRef[Done]) extends UnsealedInternalCommand
 
-  /**
-   * Retrieve information about registered workers.
-   */
+  /** Retrieve information about registered workers. */
   final case class GetWorkerStats[A](replyTo: ActorRef[WorkerStats]) extends Command[A]
 
   final case class WorkerStats(numberOfWorkers: Int)
@@ -193,9 +191,7 @@ object WorkPullingProducerController {
     def withProducerControllerSettings(newProducerControllerSettings: ProducerController.Settings): Settings =
       copy(producerControllerSettings = newProducerControllerSettings)
 
-    /**
-     * Private copy method for internal use only.
-     */
+    /** Private copy method for internal use only. */
     private def copy(
         bufferSize: Int = bufferSize,
         internalAskTimeout: FiniteDuration = internalAskTimeout,
@@ -223,9 +219,7 @@ object WorkPullingProducerController {
     WorkPullingProducerControllerImpl(producerId, workerServiceKey, durableQueueBehavior, settings)
   }
 
-  /**
-   * Java API
-   */
+  /** Java API */
   def create[A](
       messageClass: Class[A],
       producerId: String,
@@ -234,9 +228,7 @@ object WorkPullingProducerController {
     apply(producerId, workerServiceKey, durableQueueBehavior.asScala)(ClassTag(messageClass))
   }
 
-  /**
-   * Java API
-   */
+  /** Java API */
   def apply[A](
       messageClass: Class[A],
       producerId: String,

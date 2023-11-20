@@ -60,9 +60,7 @@ final class Sink[-In, +Mat](override val traversalBuilder: LinearTraversalBuilde
   def runWith[Mat2](source: Graph[SourceShape[In], Mat2])(implicit materializer: Materializer): Mat2 =
     Source.fromGraph(source).to(this).run()
 
-  /**
-   * Transform only the materialized value of this Sink, leaving all other properties as they were.
-   */
+  /** Transform only the materialized value of this Sink, leaving all other properties as they were. */
   def mapMaterializedValue[Mat2](f: Mat => Mat2): Sink[In, Mat2] =
     new Sink(traversalBuilder.transformMat(f.asInstanceOf[Any => Any]), shape)
 
@@ -97,14 +95,10 @@ final class Sink[-In, +Mat](override val traversalBuilder: LinearTraversalBuilde
   override def addAttributes(attr: Attributes): Sink[In, Mat] =
     withAttributes(traversalBuilder.attributes and attr)
 
-  /**
-   * Add a ``name`` attribute to this Sink.
-   */
+  /** Add a ``name`` attribute to this Sink. */
   override def named(name: String): Sink[In, Mat] = addAttributes(Attributes.name(name))
 
-  /**
-   * Put an asynchronous boundary around this `Source`
-   */
+  /** Put an asynchronous boundary around this `Source` */
   override def async: Sink[In, Mat] = super.async.asInstanceOf[Sink[In, Mat]]
 
   /**
@@ -124,9 +118,7 @@ final class Sink[-In, +Mat](override val traversalBuilder: LinearTraversalBuilde
   override def async(dispatcher: String, inputBufferSize: Int): Sink[In, Mat] =
     super.async(dispatcher, inputBufferSize).asInstanceOf[Sink[In, Mat]]
 
-  /**
-   * Converts this Scala DSL element to it's Java DSL counterpart.
-   */
+  /** Converts this Scala DSL element to it's Java DSL counterpart. */
   def asJava[JIn <: In]: javadsl.Sink[JIn, Mat @uncheckedVariance] = new javadsl.Sink(this)
 
   override def getAttributes: Attributes = traversalBuilder.attributes
@@ -166,11 +158,11 @@ object Sink {
    */
   def fromMaterializer[T, M](factory: (Materializer, Attributes) => Sink[T, M]): Sink[T, Future[M]] =
     Flow
-      .fromMaterializer({ (mat, attr) =>
+      .fromMaterializer { (mat, attr) =>
         Flow.fromGraph(GraphDSL.createGraph(factory(mat, attr)) { b => sink =>
           FlowShape(sink.in, b.materializedValue.outlet)
         })
-      })
+      }
       .to(Sink.head)
 
   /**
@@ -184,15 +176,11 @@ object Sink {
       factory(ActorMaterializerHelper.downcast(mat), attr)
     }
 
-  /**
-   * Helper to create [[Sink]] from `Subscriber`.
-   */
+  /** Helper to create [[Sink]] from `Subscriber`. */
   def fromSubscriber[T](subscriber: Subscriber[T]): Sink[T, NotUsed] =
     fromGraph(new SubscriberSink(subscriber, DefaultAttributes.subscriberSink, shape("SubscriberSink")))
 
-  /**
-   * A `Sink` that immediately cancels its upstream after materialization.
-   */
+  /** A `Sink` that immediately cancels its upstream after materialization. */
   def cancelled[T]: Sink[T, NotUsed] =
     fromGraph[Any, NotUsed](new CancelSink(DefaultAttributes.cancelledSink, shape("CancelledSink")))
 
@@ -299,14 +287,10 @@ object Sink {
       if (fanout) new FanoutPublisherSink[T](DefaultAttributes.fanoutPublisherSink, shape("FanoutPublisherSink"))
       else new PublisherSink[T](DefaultAttributes.publisherSink, shape("PublisherSink")))
 
-  /**
-   * A `Sink` that will consume the stream and discard the elements.
-   */
+  /** A `Sink` that will consume the stream and discard the elements. */
   def ignore: Sink[Any, Future[Done]] = fromGraph(GraphStages.IgnoreSink)
 
-  /**
-   * A [[Sink]] that will always backpressure never cancel and never consume any elements from the stream.
-   * */
+  /** A [[Sink]] that will always backpressure never cancel and never consume any elements from the stream. */
   def never: Sink[Any, Future[Done]] = _never
   private[this] val _never: Sink[Any, Future[Done]] = fromGraph(GraphStages.NeverSink)
 
@@ -328,9 +312,7 @@ object Sink {
   def foreachAsync[T](parallelism: Int)(f: T => Future[Unit]): Sink[T, Future[Done]] =
     Flow[T].mapAsyncUnordered(parallelism)(f).toMat(Sink.ignore)(Keep.right).named("foreachAsyncSink")
 
-  /**
-   * Combine several sinks with fan-out strategy like `Broadcast` or `Balance` and returns `Sink`.
-   */
+  /** Combine several sinks with fan-out strategy like `Broadcast` or `Balance` and returns `Sink`. */
   def combine[T, U](first: Sink[U, _], second: Sink[U, _], rest: Sink[U, _]*)(
       @nowarn
       @deprecatedName(Symbol("strategy"))
@@ -350,9 +332,7 @@ object Sink {
       combineRest(2, rest.iterator)
     })
 
-  /**
-   * Combine two sinks with fan-out strategy like `Broadcast` or `Balance` and returns `Sink` with 2 outlets.
-   */
+  /** Combine two sinks with fan-out strategy like `Broadcast` or `Balance` and returns `Sink` with 2 outlets. */
   def combineMat[T, U, M1, M2, M](first: Sink[U, M1], second: Sink[U, M2])(
       fanOutStrategy: Int => Graph[UniformFanOutShape[T, U], NotUsed])(matF: (M1, M2) => M): Sink[T, M] = {
     Sink.fromGraph(GraphDSL.createGraph(first, second)(matF) { implicit b => (shape1, shape2) =>

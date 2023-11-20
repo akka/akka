@@ -59,9 +59,7 @@ abstract class Props private[akka] () extends Product with Serializable {
   @InternalApi
   private[akka] def withNext(next: Props): Props
 
-  /**
-   * Prepend a selection of the [[ActorSystem]] default executor to this Props.
-   */
+  /** Prepend a selection of the [[ActorSystem]] default executor to this Props. */
   def withDispatcherDefault: Props = DispatcherDefault(this)
 
   /**
@@ -71,9 +69,7 @@ abstract class Props private[akka] () extends Product with Serializable {
    */
   def withDispatcherFromConfig(path: String): Props = DispatcherFromConfig(path, this)
 
-  /**
-   * Prepend a selection of the same executor as the parent actor to this Props.
-   */
+  /** Prepend a selection of the same executor as the parent actor to this Props. */
   def withDispatcherSameAsParent: Props = DispatcherSameAsParent(this)
 
   /**
@@ -140,9 +136,7 @@ abstract class Props private[akka] () extends Product with Serializable {
   }
 }
 
-/**
- * Not for user extension.
- */
+/** Not for user extension. */
 @DoNotInherit
 abstract class DispatcherSelector extends Props
 
@@ -188,22 +182,16 @@ object DispatcherSelector {
   def sameAsParent(): DispatcherSelector = DispatcherSameAsParent.empty
 }
 
-/**
- * Not for user extension.
- */
+/** Not for user extension. */
 @DoNotInherit
 abstract class MailboxSelector extends Props
 
 object MailboxSelector {
 
-  /**
-   * Scala API: The default mailbox is SingleConsumerOnlyUnboundedMailbox
-   */
+  /** Scala API: The default mailbox is SingleConsumerOnlyUnboundedMailbox */
   def default(): MailboxSelector = fromConfig("akka.actor.typed.default-mailbox")
 
-  /**
-   * Java API: The default mailbox is SingleConsumerOnlyUnboundedMailbox
-   */
+  /** Java API: The default mailbox is SingleConsumerOnlyUnboundedMailbox */
   def defaultMailbox(): MailboxSelector = default()
 
   /**
@@ -235,17 +223,13 @@ abstract class ActorTags extends Props {
    */
   def tags: Set[String]
 
-  /**
-   * Java API: one or more tags defined for the actor
-   */
+  /** Java API: one or more tags defined for the actor */
   def getTags(): java.util.Set[String] = tags.asJava
 }
 
 object ActorTags {
 
-  /**
-   * Java API: create a tag props with one or more tags
-   */
+  /** Java API: create a tag props with one or more tags */
   @varargs
   def create(tags: String*): ActorTags = apply(tags.toSet)
 
@@ -256,9 +240,7 @@ object ActorTags {
    */
   def create(tags: java.util.Set[String]): ActorTags = ActorTagsImpl(tags.asScala.toSet)
 
-  /**
-   * Scala API: create a tag props with one or more tags
-   */
+  /** Scala API: create a tag props with one or more tags */
   def apply(tag: String, additionalTags: String*): ActorTags = {
     val tags =
       if (additionalTags.isEmpty) Set(tag)

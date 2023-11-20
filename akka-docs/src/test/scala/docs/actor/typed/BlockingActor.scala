@@ -14,7 +14,7 @@ object BlockingActor {
       // DO NOT DO THIS HERE: this is an example of incorrect code,
       // better alternatives are described further on.
 
-      //block for 5 seconds, representing blocking I/O, etc
+      // block for 5 seconds, representing blocking I/O, etc
       Thread.sleep(5000)
       println(s"Blocking operation finished: $i")
       Behaviors.same

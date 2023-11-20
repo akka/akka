@@ -17,9 +17,7 @@ import akka.pattern.{ ask, pipe }
 import com.typesafe.config.ConfigFactory
 //#imports
 
-/**
- * Runs the sample
- */
+/** Runs the sample */
 object FaultHandlingDocSample extends App {
   import Worker._
 
@@ -83,8 +81,8 @@ class Worker extends Actor with ActorLogging {
   implicit val askTimeout: Timeout = Timeout(5 seconds)
 
   // Stop the CounterService child if it throws ServiceUnavailable
-  override val supervisorStrategy = OneForOneStrategy() {
-    case _: CounterService.ServiceUnavailable => Stop
+  override val supervisorStrategy = OneForOneStrategy() { case _: CounterService.ServiceUnavailable =>
+    Stop
   }
 
   // The sender of the initial Start message will continuously be notified
@@ -106,8 +104,8 @@ class Worker extends Actor with ActorLogging {
 
       // Send current progress to the initial sender
       (counterService ? GetCurrentCount)
-        .map {
-          case CurrentCount(_, count) => Progress(100.0 * count / totalCount)
+        .map { case CurrentCount(_, count) =>
+          Progress(100.0 * count / totalCount)
         }
         .pipeTo(progressListener.get)
   }

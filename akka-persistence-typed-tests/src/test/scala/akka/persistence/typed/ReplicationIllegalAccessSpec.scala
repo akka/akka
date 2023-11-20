@@ -32,36 +32,37 @@ object ReplicationIllegalAccessSpec {
     ReplicatedEventSourcing.commonJournalConfig(
       ReplicationId("IllegalAccessSpec", entityId, replica),
       AllReplicas,
-      PersistenceTestKitReadJournal.Identifier)(
-      replicationContext =>
-        EventSourcedBehavior[Command, String, State](
-          replicationContext.persistenceId,
-          State(Nil),
-          (_, command) =>
-            command match {
-              case AccessInCommandHandler(replyTo) =>
-                val exception = try {
+      PersistenceTestKitReadJournal.Identifier)(replicationContext =>
+      EventSourcedBehavior[Command, String, State](
+        replicationContext.persistenceId,
+        State(Nil),
+        (_, command) =>
+          command match {
+            case AccessInCommandHandler(replyTo) =>
+              val exception =
+                try {
                   replicationContext.origin
                   None
                 } catch {
                   case t: Throwable =>
                     Some(t)
                 }
-                replyTo ! Thrown(exception)
-                Effect.none
-              case AccessInPersistCallback(replyTo) =>
-                Effect.persist("cat").thenRun { _ =>
-                  val exception = try {
+              replyTo ! Thrown(exception)
+              Effect.none
+            case AccessInPersistCallback(replyTo) =>
+              Effect.persist("cat").thenRun { _ =>
+                val exception =
+                  try {
                     replicationContext.concurrent
                     None
                   } catch {
                     case t: Throwable =>
                       Some(t)
                   }
-                  replyTo ! Thrown(exception)
-                }
-            },
-          (state, event) => state.copy(all = event :: state.all)))
+                replyTo ! Thrown(exception)
+              }
+          },
+        (state, event) => state.copy(all = event :: state.all)))
   }
 
 }

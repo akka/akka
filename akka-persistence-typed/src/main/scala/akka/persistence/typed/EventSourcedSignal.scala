@@ -23,30 +23,22 @@ case object RecoveryCompleted extends RecoveryCompleted {
 
 final case class RecoveryFailed(failure: Throwable) extends EventSourcedSignal {
 
-  /**
-   * Java API
-   */
+  /** Java API */
   def getFailure(): Throwable = failure
 }
 
 final case class SnapshotCompleted(metadata: SnapshotMetadata) extends EventSourcedSignal {
 
-  /**
-   * Java API
-   */
+  /** Java API */
   def getSnapshotMetadata(): SnapshotMetadata = metadata
 }
 
 final case class SnapshotFailed(metadata: SnapshotMetadata, failure: Throwable) extends EventSourcedSignal {
 
-  /**
-   * Java API
-   */
+  /** Java API */
   def getFailure(): Throwable = failure
 
-  /**
-   * Java API
-   */
+  /** Java API */
   def getSnapshotMetadata(): SnapshotMetadata = metadata
 }
 
@@ -61,9 +53,7 @@ object SnapshotMetadata {
   def apply(persistenceId: String, sequenceNr: Long, timestamp: Long): SnapshotMetadata =
     new SnapshotMetadata(persistenceId, sequenceNr, timestamp)
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[akka] def fromClassic(metadata: akka.persistence.SnapshotMetadata): SnapshotMetadata =
     new SnapshotMetadata(metadata.persistenceId, metadata.sequenceNr, metadata.timestamp)
 }
@@ -83,64 +73,46 @@ final class SnapshotMetadata(val persistenceId: String, val sequenceNr: Long, va
 
 final case class DeleteSnapshotsCompleted(target: DeletionTarget) extends EventSourcedSignal {
 
-  /**
-   * Java API
-   */
+  /** Java API */
   def getTarget(): DeletionTarget = target
 }
 
 final case class DeleteSnapshotsFailed(target: DeletionTarget, failure: Throwable) extends EventSourcedSignal {
 
-  /**
-   * Java API
-   */
+  /** Java API */
   def getFailure(): Throwable = failure
 
-  /**
-   * Java API
-   */
+  /** Java API */
   def getTarget(): DeletionTarget = target
 }
 
 final case class DeleteEventsCompleted(toSequenceNr: Long) extends EventSourcedSignal {
 
-  /**
-   * Java API
-   */
+  /** Java API */
   def getToSequenceNr(): Long = toSequenceNr
 }
 
 final case class DeleteEventsFailed(toSequenceNr: Long, failure: Throwable) extends EventSourcedSignal {
 
-  /**
-   * Java API
-   */
+  /** Java API */
   def getFailure(): Throwable = failure
 
-  /**
-   * Java API
-   */
+  /** Java API */
   def getToSequenceNr(): Long = toSequenceNr
 }
 
-/**
- * Not for user extension
- */
+/** Not for user extension */
 @DoNotInherit
 sealed trait DeletionTarget
 object DeletionTarget {
   final case class Individual(metadata: SnapshotMetadata) extends DeletionTarget {
 
-    /**
-     * Java API
-     */
+    /** Java API */
     def getSnapshotMetadata(): SnapshotMetadata = metadata
   }
   final case class Criteria(selection: SnapshotSelectionCriteria) extends DeletionTarget {
 
-    /**
-     * Java API
-     */
+    /** Java API */
     def getSnapshotSelection(): SnapshotSelectionCriteria = selection
   }
 }

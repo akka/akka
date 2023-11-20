@@ -11,9 +11,7 @@ import akka.stream.Outlet
 import akka.stream.stage.GraphStageLogic
 import akka.util.ccompat.JavaConverters._
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[leveldb] abstract trait Buffer[T] { self: GraphStageLogic =>
 

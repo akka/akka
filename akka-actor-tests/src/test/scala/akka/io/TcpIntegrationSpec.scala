@@ -18,11 +18,15 @@ import akka.testkit.{ AkkaSpec, TestProbe }
 import akka.testkit.WithLogCapturing
 import akka.util.ByteString
 
-class TcpIntegrationSpec extends AkkaSpec("""
+class TcpIntegrationSpec
+    extends AkkaSpec("""
     akka.loglevel = debug
     akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
     akka.io.tcp.trace-logging = on
-    """) with TcpIntegrationSpecSupport with TimeLimits with WithLogCapturing {
+    """)
+    with TcpIntegrationSpecSupport
+    with TimeLimits
+    with WithLogCapturing {
 
   def verifyActorTermination(actor: ActorRef): Unit = {
     watch(actor)

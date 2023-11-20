@@ -8,7 +8,6 @@ import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
 /**
- *
  */
 class X509ReadersSpec extends AnyWordSpec with Matchers {
   import TlsResourcesSpec._

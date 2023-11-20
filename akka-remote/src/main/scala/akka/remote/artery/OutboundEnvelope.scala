@@ -9,9 +9,7 @@ import akka.actor.NoSerializationVerificationNeeded
 import akka.remote.RemoteActorRef
 import akka.util.OptionVal
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[remote] object OutboundEnvelope {
   def apply(recipient: OptionVal[RemoteActorRef], message: AnyRef, sender: OptionVal[ActorRef]): OutboundEnvelope = {
     val env = new ReusableOutboundEnvelope
@@ -20,9 +18,7 @@ private[remote] object OutboundEnvelope {
 
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[remote] trait OutboundEnvelope extends NoSerializationVerificationNeeded {
   def recipient: OptionVal[RemoteActorRef]
   def message: AnyRef
@@ -33,9 +29,7 @@ private[remote] trait OutboundEnvelope extends NoSerializationVerificationNeeded
   def copy(): OutboundEnvelope
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[remote] object ReusableOutboundEnvelope {
   def createObjectPool(capacity: Int) =
     new ObjectPool[ReusableOutboundEnvelope](
@@ -44,9 +38,7 @@ private[remote] object ReusableOutboundEnvelope {
       clear = outEnvelope => outEnvelope.clear())
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[remote] final class ReusableOutboundEnvelope extends OutboundEnvelope {
   private var _recipient: OptionVal[RemoteActorRef] = OptionVal.None
   private var _message: AnyRef = null

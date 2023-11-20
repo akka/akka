@@ -19,9 +19,12 @@ import akka.actor.testkit.typed.TestException
 
 object EventWriterSpec {
   def config =
-    ConfigFactory.parseString("""
+    ConfigFactory
+      .parseString("""
       akka.persistence.journal.inmem.delay-writes=10ms
-    """).withFallback(ConfigFactory.load()).resolve()
+    """)
+      .withFallback(ConfigFactory.load())
+      .resolve()
 }
 
 class EventWriterSpec extends ScalaTestWithActorTestKit(EventWriterSpec.config) with AnyWordSpecLike with LogCapturing {
@@ -170,7 +173,7 @@ class EventWriterSpec extends ScalaTestWithActorTestKit(EventWriterSpec.config) 
     }
     def journalAckWrite(pid: String = pid1): Int = {
       val write = fakeJournal.expectMessageType[JournalProtocol.WriteMessages]
-      write.messages should have size (1)
+      write.messages should have size 1
       val atomicWrite = write.messages.head.asInstanceOf[AtomicWrite]
       atomicWrite.payload.foreach { repr =>
         repr.persistenceId should ===(pid)
@@ -182,7 +185,7 @@ class EventWriterSpec extends ScalaTestWithActorTestKit(EventWriterSpec.config) 
 
     def journalFailWrite(reason: String, pid: String = pid1): Int = {
       val write = fakeJournal.expectMessageType[JournalProtocol.WriteMessages]
-      write.messages should have size (1)
+      write.messages should have size 1
       val atomicWrite = write.messages.head.asInstanceOf[AtomicWrite]
       atomicWrite.payload.foreach { repr =>
         repr.persistenceId should ===(pid)

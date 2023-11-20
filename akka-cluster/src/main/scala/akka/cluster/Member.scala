@@ -42,14 +42,12 @@ class Member private[cluster] (
   }
   override def toString: String = {
     s"Member($address, $status${if (dataCenter == ClusterSettings.DefaultDataCenter) "" else s", $dataCenter"}${if (appVersion == Version.Zero) ""
-    else s", $appVersion"})"
+      else s", $appVersion"})"
   }
 
   def hasRole(role: String): Boolean = roles.contains(role)
 
-  /**
-   * Java API
-   */
+  /** Java API */
   @nowarn("msg=deprecated")
   def getRoles: java.util.Set[String] =
     scala.collection.JavaConverters.setAsJavaSetConverter(roles).asJava
@@ -92,9 +90,7 @@ class Member private[cluster] (
   }
 }
 
-/**
- * Module with factory and ordering methods for Member instances.
- */
+/** Module with factory and ordering methods for Member instances. */
 object Member {
 
   val none = Set.empty[Member]
@@ -107,15 +103,11 @@ object Member {
   private[akka] def apply(uniqueAddress: UniqueAddress, roles: Set[String], appVersion: Version): Member =
     new Member(uniqueAddress, Int.MaxValue, Joining, roles, appVersion)
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   private[cluster] def removed(node: UniqueAddress): Member =
     new Member(node, Int.MaxValue, Removed, Set(ClusterSettings.DcRolePrefix + "-N/A"), Version.Zero)
 
-  /**
-   * `Address` ordering type class, sorts addresses by host and port.
-   */
+  /** `Address` ordering type class, sorts addresses by host and port. */
   implicit val addressOrdering: Ordering[Address] = Ordering.fromLessThan[Address] { (a, b) =>
     // cluster node identifier is the host and port of the address; protocol and system is assumed to be the same
     if (a eq b) false
@@ -144,9 +136,7 @@ object Member {
     }
   }
 
-  /**
-   * `Member` ordering type class, sorts members by host and port.
-   */
+  /** `Member` ordering type class, sorts members by host and port. */
   implicit val ordering: Ordering[Member] = new Ordering[Member] {
     def compare(a: Member, b: Member): Int = {
       a.uniqueAddress.compare(b.uniqueAddress)
@@ -165,16 +155,12 @@ object Member {
     a.isOlderThan(b)
   }
 
-  /**
-   * INTERNAL API.
-   */
+  /** INTERNAL API. */
   @InternalApi
   private[akka] def pickHighestPriority(a: Set[Member], b: Set[Member]): Set[Member] =
     pickHighestPriority(a, b, Map.empty)
 
-  /**
-   * INTERNAL API.
-   */
+  /** INTERNAL API. */
   @InternalApi
   private[akka] def pickHighestPriority(
       a: Set[Member],
@@ -183,15 +169,14 @@ object Member {
     // group all members by Address => Seq[Member]
     val groupedByAddress = (a.toSeq ++ b.toSeq).groupBy(_.uniqueAddress)
     // pick highest MemberStatus
-    groupedByAddress.foldLeft(Member.none) {
-      case (acc, (_, members)) =>
-        if (members.size == 2) acc + members.reduceLeft(highestPriorityOf)
-        else {
-          val m = members.head
-          if (tombstones.contains(m.uniqueAddress) || MembershipState.removeUnreachableWithMemberStatus(m.status))
-            acc // removed
-          else acc + m
-        }
+    groupedByAddress.foldLeft(Member.none) { case (acc, (_, members)) =>
+      if (members.size == 2) acc + members.reduceLeft(highestPriorityOf)
+      else {
+        val m = members.head
+        if (tombstones.contains(m.uniqueAddress) || MembershipState.removeUnreachableWithMemberStatus(m.status))
+          acc // removed
+        else acc + m
+      }
     }
   }
 
@@ -245,54 +230,34 @@ object MemberStatus {
   @SerialVersionUID(1L) case object PreparingForShutdown extends MemberStatus
   @SerialVersionUID(1L) case object ReadyForShutdown extends MemberStatus
 
-  /**
-   * Java API: retrieve the `Joining` status singleton
-   */
+  /** Java API: retrieve the `Joining` status singleton */
   def joining: MemberStatus = Joining
 
-  /**
-   * Java API: retrieve the `WeaklyUp` status singleton.
-   */
+  /** Java API: retrieve the `WeaklyUp` status singleton. */
   def weaklyUp: MemberStatus = WeaklyUp
 
-  /**
-   * Java API: retrieve the `Up` status singleton
-   */
+  /** Java API: retrieve the `Up` status singleton */
   def up: MemberStatus = Up
 
-  /**
-   * Java API: retrieve the `Leaving` status singleton
-   */
+  /** Java API: retrieve the `Leaving` status singleton */
   def leaving: MemberStatus = Leaving
 
-  /**
-   * Java API: retrieve the `Exiting` status singleton
-   */
+  /** Java API: retrieve the `Exiting` status singleton */
   def exiting: MemberStatus = Exiting
 
-  /**
-   * Java API: retrieve the `Down` status singleton
-   */
+  /** Java API: retrieve the `Down` status singleton */
   def down: MemberStatus = Down
 
-  /**
-   * Java API: retrieve the `Removed` status singleton
-   */
+  /** Java API: retrieve the `Removed` status singleton */
   def removed: MemberStatus = Removed
 
-  /**
-   * Java API: retrieve the `ShuttingDown` status singleton
-   */
+  /** Java API: retrieve the `ShuttingDown` status singleton */
   def shuttingDown: MemberStatus = PreparingForShutdown
 
-  /**
-   * Java API: retrieve the `ShutDown` status singleton
-   */
+  /** Java API: retrieve the `ShutDown` status singleton */
   def shutDown: MemberStatus = ReadyForShutdown
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   private[cluster] val allowedTransitions: Map[MemberStatus, Set[MemberStatus]] =
     Map(
       Joining -> Set(WeaklyUp, Up, Leaving, Down, Removed),

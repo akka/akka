@@ -30,10 +30,9 @@ object LocalConcurrencySpec {
 
     val replicator = DistributedData(context.system).replicator
 
-    def receive = {
-      case s: String =>
-        val update = Replicator.Update(Updater.key, ORSet.empty[String], Replicator.WriteLocal)(_ :+ s)
-        replicator ! update
+    def receive = { case s: String =>
+      val update = Replicator.Update(Updater.key, ORSet.empty[String], Replicator.WriteLocal)(_ :+ s)
+      replicator ! update
     }
   }
 }

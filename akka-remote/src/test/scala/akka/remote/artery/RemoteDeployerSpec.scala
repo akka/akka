@@ -13,7 +13,8 @@ import akka.routing._
 import akka.testkit._
 
 object RemoteDeployerSpec {
-  val deployerConf = ConfigFactory.parseString("""
+  val deployerConf = ConfigFactory
+    .parseString("""
       akka.actor.deployment {
         /service2 {
           router = round-robin-pool
@@ -22,7 +23,8 @@ object RemoteDeployerSpec {
           dispatcher = mydispatcher
         }
       }
-      """).withFallback(ArterySpecSupport.defaultConfig)
+      """)
+    .withFallback(ArterySpecSupport.defaultConfig)
 
   class RecipeActor extends Actor {
     def receive = { case _ => }

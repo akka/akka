@@ -295,10 +295,9 @@ class InterceptSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with 
 
     "be useful for implementing signal based PoisonPill" in {
 
-      def inner(count: Int): Behavior[Msg] = Behaviors.receiveMessage {
-        case Msg(hello, replyTo) =>
-          replyTo ! s"$hello-$count"
-          inner(count + 1)
+      def inner(count: Int): Behavior[Msg] = Behaviors.receiveMessage { case Msg(hello, replyTo) =>
+        replyTo ! s"$hello-$count"
+        inner(count + 1)
       }
 
       val decorated: Behavior[Msg] =
@@ -318,10 +317,9 @@ class InterceptSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with 
 
     "be useful for implementing custom message based PoisonPill" in {
 
-      def inner(count: Int): Behavior[Msg] = Behaviors.receiveMessage {
-        case Msg(hello, replyTo) =>
-          replyTo ! s"$hello-$count"
-          inner(count + 1)
+      def inner(count: Int): Behavior[Msg] = Behaviors.receiveMessage { case Msg(hello, replyTo) =>
+        replyTo ! s"$hello-$count"
+        inner(count + 1)
       }
 
       val poisonInterceptor = new BehaviorInterceptor[Any, Msg] {
@@ -470,8 +468,8 @@ class InterceptSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with 
 
     "be possible to combine with transformMessages" in {
       val probe = createTestProbe[String]()
-      val ref = spawn(MultiProtocol(probe.ref).transformMessages[String] {
-        case s => Command(s.toUpperCase())
+      val ref = spawn(MultiProtocol(probe.ref).transformMessages[String] { case s =>
+        Command(s.toUpperCase())
       })
 
       ref ! "a"
@@ -483,10 +481,12 @@ class InterceptSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with 
     "be possible to combine with MDC" in {
       val probe = createTestProbe[String]()
       val ref = spawn(Behaviors.setup[Command] { _ =>
-        Behaviors.withMdc(staticMdc = Map("x" -> "y"), mdcForMessage = (msg: Command) => {
-          probe.ref ! s"mdc:${msg.s.toUpperCase()}"
-          Map("msg" -> msg.s.toUpperCase())
-        }) {
+        Behaviors.withMdc(
+          staticMdc = Map("x" -> "y"),
+          mdcForMessage = (msg: Command) => {
+            probe.ref ! s"mdc:${msg.s.toUpperCase()}"
+            Map("msg" -> msg.s.toUpperCase())
+          }) {
           MultiProtocol(probe.ref)
         }
       })

@@ -19,15 +19,19 @@ import akka.util.unused
 object NewRemoteActorMultiJvmSpec extends MultiNodeConfig {
 
   commonConfig(
-    debugConfig(on = false)
-      .withFallback(ConfigFactory.parseString("""
+    debugConfig(on = false).withFallback(
+      ConfigFactory
+        .parseString("""
       akka.remote.use-unsafe-remote-features-outside-cluster = on
-      """).withFallback(RemotingMultiNodeSpec.commonConfig)))
+      """)
+        .withFallback(RemotingMultiNodeSpec.commonConfig)))
 
   val leader = role("leader")
   val follower = role("follower")
 
-  deployOn(leader, """
+  deployOn(
+    leader,
+    """
     /service-hello.remote = "@follower@"
     /service-hello-null.remote = "@follower@"
     /service-hello3.remote = "@follower@"
@@ -41,14 +45,14 @@ class NewRemoteActorMultiJvmNode2 extends NewRemoteActorSpec
 
 object NewRemoteActorSpec {
   class SomeActor extends Actor {
-    def receive = {
-      case "identify" => sender() ! self
+    def receive = { case "identify" =>
+      sender() ! self
     }
   }
 
   class SomeActorWithParam(@unused ignored: String) extends Actor {
-    def receive = {
-      case "identify" => sender() ! self
+    def receive = { case "identify" =>
+      sender() ! self
     }
   }
 }

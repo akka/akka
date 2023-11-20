@@ -101,13 +101,15 @@ object MetadataCarryingSpec {
   }
 }
 
-class MetadataCarryingSpec extends ArteryMultiNodeSpec("""
+class MetadataCarryingSpec
+    extends ArteryMultiNodeSpec("""
     akka {
       remote.artery.advanced {
         instruments = [ "akka.remote.artery.TestInstrument" ]
       }
     }
-  """) with ImplicitSender {
+  """)
+    with ImplicitSender {
 
   import MetadataCarryingSpec._
   import MetadataCarryingSpy._

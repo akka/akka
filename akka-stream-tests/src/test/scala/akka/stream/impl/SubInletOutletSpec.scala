@@ -79,12 +79,14 @@ class SubInletOutletSpec extends StreamSpec {
             }
           })
 
-        setHandler(out, new OutHandler {
-          override def onPull(): Unit = {
-            if (!subIn.hasBeenPulled)
-              subIn.pull()
-          }
-        })
+        setHandler(
+          out,
+          new OutHandler {
+            override def onPull(): Unit = {
+              if (!subIn.hasBeenPulled)
+                subIn.pull()
+            }
+          })
       }
     }
 
@@ -164,18 +166,20 @@ class SubInletOutletSpec extends StreamSpec {
           })
         }
 
-        setHandler(in, new InHandler {
-          override def onPush(): Unit = {
-            val elem = grab(in)
-            elem match {
-              case "completeStage" => completeStage()
-              case "cancelStage"   => cancelStage(NoMoreElementsNeeded)
-              case "failStage"     => failStage(TE("boom"))
-              case "completeAll"   => cancel(in)
-              case other           => subOut.push(other)
+        setHandler(
+          in,
+          new InHandler {
+            override def onPush(): Unit = {
+              val elem = grab(in)
+              elem match {
+                case "completeStage" => completeStage()
+                case "cancelStage"   => cancelStage(NoMoreElementsNeeded)
+                case "failStage"     => failStage(TE("boom"))
+                case "completeAll"   => cancel(in)
+                case other           => subOut.push(other)
+              }
             }
-          }
-        })
+          })
       }
     }
 

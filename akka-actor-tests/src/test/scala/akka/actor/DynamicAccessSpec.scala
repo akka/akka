@@ -47,7 +47,8 @@ class DynamicAccessSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll
     }
 
     "try different constructors with recoverWith" in {
-      instantiateWithDefaultOrStringCtor("akka.actor.TestClassWithStringConstructor").get.name shouldBe "string ctor argument"
+      instantiateWithDefaultOrStringCtor(
+        "akka.actor.TestClassWithStringConstructor").get.name shouldBe "string ctor argument"
       instantiateWithDefaultOrStringCtor("akka.actor.TestClassWithDefaultConstructor").get.name shouldBe "default"
       instantiateWithDefaultOrStringCtor("akka.actor.foo.NonExistingClass") match {
         case Failure(t) =>

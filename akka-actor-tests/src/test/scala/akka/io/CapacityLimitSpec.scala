@@ -9,10 +9,12 @@ import Tcp._
 import akka.testkit.{ AkkaSpec, TestProbe }
 import akka.testkit.SocketUtil.temporaryServerAddresses
 
-class CapacityLimitSpec extends AkkaSpec("""
+class CapacityLimitSpec
+    extends AkkaSpec("""
     akka.loglevel = ERROR
     akka.io.tcp.max-channels = 4
-    """) with TcpIntegrationSpecSupport {
+    """)
+    with TcpIntegrationSpecSupport {
 
   "The TCP transport implementation" should {
 

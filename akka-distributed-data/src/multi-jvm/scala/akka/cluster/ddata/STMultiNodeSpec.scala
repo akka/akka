@@ -10,9 +10,7 @@ import org.scalatest.wordspec.AnyWordSpecLike
 
 import akka.remote.testkit.MultiNodeSpecCallbacks
 
-/**
- * Hooks up MultiNodeSpec with ScalaTest
- */
+/** Hooks up MultiNodeSpec with ScalaTest */
 trait STMultiNodeSpec extends MultiNodeSpecCallbacks with AnyWordSpecLike with Matchers with BeforeAndAfterAll {
 
   override def beforeAll() = multiNodeSpecBeforeAll()

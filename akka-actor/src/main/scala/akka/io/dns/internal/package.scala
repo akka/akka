@@ -9,9 +9,7 @@ import java.nio.ByteOrder
 import akka.annotation.InternalApi
 import akka.io.dns.CachePolicy.{ CachePolicy, Forever, Never, Ttl }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 package object internal {
 
   /**

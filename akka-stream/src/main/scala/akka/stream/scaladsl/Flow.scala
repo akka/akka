@@ -45,9 +45,7 @@ import akka.util.OptionVal
 import akka.util.Timeout
 import akka.util.ccompat._
 
-/**
- * A `Flow` is a set of stream processing steps that has one open input and one open output.
- */
+/** A `Flow` is a set of stream processing steps that has one open input and one open output. */
 final class Flow[-In, +Out, +Mat](
     override val traversalBuilder: LinearTraversalBuilder,
     override val shape: FlowShape[In, Out])
@@ -148,9 +146,7 @@ final class Flow[-In, +Out, +Mat](
     }
   }
 
-  /**
-   * Transform the materialized value of this Flow, leaving all other properties as they were.
-   */
+  /** Transform the materialized value of this Flow, leaving all other properties as they were. */
   override def mapMaterializedValue[Mat2](f: Mat => Mat2): ReprMat[Out, Mat2] =
     new Flow(traversalBuilder.transformMat(f), shape)
 
@@ -290,14 +286,10 @@ final class Flow[-In, +Out, +Mat](
    */
   override def addAttributes(attr: Attributes): Repr[Out] = withAttributes(traversalBuilder.attributes and attr)
 
-  /**
-   * Add a ``name`` attribute to this Flow.
-   */
+  /** Add a ``name`` attribute to this Flow. */
   override def named(name: String): Repr[Out] = addAttributes(Attributes.name(name))
 
-  /**
-   * Put an asynchronous boundary around this `Flow`
-   */
+  /** Put an asynchronous boundary around this `Flow` */
   override def async: Repr[Out] = super.async.asInstanceOf[Repr[Out]]
 
   /**
@@ -325,8 +317,8 @@ final class Flow[-In, +Out, +Mat](
    * Note that the `ActorSystem` can be used as the implicit `materializer` parameter to use the
    * [[akka.stream.SystemMaterializer]] for running the stream.
    */
-  def runWith[Mat1, Mat2](source: Graph[SourceShape[In], Mat1], sink: Graph[SinkShape[Out], Mat2])(
-      implicit materializer: Materializer): (Mat1, Mat2) =
+  def runWith[Mat1, Mat2](source: Graph[SourceShape[In], Mat1], sink: Graph[SinkShape[Out], Mat2])(implicit
+      materializer: Materializer): (Mat1, Mat2) =
     Source.fromGraph(source).via(this).toMat(sink)(Keep.both).run()
 
   /**
@@ -341,15 +333,14 @@ final class Flow[-In, +Out, +Mat](
       .asSubscriber[In]
       .via(this)
       .toMat(Sink.asPublisher[Out](false))(Keep.both[Subscriber[In], Publisher[Out]])
-      .mapMaterializedValue {
-        case (sub, pub) =>
-          new Processor[In, Out] {
-            override def onError(t: Throwable): Unit = sub.onError(t)
-            override def onSubscribe(s: Subscription): Unit = sub.onSubscribe(s)
-            override def onComplete(): Unit = sub.onComplete()
-            override def onNext(t: In): Unit = sub.onNext(t)
-            override def subscribe(s: Subscriber[_ >: Out]): Unit = pub.subscribe(s)
-          }
+      .mapMaterializedValue { case (sub, pub) =>
+        new Processor[In, Out] {
+          override def onError(t: Throwable): Unit = sub.onError(t)
+          override def onSubscribe(s: Subscription): Unit = sub.onSubscribe(s)
+          override def onComplete(): Unit = sub.onComplete()
+          override def onNext(t: In): Unit = sub.onNext(t)
+          override def subscribe(s: Subscriber[_ >: Out]): Unit = pub.subscribe(s)
+        }
       }
 
   /**
@@ -362,9 +353,8 @@ final class Flow[-In, +Out, +Mat](
       extractContext: Out => CtxOut): FlowWithContext[U, CtxU, Out, CtxOut, Mat] =
     new FlowWithContext(
       Flow[(U, CtxU)]
-        .map {
-          case (e, ctx) =>
-            collapseContext(e, ctx)
+        .map { case (e, ctx) =>
+          collapseContext(e, ctx)
         }
         .viaMat(this)(Keep.right)
         .map(e => (e, extractContext(e))))
@@ -381,22 +371,16 @@ object Flow {
   private[this] val identity: Flow[Any, Any, NotUsed] =
     new Flow[Any, Any, NotUsed](identityTraversalBuilder, GraphStages.identity.shape)
 
-  /**
-   * Creates a Flow from a Reactive Streams [[org.reactivestreams.Processor]]
-   */
+  /** Creates a Flow from a Reactive Streams [[org.reactivestreams.Processor]] */
   def fromProcessor[I, O](processorFactory: () => Processor[I, O]): Flow[I, O, NotUsed] = {
     fromProcessorMat(() => (processorFactory(), NotUsed))
   }
 
-  /**
-   * Creates a Flow from a Reactive Streams [[org.reactivestreams.Processor]] and returns a materialized value.
-   */
+  /** Creates a Flow from a Reactive Streams [[org.reactivestreams.Processor]] and returns a materialized value. */
   def fromProcessorMat[I, O, M](processorFactory: () => (Processor[I, O], M)): Flow[I, O, M] =
     fromGraph(ProcessorModule(processorFactory))
 
-  /**
-   * Returns a `Flow` which outputs all its inputs.
-   */
+  /** Returns a `Flow` which outputs all its inputs. */
   def apply[T]: Flow[T, T, NotUsed] = identity.asInstanceOf[Flow[T, T, NotUsed]]
 
   /**
@@ -758,15 +742,11 @@ object RunnableGraph {
     }
 }
 
-/**
- * Flow with attached input and output, can be executed.
- */
+/** Flow with attached input and output, can be executed. */
 final case class RunnableGraph[+Mat](override val traversalBuilder: TraversalBuilder) extends Graph[ClosedShape, Mat] {
   override def shape = ClosedShape
 
-  /**
-   * Transform only the materialized value of this RunnableGraph, leaving all other properties as they were.
-   */
+  /** Transform only the materialized value of this RunnableGraph, leaving all other properties as they were. */
   def mapMaterializedValue[Mat2](f: Mat => Mat2): RunnableGraph[Mat2] =
     copy(traversalBuilder.transformMat(f.asInstanceOf[Any => Any]))
 
@@ -787,21 +767,15 @@ final case class RunnableGraph[+Mat](override val traversalBuilder: TraversalBui
   override def named(name: String): RunnableGraph[Mat] =
     addAttributes(Attributes.name(name))
 
-  /**
-   * Note that an async boundary around a runnable graph does not make sense
-   */
+  /** Note that an async boundary around a runnable graph does not make sense */
   override def async: RunnableGraph[Mat] =
     super.async.asInstanceOf[RunnableGraph[Mat]]
 
-  /**
-   * Note that an async boundary around a runnable graph does not make sense
-   */
+  /** Note that an async boundary around a runnable graph does not make sense */
   override def async(dispatcher: String): RunnableGraph[Mat] =
     super.async(dispatcher).asInstanceOf[RunnableGraph[Mat]]
 
-  /**
-   * Note that an async boundary around a runnable graph does not make sense
-   */
+  /** Note that an async boundary around a runnable graph does not make sense */
   override def async(dispatcher: String, inputBufferSize: Int): RunnableGraph[Mat] =
     super.async(dispatcher, inputBufferSize).asInstanceOf[RunnableGraph[Mat]]
 
@@ -869,7 +843,6 @@ trait FlowOps[+Out, +Mat] {
    * '''Completes when''' upstream completes or upstream failed with exception pf can handle
    *
    * '''Cancels when''' downstream cancels
-   *
    */
   def recover[T >: Out](pf: PartialFunction[Throwable, T]): Repr[T] = via(Recover(pf))
 
@@ -891,7 +864,6 @@ trait FlowOps[+Out, +Mat] {
    * '''Completes when''' upstream completes or upstream failed with exception pf can handle
    *
    * '''Cancels when''' downstream cancels
-   *
    */
   def recoverWith[T >: Out](pf: PartialFunction[Throwable, Graph[SourceShape[T], NotUsed]]): Repr[T] =
     via(new RecoverWith(-1, pf))
@@ -931,8 +903,8 @@ trait FlowOps[+Out, +Mat] {
   def onErrorComplete(pf: PartialFunction[Throwable, Boolean]): Repr[Out] =
     via(
       Flow[Out]
-        .recoverWith(pf.andThen({
-          case true => Source.empty[Out]
+        .recoverWith(pf.andThen({ case true =>
+          Source.empty[Out]
         }: PartialFunction[Boolean, Graph[SourceShape[Out], NotUsed]]))
         .withAttributes(DefaultAttributes.onErrorComplete and SourceLocation.forLambda(pf)))
 
@@ -960,7 +932,6 @@ trait FlowOps[+Out, +Mat] {
    *
    * @param attempts Maximum number of retries or -1 to retry indefinitely
    * @param pf Receives the failure cause and returns the new Source to be materialized if any
-   *
    */
   def recoverWithRetries[T >: Out](
       attempts: Int,
@@ -984,7 +955,6 @@ trait FlowOps[+Out, +Mat] {
    * '''Completes when''' upstream completes or upstream failed with exception pf can handle
    *
    * '''Cancels when''' downstream cancels
-   *
    */
   def mapError(pf: PartialFunction[Throwable, Throwable]): Repr[Out] = via(MapError(pf))
 
@@ -1001,7 +971,6 @@ trait FlowOps[+Out, +Mat] {
    * '''Completes when''' upstream completes
    *
    * '''Cancels when''' downstream cancels
-   *
    */
   def map[T](f: Out => T): Repr[T] = via(Map(f))
 
@@ -1026,7 +995,6 @@ trait FlowOps[+Out, +Mat] {
    * '''Completes when''' upstream completes
    *
    * '''Cancels when''' downstream cancels
-   *
    */
   def wireTap(f: Out => Unit): Repr[Out] =
     wireTap(Sink.foreach(f)).named("wireTap")
@@ -1047,7 +1015,6 @@ trait FlowOps[+Out, +Mat] {
    * '''Completes when''' upstream completes and all remaining elements have been emitted
    *
    * '''Cancels when''' downstream cancels
-   *
    */
   def mapConcat[T](f: Out => IterableOnce[T]): Repr[T] = statefulMapConcat(() => f)
 
@@ -1227,7 +1194,8 @@ trait FlowOps[+Out, +Mat] {
       f: (Out, P) => Future[T]): Repr[T] =
     if (parallelism == 1) mapAsyncUnordered[T](parallelism = 1) { elem =>
       f(elem, partitioner(elem))
-    } else via(MapAsyncPartitioned(parallelism, perPartition, partitioner, f))
+    }
+    else via(MapAsyncPartitioned(parallelism, perPartition, partitioner, f))
 
   /**
    * Transform this stream by applying the given function to each of the elements
@@ -2238,7 +2206,7 @@ trait FlowOps[+Out, +Mat] {
    *
    *  @param n the number of elements to accumulate before materializing the downstream flow.
    *  @param f a function that produces the downstream flow based on the upstream's prefix.
-   **/
+   */
   def flatMapPrefix[Out2, Mat2](n: Int)(f: immutable.Seq[Out] => Flow[Out, Out2, Mat2]): Repr[Out2] = {
     via(new FlatMapPrefix(n, f))
   }
@@ -2650,7 +2618,6 @@ trait FlowOps[+Out, +Mat] {
    * '''Completes when''' upstream completes
    *
    * '''Cancels when''' downstream cancels
-   *
    */
   def throttle(elements: Int, per: FiniteDuration, maximumBurst: Int, mode: ThrottleMode): Repr[Out] =
     throttle(elements, per, maximumBurst, ConstantFun.oneInt, mode)
@@ -2685,7 +2652,6 @@ trait FlowOps[+Out, +Mat] {
    * '''Completes when''' upstream completes
    *
    * '''Cancels when''' downstream cancels
-   *
    */
   def throttle(cost: Int, per: FiniteDuration, costCalculation: (Out) => Int): Repr[Out] =
     via(new Throttle(cost, per, Throttle.AutomaticMaximumBurst, costCalculation, ThrottleMode.Shaping))
@@ -2727,7 +2693,6 @@ trait FlowOps[+Out, +Mat] {
    * '''Completes when''' upstream completes
    *
    * '''Cancels when''' downstream cancels
-   *
    */
   def throttle(
       cost: Int,
@@ -2783,8 +2748,8 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Cancels when''' downstream cancels
    */
-  def log(name: String, extract: Out => Any = ConstantFun.scalaIdentityFunction)(
-      implicit log: LoggingAdapter = null): Repr[Out] =
+  def log(name: String, extract: Out => Any = ConstantFun.scalaIdentityFunction)(implicit
+      log: LoggingAdapter = null): Repr[Out] =
     via(Log(name, extract.asInstanceOf[Any => Any], Option(log)))
 
   /**
@@ -3224,8 +3189,8 @@ trait FlowOps[+Out, +Mat] {
   def mergeSorted[U >: Out, M](that: Graph[SourceShape[U], M])(implicit ord: Ordering[U]): Repr[U] =
     via(mergeSortedGraph(that))
 
-  protected def mergeSortedGraph[U >: Out, M](that: Graph[SourceShape[U], M])(
-      implicit ord: Ordering[U]): Graph[FlowShape[Out @uncheckedVariance, U], M] =
+  protected def mergeSortedGraph[U >: Out, M](that: Graph[SourceShape[U], M])(implicit
+      ord: Ordering[U]): Graph[FlowShape[Out @uncheckedVariance, U], M] =
     GraphDSL.createGraph(that) { implicit b => r =>
       val merge = b.add(new MergeSorted[U])
       r ~> merge.in1
@@ -3356,7 +3321,6 @@ trait FlowOps[+Out, +Mat] {
    * This flow will then be kept from producing elements by asserting back-pressure until its time comes.
    *
    * When needing a prepend operator that is not detached use [[#prependLazy]]
-   *
    *
    * '''Emits when''' element is available from the given [[Source]] or from current stream when the [[Source]] is completed
    *
@@ -3876,8 +3840,8 @@ trait FlowOpsMat[+Out, +Mat] extends FlowOps[Out, Mat] {
    * It is recommended to use the internally optimized `Keep.left` and `Keep.right` combiners
    * where appropriate instead of manually writing functions that pass through one of the values.
    */
-  def mergeSortedMat[U >: Out, Mat2, Mat3](that: Graph[SourceShape[U], Mat2])(matF: (Mat, Mat2) => Mat3)(
-      implicit ord: Ordering[U]): ReprMat[U, Mat3] =
+  def mergeSortedMat[U >: Out, Mat2, Mat3](that: Graph[SourceShape[U], Mat2])(matF: (Mat, Mat2) => Mat3)(implicit
+      ord: Ordering[U]): ReprMat[U, Mat3] =
     viaMat(mergeSortedGraph(that))(matF)
 
   /**
@@ -4042,9 +4006,7 @@ trait FlowOpsMat[+Out, +Mat] extends FlowOps[Out, Mat] {
   def watchTermination[Mat2]()(matF: (Mat, Future[Done]) => Mat2): ReprMat[Out, Mat2] =
     viaMat(GraphStages.terminationWatcher)(matF)
 
-  /**
-   * Transform the materialized value of this graph, leaving all other properties as they were.
-   */
+  /** Transform the materialized value of this graph, leaving all other properties as they were. */
   def mapMaterializedValue[Mat2](f: Mat => Mat2): ReprMat[Out, Mat2]
 
   /**

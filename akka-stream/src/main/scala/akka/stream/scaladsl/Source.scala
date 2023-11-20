@@ -53,10 +53,10 @@ final class Source[+Out, +Mat](
       combine: (Mat, Mat2) => Mat3): Source[T, Mat3] = {
     if (flow.traversalBuilder eq Flow.identityTraversalBuilder)
       if (combine == Keep.left)
-        //optimization by returning this
-        this.asInstanceOf[Source[T, Mat3]] //Mat == Mat3, due to Keep.left
+        // optimization by returning this
+        this.asInstanceOf[Source[T, Mat3]] // Mat == Mat3, due to Keep.left
       else if (combine == Keep.right || combine == Keep.none) // Mat3 = NotUsed
-        //optimization with LinearTraversalBuilder.empty()
+        // optimization with LinearTraversalBuilder.empty()
         new Source[T, Mat3](
           traversalBuilder.append(LinearTraversalBuilder.empty(), flow.shape, combine),
           SourceShape(shape.out).asInstanceOf[SourceShape[T]])
@@ -84,9 +84,7 @@ final class Source[+Out, +Mat](
     RunnableGraph(traversalBuilder.append(sink.traversalBuilder, sink.shape, combine))
   }
 
-  /**
-   * Transform only the materialized value of this Source, leaving all other properties as they were.
-   */
+  /** Transform only the materialized value of this Source, leaving all other properties as they were. */
   override def mapMaterializedValue[Mat2](f: Mat => Mat2): ReprMat[Out, Mat2] =
     new Source[Out, Mat2](traversalBuilder.transformMat(f.asInstanceOf[Any => Any]), shape)
 
@@ -197,14 +195,10 @@ final class Source[+Out, +Mat](
    */
   override def addAttributes(attr: Attributes): Repr[Out] = withAttributes(traversalBuilder.attributes and attr)
 
-  /**
-   * Add a ``name`` attribute to this Source.
-   */
+  /** Add a ``name`` attribute to this Source. */
   override def named(name: String): Repr[Out] = addAttributes(Attributes.name(name))
 
-  /**
-   * Put an asynchronous boundary around this `Source`
-   */
+  /** Put an asynchronous boundary around this `Source` */
   override def async: Repr[Out] = super.async.asInstanceOf[Repr[Out]]
 
   /**
@@ -224,14 +218,10 @@ final class Source[+Out, +Mat](
   override def async(dispatcher: String, inputBufferSize: Int): Repr[Out] =
     super.async(dispatcher, inputBufferSize).asInstanceOf[Repr[Out]]
 
-  /**
-   * Converts this Scala DSL element to it's Java DSL counterpart.
-   */
+  /** Converts this Scala DSL element to it's Java DSL counterpart. */
   def asJava: javadsl.Source[Out @uncheckedVariance, Mat @uncheckedVariance] = new javadsl.Source(this)
 
-  /**
-   * Transform this source whose element is ``e`` into a source producing tuple ``(e, f(e))``
-  **/
+  /** Transform this source whose element is ``e`` into a source producing tuple ``(e, f(e))`` */
   def asSourceWithContext[Ctx](f: Out => Ctx): SourceWithContext[Out, Ctx, Mat] =
     new SourceWithContext(this.map(e => (e, f(e))))
 
@@ -401,9 +391,7 @@ object Source {
   def single[T](element: T): Source[T, NotUsed] =
     fromGraph(new GraphStages.SingleSource(element))
 
-  /**
-   * Create a `Source` that will continually emit the given element.
-   */
+  /** Create a `Source` that will continually emit the given element. */
   def repeat[T](element: T): Source[T, NotUsed] = {
     fromIterator(() => Iterator.continually(element)).withAttributes(DefaultAttributes.repeat)
   }
@@ -442,9 +430,7 @@ object Source {
   def unfoldAsync[S, E](s: S)(f: S => Future[Option[(S, E)]]): Source[E, NotUsed] =
     Source.fromGraph(new UnfoldAsync(s, f))
 
-  /**
-   * A `Source` with no elements, i.e. an empty stream that is completed immediately for every connected `Sink`.
-   */
+  /** A `Source` with no elements, i.e. an empty stream that is completed immediately for every connected `Sink`. */
   def empty[T]: Source[T, NotUsed] = _empty
   private[this] val _empty: Source[Nothing, NotUsed] =
     Source.fromGraph(EmptySource)
@@ -463,9 +449,7 @@ object Source {
   def maybe[T]: Source[T, Promise[Option[T]]] =
     Source.fromGraph(MaybeSource.asInstanceOf[Graph[SourceShape[T], Promise[Option[T]]]])
 
-  /**
-   * Create a `Source` that immediately ends the stream with the `cause` error to every connected `Sink`.
-   */
+  /** Create a `Source` that immediately ends the stream with the `cause` error to every connected `Sink`. */
   def failed[T](cause: Throwable): Source[T, NotUsed] =
     Source.fromGraph(new FailedSource[T](cause))
 
@@ -581,9 +565,7 @@ object Source {
   def lazyFutureSource[T, M](create: () => Future[Source[T, M]]): Source[T, Future[M]] =
     lazySource(() => futureSource(create())).mapMaterializedValue(_.flatten)
 
-  /**
-   * Creates a `Source` that is materialized as a [[org.reactivestreams.Subscriber]]
-   */
+  /** Creates a `Source` that is materialized as a [[org.reactivestreams.Subscriber]] */
   def asSubscriber[T]: Source[T, Subscriber[T]] =
     fromGraph(new SubscriberSource[T](DefaultAttributes.subscriberSource, shape("SubscriberSource")))
 
@@ -667,21 +649,22 @@ object Source {
    *
    * See also [[akka.stream.scaladsl.Source.queue]].
    *
-   *
    * @param bufferSize The size of the buffer in element count
    * @param overflowStrategy Strategy that is used when incoming elements cannot fit inside the buffer
    */
   @deprecated("Use variant accepting completion and failure matchers instead", "2.6.0")
   def actorRef[T](bufferSize: Int, overflowStrategy: OverflowStrategy): Source[T, ActorRef] =
-    actorRef({
-      case akka.actor.Status.Success(s: CompletionStrategy) => s
-      case akka.actor.Status.Success(_)                     => CompletionStrategy.Draining
-      case akka.actor.Status.Success                        => CompletionStrategy.Draining
-    }, { case akka.actor.Status.Failure(cause)              => cause }, bufferSize, overflowStrategy)
+    actorRef(
+      {
+        case akka.actor.Status.Success(s: CompletionStrategy) => s
+        case akka.actor.Status.Success(_)                     => CompletionStrategy.Draining
+        case akka.actor.Status.Success                        => CompletionStrategy.Draining
+      },
+      { case akka.actor.Status.Failure(cause) => cause },
+      bufferSize,
+      overflowStrategy)
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[akka] def actorRefWithAck[T](
       ackTo: Option[ActorRef],
       ackMessage: Any,
@@ -732,15 +715,17 @@ object Source {
    */
   @deprecated("Use actorRefWithBackpressure accepting completion and failure matchers instead", "2.6.0")
   def actorRefWithAck[T](ackMessage: Any): Source[T, ActorRef] =
-    actorRefWithAck(None, ackMessage, {
-      case akka.actor.Status.Success(s: CompletionStrategy) => s
-      case akka.actor.Status.Success(_)                     => CompletionStrategy.Draining
-      case akka.actor.Status.Success                        => CompletionStrategy.Draining
-    }, { case akka.actor.Status.Failure(cause)              => cause })
+    actorRefWithAck(
+      None,
+      ackMessage,
+      {
+        case akka.actor.Status.Success(s: CompletionStrategy) => s
+        case akka.actor.Status.Success(_)                     => CompletionStrategy.Draining
+        case akka.actor.Status.Success                        => CompletionStrategy.Draining
+      },
+      { case akka.actor.Status.Failure(cause) => cause })
 
-  /**
-   * Combines several sources with fan-in strategy like [[Merge]] or [[Concat]] into a single [[Source]].
-   */
+  /** Combines several sources with fan-in strategy like [[Merge]] or [[Concat]] into a single [[Source]]. */
   def combine[T, U](first: Source[T, _], second: Source[T, _], rest: Source[T, _]*)(
       @nowarn
       @deprecatedName(Symbol("strategy"))
@@ -760,9 +745,7 @@ object Source {
       combineRest(2, rest.iterator)
     })
 
-  /**
-   * Combines several sources with fan-in strategy like [[Merge]] or [[Concat]] into a single [[Source]].
-   */
+  /** Combines several sources with fan-in strategy like [[Merge]] or [[Concat]] into a single [[Source]]. */
   def combine[T, U, M](sources: immutable.Seq[Graph[SourceShape[T], M]])(
       fanInStrategy: Int => Graph[UniformFanInShape[T, U], NotUsed]): Source[U, immutable.Seq[M]] =
     sources match {
@@ -779,9 +762,7 @@ object Source {
         })
     }
 
-  /**
-   * Combines two sources with fan-in strategy like [[Merge]] or [[Concat]] into a single [[Source]] with a materialized value.
-   */
+  /** Combines two sources with fan-in strategy like [[Merge]] or [[Concat]] into a single [[Source]] with a materialized value. */
   def combineMat[T, U, M1, M2, M](first: Source[T, M1], second: Source[T, M2])(
       @nowarn
       @deprecatedName(Symbol("strategy"))
@@ -794,9 +775,7 @@ object Source {
       SourceShape(c.out)
     })
 
-  /**
-   * Combine the elements of multiple streams into a stream of sequences.
-   */
+  /** Combine the elements of multiple streams into a stream of sequences. */
   def zipN[T](sources: immutable.Seq[Source[T, _]]): Source[immutable.Seq[T], NotUsed] =
     zipWithN(ConstantFun.scalaIdentityFunction[immutable.Seq[T]])(sources).addAttributes(DefaultAttributes.zipN)
 

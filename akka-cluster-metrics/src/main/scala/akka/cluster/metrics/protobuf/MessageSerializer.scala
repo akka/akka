@@ -23,9 +23,7 @@ import akka.util.ClassLoaderObjectInputStream
 import akka.util.ccompat._
 import akka.util.ccompat.JavaConverters._
 
-/**
- * Protobuf serializer for [[akka.cluster.metrics.ClusterMetricsMessage]] types.
- */
+/** Protobuf serializer for [[akka.cluster.metrics.ClusterMetricsMessage]] types. */
 @ccompatUsedUntil213
 class MessageSerializer(val system: ExtendedActorSystem) extends SerializerWithStringManifest with BaseSerializer {
 
@@ -307,7 +305,7 @@ class MessageSerializer(val system: ExtendedActorSystem) extends SerializerWithS
     val mm = cm.MixMetricsSelector.parseFrom(bytes)
     MixMetricsSelector(
       mm.getSelectorsList.asScala
-      // should be safe because we serialized only the right subtypes of MetricsSelector
+        // should be safe because we serialized only the right subtypes of MetricsSelector
         .map(s => metricSelectorFromProto(s).asInstanceOf[CapacityMetricsSelector])
         .toIndexedSeq)
   }

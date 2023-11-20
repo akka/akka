@@ -16,9 +16,7 @@ import akka.cluster.sharding.ClusterShardingSettings
 import akka.cluster.sharding.ShardRegion.ShardId
 import akka.testkit.{ AkkaSpec, ImplicitSender, WithLogCapturing }
 
-/**
- * Covers the interaction between the shard and the remember entities store
- */
+/** Covers the interaction between the shard and the remember entities store */
 object RememberEntitiesShardStoreSpec {
   def config =
     ConfigFactory.parseString(s"""
@@ -34,8 +32,8 @@ object RememberEntitiesShardStoreSpec {
       akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
       akka.persistence.snapshot-store.plugin = "akka.persistence.snapshot-store.local"
       akka.persistence.snapshot-store.local.dir = "target/${classOf[RememberEntitiesShardStoreSpec].getName}-${UUID
-                                   .randomUUID()
-                                   .toString}"
+                                  .randomUUID()
+                                  .toString}"
     """.stripMargin)
 }
 
@@ -92,7 +90,9 @@ abstract class RememberEntitiesShardStoreSpec
 
       Thread.sleep(500)
       storeIncarnation3 ! RememberEntitiesShardStore.GetEntities
-      expectMsgType[RememberEntitiesShardStore.RememberedEntities].entities should ===(Set("1", "2", "4", "5")) // from previous test
+      expectMsgType[RememberEntitiesShardStore.RememberedEntities].entities should ===(
+        Set("1", "2", "4", "5")
+      ) // from previous test
     }
 
     "handle a large batch" in {
@@ -102,8 +102,8 @@ abstract class RememberEntitiesShardStoreSpec
 
       store ! RememberEntitiesShardStore.Update((1 to 1000).map(_.toString).toSet, (1001 to 2000).map(_.toString).toSet)
       val response = expectMsgType[RememberEntitiesShardStore.UpdateDone]
-      response.started should have size (1000)
-      response.stopped should have size (1000)
+      response.started should have size 1000
+      response.stopped should have size 1000
 
       watch(store)
       system.stop(store)
@@ -111,7 +111,7 @@ abstract class RememberEntitiesShardStoreSpec
 
       store = system.actorOf(storeProps("FakeShardIdLarge", "FakeTypeNameLarge", shardingSettings))
       store ! RememberEntitiesShardStore.GetEntities
-      expectMsgType[RememberEntitiesShardStore.RememberedEntities].entities should have size (1000)
+      expectMsgType[RememberEntitiesShardStore.RememberedEntities].entities should have size 1000
     }
 
   }

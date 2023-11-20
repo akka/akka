@@ -51,15 +51,15 @@ class SmallestMailboxSpec extends AkkaSpec with DefaultTimeout with ImplicitSend
       busy.countDown()
 
       val busyPath = usedActors.get(0)
-      busyPath should not be (null)
+      busyPath should not be null
 
       val path1 = usedActors.get(1)
       val path2 = usedActors.get(2)
       val path3 = usedActors.get(3)
 
-      path1 should not be (busyPath)
-      path2 should not be (busyPath)
-      path3 should not be (busyPath)
+      path1 should not be busyPath
+      path2 should not be busyPath
+      path3 should not be busyPath
 
     }
   }

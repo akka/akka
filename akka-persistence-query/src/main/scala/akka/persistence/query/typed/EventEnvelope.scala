@@ -191,9 +191,7 @@ final class EventEnvelope[Event](
         }
     }
 
-  /**
-   * Java API
-   */
+  /** Java API */
   def getEvent(): Event =
     eventOption match {
       case Some(evt) => evt
@@ -207,25 +205,19 @@ final class EventEnvelope[Event](
         }
     }
 
-  /**
-   * Java API
-   */
+  /** Java API */
   def getOptionalEvent(): Optional[Event] = {
     import scala.compat.java8.OptionConverters._
     eventOption.asJava
   }
 
-  /**
-   * Java API
-   */
+  /** Java API */
   def getEventMetaData(): Optional[AnyRef] = {
     import scala.compat.java8.OptionConverters._
     eventMetadata.map(_.asInstanceOf[AnyRef]).asJava
   }
 
-  /**
-   * Java API:
-   */
+  /** Java API: */
   def getTags(): JSet[String] = tags.asJava
 
   /**
@@ -304,6 +296,6 @@ final class EventEnvelope[Event](
       case None       => ""
     }
     s"EventEnvelope($offset,$persistenceId,$sequenceNr,$eventStr,$timestamp,$metaStr,$entityType,$slice,$filtered,$source,${tags
-      .mkString("[", ", ", "]")})"
+        .mkString("[", ", ", "]")})"
   }
 }

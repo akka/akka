@@ -33,9 +33,7 @@ sealed private[akka] trait RoutingLogic[T] {
   def routeesUpdated(newRoutees: Set[ActorRef[T]]): Unit
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] object RoutingLogics {
 
@@ -62,8 +60,8 @@ private[akka] object RoutingLogics {
         val firstDiffIndex = {
           var idx = 0
           while (idx < currentRoutees.length &&
-                 idx < sortedNewRoutees.length &&
-                 currentRoutees(idx) == sortedNewRoutees(idx)) {
+            idx < sortedNewRoutees.length &&
+            currentRoutees(idx) == sortedNewRoutees(idx)) {
             idx += 1
           }
           idx

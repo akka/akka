@@ -10,9 +10,7 @@ import scala.reflect.ClassTag
 import akka.actor.typed.internal._
 import akka.annotation.{ DoNotInherit, InternalApi }
 
-/**
- * Factories for [[akka.actor.typed.Behavior]].
- */
+/** Factories for [[akka.actor.typed.Behavior]]. */
 object Behaviors {
 
   /**
@@ -29,9 +27,7 @@ object Behaviors {
   def setup[T](factory: ActorContext[T] => Behavior[T]): Behavior[T] =
     BehaviorImpl.DeferredBehavior(factory)
 
-  /**
-   * Support for stashing messages to unstash at a later time.
-   */
+  /** Support for stashing messages to unstash at a later time. */
   def withStash[T](capacity: Int)(factory: StashBuffer[T] => Behavior[T]): Behavior[T] =
     setup(ctx => {
       val stash = StashBuffer[T](ctx, capacity)
@@ -79,14 +75,10 @@ object Behaviors {
    */
   def stopped[T](postStop: () => Unit): Behavior[T] = BehaviorImpl.stopped(postStop)
 
-  /**
-   * A behavior that treats every incoming message as unhandled.
-   */
+  /** A behavior that treats every incoming message as unhandled. */
   def empty[T]: Behavior[T] = BehaviorImpl.empty
 
-  /**
-   * A behavior that ignores every incoming message and returns “same”.
-   */
+  /** A behavior that ignores every incoming message and returns “same”. */
   def ignore[T]: Behavior[T] = BehaviorImpl.ignore
 
   /**
@@ -123,25 +115,19 @@ object Behaviors {
   def receiveMessage[T](onMessage: T => Behavior[T]): Receive[T] =
     new ReceiveMessageImpl(onMessage)
 
-  /**
-   * Construct an actor `Behavior` from a partial message handler which treats undefined messages as unhandled.
-   */
+  /** Construct an actor `Behavior` from a partial message handler which treats undefined messages as unhandled. */
   def receivePartial[T](onMessage: PartialFunction[(ActorContext[T], T), Behavior[T]]): Receive[T] =
     Behaviors.receive[T] { (ctx, t) =>
       onMessage.applyOrElse((ctx, t), (_: (ActorContext[T], T)) => Behaviors.unhandled[T])
     }
 
-  /**
-   * Construct an actor `Behavior` from a partial message handler which treats undefined messages as unhandled.
-   */
+  /** Construct an actor `Behavior` from a partial message handler which treats undefined messages as unhandled. */
   def receiveMessagePartial[T](onMessage: PartialFunction[T, Behavior[T]]): Receive[T] =
     Behaviors.receive[T] { (_, t) =>
       onMessage.applyOrElse(t, (_: T) => Behaviors.unhandled[T])
     }
 
-  /**
-   * Construct an actor `Behavior` that can react to lifecycle signals only.
-   */
+  /** Construct an actor `Behavior` that can react to lifecycle signals only. */
   def receiveSignal[T](handler: PartialFunction[(ActorContext[T], Signal), Behavior[T]]): Behavior[T] =
     receive[T]((_, _) => same).receiveSignal(handler)
 
@@ -222,8 +208,8 @@ object Behaviors {
   final class Supervise[T] private[akka] (val wrapped: Behavior[T]) extends AnyVal {
 
     /** Specify the [[SupervisorStrategy]] to be invoked when the wrapped behavior throws. */
-    def onFailure[Thr <: Throwable](strategy: SupervisorStrategy)(
-        implicit tag: ClassTag[Thr] = ThrowableClassTag): Behavior[T] = {
+    def onFailure[Thr <: Throwable](strategy: SupervisorStrategy)(implicit
+        tag: ClassTag[Thr] = ThrowableClassTag): Behavior[T] = {
       val effectiveTag = if (tag == ClassTag.Nothing) ThrowableClassTag else tag
       Supervisor(Behavior.validateAsInitial(wrapped), strategy)(effectiveTag)
     }
@@ -250,7 +236,6 @@ object Behaviors {
    *                 each message processing by the inner behavior is done.
    * @param behavior The actual behavior handling the messages, the MDC is used for the log entries logged through
    *                 `ActorContext.log`
-   *
    */
   def withMdc[T: ClassTag](mdcForMessage: T => Map[String, String])(behavior: Behavior[T]): Behavior[T] =
     withMdc[T](Map.empty[String, String], mdcForMessage)(behavior)
@@ -265,7 +250,6 @@ object Behaviors {
    * @param staticMdc This MDC is setup in the logging context for every message
    * @param behavior The actual behavior handling the messages, the MDC is used for the log entries logged through
    *                 `ActorContext.log`
-   *
    */
   def withMdc[T: ClassTag](staticMdc: Map[String, String])(behavior: Behavior[T]): Behavior[T] =
     withMdc[T](staticMdc, (_: T) => Map.empty[String, String])(behavior)
@@ -288,7 +272,6 @@ object Behaviors {
    *                 each message processing by the inner behavior is done.
    * @param behavior The actual behavior handling the messages, the MDC is used for the log entries logged through
    *                 `ActorContext.log`
-   *
    */
   def withMdc[T: ClassTag](staticMdc: Map[String, String], mdcForMessage: T => Map[String, String])(
       behavior: Behavior[T]): Behavior[T] =

@@ -26,14 +26,17 @@ object ChunkLargeMessageSpec extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
 
-  commonConfig(ConfigFactory.parseString("""
+  commonConfig(
+    ConfigFactory
+      .parseString("""
         akka.loglevel = INFO
         #akka.serialization.jackson.verbose-debug-logging = on
         akka.remote.artery {
           advanced.inbound-lanes = 1
           advanced.maximum-frame-size = 2 MB
         }
-      """).withFallback(MultiNodeClusterSpec.clusterConfig))
+      """)
+      .withFallback(MultiNodeClusterSpec.clusterConfig))
 
   object Producer {
     sealed trait Command
@@ -86,18 +89,17 @@ object ChunkLargeMessageSpec extends MultiNodeConfig {
                   Behaviors.stopped
               }
             }
-            .receiveSignal {
-              case (context, PostStop) =>
-                if (histogram.getTotalCount > 0) {
-                  context.log.info(
-                    s"=== Latency for [${context.self.path.name}] " +
-                    f"50%%ile: ${percentile(50.0)}%.0f µs, " +
-                    f"90%%ile: ${percentile(90.0)}%.0f µs, " +
-                    f"99%%ile: ${percentile(99.0)}%.0f µs")
-                  println(s"Histogram for [${context.self.path.name}] of RTT latencies in microseconds.")
-                  histogram.outputPercentileDistribution(System.out, 1000.0)
-                }
-                Behaviors.same
+            .receiveSignal { case (context, PostStop) =>
+              if (histogram.getTotalCount > 0) {
+                context.log.info(
+                  s"=== Latency for [${context.self.path.name}] " +
+                  f"50%%ile: ${percentile(50.0)}%.0f µs, " +
+                  f"90%%ile: ${percentile(90.0)}%.0f µs, " +
+                  f"99%%ile: ${percentile(99.0)}%.0f µs")
+                println(s"Histogram for [${context.self.path.name}] of RTT latencies in microseconds.")
+                histogram.outputPercentileDistribution(System.out, 1000.0)
+              }
+              Behaviors.same
             }
 
       }

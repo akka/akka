@@ -63,9 +63,7 @@ object JoinConfigCompatChecker {
     exists(requiredKeys, toCheck) ++ checkEquality(requiredKeys, toCheck, actualConfig)
   }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[akka] def checkEquality(
       keys: im.Seq[String],
       toCheck: Config,
@@ -179,9 +177,7 @@ sealed trait ConfigValidation {
 
 case object Valid extends ConfigValidation {
 
-  /**
-   * Java API: get the singleton instance
-   */
+  /** Java API: get the singleton instance */
   def getInstance = this
 }
 

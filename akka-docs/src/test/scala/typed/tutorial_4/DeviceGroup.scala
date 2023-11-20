@@ -47,9 +47,9 @@ class DeviceGroup(context: ActorContext[DeviceGroup.Command], groupId: String)
           case None =>
             context.log.info("Creating device actor for {}", trackMsg.deviceId)
             val deviceActor = context.spawn(Device(groupId, deviceId), s"device-$deviceId")
-            //#device-group-register
+            // #device-group-register
             context.watchWith(deviceActor, DeviceTerminated(deviceActor, groupId, deviceId))
-            //#device-group-register
+            // #device-group-register
             deviceIdToActor += deviceId -> deviceActor
             replyTo ! DeviceRegistered(deviceActor)
         }
@@ -58,8 +58,8 @@ class DeviceGroup(context: ActorContext[DeviceGroup.Command], groupId: String)
       case RequestTrackDevice(gId, _, _) =>
         context.log.warn2("Ignoring TrackDevice request for {}. This actor is responsible for {}.", gId, groupId)
         this
-      //#device-group-register
-      //#device-group-remove
+      // #device-group-register
+      // #device-group-remove
 
       case RequestDeviceList(requestId, gId, replyTo) =>
         if (gId == groupId) {
@@ -67,20 +67,19 @@ class DeviceGroup(context: ActorContext[DeviceGroup.Command], groupId: String)
           this
         } else
           Behaviors.unhandled
-      //#device-group-remove
+      // #device-group-remove
 
       case DeviceTerminated(_, _, deviceId) =>
         context.log.info("Device actor for {} has been terminated", deviceId)
         deviceIdToActor -= deviceId
         this
 
-      //#device-group-register
+      // #device-group-register
     }
 
-  override def onSignal: PartialFunction[Signal, Behavior[Command]] = {
-    case PostStop =>
-      context.log.info("DeviceGroup {} stopped", groupId)
-      this
+  override def onSignal: PartialFunction[Signal, Behavior[Command]] = { case PostStop =>
+    context.log.info("DeviceGroup {} stopped", groupId)
+    this
   }
 }
 //#device-group-remove

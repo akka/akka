@@ -42,15 +42,16 @@ object ShardedDaemonProcessRescaleSpec extends MultiNodeConfig {
       val snitchRouter = ctx.spawn(Routers.group(SnitchServiceKey), "router")
       snitchRouter ! ProcessActorEvent(id, "Started")
 
-      Behaviors.receiveMessagePartial {
-        case Stop =>
-          snitchRouter ! ProcessActorEvent(id, "Stopped")
-          Behaviors.stopped
+      Behaviors.receiveMessagePartial { case Stop =>
+        snitchRouter ! ProcessActorEvent(id, "Stopped")
+        Behaviors.stopped
       }
     }
   }
 
-  commonConfig(ConfigFactory.parseString("""
+  commonConfig(
+    ConfigFactory
+      .parseString("""
         akka.loglevel = DEBUG
         akka.cluster.sharded-daemon-process {
           sharding {
@@ -60,7 +61,8 @@ object ShardedDaemonProcessRescaleSpec extends MultiNodeConfig {
           # quick ping to make test swift
           keep-alive-interval = 1s
         }
-      """).withFallback(MultiNodeClusterSpec.clusterConfig))
+      """)
+      .withFallback(MultiNodeClusterSpec.clusterConfig))
 
 }
 
@@ -87,10 +89,12 @@ abstract class ShardedDaemonProcessRescaleSpec
       }
       enterBarrier("snitch-registered")
 
-      topicProbe.awaitAssert({
-        typedSystem.receptionist ! Receptionist.Find(SnitchServiceKey, topicProbe.ref)
-        topicProbe.expectMessageType[Receptionist.Listing].serviceInstances(SnitchServiceKey).size should ===(1)
-      }, 5.seconds)
+      topicProbe.awaitAssert(
+        {
+          typedSystem.receptionist ! Receptionist.Find(SnitchServiceKey, topicProbe.ref)
+          topicProbe.expectMessageType[Receptionist.Listing].serviceInstances(SnitchServiceKey).size should ===(1)
+        },
+        5.seconds)
       enterBarrier("snitch-seen")
     }
 
@@ -138,7 +142,7 @@ abstract class ShardedDaemonProcessRescaleSpec
         val reply = probe.receiveMessage()
         reply.numberOfProcesses should ===(2)
         reply.revision should ===(2)
-        reply.rescaleInProgress === (false)
+        reply.rescaleInProgress === false
       }
       enterBarrier("sharded-daemon-process-query")
     }

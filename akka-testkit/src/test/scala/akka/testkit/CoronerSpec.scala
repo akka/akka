@@ -70,27 +70,29 @@ class CoronerSpec extends AnyWordSpec with Matchers {
       def lockingThread(name: String, initialLocks: List[ReentrantLock]): LockingThread = {
         val ready = new Semaphore(0)
         val proceed = new Semaphore(0)
-        val t = new Thread(new Runnable {
-          def run =
-            try recursiveLock(initialLocks)
-            catch { case _: InterruptedException => () }
+        val t = new Thread(
+          new Runnable {
+            def run =
+              try recursiveLock(initialLocks)
+              catch { case _: InterruptedException => () }
 
-          def recursiveLock(locks: List[ReentrantLock]): Unit = {
-            locks match {
-              case Nil => ()
-              case lock :: rest => {
-                ready.release()
-                proceed.acquire()
-                lock.lockInterruptibly() // Allows us to break deadlock and free threads
-                try {
-                  recursiveLock(rest)
-                } finally {
-                  lock.unlock()
+            def recursiveLock(locks: List[ReentrantLock]): Unit = {
+              locks match {
+                case Nil => ()
+                case lock :: rest => {
+                  ready.release()
+                  proceed.acquire()
+                  lock.lockInterruptibly() // Allows us to break deadlock and free threads
+                  try {
+                    recursiveLock(rest)
+                  } finally {
+                    lock.unlock()
+                  }
                 }
               }
             }
-          }
-        }, name)
+          },
+          name)
         t.start()
         LockingThread(name, t, ready, proceed)
       }

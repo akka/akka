@@ -42,9 +42,7 @@ object LWWRegister {
    */
   def reverseClock[A]: Clock[A] = _reverseClock.asInstanceOf[Clock[A]]
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[akka] def apply[A](node: UniqueAddress, initialValue: A, clock: Clock[A]): LWWRegister[A] =
     new LWWRegister(node, initialValue, clock(0L, initialValue))
 
@@ -61,21 +59,15 @@ object LWWRegister {
   def create[A](initialValue: A)(implicit node: SelfUniqueAddress, clock: Clock[A] = defaultClock[A]): LWWRegister[A] =
     apply(node.uniqueAddress, initialValue, clock)
 
-  /**
-   * Java API
-   */
+  /** Java API */
   def create[A](node: SelfUniqueAddress, initialValue: A, clock: Clock[A]): LWWRegister[A] =
     apply(node.uniqueAddress, initialValue, clock)
 
-  /**
-   * Java API
-   */
+  /** Java API */
   def create[A](node: SelfUniqueAddress, initialValue: A): LWWRegister[A] =
     apply(node.uniqueAddress, initialValue, defaultClock[A])
 
-  /**
-   * Extract the [[LWWRegister#value]].
-   */
+  /** Extract the [[LWWRegister#value]]. */
   def unapply[A](c: LWWRegister[A]): Option[A] = Some(c.value)
 
 }
@@ -117,9 +109,7 @@ final class LWWRegister[A] private[akka] (private[akka] val node: UniqueAddress,
 
   type T = LWWRegister[A]
 
-  /**
-   * Java API
-   */
+  /** Java API */
   def getValue(): A = value
 
   /**
@@ -133,9 +123,7 @@ final class LWWRegister[A] private[akka] (private[akka] val node: UniqueAddress,
   def withValue(node: SelfUniqueAddress, value: A, clock: Clock[A]): LWWRegister[A] =
     withValue(node.uniqueAddress, value, clock)
 
-  /**
-   * Change the value of the register.
-   */
+  /** Change the value of the register. */
   def withValue(node: SelfUniqueAddress, value: A): LWWRegister[A] =
     withValue(node, value, defaultClock[A])
 
@@ -150,14 +138,10 @@ final class LWWRegister[A] private[akka] (private[akka] val node: UniqueAddress,
   def withValueOf(value: A)(implicit node: SelfUniqueAddress, clock: Clock[A] = defaultClock[A]): LWWRegister[A] =
     withValue(node, value, clock)
 
-  /**
-   * The current `value` was set by this node.
-   */
+  /** The current `value` was set by this node. */
   def updatedBy: UniqueAddress = node
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[akka] def withValue(node: UniqueAddress, value: A, clock: Clock[A]): LWWRegister[A] =
     new LWWRegister(node, value, clock(timestamp, value))
 

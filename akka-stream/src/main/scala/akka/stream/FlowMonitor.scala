@@ -18,14 +18,10 @@ trait FlowMonitor[+T] {
 object FlowMonitorState {
   sealed trait StreamState[+U]
 
-  /**
-   * Stream was created, but no events have passed through it
-   */
+  /** Stream was created, but no events have passed through it */
   case object Initialized extends StreamState[Nothing]
 
-  /**
-   * Java API
-   */
+  /** Java API */
   def initialized[U](): StreamState[U] = Initialized
 
   /**
@@ -35,9 +31,7 @@ object FlowMonitorState {
    */
   final case class Received[+U](msg: U) extends StreamState[U]
 
-  /**
-   * Java API
-   */
+  /** Java API */
   def received[U](msg: U): StreamState[U] = Received(msg)
 
   /**
@@ -47,18 +41,12 @@ object FlowMonitorState {
    */
   final case class Failed(cause: Throwable) extends StreamState[Nothing]
 
-  /**
-   * Java API
-   */
+  /** Java API */
   def failed[U](cause: Throwable): StreamState[U] = Failed(cause)
 
-  /**
-   * Stream completed successfully
-   */
+  /** Stream completed successfully */
   case object Finished extends StreamState[Nothing]
 
-  /**
-   * Java API
-   */
+  /** Java API */
   def finished[U](): StreamState[U] = Finished
 }

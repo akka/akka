@@ -10,7 +10,7 @@ object PartitionDocExample {
 
   implicit val system: ActorSystem = ???
 
-  //#partition
+  // #partition
   import akka.NotUsed
   import akka.stream.Attributes
   import akka.stream.Attributes.LogLevels
@@ -40,5 +40,5 @@ object PartitionDocExample {
     })
     .run()
 
-  //#partition
+  // #partition
 }

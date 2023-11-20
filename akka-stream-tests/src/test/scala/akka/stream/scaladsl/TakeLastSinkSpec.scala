@@ -28,7 +28,7 @@ class TakeLastSinkSpec extends StreamSpec {
 
     "return top three student based on GPA correctly" in {
       implicit val ex = system.dispatcher
-      //#takeLast-operator-example
+      // #takeLast-operator-example
       case class Student(name: String, gpa: Double)
 
       val students = List(
@@ -56,7 +56,7 @@ class TakeLastSinkSpec extends StreamSpec {
           Name: Kendra, GPA: 4.2
        */
 
-      //#takeLast-operator-example
+      // #takeLast-operator-example
 
       result.futureValue shouldEqual students.takeRight(3)
     }

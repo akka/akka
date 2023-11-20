@@ -27,11 +27,14 @@ object ClusterShardingStatsSpecConfig extends MultiNodeConfig {
   val second = role("second")
   val third = role("third")
 
-  commonConfig(ConfigFactory.parseString("""
+  commonConfig(
+    ConfigFactory
+      .parseString("""
         akka.log-dead-letters-during-shutdown = off
         akka.cluster.sharding.updating-state-timeout = 2s
         akka.cluster.sharding.waiting-for-state-timeout = 2s
-      """).withFallback(MultiNodeClusterSpec.clusterConfig))
+      """)
+      .withFallback(MultiNodeClusterSpec.clusterConfig))
 
 }
 
@@ -45,10 +48,9 @@ object Pinger {
   case class Pong(id: Int) extends CborSerializable
 
   def apply(): Behavior[Command] = {
-    Behaviors.receiveMessage[Command] {
-      case Ping(id: Int, ref) =>
-        ref ! Pong(id)
-        Behaviors.same
+    Behaviors.receiveMessage[Command] { case Ping(id: Int, ref) =>
+      ref ! Pong(id)
+      Behaviors.same
     }
   }
 
@@ -65,7 +67,7 @@ abstract class ClusterShardingStatsSpec
   private val typeKey = EntityTypeKey[Command]("ping")
   private val sharding = ClusterSharding(typedSystem)
   private val settings = ClusterShardingSettings(typedSystem)
-  private val queryTimeout = settings.shardRegionQueryTimeout * roles.size.toLong //numeric widening y'all
+  private val queryTimeout = settings.shardRegionQueryTimeout * roles.size.toLong // numeric widening y'all
 
   "Cluster sharding stats" must {
     "form cluster" in {

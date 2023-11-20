@@ -9,14 +9,10 @@ object Counter {
 
   final case class Updated(delta: BigInt) {
 
-    /**
-     * JAVA API
-     */
+    /** JAVA API */
     def this(delta: java.math.BigInteger) = this(delta: BigInt)
 
-    /**
-     * JAVA API
-     */
+    /** JAVA API */
     def this(delta: Int) = this(delta: BigInt)
   }
 }

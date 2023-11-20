@@ -6,9 +6,7 @@ package akka.io.dns
 
 import akka.util.OptionVal
 
-/**
- * DNS Record Type
- */
+/** DNS Record Type */
 final case class RecordType(code: Short, name: String)
 
 object RecordType {

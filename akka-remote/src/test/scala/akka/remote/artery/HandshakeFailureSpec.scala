@@ -15,10 +15,12 @@ import akka.testkit.TestProbe
 
 object HandshakeFailureSpec {
 
-  val commonConfig = ConfigFactory.parseString("""
+  val commonConfig = ConfigFactory
+    .parseString("""
      akka.remote.artery.advanced.handshake-timeout = 2s
      akka.remote.artery.advanced.aeron.image-liveness-timeout = 1.9s
-  """).withFallback(ArterySpecSupport.defaultConfig)
+  """)
+    .withFallback(ArterySpecSupport.defaultConfig)
 
 }
 

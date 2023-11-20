@@ -82,14 +82,13 @@ object SupervisionSpec {
         case Throw(e) =>
           throw e
       }
-    }.receiveSignal {
-      case (_, sig) =>
-        if (sig == PostStop)
-          slowStop.foreach(latch => latch.await(10, TimeUnit.SECONDS))
-        else if (sig == PreRestart)
-          slowRestart.foreach(latch => latch.await(10, TimeUnit.SECONDS))
-        monitor ! ReceivedSignal(sig)
-        Behaviors.same
+    }.receiveSignal { case (_, sig) =>
+      if (sig == PostStop)
+        slowStop.foreach(latch => latch.await(10, TimeUnit.SECONDS))
+      else if (sig == PreRestart)
+        slowRestart.foreach(latch => latch.await(10, TimeUnit.SECONDS))
+      monitor ! ReceivedSignal(sig)
+      Behaviors.same
     }
 
   class FailingConstructor(context: ActorContext[Command], monitor: ActorRef[Event])
@@ -263,9 +262,12 @@ class StubbedSupervisionSpec extends AnyWordSpec with Matchers with LogCapturing
   }
 }
 
-class SupervisionSpec extends ScalaTestWithActorTestKit("""
+class SupervisionSpec
+    extends ScalaTestWithActorTestKit("""
     akka.log-dead-letters = off
-    """) with AnyWordSpecLike with LogCapturing {
+    """)
+    with AnyWordSpecLike
+    with LogCapturing {
 
   import BehaviorInterceptor._
   import SupervisionSpec._
@@ -647,8 +649,8 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
     }
 
     "optionally NOT stop children when backoff" in {
-      testNotStopChildren(
-        strategy = SupervisorStrategy.restartWithBackoff(10.millis, 10.millis, 0).withStopChildren(enabled = false))
+      testNotStopChildren(strategy =
+        SupervisorStrategy.restartWithBackoff(10.millis, 10.millis, 0).withStopChildren(enabled = false))
     }
 
     def testNotStopChildren(strategy: SupervisorStrategy): Unit = {
@@ -960,8 +962,8 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
           alreadyStarted.set(true)
           startedProbe.ref ! Started
 
-          Behaviors.receiveMessagePartial {
-            case Throw(boom) => throw boom
+          Behaviors.receiveMessagePartial { case Throw(boom) =>
+            throw boom
           }
         })
         .onFailure[Exception](strategy)
@@ -1073,8 +1075,8 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
       }
     }
 
-    "fail to restart when deferred factory throws unhandled" in new FailingUnhandledTestSetup(
-      strategy = SupervisorStrategy.restart) {
+    "fail to restart when deferred factory throws unhandled" in new FailingUnhandledTestSetup(strategy =
+      SupervisorStrategy.restart) {
 
       LoggingTestKit.error[ActorInitializationException].expect {
         spawn(behv)
@@ -1475,10 +1477,9 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
             Behaviors.same
           case _ => throw new Exc1
         }
-        .receiveSignal {
-          case (_, PreRestart) =>
-            probe.ref ! ReceivedSignal(PreRestart)
-            Behaviors.same
+        .receiveSignal { case (_, PreRestart) =>
+          probe.ref ! ReceivedSignal(PreRestart)
+          Behaviors.same
         }
         .narrow
 
@@ -1566,10 +1567,9 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
                   probe.ref ! other
                   Behaviors.same
               }
-              .receiveSignal {
-                case (_, PreRestart) =>
-                  probe.ref ! "PreRestart"
-                  Behaviors.same
+              .receiveSignal { case (_, PreRestart) =>
+                probe.ref ! "PreRestart"
+                Behaviors.same
               }
           })
           .onFailure[TestException](SupervisorStrategy.restart))
@@ -1594,10 +1594,9 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
             case (_, "throw-test-exception") =>
               throw TestException("boom")
           }
-          .receiveSignal {
-            case (_, signal @ (PreRestart | PostStop)) =>
-              signalProbe.ref ! signal.toString
-              Behaviors.same
+          .receiveSignal { case (_, signal @ (PreRestart | PostStop)) =>
+            signalProbe.ref ! signal.toString
+            Behaviors.same
           }
 
       // restart on all exceptions, stop on specific exception subtype
@@ -1642,8 +1641,8 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
                   Behaviors.stopped
                 } else {
                   stopInSetup.set(true)
-                  Behaviors.receiveMessagePartial {
-                    case "boom" => throw TestException("boom")
+                  Behaviors.receiveMessagePartial { case "boom" =>
+                    throw TestException("boom")
                   }
                 }
               })

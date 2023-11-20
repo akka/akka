@@ -79,12 +79,12 @@ class FlowZipSpec extends BaseTwoStreamsSetup {
     }
 
     "work in fruits example" in {
-      //#zip
+      // #zip
       val sourceFruits = Source(List("apple", "orange", "banana"))
       val sourceFirstLetters = Source(List("A", "O", "B"))
       sourceFruits.zip(sourceFirstLetters).runWith(Sink.foreach(println))
       // this will print ('apple', 'A'), ('orange', 'O'), ('banana', 'B')
-      //#zip
+      // #zip
 
     }
   }

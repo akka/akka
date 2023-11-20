@@ -20,30 +20,30 @@ object DnsCompileOnlyDocSpec {
   implicit val timeout: Timeout = Timeout(1.second)
 
   val actorRef: ActorRef = ???
-  //#resolve
+  // #resolve
   val initial: Option[Dns.Resolved] = Dns(system).cache.resolve("google.com")(system, actorRef)
   val cached: Option[Dns.Resolved] = Dns(system).cache.cached("google.com")
-  //#resolve
+  // #resolve
 
   {
-    //#actor-api-inet-address
+    // #actor-api-inet-address
     val resolved: Future[Dns.Resolved] = (IO(Dns) ? Dns.Resolve("google.com")).mapTo[Dns.Resolved]
-    //#actor-api-inet-address
+    // #actor-api-inet-address
 
   }
 
   {
-    //#actor-api-async
+    // #actor-api-async
     val resolved: Future[DnsProtocol.Resolved] =
       (IO(Dns) ? DnsProtocol.Resolve("google.com")).mapTo[DnsProtocol.Resolved]
-    //#actor-api-async
+    // #actor-api-async
   }
 
   {
-    //#srv
+    // #srv
     val resolved: Future[DnsProtocol.Resolved] =
       (IO(Dns) ? DnsProtocol.Resolve("your-service", Srv)).mapTo[DnsProtocol.Resolved]
-    //#srv
+    // #srv
   }
 
 }

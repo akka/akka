@@ -17,9 +17,7 @@ import akka.remote.RemoteActorRefProvider
 import akka.remote.RemoteRef
 import akka.util.OptionVal
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[remote] class MessageDispatcher(system: ExtendedActorSystem, provider: RemoteActorRefProvider) {
 
   private val remoteDaemon = provider.remoteDaemon
@@ -61,7 +59,7 @@ private[remote] class MessageDispatcher(system: ExtendedActorSystem, provider: R
         message match {
           case sel: ActorSelectionMessage =>
             if (UntrustedMode && (!TrustedSelectionPaths.contains(sel.elements.mkString("/", "/", "")) ||
-                sel.msg.isInstanceOf[PossiblyHarmful] || l != provider.rootGuardian)) {
+              sel.msg.isInstanceOf[PossiblyHarmful] || l != provider.rootGuardian)) {
               if (debugLogEnabled)
                 log.debug(
                   LogMarker.Security,

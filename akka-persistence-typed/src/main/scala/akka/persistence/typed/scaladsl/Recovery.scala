@@ -8,32 +8,22 @@ import akka.annotation.InternalApi
 import akka.persistence.typed.SnapshotSelectionCriteria
 import akka.persistence.typed.internal.{ DefaultRecovery, DisabledRecovery, RecoveryWithSnapshotSelectionCriteria }
 
-/**
- * Strategy for recovery of snapshots and events.
- */
+/** Strategy for recovery of snapshots and events. */
 trait Recovery {
   def asJava: akka.persistence.typed.javadsl.Recovery
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[akka] def toClassic: akka.persistence.Recovery
 
 }
 
-/**
- * Strategy for recovery of snapshots and events.
- */
+/** Strategy for recovery of snapshots and events. */
 object Recovery {
 
-  /**
-   * Snapshots and events are recovered
-   */
+  /** Snapshots and events are recovered */
   val default: Recovery = DefaultRecovery
 
-  /**
-   * Neither snapshots nor events are recovered
-   */
+  /** Neither snapshots nor events are recovered */
   val disabled: Recovery = DisabledRecovery
 
   /**

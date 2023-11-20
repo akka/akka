@@ -10,9 +10,7 @@ import akka.actor.ExtendedActorSystem
 import akka.annotation.InternalApi
 import akka.util.ByteString
 
-/**
- * INTERNAL API: only public by configuration
- */
+/** INTERNAL API: only public by configuration */
 @InternalApi private[akka] final class LongSerializer(val system: ExtendedActorSystem)
     extends Serializer
     with ByteBufferSerializer {
@@ -33,7 +31,7 @@ import akka.util.ByteString
     var long = Long.unbox(o)
     var i = 0
     while (long != 0) {
-      result(i) = (long & 0xFF).toByte
+      result(i) = (long & 0xff).toByte
       i += 1
       long >>>= 8
     }
@@ -45,16 +43,14 @@ import akka.util.ByteString
     var i = 7
     while (i >= 0) {
       result <<= 8
-      result |= (bytes(i).toLong & 0xFF)
+      result |= (bytes(i).toLong & 0xff)
       i -= 1
     }
     Long.box(result)
   }
 }
 
-/**
- * INTERNAL API: only public by configuration
- */
+/** INTERNAL API: only public by configuration */
 @InternalApi private[akka] final class IntSerializer(val system: ExtendedActorSystem)
     extends Serializer
     with ByteBufferSerializer {
@@ -71,7 +67,7 @@ import akka.util.ByteString
     var int = Int.unbox(o)
     var i = 0
     while (int != 0) {
-      result(i) = (int & 0xFF).toByte
+      result(i) = (int & 0xff).toByte
       i += 1
       int >>>= 8
     }
@@ -83,16 +79,14 @@ import akka.util.ByteString
     var i = 3
     while (i >= 0) {
       result <<= 8
-      result |= (bytes(i).toInt & 0xFF)
+      result |= (bytes(i).toInt & 0xff)
       i -= 1
     }
     Int.box(result)
   }
 }
 
-/**
- * INTERNAL API: only public by configuration
- */
+/** INTERNAL API: only public by configuration */
 @InternalApi private[akka] final class StringSerializer(val system: ExtendedActorSystem)
     extends Serializer
     with ByteBufferSerializer {
@@ -114,9 +108,7 @@ import akka.util.ByteString
 
 }
 
-/**
- * INTERNAL API: only public by configuration
- */
+/** INTERNAL API: only public by configuration */
 @InternalApi private[akka] final class ByteStringSerializer(val system: ExtendedActorSystem)
     extends Serializer
     with ByteBufferSerializer {
@@ -148,9 +140,7 @@ import akka.util.ByteString
 
 }
 
-/**
- * INTERNAL API: only public by configuration
- */
+/** INTERNAL API: only public by configuration */
 @InternalApi private[akka] final class BooleanSerializer(val system: ExtendedActorSystem)
     extends Serializer
     with ByteBufferSerializer {

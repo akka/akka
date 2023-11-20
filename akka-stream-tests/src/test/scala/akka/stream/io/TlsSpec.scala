@@ -72,15 +72,19 @@ object TlsSpec {
       override def preStart(): Unit = scheduleOnce((), duration)
 
       var last: ByteString = _
-      setHandler(in, new InHandler {
-        override def onPush(): Unit = {
-          last = grab(in)
-          push(out, last)
-        }
-      })
-      setHandler(out, new OutHandler {
-        override def onPull(): Unit = pull(in)
-      })
+      setHandler(
+        in,
+        new InHandler {
+          override def onPush(): Unit = {
+            last = grab(in)
+            push(out, last)
+          }
+        })
+      setHandler(
+        out,
+        new OutHandler {
+          override def onPull(): Unit = pull(in)
+        })
       override def onTimer(x: Any): Unit = {
         failStage(new TimeoutException(s"timeout expired, last element was $last"))
       }
@@ -567,7 +571,7 @@ class TlsSpec extends StreamSpec(TlsSpec.configOverrides) with WithLogCapturing 
           Await.result(run("unknown.example.org"), 3.seconds)
         }
 
-        cause.getClass should ===(classOf[SSLHandshakeException]) //General SSLEngine problem
+        cause.getClass should ===(classOf[SSLHandshakeException]) // General SSLEngine problem
 
         val rootCause = rootCauseOf(cause.getCause)
         rootCause.getClass should ===(classOf[CertificateException])

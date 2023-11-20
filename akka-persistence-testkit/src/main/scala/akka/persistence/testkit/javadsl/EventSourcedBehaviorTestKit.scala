@@ -89,9 +89,7 @@ object EventSourcedBehaviorTestKit {
     }
   }
 
-  /**
-   * Factory method to create a new EventSourcedBehaviorTestKit.
-   */
+  /** Factory method to create a new EventSourcedBehaviorTestKit. */
   def create[Command, Event, State](
       system: ActorSystem[_],
       behavior: Behavior[Command]): EventSourcedBehaviorTestKit[Command, Event, State] =
@@ -115,15 +113,11 @@ object EventSourcedBehaviorTestKit {
     new EventSourcedBehaviorTestKit(scaladsl.EventSourcedBehaviorTestKit(system, behavior, scaladslSettings))
   }
 
-  /**
-   * The result of running a command.
-   */
+  /** The result of running a command. */
   @DoNotInherit class CommandResult[Command, Event, State](
       delegate: scaladsl.EventSourcedBehaviorTestKit.CommandResult[Command, Event, State]) {
 
-    /**
-     * The command that was run.
-     */
+    /** The command that was run. */
     def command: Command =
       delegate.command
 
@@ -135,15 +129,11 @@ object EventSourcedBehaviorTestKit {
     def events: JList[Event] =
       delegate.events.asJava
 
-    /**
-     * `true` if no events were emitted by the command.
-     */
+    /** `true` if no events were emitted by the command. */
     def hasNoEvents: Boolean =
       delegate.hasNoEvents
 
-    /**
-     * The first event. It will throw `AssertionError` if there is no event.
-     */
+    /** The first event. It will throw `AssertionError` if there is no event. */
     def event: Event =
       delegate.event
 
@@ -154,15 +144,11 @@ object EventSourcedBehaviorTestKit {
     def eventOfType[E <: Event](eventClass: Class[E]): E =
       delegate.eventOfType(ClassTag[E](eventClass))
 
-    /**
-     * The state after applying the events.
-     */
+    /** The state after applying the events. */
     def state: State =
       delegate.state
 
-    /**
-     * The state as a given expected type. It will throw `AssertionError` if the state is of a different type.
-     */
+    /** The state as a given expected type. It will throw `AssertionError` if the state is of a different type. */
     def stateOfType[S <: State](stateClass: Class[S]): S =
       delegate.stateOfType(ClassTag[S](stateClass))
   }
@@ -175,9 +161,7 @@ object EventSourcedBehaviorTestKit {
       delegate: scaladsl.EventSourcedBehaviorTestKit.CommandResultWithReply[Command, Event, State, Reply])
       extends CommandResult[Command, Event, State](delegate) {
 
-    /**
-     * The reply. It will throw `AssertionError` if there was no reply.
-     */
+    /** The reply. It will throw `AssertionError` if there was no reply. */
     def reply: Reply =
       delegate.reply
 
@@ -188,21 +172,15 @@ object EventSourcedBehaviorTestKit {
     def replyOfType[R <: Reply](replyClass: Class[R]): R =
       delegate.replyOfType(ClassTag[R](replyClass))
 
-    /**
-     * `true` if there is no reply.
-     */
+    /** `true` if there is no reply. */
     def hasNoReply: Boolean = delegate.hasNoReply
 
   }
 
-  /**
-   * The result of restarting the behavior.
-   */
+  /** The result of restarting the behavior. */
   final class RestartResult[State](delegate: scaladsl.EventSourcedBehaviorTestKit.RestartResult[State]) {
 
-    /**
-     * The state after recovery.
-     */
+    /** The state after recovery. */
     def state: State =
       delegate.state
   }
@@ -235,9 +213,7 @@ final class EventSourcedBehaviorTestKit[Command, Event, State](
   def runCommand[R](creator: JFunction[ActorRef[R], Command]): CommandResultWithReply[Command, Event, State, R] =
     new CommandResultWithReply(delegate.runCommand(replyTo => creator.apply(replyTo)))
 
-  /**
-   * Retrieve the current state of the Behavior.
-   */
+  /** Retrieve the current state of the Behavior. */
   def getState(): State =
     delegate.getState()
 
@@ -248,15 +224,11 @@ final class EventSourcedBehaviorTestKit[Command, Event, State](
   def restart(): RestartResult[State] =
     new RestartResult(delegate.restart())
 
-  /**
-   * Clears the in-memory journal and snapshot storage and restarts the behavior.
-   */
+  /** Clears the in-memory journal and snapshot storage and restarts the behavior. */
   def clear(): Unit =
     delegate.clear()
 
-  /**
-   * Initializes behavior from provided state and/or events.
-   */
+  /** Initializes behavior from provided state and/or events. */
   @varargs
   def initialize(state: State, events: Event*): Unit = delegate.initialize(state, events: _*)
   @varargs

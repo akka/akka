@@ -7,9 +7,7 @@ package akka.actor.typed.internal
 import akka.actor.typed.Props
 import akka.annotation.InternalApi
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 final private[akka] case class CachedProps(
     typedProps: Props,

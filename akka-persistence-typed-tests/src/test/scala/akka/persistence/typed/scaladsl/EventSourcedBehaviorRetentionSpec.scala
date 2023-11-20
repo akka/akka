@@ -264,14 +264,13 @@ class EventSourcedBehaviorRetentionSpec
       val replyProbe = TestProbe[State]()
 
       val persistentActor = spawn(
-        Behaviors.setup[Command](
-          ctx =>
-            counter(
-              ctx,
-              pid,
-              snapshotSignalProbe = Some(snapshotSignalProbe.ref),
-              deleteSnapshotSignalProbe = Some(deleteSnapshotSignalProbe.ref))
-              .withRetention(RetentionCriteria.snapshotEvery(numberOfEvents = 3, keepNSnapshots = 2))))
+        Behaviors.setup[Command](ctx =>
+          counter(
+            ctx,
+            pid,
+            snapshotSignalProbe = Some(snapshotSignalProbe.ref),
+            deleteSnapshotSignalProbe = Some(deleteSnapshotSignalProbe.ref))
+            .withRetention(RetentionCriteria.snapshotEvery(numberOfEvents = 3, keepNSnapshots = 2))))
 
       (1 to 10).foreach(_ => persistentActor ! Increment)
       persistentActor ! GetValue(replyProbe.ref)
@@ -500,14 +499,13 @@ class EventSourcedBehaviorRetentionSpec
       val replyProbe = TestProbe[State]()
 
       val persistentActor = spawn(
-        Behaviors.setup[Command](
-          ctx =>
-            counter(
-              ctx,
-              pid,
-              snapshotSignalProbe = Some(snapshotSignalProbe.ref),
-              deleteSnapshotSignalProbe = Some(deleteSnapshotSignalProbe.ref))
-              .withRetention(RetentionCriteria.snapshotEvery(numberOfEvents = 1, keepNSnapshots = 3))))
+        Behaviors.setup[Command](ctx =>
+          counter(
+            ctx,
+            pid,
+            snapshotSignalProbe = Some(snapshotSignalProbe.ref),
+            deleteSnapshotSignalProbe = Some(deleteSnapshotSignalProbe.ref))
+            .withRetention(RetentionCriteria.snapshotEvery(numberOfEvents = 1, keepNSnapshots = 3))))
 
       (1 to 4).foreach(_ => persistentActor ! Increment)
       persistentActor ! GetValue(replyProbe.ref)

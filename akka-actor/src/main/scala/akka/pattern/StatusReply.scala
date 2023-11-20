@@ -36,9 +36,7 @@ final class StatusReply[+T] private (private val status: Try[T]) {
    */
   def getValue: T = status.get
 
-  /**
-   * Java API: returns the exception if the reply is a failure, or throws an exception if not.
-   */
+  /** Java API: returns the exception if the reply is a failure, or throws an exception if not. */
   def getError: Throwable = status match {
     case ScalaFailure(ex) => ex
     case _                => throw new IllegalArgumentException("Expected reply to be a failure, but was a success")
@@ -64,24 +62,16 @@ final class StatusReply[+T] private (private val status: Try[T]) {
 
 object StatusReply {
 
-  /**
-   * Scala API: A general purpose message for using as an Ack
-   */
+  /** Scala API: A general purpose message for using as an Ack */
   val Ack: StatusReply[Done] = success(Done)
 
-  /**
-   * Java API: A general purpose message for using as an Ack
-   */
+  /** Java API: A general purpose message for using as an Ack */
   def ack(): StatusReply[Done] = Ack
 
-  /**
-   * Java API: Create a successful reply containing `value`
-   */
+  /** Java API: Create a successful reply containing `value` */
   def success[T](value: T): StatusReply[T] = new StatusReply(ScalaSuccess(value))
 
-  /**
-   * Java API: Create an status response with a error message describing why the request was failed or denied.
-   */
+  /** Java API: Create an status response with a error message describing why the request was failed or denied. */
   def error[T](errorMessage: String): StatusReply[T] = Error(errorMessage)
 
   /**
@@ -144,9 +134,7 @@ object StatusReply {
    */
   object Success {
 
-    /**
-     * Scala API: Create a successful reply containing `value`
-     */
+    /** Scala API: Create a successful reply containing `value` */
     def apply[T](value: T): StatusReply[T] = new StatusReply(ScalaSuccess(value))
     def unapply(status: StatusReply[Any]): Option[Any] =
       if (status != null && status.isSuccess) Some(status.getValue)
@@ -163,9 +151,7 @@ object StatusReply {
    */
   object Error {
 
-    /**
-     * Scala API: Create an status response with a error message describing why the request was failed or denied.
-     */
+    /** Scala API: Create an status response with a error message describing why the request was failed or denied. */
     def apply[T](errorMessage: String): StatusReply[T] = error(new ErrorMessage(errorMessage))
 
     /**
@@ -185,9 +171,7 @@ object StatusReply {
       else None
   }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi
   private[akka] def flattenStatusFuture[T](f: Future[StatusReply[T]]): Future[T] =
     f.transform {

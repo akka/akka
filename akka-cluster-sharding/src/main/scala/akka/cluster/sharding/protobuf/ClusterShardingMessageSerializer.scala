@@ -34,9 +34,7 @@ import akka.serialization.SerializerWithStringManifest
 import akka.util.ccompat._
 import akka.util.ccompat.JavaConverters._
 
-/**
- * INTERNAL API: Protobuf serializer of ClusterSharding messages.
- */
+/** INTERNAL API: Protobuf serializer of ClusterSharding messages. */
 @ccompatUsedUntil213
 private[akka] class ClusterShardingMessageSerializer(val system: ExtendedActorSystem)
     extends SerializerWithStringManifest
@@ -354,16 +352,15 @@ private[akka] class ClusterShardingMessageSerializer(val system: ExtendedActorSy
   private def coordinatorStateToProto(state: State): sm.CoordinatorState = {
     val builder = sm.CoordinatorState.newBuilder()
 
-    state.shards.foreach {
-      case (shardId, regionRef) =>
-        val b = sm.CoordinatorState.ShardEntry
-          .newBuilder()
-          .setShardId(shardId)
-          .setRegionRef(Serialization.serializedActorPath(regionRef))
-        builder.addShards(b)
+    state.shards.foreach { case (shardId, regionRef) =>
+      val b = sm.CoordinatorState.ShardEntry
+        .newBuilder()
+        .setShardId(shardId)
+        .setRegionRef(Serialization.serializedActorPath(regionRef))
+      builder.addShards(b)
     }
-    state.regions.foreach {
-      case (regionRef, _) => builder.addRegions(Serialization.serializedActorPath(regionRef))
+    state.regions.foreach { case (regionRef, _) =>
+      builder.addRegions(Serialization.serializedActorPath(regionRef))
     }
     state.regionProxies.foreach { ref =>
       builder.addRegionProxies(Serialization.serializedActorPath(ref))
@@ -385,8 +382,8 @@ private[akka] class ClusterShardingMessageSerializer(val system: ExtendedActorSy
     val regionsZero: Map[ActorRef, Vector[String]] =
       state.getRegionsList.asScala.toVector.iterator.map(resolveActorRef(_) -> Vector.empty[String]).toMap
     val regions: Map[ActorRef, Vector[String]] =
-      shards.foldLeft(regionsZero) {
-        case (acc, (shardId, regionRef)) => acc.updated(regionRef, acc(regionRef) :+ shardId)
+      shards.foldLeft(regionsZero) { case (acc, (shardId, regionRef)) =>
+        acc.updated(regionRef, acc(regionRef) :+ shardId)
       }
 
     val proxies: Set[ActorRef] = state.getRegionProxiesList.asScala.iterator.map { resolveActorRef }.to(immutable.Set)
@@ -430,13 +427,12 @@ private[akka] class ClusterShardingMessageSerializer(val system: ExtendedActorSy
   private def shardHomesToProto(sh: ShardHomes): sm.ShardHomes = {
     sm.ShardHomes
       .newBuilder()
-      .addAllHomes(sh.homes.map {
-        case (regionRef, shards) =>
-          sm.ShardHomesEntry
-            .newBuilder()
-            .setRegion(Serialization.serializedActorPath(regionRef))
-            .addAllShard(shards.asJava)
-            .build()
+      .addAllHomes(sh.homes.map { case (regionRef, shards) =>
+        sm.ShardHomesEntry
+          .newBuilder()
+          .setRegion(Serialization.serializedActorPath(regionRef))
+          .addAllShard(shards.asJava)
+          .build()
       }.asJava)
       .build()
   }
@@ -485,9 +481,8 @@ private[akka] class ClusterShardingMessageSerializer(val system: ExtendedActorSy
 
   private def shardRegionStatsToProto(evt: ShardRegionStats): sm.ShardRegionStats = {
     val b = sm.ShardRegionStats.newBuilder()
-    evt.stats.foreach {
-      case (sid, no) =>
-        b.addStats(sm.MapFieldEntry.newBuilder().setKey(sid).setValue(no).build())
+    evt.stats.foreach { case (sid, no) =>
+      b.addStats(sm.MapFieldEntry.newBuilder().setKey(sid).setValue(no).build())
     }
     evt.failed.foreach { sid =>
       b.addFailed(sid).build()
@@ -508,14 +503,13 @@ private[akka] class ClusterShardingMessageSerializer(val system: ExtendedActorSy
 
   private def clusterShardingStatsToProto(evt: ClusterShardingStats): sm.ClusterShardingStats = {
     val b = sm.ClusterShardingStats.newBuilder()
-    evt.regions.foreach {
-      case (address, shardRegionStats) =>
-        b.addStats(
-          sm.ClusterShardingStatsEntry
-            .newBuilder()
-            .setAddress(serializeAddress(address))
-            .setStats(shardRegionStatsToProto(shardRegionStats))
-            .build())
+    evt.regions.foreach { case (address, shardRegionStats) =>
+      b.addStats(
+        sm.ClusterShardingStatsEntry
+          .newBuilder()
+          .setAddress(serializeAddress(address))
+          .setStats(shardRegionStatsToProto(shardRegionStats))
+          .build())
     }
     b.build()
   }

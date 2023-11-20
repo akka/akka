@@ -10,9 +10,7 @@ import akka.stream.SinkRef
 import akka.stream.SourceRef
 import akka.stream.StreamRefResolver
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] final class StreamRefResolverImpl(system: ExtendedActorSystem) extends StreamRefResolver {
 
   def toSerializationFormat[T](ref: SourceRef[T]): String = ref match {

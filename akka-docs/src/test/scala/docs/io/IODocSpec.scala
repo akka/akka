@@ -15,12 +15,12 @@ import akka.testkit.AkkaSpec
 import scala.concurrent.duration._
 
 class DemoActor extends Actor {
-  //#manager
+  // #manager
   import akka.io.{ IO, Tcp }
   import context.system // implicitly used by IO(Tcp)
 
   val manager = IO(Tcp)
-  //#manager
+  // #manager
 
   def receive = Actor.emptyBehavior
 }
@@ -35,16 +35,16 @@ class Server extends Actor {
 
   def receive = {
     case b @ Bound(localAddress) =>
-      //#do-some-logging-or-setup
+      // #do-some-logging-or-setup
       context.parent ! b
-    //#do-some-logging-or-setup
+    // #do-some-logging-or-setup
 
     case CommandFailed(_: Bind) => context.stop(self)
 
     case c @ Connected(remote, local) =>
-      //#server
+      // #server
       context.parent ! c
-      //#server
+      // #server
       val handler = context.actorOf(Props[SimplisticHandler]())
       val connection = sender()
       connection ! Register(handler)
@@ -107,8 +107,8 @@ class IODocSpec extends AkkaSpec {
 
   class Parent extends Actor {
     context.actorOf(Props[Server](), "server")
-    def receive = {
-      case msg => testActor.forward(msg)
+    def receive = { case msg =>
+      testActor.forward(msg)
     }
   }
 

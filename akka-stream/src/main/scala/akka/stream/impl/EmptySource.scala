@@ -9,9 +9,7 @@ import akka.stream._
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.stage._
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object EmptySource extends GraphStage[SourceShape[Nothing]] {
   val out = Outlet[Nothing]("EmptySource.out")
   override val shape = SourceShape(out)

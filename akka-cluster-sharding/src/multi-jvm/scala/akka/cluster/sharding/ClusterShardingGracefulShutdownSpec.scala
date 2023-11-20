@@ -17,8 +17,7 @@ import akka.testkit._
 abstract class ClusterShardingGracefulShutdownSpecConfig(mode: String)
     extends MultiNodeClusterShardingConfig(
       mode,
-      additionalConfig =
-        """
+      additionalConfig = """
         akka.loglevel = info
         akka.persistence.journal.leveldb-shared.store.native = off
         # We set this high to allow pausing coordinated shutdown make sure the handoff completes 'immediately' and not

@@ -12,9 +12,7 @@ import akka.event.EventStream
 import akka.remote.FailureDetector
 import akka.util.unused
 
-/**
- * User controllable "puppet" failure detector.
- */
+/** User controllable "puppet" failure detector. */
 class FailureDetectorPuppet(@unused config: Config, @unused ev: EventStream) extends FailureDetector {
 
   sealed trait Status

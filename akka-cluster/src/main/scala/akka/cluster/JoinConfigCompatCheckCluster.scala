@@ -11,9 +11,7 @@ import com.typesafe.config.Config
 import akka.annotation.InternalApi
 import akka.cluster.sbr.SplitBrainResolverProvider
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object JoinConfigCompatCheckCluster {
   private val DowningProviderPath = "akka.cluster.downing-provider-class"
   private val SbrStrategyPath = "akka.cluster.split-brain-resolver.active-strategy"
@@ -22,9 +20,7 @@ import akka.cluster.sbr.SplitBrainResolverProvider
   private val LightbendSbrProviderClass = "com.lightbend.akka.sbr.SplitBrainResolverProvider"
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 final class JoinConfigCompatCheckCluster extends JoinConfigCompatChecker {
   import JoinConfigCompatCheckCluster._
@@ -36,8 +32,8 @@ final class JoinConfigCompatCheckCluster extends JoinConfigCompatChecker {
     val actualDowningProvider = actualConfig.getString(DowningProviderPath)
     val downingProviderResult =
       if (toCheckDowningProvider == actualDowningProvider || Set(toCheckDowningProvider, actualDowningProvider) == Set(
-            AkkaSbrProviderClass,
-            LightbendSbrProviderClass))
+          AkkaSbrProviderClass,
+          LightbendSbrProviderClass))
         Valid
       else
         JoinConfigCompatChecker.checkEquality(List(DowningProviderPath), toCheck, actualConfig)

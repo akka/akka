@@ -207,6 +207,8 @@ class ReliableDeliverySpec(config: Config)
 // Same tests but with chunked messages
 class ReliableDeliveryChunkedSpec
     extends ReliableDeliverySpec(
-      ConfigFactory.parseString("""
+      ConfigFactory
+        .parseString("""
     akka.reliable-delivery.producer-controller.chunk-large-messages = 1b
-    """).withFallback(TestSerializer.config).withFallback(ReliableDeliverySpec.config))
+    """).withFallback(TestSerializer.config)
+        .withFallback(ReliableDeliverySpec.config))

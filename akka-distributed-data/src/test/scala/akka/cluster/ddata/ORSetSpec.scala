@@ -59,16 +59,16 @@ class ORSetSpec extends AnyWordSpec with Matchers {
       val c4 = c3.remove(node1, user2)
       val c5 = c4.remove(node1, user1)
 
-      c5.elements should not contain (user1)
-      c5.elements should not contain (user2)
+      c5.elements should not contain user1
+      c5.elements should not contain user2
 
       val c6 = c3.merge(c5)
-      c6.elements should not contain (user1)
-      c6.elements should not contain (user2)
+      c6.elements should not contain user1
+      c6.elements should not contain user2
 
       val c7 = c5.merge(c3)
-      c7.elements should not contain (user1)
-      c7.elements should not contain (user2)
+      c7.elements should not contain user1
+      c7.elements should not contain user2
     }
 
     "be able to add removed" in {
@@ -77,7 +77,7 @@ class ORSetSpec extends AnyWordSpec with Matchers {
       val c3 = c2.add(node1, user1)
       c3.elements should contain(user1)
       val c4 = c3.remove(node1, user1)
-      c4.elements should not contain (user1)
+      c4.elements should not contain user1
       val c5 = c4.add(node1, user1)
       c5.elements should contain(user1)
     }
@@ -88,7 +88,7 @@ class ORSetSpec extends AnyWordSpec with Matchers {
       val c2 = c1.add(node1, user1)
       val c3 = c2.add(node1, user2)
       val c4 = c3.remove(node1, user1)
-      c4.elements should not contain (user1)
+      c4.elements should not contain user1
       c4.elements should contain(user2)
 
       val c5 = c4.add(node1, user1)
@@ -99,7 +99,7 @@ class ORSetSpec extends AnyWordSpec with Matchers {
       val c7 = c6.remove(node1, user1)
       val c8 = c7.add(node1, user2)
       val c9 = c8.remove(node1, user1)
-      c9.elements should not contain (user1)
+      c9.elements should not contain user1
       c9.elements should contain(user2)
     }
 
@@ -112,20 +112,20 @@ class ORSetSpec extends AnyWordSpec with Matchers {
       // set 2
       val c2 = ORSet().add(node2, user3).add(node2, user4).remove(node2, user3)
 
-      c2.elements should not contain (user3)
+      c2.elements should not contain user3
       c2.elements should contain(user4)
 
       // merge both ways
       val merged1 = c1.merge(c2)
       merged1.elements should contain(user1)
       merged1.elements should contain(user2)
-      merged1.elements should not contain (user3)
+      merged1.elements should not contain user3
       merged1.elements should contain(user4)
 
       val merged2 = c2.merge(c1)
       merged2.elements should contain(user1)
       merged2.elements should contain(user2)
-      merged2.elements should not contain (user3)
+      merged2.elements should not contain user3
       merged2.elements should contain(user4)
     }
 
@@ -133,29 +133,29 @@ class ORSetSpec extends AnyWordSpec with Matchers {
       // set 1
       val c1 = ORSet().add(node1, user1).add(node1, user2).add(node1, user3).remove(node1, user1).remove(node1, user3)
 
-      c1.elements should not contain (user1)
+      c1.elements should not contain user1
       c1.elements should contain(user2)
-      c1.elements should not contain (user3)
+      c1.elements should not contain user3
 
       // set 2
       val c2 = ORSet().add(node2, user1).add(node2, user2).add(node2, user3).add(node2, user4).remove(node2, user3)
 
       c2.elements should contain(user1)
       c2.elements should contain(user2)
-      c2.elements should not contain (user3)
+      c2.elements should not contain user3
       c2.elements should contain(user4)
 
       // merge both ways
       val merged1 = c1.merge(c2)
       merged1.elements should contain(user1)
       merged1.elements should contain(user2)
-      merged1.elements should not contain (user3)
+      merged1.elements should not contain user3
       merged1.elements should contain(user4)
 
       val merged2 = c2.merge(c1)
       merged2.elements should contain(user1)
       merged2.elements should contain(user2)
-      merged2.elements should not contain (user3)
+      merged2.elements should not contain user3
       merged2.elements should contain(user4)
     }
 
@@ -169,19 +169,19 @@ class ORSetSpec extends AnyWordSpec with Matchers {
       val c2 = c1.add(node2, user1).remove(node2, user2).remove(node2, user3)
 
       c2.elements should contain(user1)
-      c2.elements should not contain (user2)
-      c2.elements should not contain (user3)
+      c2.elements should not contain user2
+      c2.elements should not contain user3
 
       // merge both ways
       val merged1 = c1.merge(c2)
       merged1.elements should contain(user1)
-      merged1.elements should not contain (user2)
-      merged1.elements should not contain (user3)
+      merged1.elements should not contain user2
+      merged1.elements should not contain user3
 
       val merged2 = c2.merge(c1)
       merged2.elements should contain(user1)
-      merged2.elements should not contain (user2)
-      merged2.elements should not contain (user3)
+      merged2.elements should not contain user2
+      merged2.elements should not contain user3
 
       val c3 = c1.add(node1, user4).remove(node1, user3).add(node1, user2)
 
@@ -189,13 +189,13 @@ class ORSetSpec extends AnyWordSpec with Matchers {
       val merged3 = c2.merge(c3)
       merged3.elements should contain(user1)
       merged3.elements should contain(user2)
-      merged3.elements should not contain (user3)
+      merged3.elements should not contain user3
       merged3.elements should contain(user4)
 
       val merged4 = c3.merge(c2)
       merged4.elements should contain(user1)
       merged4.elements should contain(user2)
-      merged4.elements should not contain (user3)
+      merged4.elements should not contain user3
       merged4.elements should contain(user4)
     }
 
@@ -206,23 +206,23 @@ class ORSetSpec extends AnyWordSpec with Matchers {
       // merge both ways
       val merged1 = c1.merge(c2)
       merged1.elements should contain(user1)
-      merged1.elements should not contain (user2)
+      merged1.elements should not contain user2
 
       val merged2 = c2.merge(c1)
       merged2.elements should contain(user1)
-      merged2.elements should not contain (user2)
+      merged2.elements should not contain user2
 
       val c3 = c1.add(node1, user3)
 
       // merge both ways
       val merged3 = c3.merge(c2)
       merged3.elements should contain(user1)
-      merged3.elements should not contain (user2)
+      merged3.elements should not contain user2
       merged3.elements should contain(user3)
 
       val merged4 = c2.merge(c3)
       merged4.elements should contain(user1)
-      merged4.elements should not contain (user2)
+      merged4.elements should not contain user2
       merged4.elements should contain(user3)
     }
 
@@ -521,7 +521,11 @@ class ORSetSpec extends AnyWordSpec with Matchers {
         "K5" -> VersionVector(nodeA, 2L))
       val vvector = VersionVector(TreeMap(nodeA -> 3L, nodeD -> 7L))
       val acc: Map[Any, VersionVector] = Map("K1" -> VersionVector(nodeA, 3L))
-      val expectedDots = acc ++ Map("K3" -> VersionVector(nodeA, 4L), "K4" -> VersionVector(nodeD, 8L)) // "a" -> 3 removed, optimized to include only those unseen
+      val expectedDots =
+        acc ++ Map(
+          "K3" -> VersionVector(nodeA, 4L),
+          "K4" -> VersionVector(nodeD, 8L)
+        ) // "a" -> 3 removed, optimized to include only those unseen
 
       ORSet.mergeDisjointKeys(keys, elements, vvector, acc) should be(expectedDots)
     }
@@ -599,7 +603,9 @@ class ORSetSpec extends AnyWordSpec with Matchers {
 
       val a2 = ORSet().mergeDelta(a.delta.get).mergeDelta(a1.delta.get)
       a2.elements should be(Set.empty)
-      a2.vvector.contains(nodeB) should be(false) // a2 should not be polluted by the nodeB dot, as all operations on it pertained only to elements from nodeA
+      a2.vvector.contains(nodeB) should be(
+        false
+      ) // a2 should not be polluted by the nodeB dot, as all operations on it pertained only to elements from nodeA
     }
 
     "have unapply extractor" in {

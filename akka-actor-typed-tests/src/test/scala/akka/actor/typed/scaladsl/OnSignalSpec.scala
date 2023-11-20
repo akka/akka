@@ -22,10 +22,9 @@ final class OnSignalSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike 
         Behaviors.setup[Nothing] { context =>
           val stoppedChild = context.spawn(Behaviors.stopped, "stopped-child")
           context.watch(stoppedChild)
-          Behaviors.receiveSignal[Nothing] {
-            case (_, Terminated(`stoppedChild`)) =>
-              probe.ref ! Done
-              Behaviors.stopped
+          Behaviors.receiveSignal[Nothing] { case (_, Terminated(`stoppedChild`)) =>
+            probe.ref ! Done
+            Behaviors.stopped
           }
         }
       spawn[Nothing](behavior)
@@ -34,19 +33,19 @@ final class OnSignalSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike 
 
     def stopper(probe: TestProbe[Done], children: Int) = Behaviors.setup[String] { ctx =>
       (0 until children).foreach { i =>
-        ctx.spawn(Behaviors.receiveMessage[String] { _ =>
-          Behaviors.same
-        }, s"$i")
+        ctx.spawn(
+          Behaviors.receiveMessage[String] { _ =>
+            Behaviors.same
+          },
+          s"$i")
       }
       Behaviors
-        .receiveMessagePartial[String] {
-          case "stop" =>
-            Behaviors.stopped
+        .receiveMessagePartial[String] { case "stop" =>
+          Behaviors.stopped
         }
-        .receiveSignal {
-          case (_, PostStop) =>
-            probe.ref ! Done
-            Behaviors.same
+        .receiveSignal { case (_, PostStop) =>
+          probe.ref ! Done
+          Behaviors.same
         }
     }
 

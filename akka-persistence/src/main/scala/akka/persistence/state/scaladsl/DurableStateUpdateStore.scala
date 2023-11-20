@@ -16,9 +16,7 @@ import akka.Done
 //#plugin-api
 trait DurableStateUpdateStore[A] extends DurableStateStore[A] {
 
-  /**
-   * @param revision sequence number for optimistic locking. starts at 1.
-   */
+  /** @param revision sequence number for optimistic locking. starts at 1. */
   def upsertObject(persistenceId: String, revision: Long, value: A, tag: String): Future[Done]
 
   @deprecated(message = "Use the deleteObject overload with revision instead.", since = "2.6.20")

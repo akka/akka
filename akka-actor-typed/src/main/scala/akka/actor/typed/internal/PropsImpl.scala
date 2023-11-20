@@ -8,9 +8,7 @@ import akka.actor.typed.{ DispatcherSelector, MailboxSelector, Props }
 import akka.actor.typed.ActorTags
 import akka.annotation.InternalApi
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object PropsImpl {
 
   /**

@@ -17,12 +17,12 @@ object PersistenceMultiDocSpec {
   //#default-config
   """
 
-  //#default-plugins
+  // #default-plugins
   trait ActorWithDefaultPlugins extends PersistentActor {
     override def persistenceId = "123"
   }
 
-  //#default-plugins
+  // #default-plugins
 
   val OverrideConfig =
     s"""
@@ -44,7 +44,7 @@ object PersistenceMultiDocSpec {
   //#override-config
   """
 
-  //#override-plugins
+  // #override-plugins
   trait ActorWithOverridePlugins extends PersistentActor {
     override def persistenceId = "123"
 
@@ -55,9 +55,9 @@ object PersistenceMultiDocSpec {
     override def snapshotPluginId = "akka.persistence.chronicle.snapshot-store"
   }
 
-  //#override-plugins
+  // #override-plugins
 
-  //#runtime-config
+  // #runtime-config
   trait ActorWithRuntimePluginConfig extends PersistentActor with RuntimePluginConfig {
     // Variable that is retrieved at runtime, from an external service for instance.
     val runtimeDistinction = "foo"
@@ -92,5 +92,5 @@ object PersistenceMultiDocSpec {
 
   }
 
-  //#runtime-config
+  // #runtime-config
 }

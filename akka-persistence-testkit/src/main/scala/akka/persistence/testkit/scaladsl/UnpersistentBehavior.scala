@@ -20,7 +20,8 @@ sealed trait UnpersistentBehavior[Command, State] {
 
 object UnpersistentBehavior {
 
-  /** Given an EventSourcedBehavior, produce a non-persistent Behavior which synchronously publishes events and snapshots
+  /**
+   * Given an EventSourcedBehavior, produce a non-persistent Behavior which synchronously publishes events and snapshots
    *  for inspection.  State is updated as in the EventSourcedBehavior, and side effects are performed synchronously.  The
    *  resulting Behavior is, contingent on the command handling, event handling, and side effects being compatible with the
    *  BehaviorTestKit, testable with the BehaviorTestKit.
@@ -84,9 +85,7 @@ object UnpersistentBehavior {
 
 final case class PersistenceEffect[T](persistedObject: T, sequenceNr: Long, tags: Set[String])
 
-/**
- * Not for user extension
- */
+/** Not for user extension */
 @DoNotInherit
 trait PersistenceProbe[T] {
 
@@ -96,7 +95,8 @@ trait PersistenceProbe[T] {
   /** Get and remove the oldest persistence effect from the probe */
   def extract(): PersistenceEffect[T]
 
-  /** Get and remove the oldest persistence effect from the probe, failing if the
+  /**
+   * Get and remove the oldest persistence effect from the probe, failing if the
    *  persisted object is not of the requested type
    */
   def expectPersistedType[S <: T: ClassTag](): PersistenceEffect[S]
@@ -104,19 +104,22 @@ trait PersistenceProbe[T] {
   /** Are there any persistence effects? */
   def hasEffects: Boolean
 
-  /** Assert that the given object was persisted in the oldest persistence effect and
+  /**
+   * Assert that the given object was persisted in the oldest persistence effect and
    *  remove that persistence effect
    */
   def expectPersisted(obj: T): PersistenceProbe[T]
 
-  /** Assert that the given object was persisted with the given tag in the oldest
+  /**
+   * Assert that the given object was persisted with the given tag in the oldest
    *  persistence effect and remove that persistence effect.  If the persistence
    *  effect has multiple tags, only one of them has to match in order for the
    *  assertion to succeed.
    */
   def expectPersisted(obj: T, tag: String): PersistenceProbe[T]
 
-  /** Assert that the given object was persisted with the given tags in the oldest
+  /**
+   * Assert that the given object was persisted with the given tags in the oldest
    *  persistence effect and remove that persistence effect.  If the persistence
    *  effect has tags which are not given, the assertion fails.
    */

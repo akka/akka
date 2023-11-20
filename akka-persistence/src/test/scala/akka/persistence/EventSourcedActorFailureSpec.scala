@@ -56,14 +56,13 @@ object EventSourcedActorFailureSpec {
       }
 
     def checkSerializable(messages: immutable.Seq[AtomicWrite]): immutable.Seq[Try[Unit]] =
-      messages.collect {
-        case a: AtomicWrite =>
-          a.payload.collectFirst {
-            case PersistentRepr(Evt(s: String), _: Long) if s.contains("not serializable") => s
-          } match {
-            case Some(s) => Failure(new SimulatedSerializationException(s))
-            case None    => AsyncWriteJournal.successUnit
-          }
+      messages.collect { case a: AtomicWrite =>
+        a.payload.collectFirst {
+          case PersistentRepr(Evt(s: String), _: Long) if s.contains("not serializable") => s
+        } match {
+          case Some(s) => Failure(new SimulatedSerializationException(s))
+          case None    => AsyncWriteJournal.successUnit
+        }
       }
 
     def isCorrupt(events: Seq[PersistentRepr]): Boolean =
@@ -75,8 +74,8 @@ object EventSourcedActorFailureSpec {
   }
 
   class OnRecoveryFailurePersistentActor(name: String, probe: ActorRef) extends ExamplePersistentActor(name) {
-    val receiveCommand: Receive = commonBehavior.orElse {
-      case Cmd(txt) => persist(Evt(txt))(updateState)
+    val receiveCommand: Receive = commonBehavior.orElse { case Cmd(txt) =>
+      persist(Evt(txt))(updateState)
     }
 
     override protected def onRecoveryFailure(cause: Throwable, event: Option[Any]): Unit =
@@ -84,10 +83,9 @@ object EventSourcedActorFailureSpec {
   }
 
   class Supervisor(testActor: ActorRef) extends Actor {
-    override def supervisorStrategy = OneForOneStrategy(loggingEnabled = false) {
-      case e =>
-        testActor ! e
-        SupervisorStrategy.Restart
+    override def supervisorStrategy = OneForOneStrategy(loggingEnabled = false) { case e =>
+      testActor ! e
+      SupervisorStrategy.Restart
     }
 
     def receive = {
@@ -97,18 +95,17 @@ object EventSourcedActorFailureSpec {
   }
 
   class ResumingSupervisor(testActor: ActorRef) extends Supervisor(testActor) {
-    override def supervisorStrategy = OneForOneStrategy(loggingEnabled = false) {
-      case e =>
-        testActor ! e
-        SupervisorStrategy.Resume
+    override def supervisorStrategy = OneForOneStrategy(loggingEnabled = false) { case e =>
+      testActor ! e
+      SupervisorStrategy.Resume
     }
 
   }
 
   class FailingRecovery(name: String) extends ExamplePersistentActor(name) {
 
-    override val receiveCommand: Receive = commonBehavior.orElse {
-      case Cmd(data) => persist(Evt(s"${data}"))(updateState)
+    override val receiveCommand: Receive = commonBehavior.orElse { case Cmd(data) =>
+      persist(Evt(s"${data}"))(updateState)
     }
 
     val failingRecover: Receive = {
@@ -121,22 +118,20 @@ object EventSourcedActorFailureSpec {
   }
 
   class ThrowingActor1(name: String) extends ExamplePersistentActor(name) {
-    override val receiveCommand: Receive = commonBehavior.orElse {
-      case Cmd(data) =>
-        persist(Evt(s"${data}"))(updateState)
-        if (data == "err")
-          throw new SimulatedException("Simulated exception 1")
+    override val receiveCommand: Receive = commonBehavior.orElse { case Cmd(data) =>
+      persist(Evt(s"${data}"))(updateState)
+      if (data == "err")
+        throw new SimulatedException("Simulated exception 1")
     }
   }
 
   class ThrowingActor2(name: String) extends ExamplePersistentActor(name) {
-    override val receiveCommand: Receive = commonBehavior.orElse {
-      case Cmd(data) =>
-        persist(Evt(s"${data}")) { evt =>
-          if (data == "err")
-            throw new SimulatedException("Simulated exception 1")
-          updateState(evt)
-        }
+    override val receiveCommand: Receive = commonBehavior.orElse { case Cmd(data) =>
+      persist(Evt(s"${data}")) { evt =>
+        if (data == "err")
+          throw new SimulatedException("Simulated exception 1")
+        updateState(evt)
+      }
 
     }
   }
@@ -147,8 +142,7 @@ class EventSourcedActorFailureSpec
       PersistenceSpec.config(
         "inmem",
         "SnapshotFailureRobustnessSpec",
-        extraConfig = Some(
-          """
+        extraConfig = Some("""
   akka.persistence.journal.inmem.class = "akka.persistence.EventSourcedActorFailureSpec$FailingInmemJournal"
   """)))
     with ImplicitSender {

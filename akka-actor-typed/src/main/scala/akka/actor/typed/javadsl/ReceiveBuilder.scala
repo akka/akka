@@ -77,12 +77,15 @@ final class ReceiveBuilder[T] private (
    * @return this behavior builder
    */
   def onMessageEquals(msg: T, handler: Creator[Behavior[T]]): ReceiveBuilder[T] =
-    withMessage(OptionVal.Some(msg.getClass), OptionVal.Some(new JPredicate[T] {
-      override def test(param: T): Boolean = param == (msg)
-    }), new JFunction[T, Behavior[T]] {
-      // invoke creator without the message
-      override def apply(param: T): Behavior[T] = handler.create()
-    })
+    withMessage(
+      OptionVal.Some(msg.getClass),
+      OptionVal.Some(new JPredicate[T] {
+        override def test(param: T): Boolean = param == msg
+      }),
+      new JFunction[T, Behavior[T]] {
+        // invoke creator without the message
+        override def apply(param: T): Behavior[T] = handler.create()
+      })
 
   /**
    * Add a new case to the message handling matching any message. Subsequent `onMessage` clauses will
@@ -128,11 +131,14 @@ final class ReceiveBuilder[T] private (
    * @return this behavior builder
    */
   def onSignalEquals(signal: Signal, handler: Creator[Behavior[T]]): ReceiveBuilder[T] =
-    withSignal(signal.getClass, OptionVal.Some(new JPredicate[Signal] {
-      override def test(param: Signal): Boolean = param == signal
-    }), new JFunction[Signal, Behavior[T]] {
-      override def apply(param: Signal): Behavior[T] = handler.create()
-    })
+    withSignal(
+      signal.getClass,
+      OptionVal.Some(new JPredicate[Signal] {
+        override def test(param: Signal): Boolean = param == signal
+      }),
+      new JFunction[Signal, Behavior[T]] {
+        override def apply(param: Signal): Behavior[T] = handler.create()
+      })
 
   private def withMessage[M <: T](
       `type`: OptionVal[Class[M]],

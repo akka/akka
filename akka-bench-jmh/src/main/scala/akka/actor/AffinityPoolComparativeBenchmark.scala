@@ -26,7 +26,7 @@ class AffinityPoolComparativeBenchmark {
   @Param(Array("affinity-dispatcher", "default-fj-dispatcher", "fixed-size-dispatcher"))
   var dispatcher = ""
 
-  @Param(Array("SingleConsumerOnlyUnboundedMailbox")) //"default"
+  @Param(Array("SingleConsumerOnlyUnboundedMailbox")) // "default"
   var mailbox = ""
 
   final val numThreads, numActors = 8

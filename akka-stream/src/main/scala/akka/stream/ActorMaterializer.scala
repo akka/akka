@@ -44,8 +44,8 @@ object ActorMaterializer {
   @deprecated(
     "Use the system wide materializer with stream attributes or configuration settings to change defaults",
     "2.6.0")
-  def apply(materializerSettings: Option[ActorMaterializerSettings] = None, namePrefix: Option[String] = None)(
-      implicit context: ActorRefFactory): ActorMaterializer = {
+  def apply(materializerSettings: Option[ActorMaterializerSettings] = None, namePrefix: Option[String] = None)(implicit
+      context: ActorRefFactory): ActorMaterializer = {
     val system = actorSystemOf(context)
 
     val settings = materializerSettings.getOrElse(SystemMaterializer(system).materializerSettings)
@@ -67,8 +67,8 @@ object ActorMaterializer {
   @deprecated(
     "Use the system wide materializer with stream attributes or configuration settings to change defaults",
     "2.6.0")
-  def apply(materializerSettings: ActorMaterializerSettings, namePrefix: String)(
-      implicit context: ActorRefFactory): ActorMaterializer = {
+  def apply(materializerSettings: ActorMaterializerSettings, namePrefix: String)(implicit
+      context: ActorRefFactory): ActorMaterializer = {
 
     context match {
       case system: ActorSystem =>
@@ -186,14 +186,10 @@ object ActorMaterializer {
   }
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[akka] object ActorMaterializerHelper {
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @deprecated("The Materializer now has all methods the ActorMaterializer used to have", "2.6.0")
   private[akka] def downcast(materializer: Materializer): ActorMaterializer =
     materializer match {
@@ -205,9 +201,7 @@ private[akka] object ActorMaterializerHelper {
     }
 }
 
-/**
- * An ActorMaterializer takes a stream blueprint and turns it into a running stream.
- */
+/** An ActorMaterializer takes a stream blueprint and turns it into a running stream. */
 @deprecated("The Materializer now has all methods the ActorMaterializer used to have", "2.6.0")
 abstract class ActorMaterializer extends Materializer with MaterializerLoggingProvider {
 
@@ -223,29 +217,19 @@ abstract class ActorMaterializer extends Materializer with MaterializerLoggingPr
    */
   def shutdown(): Unit
 
-  /**
-   * Indicates if the materializer has been shut down.
-   */
+  /** Indicates if the materializer has been shut down. */
   def isShutdown: Boolean
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   private[akka] def actorOf(context: MaterializationContext, props: Props): ActorRef
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   def system: ActorSystem
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   private[akka] def logger: LoggingAdapter
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   private[akka] def supervisor: ActorRef
 
 }
@@ -393,9 +377,7 @@ object ActorMaterializerSettings {
       config.getString(ActorAttributes.IODispatcher.dispatcher))
   }
 
-  /**
-   * Create [[ActorMaterializerSettings]] from the settings of an [[akka.actor.ActorSystem]] (Java).
-   */
+  /** Create [[ActorMaterializerSettings]] from the settings of an [[akka.actor.ActorSystem]] (Java). */
   @deprecated(
     "Use config or attributes to configure the materializer. See migration guide for details https://doc.akka.io/docs/akka/2.6/project/migration-guide-2.5.x-2.6.x.html",
     "2.6.0")
@@ -584,25 +566,19 @@ final class ActorMaterializerSettings @InternalApi private (
     if (enable == this.fuzzingMode) this
     else copy(fuzzingMode = enable)
 
-  /**
-   * Maximum number of elements emitted in batch if downstream signals large demand.
-   */
+  /** Maximum number of elements emitted in batch if downstream signals large demand. */
   @deprecated("Use attribute 'ActorAttributes.OutputBurstLimit' to change setting value", "2.6.0")
   def withOutputBurstLimit(limit: Int): ActorMaterializerSettings =
     if (limit == this.outputBurstLimit) this
     else copy(outputBurstLimit = limit)
 
-  /**
-   * Limit for number of messages that can be processed synchronously in stream to substream communication
-   */
+  /** Limit for number of messages that can be processed synchronously in stream to substream communication */
   @deprecated("Use attribute 'ActorAttributes.SyncProcessingLimit' to change setting value", "2.6.0")
   def withSyncProcessingLimit(limit: Int): ActorMaterializerSettings =
     if (limit == this.syncProcessingLimit) this
     else copy(syncProcessingLimit = limit)
 
-  /**
-   * Enable to log all elements that are dropped due to failures (at DEBUG level).
-   */
+  /** Enable to log all elements that are dropped due to failures (at DEBUG level). */
   @deprecated("Use attribute 'ActorAttributes.DebugLogging' to change setting value", "2.6.0")
   def withDebugLogging(enable: Boolean): ActorMaterializerSettings =
     if (enable == this.debugLogging) this
@@ -662,9 +638,7 @@ final class ActorMaterializerSettings @InternalApi private (
     case _ => false
   }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi
   private[akka] def toAttributes: Attributes = asAttributes
 
@@ -747,38 +721,32 @@ final class IOSettings private (
 object StreamSubscriptionTimeoutSettings {
   import akka.stream.StreamSubscriptionTimeoutTerminationMode._
 
-  /**
-   * Create settings from individual values (Java).
-   */
+  /** Create settings from individual values (Java). */
   def create(
       mode: StreamSubscriptionTimeoutTerminationMode,
       timeout: FiniteDuration): StreamSubscriptionTimeoutSettings =
     new StreamSubscriptionTimeoutSettings(mode, timeout)
 
-  /**
-   * Create settings from individual values (Scala).
-   */
+  /** Create settings from individual values (Scala). */
   def apply(
       mode: StreamSubscriptionTimeoutTerminationMode,
       timeout: FiniteDuration): StreamSubscriptionTimeoutSettings =
     new StreamSubscriptionTimeoutSettings(mode, timeout)
 
-  /**
-   * Create settings from a Config subsection (Java).
-   */
+  /** Create settings from a Config subsection (Java). */
   def create(config: Config): StreamSubscriptionTimeoutSettings =
     apply(config)
 
-  /**
-   * Create settings from a Config subsection (Scala).
-   */
+  /** Create settings from a Config subsection (Scala). */
   def apply(config: Config): StreamSubscriptionTimeoutSettings = {
     val c = config.getConfig("subscription-timeout")
-    StreamSubscriptionTimeoutSettings(mode = toRootLowerCase(c.getString("mode")) match {
-      case "no" | "off" | "false" | "noop" => NoopTermination
-      case "warn"                          => WarnTermination
-      case "cancel"                        => CancelTermination
-    }, timeout = c.getDuration("timeout", TimeUnit.MILLISECONDS).millis)
+    StreamSubscriptionTimeoutSettings(
+      mode = toRootLowerCase(c.getString("mode")) match {
+        case "no" | "off" | "false" | "noop" => NoopTermination
+        case "warn"                          => WarnTermination
+        case "cancel"                        => CancelTermination
+      },
+      timeout = c.getDuration("timeout", TimeUnit.MILLISECONDS).millis)
   }
 }
 
@@ -812,19 +780,13 @@ object StreamSubscriptionTimeoutTerminationMode {
   case object WarnTermination extends StreamSubscriptionTimeoutTerminationMode
   case object CancelTermination extends StreamSubscriptionTimeoutTerminationMode
 
-  /**
-   * Do not do anything when timeout expires.
-   */
+  /** Do not do anything when timeout expires. */
   def noop: StreamSubscriptionTimeoutTerminationMode = NoopTermination
 
-  /**
-   * Log a warning when the timeout expires.
-   */
+  /** Log a warning when the timeout expires. */
   def warn: StreamSubscriptionTimeoutTerminationMode = WarnTermination
 
-  /**
-   * When the timeout expires attach a Subscriber that will immediately cancel its subscription.
-   */
+  /** When the timeout expires attach a Subscriber that will immediately cancel its subscription. */
   def cancel: StreamSubscriptionTimeoutTerminationMode = CancelTermination
 
 }

@@ -44,11 +44,10 @@ private[cluster] final class ClusterHeartbeatReceiver(getCluster: () => Cluster)
     new cluster.ClusterLogger(
       Logging.withMarker(context.system, ActorWithLogClass(this, ClusterLogClass.ClusterHeartbeat)))
 
-  def receive: Receive = {
-    case hb: Heartbeat =>
-      // TODO log the sequence nr once serializer is enabled
-      if (verboseHeartbeat) clusterLogger.logDebug("Heartbeat #{} from [{}]", hb.sequenceNr, hb.from)
-      sender() ! HeartbeatRsp(cluster.selfUniqueAddress, hb.sequenceNr, hb.creationTimeNanos)
+  def receive: Receive = { case hb: Heartbeat =>
+    // TODO log the sequence nr once serializer is enabled
+    if (verboseHeartbeat) clusterLogger.logDebug("Heartbeat #{} from [{}]", hb.sequenceNr, hb.from)
+    sender() ! HeartbeatRsp(cluster.selfUniqueAddress, hb.sequenceNr, hb.creationTimeNanos)
   }
 
 }
@@ -63,22 +62,16 @@ private[cluster] object ClusterHeartbeatReceiver {
     RootActorPath(address) / "system" / "cluster" / name
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[cluster] object ClusterHeartbeatSender {
 
-  /**
-   * Sent at regular intervals for failure detection.
-   */
+  /** Sent at regular intervals for failure detection. */
   final case class Heartbeat(from: Address, sequenceNr: Long, creationTimeNanos: Long)
       extends ClusterMessage
       with HeartbeatMessage
       with DeadLetterSuppression
 
-  /**
-   * Sent as reply to [[Heartbeat]] messages.
-   */
+  /** Sent as reply to [[Heartbeat]] messages. */
   final case class HeartbeatRsp(from: UniqueAddress, sequenceNr: Long, creationTimeNanos: Long)
       extends ClusterMessage
       with HeartbeatMessage
@@ -151,9 +144,7 @@ private[cluster] class ClusterHeartbeatSender extends Actor {
     cluster.unsubscribe(self)
   }
 
-  /**
-   * Looks up and returns the remote cluster heartbeat connection for the specific address.
-   */
+  /** Looks up and returns the remote cluster heartbeat connection for the specific address. */
   def heartbeatReceiver(address: Address): ActorSelection =
     context.actorSelection(ClusterHeartbeatReceiver.path(address))
 
@@ -178,16 +169,16 @@ private[cluster] class ClusterHeartbeatSender extends Actor {
   }
 
   def init(snapshot: CurrentClusterState): Unit = {
-    val nodes = snapshot.members.collect { case m if filterInternalClusterMembers(m)           => m.uniqueAddress }
+    val nodes = snapshot.members.collect { case m if filterInternalClusterMembers(m) => m.uniqueAddress }
     val unreachable = snapshot.unreachable.collect { case m if filterInternalClusterMembers(m) => m.uniqueAddress }
     state = state.init(nodes, unreachable)
   }
 
   def addMember(m: Member): Unit =
     if (m.uniqueAddress != selfUniqueAddress && // is not self
-        !state.contains(m.uniqueAddress) && // not already added
-        filterInternalClusterMembers(m) // should be watching members from this DC (internal / external)
-        ) {
+      !state.contains(m.uniqueAddress) && // not already added
+      filterInternalClusterMembers(m) // should be watching members from this DC (internal / external)
+    ) {
       state = state.addMember(m.uniqueAddress)
     }
 
@@ -351,16 +342,12 @@ private[cluster] final case class HeartbeatNodeRing(
     immutable.SortedSet().union(nodes)
   }
 
-  /**
-   * Receivers for `selfAddress`. Cached for subsequent access.
-   */
+  /** Receivers for `selfAddress`. Cached for subsequent access. */
   lazy val myReceivers: Set[UniqueAddress] = receivers(selfAddress)
 
   private val useAllAsReceivers = monitoredByNrOfMembers >= (nodeRing.size - 1)
 
-  /**
-   * The receivers to use from a specified sender.
-   */
+  /** The receivers to use from a specified sender. */
   def receivers(sender: UniqueAddress): Set[UniqueAddress] =
     if (useAllAsReceivers)
       nodeRing - sender
@@ -398,14 +385,10 @@ private[cluster] final case class HeartbeatNodeRing(
       slice
     }
 
-  /**
-   * Add a node to the ring.
-   */
+  /** Add a node to the ring. */
   def :+(node: UniqueAddress): HeartbeatNodeRing = if (nodes contains node) this else copy(nodes = nodes + node)
 
-  /**
-   * Remove a node from the ring.
-   */
+  /** Remove a node from the ring. */
   def :-(node: UniqueAddress): HeartbeatNodeRing =
     if (nodes.contains(node) || unreachable.contains(node))
       copy(nodes = nodes - node, unreachable = unreachable - node)

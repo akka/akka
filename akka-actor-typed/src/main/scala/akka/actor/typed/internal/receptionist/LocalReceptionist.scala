@@ -197,12 +197,14 @@ private[akka] object LocalReceptionist extends ReceptionistBehaviorProvider {
             case None          =>
           }
 
-          updateServices(Set(key), { state =>
-            val newState = state.serviceInstanceRemoved(key)(serviceInstance)
-            if (state.servicesPerActor.getOrElse(serviceInstance, Set.empty).isEmpty)
-              ctx.unwatch(serviceInstance)
-            newState
-          })
+          updateServices(
+            Set(key),
+            { state =>
+              val newState = state.serviceInstanceRemoved(key)(serviceInstance)
+              if (state.servicesPerActor.getOrElse(serviceInstance, Set.empty).isEmpty)
+                ctx.unwatch(serviceInstance)
+              newState
+            })
 
         }
 

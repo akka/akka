@@ -8,9 +8,7 @@ import akka.annotation.InternalApi
 import akka.io.dns.RecordClass
 import akka.util.{ ByteIterator, ByteStringBuilder }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] object RecordClassSerializer {
 

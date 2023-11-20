@@ -18,12 +18,12 @@ class LastSinkSpec extends StreamSpec with ScriptedTest {
   "A Flow with Sink.last" must {
 
     "yield the last value" in {
-      //#last-operator-example
+      // #last-operator-example
       val source = Source(1 to 10)
       val result: Future[Int] = source.runWith(Sink.last)
       result.map(println)
       // 10
-      //#last-operator-example
+      // #last-operator-example
       result.futureValue shouldEqual 10
     }
 
@@ -55,12 +55,12 @@ class LastSinkSpec extends StreamSpec with ScriptedTest {
     }
 
     "yield None for empty stream" in {
-      //#lastOption-operator-example
+      // #lastOption-operator-example
       val source = Source.empty[Int]
       val result: Future[Option[Int]] = source.runWith(Sink.lastOption)
       result.map(println)
       // None
-      //#lastOption-operator-example
+      // #lastOption-operator-example
       result.futureValue shouldEqual None
     }
 

@@ -6,9 +6,7 @@ package akka.cluster
 
 import akka.annotation.InternalApi
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object ClusterLogClass {
 
   val ClusterCore: Class[Cluster] = classOf[Cluster]
@@ -17,12 +15,8 @@ import akka.annotation.InternalApi
 
 }
 
-/**
- * INTERNAL API: Logger class for (verbose) heartbeat logging.
- */
+/** INTERNAL API: Logger class for (verbose) heartbeat logging. */
 @InternalApi private[akka] class ClusterHeartbeat
 
-/**
- * INTERNAL API: Logger class for (verbose) gossip logging.
- */
+/** INTERNAL API: Logger class for (verbose) gossip logging. */
 @InternalApi private[akka] class ClusterGossip

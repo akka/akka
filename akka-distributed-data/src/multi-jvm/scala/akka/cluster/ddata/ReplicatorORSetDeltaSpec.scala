@@ -63,12 +63,11 @@ class ReplicatorORSetDeltaSpec
     within(10.seconds) {
       awaitAssert {
         replicator ! Get(key, ReadLocal)
-        val value = expectMsgPF() {
-          case g @ GetSuccess(`key`, _) =>
-            g.dataValue match {
-              case c: ORSet[_] => c.elements
-              case _           => fail()
-            }
+        val value = expectMsgPF() { case g @ GetSuccess(`key`, _) =>
+          g.dataValue match {
+            case c: ORSet[_] => c.elements
+            case _           => fail()
+          }
         }
         value should be(expected)
       }

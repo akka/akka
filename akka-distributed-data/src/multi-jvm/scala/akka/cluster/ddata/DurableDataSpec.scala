@@ -56,7 +56,8 @@ object DurableDataSpec {
         if (failStore) reply match {
           case Some(StoreReply(_, failureMsg, replyTo)) => replyTo ! failureMsg
           case None                                     =>
-        } else
+        }
+        else
           reply match {
             case Some(StoreReply(successMsg, _, replyTo)) => replyTo ! successMsg
             case None                                     =>
@@ -345,9 +346,11 @@ abstract class DurableDataSpec(multiNodeConfig: DurableDataSpecConfig)
       val sys2 = ActorSystem(
         "AdditionalSys",
         // use the same port
-        ConfigFactory.parseString(s"""
+        ConfigFactory
+          .parseString(s"""
             akka.remote.artery.canonical.port = ${address.port.get}
-            """).withFallback(system.settings.config))
+            """)
+          .withFallback(system.settings.config))
       try {
         Cluster(sys2).join(address)
         new TestKit(sys2) with ImplicitSender {

@@ -174,18 +174,12 @@ abstract class PoolRouter[T] extends DeferredBehavior[T] {
       virtualNodesFactor: Int,
       mapping: java.util.function.Function[T, String]): PoolRouter[T]
 
-  /**
-   * Set a new pool size from the one set at construction
-   */
+  /** Set a new pool size from the one set at construction */
   def withPoolSize(poolSize: Int): PoolRouter[T]
 
-  /**
-   * Set the props used to spawn the pool's routees
-   */
+  /** Set the props used to spawn the pool's routees */
   def withRouteeProps(routeeProps: Props): PoolRouter[T]
 
-  /**
-   * Any message that the predicate returns true for will be broadcast to all routees.
-   */
+  /** Any message that the predicate returns true for will be broadcast to all routees. */
   def withBroadcastPredicate(pred: Predicate[T]): PoolRouter[T]
 }

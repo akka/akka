@@ -101,7 +101,7 @@ class RollingEventLogSimulationSpec extends AkkaSpec {
 
     val instructions: Array[Instruction] =
       (Array(AdvanceHeader, TryMarkDirty) :+
-      WriteId) ++
+        WriteId) ++
       Array.fill(EntrySize - 2)(WriteByte) :+
       Commit
 

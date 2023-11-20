@@ -38,14 +38,14 @@ class GraphDSLDocSpec extends AkkaSpec {
     //#simple-graph-dsl
     //format: ON
 
-    //#simple-graph-run
+    // #simple-graph-run
     g.run()
-    //#simple-graph-run
+    // #simple-graph-run
   }
 
   "flow connection errors" in {
     intercept[IllegalStateException] {
-      //#simple-graph
+      // #simple-graph
       RunnableGraph.fromGraph(GraphDSL.create() { implicit builder =>
         import GraphDSL.Implicits._
         val source1 = Source(1 to 10)
@@ -58,18 +58,18 @@ class GraphDSLDocSpec extends AkkaSpec {
         // unconnected zip.out (!) => "must have at least 1 outgoing edge"
         ClosedShape
       })
-      //#simple-graph
+      // #simple-graph
     }.getMessage should include("ZipWith2.out")
   }
 
   "reusing a flow in a graph" in {
-    //#graph-dsl-reusing-a-flow
+    // #graph-dsl-reusing-a-flow
 
     val topHeadSink = Sink.head[Int]
     val bottomHeadSink = Sink.head[Int]
     val sharedDoubler = Flow[Int].map(_ * 2)
 
-    //#graph-dsl-reusing-a-flow
+    // #graph-dsl-reusing-a-flow
 
     // format: OFF
     val g =
@@ -93,7 +93,7 @@ class GraphDSLDocSpec extends AkkaSpec {
 
   "building a reusable component" in {
 
-    //#graph-dsl-components-shape
+    // #graph-dsl-components-shape
     // A shape represents the input and output ports of a reusable
     // processing module
     case class PriorityWorkerPoolShape[In, Out](jobsIn: Inlet[In], priorityJobsIn: Inlet[In], resultsOut: Outlet[Out])
@@ -112,9 +112,9 @@ class GraphDSLDocSpec extends AkkaSpec {
         PriorityWorkerPoolShape(jobsIn.carbonCopy(), priorityJobsIn.carbonCopy(), resultsOut.carbonCopy())
 
     }
-    //#graph-dsl-components-shape
+    // #graph-dsl-components-shape
 
-    //#graph-dsl-components-create
+    // #graph-dsl-components-create
     object PriorityWorkerPool {
       def apply[In, Out](
           worker: Flow[In, Out, Any],
@@ -147,11 +147,11 @@ class GraphDSLDocSpec extends AkkaSpec {
       }
 
     }
-    //#graph-dsl-components-create
+    // #graph-dsl-components-create
 
     def println(s: Any): Unit = ()
 
-    //#graph-dsl-components-use
+    // #graph-dsl-components-use
     val worker1 = Flow[String].map("step 1 " + _)
     val worker2 = Flow[String].map("step 2 " + _)
 
@@ -172,9 +172,9 @@ class GraphDSLDocSpec extends AkkaSpec {
         ClosedShape
       })
       .run()
-    //#graph-dsl-components-use
+    // #graph-dsl-components-use
 
-    //#graph-dsl-components-shape2
+    // #graph-dsl-components-shape2
     import FanInShape.{ Init, Name }
 
     class PriorityWorkerPoolShape2[In, Out](_init: Init[Out] = Name("PriorityWorkerPool"))
@@ -185,22 +185,22 @@ class GraphDSLDocSpec extends AkkaSpec {
       val priorityJobsIn = newInlet[In]("priorityJobsIn")
       // Outlet[Out] with name "out" is automatically created
     }
-    //#graph-dsl-components-shape2
+    // #graph-dsl-components-shape2
 
   }
 
   "access to materialized value" in {
-    //#graph-dsl-matvalue
+    // #graph-dsl-matvalue
     import GraphDSL.Implicits._
-    val foldFlow: Flow[Int, Int, Future[Int]] = Flow.fromGraph(GraphDSL.createGraph(Sink.fold[Int, Int](0)(_ + _)) {
-      implicit builder => fold =>
+    val foldFlow: Flow[Int, Int, Future[Int]] =
+      Flow.fromGraph(GraphDSL.createGraph(Sink.fold[Int, Int](0)(_ + _)) { implicit builder => fold =>
         FlowShape(fold.in, builder.materializedValue.mapAsync(4)(identity).outlet)
-    })
-    //#graph-dsl-matvalue
+      })
+    // #graph-dsl-matvalue
 
     Await.result(Source(1 to 10).via(foldFlow).runWith(Sink.head), 3.seconds) should ===(55)
 
-    //#graph-dsl-matvalue-cycle
+    // #graph-dsl-matvalue-cycle
     import GraphDSL.Implicits._
     // This cannot produce any value:
     val cyclicFold: Source[Int, Future[Int]] =
@@ -213,7 +213,7 @@ class GraphDSLDocSpec extends AkkaSpec {
         builder.materializedValue.mapAsync(4)(identity) ~> fold
         SourceShape(builder.materializedValue.mapAsync(4)(identity).outlet)
       })
-    //#graph-dsl-matvalue-cycle
+    // #graph-dsl-matvalue-cycle
   }
 
 }

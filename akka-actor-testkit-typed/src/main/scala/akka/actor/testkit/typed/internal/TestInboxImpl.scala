@@ -15,9 +15,7 @@ import akka.annotation.InternalApi
 import akka.pattern.StatusReply
 import akka.util.OptionVal
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] final class TestInboxImpl[T](path: ActorPath)
     extends akka.actor.testkit.typed.javadsl.TestInbox[T]
@@ -56,9 +54,7 @@ private[akka] final class TestInboxImpl[T](path: ActorPath)
 
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 object TestInboxImpl {
   def apply[T](name: String): TestInboxImpl[T] = {
@@ -68,9 +64,7 @@ object TestInboxImpl {
   private[akka] val address = RootActorPath(Address("akka.actor.typed.inbox", "anonymous"))
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] final class ReplyInboxImpl[T](private var underlying: OptionVal[TestInboxImpl[T]])
     extends akka.actor.testkit.typed.javadsl.ReplyInbox[T]
@@ -87,14 +81,14 @@ private[akka] final class ReplyInboxImpl[T](private var underlying: OptionVal[Te
 
   def expectReply(expectedReply: T): Unit =
     receiveReply() match {
-      case matches if (matches == expectedReply) => ()
+      case matches if matches == expectedReply => ()
       case doesntMatch =>
         throw new AssertionError(s"Expected $expectedReply but received $doesntMatch")
     }
 
   def expectNoReply(): ReplyInboxImpl[T] =
     underlying match {
-      case OptionVal.Some(testInbox) if (testInbox.hasMessages) =>
+      case OptionVal.Some(testInbox) if testInbox.hasMessages =>
         throw new AssertionError(s"Expected no reply, but ${receiveReply()} was received")
 
       case OptionVal.Some(_) => this
@@ -111,9 +105,7 @@ private[akka] final class ReplyInboxImpl[T](private var underlying: OptionVal[Te
     }
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] final class StatusReplyInboxImpl[T](private var underlying: OptionVal[TestInboxImpl[StatusReply[T]]])
     extends akka.actor.testkit.typed.javadsl.StatusReplyInbox[T]
@@ -142,21 +134,21 @@ private[akka] final class StatusReplyInboxImpl[T](private var underlying: Option
 
   def expectValue(expectedValue: T): Unit =
     receiveValue() match {
-      case matches if (matches == expectedValue) => ()
+      case matches if matches == expectedValue => ()
       case doesntMatch =>
         throw new AssertionError(s"Expected $expectedValue but received $doesntMatch")
     }
 
   def expectErrorMessage(errorMessage: String): Unit =
     receiveError() match {
-      case matches if (matches.getMessage == errorMessage) => ()
+      case matches if matches.getMessage == errorMessage => ()
       case doesntMatch =>
         throw new AssertionError(s"Expected a throwable with message $errorMessage, but got ${doesntMatch.getMessage}")
     }
 
   def expectNoReply(): StatusReplyInboxImpl[T] =
     underlying match {
-      case OptionVal.Some(testInbox) if (testInbox.hasMessages) =>
+      case OptionVal.Some(testInbox) if testInbox.hasMessages =>
         throw new AssertionError(s"Expected no reply, but ${receiveStatusReply()} was received")
 
       case OptionVal.Some(_) => this

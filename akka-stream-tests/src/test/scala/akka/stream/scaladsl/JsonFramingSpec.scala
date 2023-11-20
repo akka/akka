@@ -82,8 +82,8 @@ class JsonFramingSpec extends AkkaSpec {
 
       val result = Source(List(ByteString(input1), ByteString(input2)))
         .via(JsonFraming.objectScanner(Int.MaxValue))
-        .runFold(Seq.empty[String]) {
-          case (acc, entry) => acc ++ Seq(entry.utf8String)
+        .runFold(Seq.empty[String]) { case (acc, entry) =>
+          acc ++ Seq(entry.utf8String)
         }
 
       result.futureValue shouldBe Seq("""{ "name" : "john" }""", """{ "name" : "jack" }""")
@@ -99,8 +99,8 @@ class JsonFramingSpec extends AkkaSpec {
         .single(ByteString(input))
         .via(JsonFraming.objectScanner(Int.MaxValue))
         .take(1)
-        .runFold(Seq.empty[String]) {
-          case (acc, entry) => acc ++ Seq(entry.utf8String)
+        .runFold(Seq.empty[String]) { case (acc, entry) =>
+          acc ++ Seq(entry.utf8String)
         }
 
       Await.result(result, 3.seconds) shouldBe Seq("""{ "name": "john" }""")
@@ -519,8 +519,8 @@ class JsonFramingSpec extends AkkaSpec {
         .single(ByteString(input))
         .via(JsonFraming.objectScanner(5))
         .map(_.utf8String)
-        .runFold(Seq.empty[String]) {
-          case (acc, entry) => acc ++ Seq(entry)
+        .runFold(Seq.empty[String]) { case (acc, entry) =>
+          acc ++ Seq(entry)
         }
 
       a[FramingException] shouldBe thrownBy {

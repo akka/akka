@@ -12,9 +12,7 @@ import akka.actor._
 import akka.cluster.MemberStatus
 import akka.testkit.{ ImplicitSender, TestProbe }
 
-/**
- * Test for issue #28416
- */
+/** Test for issue #28416 */
 object ClusterShardingRegistrationCoordinatedShutdownSpec extends MultiNodeClusterShardingConfig {
 
   val first = role("first")

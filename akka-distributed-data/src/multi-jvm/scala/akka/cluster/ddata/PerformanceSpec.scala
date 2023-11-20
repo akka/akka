@@ -47,11 +47,10 @@ object PerformanceSpec extends MultiNodeConfig {
   def countDownProps(latch: TestLatch): Props = Props(new CountDown(latch)).withDeploy(Deploy.local)
 
   class CountDown(latch: TestLatch) extends Actor {
-    def receive = {
-      case _ =>
-        latch.countDown()
-        if (latch.isOpen)
-          context.stop(self)
+    def receive = { case _ =>
+      latch.countDown()
+      if (latch.isOpen)
+        context.stop(self)
     }
   }
 
@@ -163,9 +162,11 @@ class PerformanceSpec extends MultiNodeSpec(PerformanceSpec) with STMultiNodeSpe
       val keys = (1 to repeatCount).map(n => ORSetKey[Int]("A" + n))
       val n = 1000 * factor
       val expectedData = (0 until n).toSet
-      repeat("ORSet Update WriteLocal", keys, n)({ (key, i, replyTo) =>
-        replicator.tell(Update(key, ORSet(), WriteLocal)(_ :+ i), replyTo)
-      }, key => awaitReplicated(key, expectedData))
+      repeat("ORSet Update WriteLocal", keys, n)(
+        { (key, i, replyTo) =>
+          replicator.tell(Update(key, ORSet(), WriteLocal)(_ :+ i), replyTo)
+        },
+        key => awaitReplicated(key, expectedData))
 
       enterBarrier("after-1")
     }

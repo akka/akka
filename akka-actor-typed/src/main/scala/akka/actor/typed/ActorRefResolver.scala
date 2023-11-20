@@ -33,16 +33,12 @@ abstract class ActorRefResolver extends Extension {
    */
   def toSerializationFormat[T](ref: ActorRef[T]): String
 
-  /**
-   * Deserialize an `ActorRef` in the [[ActorRefResolver#toSerializationFormat]].
-   */
+  /** Deserialize an `ActorRef` in the [[ActorRefResolver#toSerializationFormat]]. */
   def resolveActorRef[T](serializedActorRef: String): ActorRef[T]
 
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] class ActorRefResolverImpl(system: ActorSystem[_]) extends ActorRefResolver {
   import akka.actor.typed.scaladsl.adapter._
 

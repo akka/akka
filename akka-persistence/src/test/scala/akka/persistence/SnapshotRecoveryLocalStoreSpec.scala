@@ -20,8 +20,7 @@ object SnapshotRecoveryLocalStoreSpec {
       case SaveSnapshotSuccess(md) => probe ! md.sequenceNr
       case GetState                => probe ! state
     }
-    def receiveRecover = {
-      case _ =>
+    def receiveRecover = { case _ =>
     }
   }
 
@@ -31,11 +30,10 @@ object SnapshotRecoveryLocalStoreSpec {
 
     override def recovery = Recovery(toSequenceNr = 0)
 
-    def receiveCommand = {
-      case _ =>
+    def receiveCommand = { case _ =>
     }
-    def receiveRecover = {
-      case other => probe ! other
+    def receiveRecover = { case other =>
+      probe ! other
     }
   }
 }

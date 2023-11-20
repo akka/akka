@@ -74,7 +74,7 @@ object PerformanceSpec {
 
   def behavior(name: String, probe: TestProbe[Reply])(other: (Command, Parameters) => Effect[String, String]) = {
     Behaviors
-      .supervise({
+      .supervise {
         val parameters = Parameters()
         EventSourcedBehavior[Command, String, String](
           persistenceId = PersistenceId.ofUniqueId(name),
@@ -86,13 +86,12 @@ object PerformanceSpec {
               Effect.none.thenRun(_ => parameters.failAt = sequence)
             case command => other(command, parameters)
           },
-          eventHandler = {
-            case (state, _) => state
-          }).receiveSignal {
-          case (_, RecoveryCompleted) =>
-            if (parameters.every(1000)) print("r")
+          eventHandler = { case (state, _) =>
+            state
+          }).receiveSignal { case (_, RecoveryCompleted) =>
+          if (parameters.every(1000)) print("r")
         }
-      })
+      }
       .onFailure(SupervisorStrategy.restart.withLoggingEnabled(false))
   }
 

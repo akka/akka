@@ -79,14 +79,10 @@ trait RouterConfig extends Serializable {
    */
   def stopRouterWhenAllRouteesRemoved: Boolean = true
 
-  /**
-   * Overridable merge strategy, by default completely prefers `this` (i.e. no merge).
-   */
+  /** Overridable merge strategy, by default completely prefers `this` (i.e. no merge). */
   def withFallback(@unused other: RouterConfig): RouterConfig = this
 
-  /**
-   * Check that everything is there which is needed. Called in constructor of RoutedActorRef to fail early.
-   */
+  /** Check that everything is there which is needed. Called in constructor of RoutedActorRef to fail early. */
   def verifyConfig(@unused path: ActorPath): Unit = ()
 
   /**
@@ -112,7 +108,7 @@ private[akka] trait PoolOverrideUnsetConfig[T <: Pool] extends Pool {
         case p: Pool =>
           val wssConf: PoolOverrideUnsetConfig[T] =
             if ((this.supervisorStrategy eq Pool.defaultSupervisorStrategy)
-                && (p.supervisorStrategy ne Pool.defaultSupervisorStrategy))
+              && (p.supervisorStrategy ne Pool.defaultSupervisorStrategy))
               this.withSupervisorStrategy(p.supervisorStrategy).asInstanceOf[PoolOverrideUnsetConfig[T]]
             else this
 
@@ -129,9 +125,7 @@ private[akka] trait PoolOverrideUnsetConfig[T <: Pool] extends Pool {
   def withResizer(resizer: Resizer): T
 }
 
-/**
- * Java API: Base class for custom router [[Group]]
- */
+/** Java API: Base class for custom router [[Group]] */
 abstract class GroupBase extends Group {
 
   def getPaths(system: ActorSystem): java.lang.Iterable[String]
@@ -155,27 +149,21 @@ trait Group extends RouterConfig {
    */
   def props(): Props = Props.empty.withRouter(this)
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   private[akka] def routeeFor(path: String, context: ActorContext): Routee =
     ActorSelectionRoutee(context.actorSelection(path))
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   private[akka] override def createRouterActor(): RouterActor = new RouterActor
 }
 
 object Pool {
-  val defaultSupervisorStrategy: SupervisorStrategy = OneForOneStrategy() {
-    case _ => SupervisorStrategy.Escalate
+  val defaultSupervisorStrategy: SupervisorStrategy = OneForOneStrategy() { case _ =>
+    SupervisorStrategy.Escalate
   }
 }
 
-/**
- * Java API: Base class for custom router [[Pool]]
- */
+/** Java API: Base class for custom router [[Pool]] */
 abstract class PoolBase extends Pool
 
 /**
@@ -184,9 +172,7 @@ abstract class PoolBase extends Pool
  */
 trait Pool extends RouterConfig {
 
-  /**
-   * Initial number of routee instances
-   */
+  /** Initial number of routee instances */
   def nrOfInstances(sys: ActorSystem): Int
 
   /**
@@ -196,15 +182,11 @@ trait Pool extends RouterConfig {
    */
   def usePoolDispatcher: Boolean = false
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   private[akka] def newRoutee(routeeProps: Props, context: ActorContext): Routee =
     ActorRefRoutee(context.actorOf(enrichWithPoolDispatcher(routeeProps, context)))
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   private[akka] def enrichWithPoolDispatcher(routeeProps: Props, context: ActorContext): Props =
     if (usePoolDispatcher && routeeProps.dispatcher == Dispatchers.DefaultDispatcherId)
       routeeProps.withDispatcher(
@@ -221,9 +203,7 @@ trait Pool extends RouterConfig {
    */
   def resizer: Option[Resizer]
 
-  /**
-   * SupervisorStrategy for the head actor, i.e. for supervising the routees of the pool.
-   */
+  /** SupervisorStrategy for the head actor, i.e. for supervising the routees of the pool. */
   def supervisorStrategy: SupervisorStrategy
 
   /**
@@ -239,9 +219,7 @@ trait Pool extends RouterConfig {
    */
   override def stopRouterWhenAllRouteesRemoved: Boolean = resizer.isEmpty
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   private[akka] override def createRouterActor(): RouterActor =
     resizer match {
       case None    => new RouterPoolActor(supervisorStrategy)
@@ -256,9 +234,7 @@ trait Pool extends RouterConfig {
  */
 abstract class CustomRouterConfig extends RouterConfig {
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   private[akka] override def createRouterActor(): RouterActor = new RouterActor
 
   override def routerDispatcher: String = Dispatchers.DefaultDispatcherId
@@ -271,9 +247,7 @@ abstract class CustomRouterConfig extends RouterConfig {
  */
 case object FromConfig extends FromConfig {
 
-  /**
-   * Java API: get the singleton instance
-   */
+  /** Java API: get the singleton instance */
   def getInstance = this
   @inline final def apply(
       resizer: Option[Resizer] = None,
@@ -304,24 +278,18 @@ class FromConfig(
   override def createRouter(system: ActorSystem): Router =
     throw new UnsupportedOperationException("FromConfig must not create Router")
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   override private[akka] def createRouterActor(): RouterActor =
     throw new UnsupportedOperationException("FromConfig must not create RouterActor")
 
   override def verifyConfig(path: ActorPath): Unit =
     throw new ConfigurationException(s"Configuration missing for router [$path] in 'akka.actor.deployment' section.")
 
-  /**
-   * Setting the supervisor strategy to be used for the “head” Router actor.
-   */
+  /** Setting the supervisor strategy to be used for the “head” Router actor. */
   def withSupervisorStrategy(strategy: SupervisorStrategy): FromConfig =
     new FromConfig(resizer, strategy, routerDispatcher)
 
-  /**
-   * Setting the resizer to be used.
-   */
+  /** Setting the resizer to be used. */
   def withResizer(resizer: Resizer): FromConfig =
     new FromConfig(Some(resizer), supervisorStrategy, routerDispatcher)
 
@@ -355,26 +323,20 @@ case object NoRouter extends NoRouter {
   override def createRouter(system: ActorSystem): Router =
     throw new UnsupportedOperationException("NoRouter has no Router")
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   override private[akka] def createRouterActor(): RouterActor =
     throw new UnsupportedOperationException("NoRouter must not create RouterActor")
   override def routerDispatcher: String = throw new UnsupportedOperationException("NoRouter has no dispatcher")
   override def withFallback(other: akka.routing.RouterConfig): akka.routing.RouterConfig = other
 
-  /**
-   * Java API: get the singleton instance
-   */
+  /** Java API: get the singleton instance */
   def getInstance = this
 
   def props(routeeProps: Props): Props = routeeProps.withRouter(this)
 
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @nowarn("msg=@SerialVersionUID has no effect")
 @SerialVersionUID(1L)
 private[akka] trait RouterManagementMesssage
@@ -390,21 +352,15 @@ abstract class GetRoutees extends RouterManagementMesssage
 
 @SerialVersionUID(1L) case object GetRoutees extends GetRoutees {
 
-  /**
-   * Java API: get the singleton instance
-   */
+  /** Java API: get the singleton instance */
   def getInstance = this
 }
 
-/**
- * Message used to carry information about what routees the router is currently using.
- */
+/** Message used to carry information about what routees the router is currently using. */
 @SerialVersionUID(1L)
 final case class Routees(routees: immutable.IndexedSeq[Routee]) {
 
-  /**
-   * Java API
-   */
+  /** Java API */
   def getRoutees: java.util.List[Routee] = {
     import akka.util.ccompat.JavaConverters._
     routees.asJava
@@ -425,7 +381,6 @@ final case class AddRoutee(routee: Routee) extends RouterManagementMesssage
  * For a pool, with child routees, the routee is stopped by sending a [[akka.actor.PoisonPill]]
  * to the routee. Precautions are taken reduce the risk of dropping messages that are concurrently
  * being routed to the removed routee, but there are no guarantees.
- *
  */
 @SerialVersionUID(1L)
 final case class RemoveRoutee(routee: Routee) extends RouterManagementMesssage

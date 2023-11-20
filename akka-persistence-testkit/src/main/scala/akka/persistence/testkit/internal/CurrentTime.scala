@@ -8,15 +8,11 @@ import java.util.concurrent.atomic.AtomicLong
 
 import akka.annotation.InternalApi
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object CurrentTime {
   private val previous = new AtomicLong(System.currentTimeMillis())
 
-  /**
-   * `System.currentTimeMillis` but always increasing.
-   */
+  /** `System.currentTimeMillis` but always increasing. */
   def now(): Long = {
     val current = System.currentTimeMillis()
     val prev = previous.get()

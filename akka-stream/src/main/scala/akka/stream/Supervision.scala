@@ -51,43 +51,31 @@ object Supervision {
 
   type Decider = Function[Throwable, Directive]
 
-  /**
-   * Scala API: [[Decider]] that returns [[Stop]] for all exceptions.
-   */
+  /** Scala API: [[Decider]] that returns [[Stop]] for all exceptions. */
   val stoppingDecider: Decider with japi.Function[Throwable, Directive] =
     new Decider with japi.Function[Throwable, Directive] {
       override def apply(e: Throwable) = Stop
     }
 
-  /**
-   * Java API: Decider function that returns [[#stop]] for all exceptions.
-   */
+  /** Java API: Decider function that returns [[#stop]] for all exceptions. */
   val getStoppingDecider: japi.Function[Throwable, Directive] = stoppingDecider
 
-  /**
-   * Scala API: [[Decider]] that returns [[Resume]] for all exceptions.
-   */
+  /** Scala API: [[Decider]] that returns [[Resume]] for all exceptions. */
   val resumingDecider: Decider with japi.Function[Throwable, Directive] =
     new Decider with japi.Function[Throwable, Directive] {
       override def apply(e: Throwable) = Resume
     }
 
-  /**
-   * Java API: Decider function that returns [[#resume]] for all exceptions.
-   */
+  /** Java API: Decider function that returns [[#resume]] for all exceptions. */
   val getResumingDecider: japi.Function[Throwable, Directive] = resumingDecider
 
-  /**
-   * Scala API: [[Decider]] that returns [[Restart]] for all exceptions.
-   */
+  /** Scala API: [[Decider]] that returns [[Restart]] for all exceptions. */
   val restartingDecider: Decider with japi.Function[Throwable, Directive] =
     new Decider with japi.Function[Throwable, Directive] {
       override def apply(e: Throwable) = Restart
     }
 
-  /**
-   * Java API: Decider function that returns [[#restart]] for all exceptions.
-   */
+  /** Java API: Decider function that returns [[#restart]] for all exceptions. */
   val getRestartingDecider: japi.Function[Throwable, Directive] = restartingDecider
 
 }

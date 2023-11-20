@@ -20,7 +20,6 @@ import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
  * '''Completes when''' all upstreams complete (eagerClose=false) or one upstream completes (eagerClose=true)
  *
  * '''Cancels when''' downstream cancels
- *
  */
 object MergeLatest {
 
@@ -53,25 +52,24 @@ final class MergeLatest[T, M](val inputPorts: Int, val eagerClose: Boolean)(buil
 
       override def preStart(): Unit = in.foreach(tryPull)
 
-      in.zipWithIndex.foreach {
-        case (input, index) =>
-          setHandler(
-            input,
-            new InHandler {
-              override def onPush(): Unit = {
-                messages.update(index, grab(input))
-                activeStreams.add(index)
-                if (allMessagesReady) emit(out, buildElem(messages.asInstanceOf[Array[T]]))
-                tryPull(input)
-              }
+      in.zipWithIndex.foreach { case (input, index) =>
+        setHandler(
+          input,
+          new InHandler {
+            override def onPush(): Unit = {
+              messages.update(index, grab(input))
+              activeStreams.add(index)
+              if (allMessagesReady) emit(out, buildElem(messages.asInstanceOf[Array[T]]))
+              tryPull(input)
+            }
 
-              override def onUpstreamFinish(): Unit = {
-                if (!eagerClose) {
-                  runningUpstreams -= 1
-                  if (upstreamsClosed) completeStage()
-                } else completeStage()
-              }
-            })
+            override def onUpstreamFinish(): Unit = {
+              if (!eagerClose) {
+                runningUpstreams -= 1
+                if (upstreamsClosed) completeStage()
+              } else completeStage()
+            }
+          })
       }
 
       override def onPull(): Unit = {

@@ -27,8 +27,7 @@ object RemoteNodeDeathWatchConfig extends MultiNodeConfig {
 
   commonConfig(
     debugConfig(on = false)
-      .withFallback(ConfigFactory.parseString(
-        """
+      .withFallback(ConfigFactory.parseString("""
       akka.loglevel = INFO
       ## Use a tighter setting than the default, otherwise it takes 20s for DeathWatch to trigger
       akka.remote.watch-failure-detector.acceptable-heartbeat-pause = 3 s

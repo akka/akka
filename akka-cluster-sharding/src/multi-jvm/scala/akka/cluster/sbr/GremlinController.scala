@@ -53,7 +53,7 @@ object GremlinControllerProxy {
 }
 
 class GremlinControllerProxy(target: ActorRef) extends Actor {
-  override def receive = {
-    case msg => target.forward(msg)
+  override def receive = { case msg =>
+    target.forward(msg)
   }
 }

@@ -201,7 +201,9 @@ class DeprecatedLeastShardAllocationStrategySpec extends AkkaSpec {
           fakeRegionC, // newest version, up
           fakeRegionD, // most shards, up
           fakeLocalRegion, // old app version
-          fakeRegionA)) // leaving
+          fakeRegionA
+        )
+      ) // leaving
     }
 
     "not rebalance when rolling update in progress" in {

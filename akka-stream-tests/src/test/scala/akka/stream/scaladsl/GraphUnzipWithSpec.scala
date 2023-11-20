@@ -278,7 +278,7 @@ class GraphUnzipWithSpec extends StreamSpec("""
 
       RunnableGraph
         .fromGraph(GraphDSL.create() { implicit b =>
-          val split22 = (a: (List[Int])) =>
+          val split22 = (a: List[Int]) =>
             (
               a(0),
               a(0).toString,

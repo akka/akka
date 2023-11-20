@@ -108,10 +108,9 @@ class SnapshotSpec extends PersistenceSpec(PersistenceSpec.config("inmem", "Snap
       system.actorOf(Props(classOf[LoadSnapshotTestPersistentActor], name, Recovery(), testActor))
       val persistenceId = name
 
-      expectMsgPF() {
-        case SnapshotOffer(SnapshotMetadata(`persistenceId`, 4, timestamp), state) =>
-          state should ===(List("a-1", "b-2", "c-3", "d-4").reverse)
-          timestamp should be > (0L)
+      expectMsgPF() { case SnapshotOffer(SnapshotMetadata(`persistenceId`, 4, timestamp), state) =>
+        state should ===(List("a-1", "b-2", "c-3", "d-4").reverse)
+        timestamp should be > 0L
       }
       expectMsg("e-5")
       expectMsg("f-6")
@@ -132,10 +131,9 @@ class SnapshotSpec extends PersistenceSpec(PersistenceSpec.config("inmem", "Snap
       system.actorOf(Props(classOf[LoadSnapshotTestPersistentActor], name, Recovery(toSequenceNr = 3), testActor))
       val persistenceId = name
 
-      expectMsgPF() {
-        case SnapshotOffer(SnapshotMetadata(`persistenceId`, 2, timestamp), state) =>
-          state should ===(List("a-1", "b-2").reverse)
-          timestamp should be > (0L)
+      expectMsgPF() { case SnapshotOffer(SnapshotMetadata(`persistenceId`, 2, timestamp), state) =>
+        state should ===(List("a-1", "b-2").reverse)
+        timestamp should be > 0L
       }
       expectMsg("c-3")
       expectMsg(RecoveryCompleted)
@@ -147,10 +145,9 @@ class SnapshotSpec extends PersistenceSpec(PersistenceSpec.config("inmem", "Snap
 
       persistentActor ! "done"
 
-      expectMsgPF() {
-        case SnapshotOffer(SnapshotMetadata(`persistenceId`, 4, timestamp), state) =>
-          state should ===(List("a-1", "b-2", "c-3", "d-4").reverse)
-          timestamp should be > (0L)
+      expectMsgPF() { case SnapshotOffer(SnapshotMetadata(`persistenceId`, 4, timestamp), state) =>
+        state should ===(List("a-1", "b-2", "c-3", "d-4").reverse)
+        timestamp should be > 0L
       }
       expectMsg(RecoveryCompleted)
       expectMsg("done")
@@ -160,10 +157,9 @@ class SnapshotSpec extends PersistenceSpec(PersistenceSpec.config("inmem", "Snap
       system.actorOf(Props(classOf[LoadSnapshotTestPersistentActor], name, recovery, testActor))
       val persistenceId = name
 
-      expectMsgPF() {
-        case SnapshotOffer(SnapshotMetadata(`persistenceId`, 2, timestamp), state) =>
-          state should ===(List("a-1", "b-2").reverse)
-          timestamp should be > (0L)
+      expectMsgPF() { case SnapshotOffer(SnapshotMetadata(`persistenceId`, 2, timestamp), state) =>
+        state should ===(List("a-1", "b-2").reverse)
+        timestamp should be > 0L
       }
       expectMsg("c-3")
       expectMsg("d-4")
@@ -176,10 +172,9 @@ class SnapshotSpec extends PersistenceSpec(PersistenceSpec.config("inmem", "Snap
       system.actorOf(Props(classOf[LoadSnapshotTestPersistentActor], name, recovery, testActor))
       val persistenceId = name
 
-      expectMsgPF() {
-        case SnapshotOffer(SnapshotMetadata(`persistenceId`, 2, timestamp), state) =>
-          state should ===(List("a-1", "b-2").reverse)
-          timestamp should be > (0L)
+      expectMsgPF() { case SnapshotOffer(SnapshotMetadata(`persistenceId`, 2, timestamp), state) =>
+        state should ===(List("a-1", "b-2").reverse)
+        timestamp should be > 0L
       }
       expectMsg("c-3")
       expectMsg(RecoveryCompleted)
@@ -206,10 +201,9 @@ class SnapshotSpec extends PersistenceSpec(PersistenceSpec.config("inmem", "Snap
 
       persistentActor1 ! "done"
 
-      val metadata = expectMsgPF() {
-        case SnapshotOffer(md @ SnapshotMetadata(`persistenceId`, 4, _), state) =>
-          state should ===(List("a-1", "b-2", "c-3", "d-4").reverse)
-          md
+      val metadata = expectMsgPF() { case SnapshotOffer(md @ SnapshotMetadata(`persistenceId`, 4, _), state) =>
+        state should ===(List("a-1", "b-2", "c-3", "d-4").reverse)
+        md
       }
       expectMsg(RecoveryCompleted)
       expectMsg("done")
@@ -243,9 +237,8 @@ class SnapshotSpec extends PersistenceSpec(PersistenceSpec.config("inmem", "Snap
       // recover persistentActor and the delete first three (= all) snapshots
       val criteria = SnapshotSelectionCriteria(maxSequenceNr = 4)
       persistentActor1 ! DeleteN(criteria)
-      expectMsgPF() {
-        case SnapshotOffer(SnapshotMetadata(`persistenceId`, 4, _), state) =>
-          state should ===(List("a-1", "b-2", "c-3", "d-4").reverse)
+      expectMsgPF() { case SnapshotOffer(SnapshotMetadata(`persistenceId`, 4, _), state) =>
+        state should ===(List("a-1", "b-2", "c-3", "d-4").reverse)
       }
       expectMsg(RecoveryCompleted)
       deleteProbe.expectMsgType[DeleteSnapshots]

@@ -125,7 +125,7 @@ class JepsenInspiredInsertSpec
         writeProbe.receiveOne(3.seconds)
       }
       val successWriteAcks = writeAcks.collect { case success: UpdateSuccess[_] => success }
-      val failureWriteAcks = writeAcks.collect { case fail: UpdateFailure[_]    => fail }
+      val failureWriteAcks = writeAcks.collect { case fail: UpdateFailure[_] => fail }
       successWriteAcks.map(_.request.get).toSet should be(myData.toSet)
       successWriteAcks.size should be(myData.size)
       failureWriteAcks should be(Nil)
@@ -158,7 +158,7 @@ class JepsenInspiredInsertSpec
         writeProbe.receiveOne(timeout + 1.second)
       }
       val successWriteAcks = writeAcks.collect { case success: UpdateSuccess[_] => success }
-      val failureWriteAcks = writeAcks.collect { case fail: UpdateFailure[_]    => fail }
+      val failureWriteAcks = writeAcks.collect { case fail: UpdateFailure[_] => fail }
       successWriteAcks.map(_.request.get).toSet should be(myData.toSet)
       successWriteAcks.size should be(myData.size)
       failureWriteAcks should be(Nil)
@@ -170,7 +170,7 @@ class JepsenInspiredInsertSpec
       val readProbe = TestProbe()
       replicator.tell(Get(key, readMajority), readProbe.ref)
       val result = readProbe.expectMsgPF() { case g @ GetSuccess(`key`, _) => g.get(key) }
-      //val survivors = result.elements.size
+      // val survivors = result.elements.size
       result.elements should be(expectedData)
 
     }
@@ -202,7 +202,7 @@ class JepsenInspiredInsertSpec
         writeProbe.receiveOne(3.seconds)
       }
       val successWriteAcks = writeAcks.collect { case success: UpdateSuccess[_] => success }
-      val failureWriteAcks = writeAcks.collect { case fail: UpdateFailure[_]    => fail }
+      val failureWriteAcks = writeAcks.collect { case fail: UpdateFailure[_] => fail }
       successWriteAcks.map(_.request.get).toSet should be(myData.toSet)
       successWriteAcks.size should be(myData.size)
       failureWriteAcks should be(Nil)
@@ -247,7 +247,7 @@ class JepsenInspiredInsertSpec
         writeProbe.receiveOne(timeout + 1.second)
       }
       val successWriteAcks = writeAcks.collect { case success: UpdateSuccess[_] => success }
-      val failureWriteAcks = writeAcks.collect { case fail: UpdateFailure[_]    => fail }
+      val failureWriteAcks = writeAcks.collect { case fail: UpdateFailure[_] => fail }
       runOn(n1, n4, n5) {
         successWriteAcks.map(_.request.get).toSet should be(myData.toSet)
         successWriteAcks.size should be(myData.size)
@@ -256,7 +256,7 @@ class JepsenInspiredInsertSpec
       runOn(n2, n3) {
         // without delays all could theoretically have been written before the blackhole
         if (delayMillis != 0)
-          failureWriteAcks should not be (Nil)
+          failureWriteAcks should not be Nil
       }
       (successWriteAcks.size + failureWriteAcks.size) should be(myData.size)
 
@@ -267,7 +267,7 @@ class JepsenInspiredInsertSpec
         val readProbe = TestProbe()
         replicator.tell(Get(key, readMajority), readProbe.ref)
         val result = readProbe.expectMsgPF() { case g @ GetSuccess(`key`, _) => g.get(key) }
-        //val survivors = result.elements.size
+        // val survivors = result.elements.size
         result.elements should be(expectedData)
       }
       // but on the 3 node side, read from majority doesn't mean that we are guaranteed to see

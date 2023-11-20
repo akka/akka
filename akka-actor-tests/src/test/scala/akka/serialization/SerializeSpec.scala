@@ -117,8 +117,8 @@ object SerializationTests {
   """
 
   class FooActor extends Actor {
-    def receive = {
-      case msg => sender() ! msg
+    def receive = { case msg =>
+      sender() ! msg
     }
   }
 
@@ -128,8 +128,8 @@ object SerializationTests {
   }
 
   class NonSerializableActor(@unused arg: AnyRef) extends Actor {
-    def receive = {
-      case s: String => sender() ! s
+    def receive = { case s: String =>
+      sender() ! s
     }
   }
 
@@ -184,10 +184,9 @@ class SerializeSpec extends AkkaSpec(SerializationTests.serializeConf) {
 
     "not serialize ActorCell" in {
       val a = system.actorOf(Props(new Actor {
-        def receive = {
-          case o: ObjectOutputStream =>
-            try o.writeObject(this)
-            catch { case _: NotSerializableException => testActor ! "pass" }
+        def receive = { case o: ObjectOutputStream =>
+          try o.writeObject(this)
+          catch { case _: NotSerializableException => testActor ! "pass" }
         }
       }))
       a ! new ObjectOutputStream(new ByteArrayOutputStream())
@@ -494,10 +493,9 @@ class AllowJavaSerializationSpec extends AkkaSpec(SerializationTests.allowJavaSe
 
     "not serialize ActorCell" in {
       val a = system.actorOf(Props(new Actor {
-        def receive = {
-          case o: ObjectOutputStream =>
-            try o.writeObject(this)
-            catch { case _: NotSerializableException => testActor ! "pass" }
+        def receive = { case o: ObjectOutputStream =>
+          try o.writeObject(this)
+          catch { case _: NotSerializableException => testActor ! "pass" }
         }
       }))
       a ! new ObjectOutputStream(new ByteArrayOutputStream())
@@ -527,8 +525,7 @@ class AllowJavaSerializationSpec extends AkkaSpec(SerializationTests.allowJavaSe
   }
 }
 
-class NoVerificationWarningSpec
-    extends AkkaSpec(ConfigFactory.parseString("""
+class NoVerificationWarningSpec extends AkkaSpec(ConfigFactory.parseString("""
         akka.actor.allow-java-serialization = on
         akka.actor.warn-about-java-serializer-usage = on
         akka.actor.warn-on-no-serialization-verification = on
@@ -553,8 +550,7 @@ class NoVerificationWarningSpec
   }
 }
 
-class NoVerificationWarningOffSpec
-    extends AkkaSpec(ConfigFactory.parseString("""
+class NoVerificationWarningOffSpec extends AkkaSpec(ConfigFactory.parseString("""
         akka.actor.allow-java-serialization = on
         akka.actor.warn-about-java-serializer-usage = on
         akka.actor.warn-on-no-serialization-verification = off

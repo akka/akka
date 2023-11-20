@@ -77,7 +77,7 @@ class TestProbeSpec extends AkkaSpec with DefaultTimeout with Eventually {
 
       awaitAssert {
         child ! "hello"
-        restarts.get() should be > (1)
+        restarts.get() should be > 1
       }
     }
 
@@ -115,7 +115,7 @@ class TestProbeSpec extends AkkaSpec with DefaultTimeout with Eventually {
     }
 
     "have an AutoPilot" in {
-      //#autopilot
+      // #autopilot
       val probe = TestProbe()
       probe.setAutoPilot(new TestActor.AutoPilot {
         def run(sender: ActorRef, msg: Any): TestActor.AutoPilot =
@@ -124,7 +124,7 @@ class TestProbeSpec extends AkkaSpec with DefaultTimeout with Eventually {
             case x      => testActor.tell(x, sender); TestActor.KeepRunning
           }
       })
-      //#autopilot
+      // #autopilot
       probe.ref ! "hallo"
       probe.ref ! "welt"
       probe.ref ! "stop"

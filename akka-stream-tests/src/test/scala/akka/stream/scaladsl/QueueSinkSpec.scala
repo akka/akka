@@ -130,9 +130,9 @@ class QueueSinkSpec extends StreamSpec {
     "fail future immediately if stream already canceled" in {
       val queue = Source.empty[Int].runWith(Sink.queue())
       // race here because no way to observe that queue sink saw termination
-      awaitAssert({
+      awaitAssert {
         queue.pull().failed.futureValue shouldBe a[StreamDetachedException]
-      })
+      }
     }
 
     "timeout future when stream cannot provide data" in {

@@ -36,7 +36,7 @@ class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
         s.request(3)
       }
       probes.zipWithIndex.foreach { case (p, i) => p.expectNext(i) }
-      probes.foreach { case p                   => p.expectComplete() }
+      probes.foreach { case p => p.expectComplete() }
     }
 
     "be composable with importing 1 module" in {
@@ -54,7 +54,7 @@ class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
         s.request(3)
       }
       probes.zipWithIndex.foreach { case (p, i) => p.expectNext(i) }
-      probes.foreach { case p                   => p.expectComplete() }
+      probes.foreach { case p => p.expectComplete() }
     }
 
     "be composable with importing 2 modules" in {
@@ -76,7 +76,7 @@ class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
         s.request(3)
       }
       probes.zipWithIndex.foreach { case (p, i) => p.expectNext(i) }
-      probes.foreach { case p                   => p.expectComplete() }
+      probes.foreach { case p => p.expectComplete() }
     }
 
     "be composable with importing 3 modules" in {
@@ -99,7 +99,7 @@ class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
         s.request(3)
       }
       probes.zipWithIndex.foreach { case (p, i) => p.expectNext(i) }
-      probes.foreach { case p                   => p.expectComplete() }
+      probes.foreach { case p => p.expectComplete() }
     }
 
     "combine to many outputs with simplified API" in {
@@ -268,13 +268,13 @@ class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
 
   "The reduce sink" must {
     "sum up 1 to 10 correctly" in {
-      //#reduce-operator-example
+      // #reduce-operator-example
       val source = Source(1 to 10)
       val result = source.runWith(Sink.reduce[Int]((a, b) => a + b))
       result.map(println)(system.dispatcher)
       // will print
       // 55
-      //#reduce-operator-example
+      // #reduce-operator-example
       assert(result.futureValue == (1 to 10).sum)
     }
   }

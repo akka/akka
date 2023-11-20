@@ -25,9 +25,7 @@ import akka.stream.impl.fusing.ActorGraphInterpreter
 import akka.stream.snapshot.StreamSnapshotImpl
 import akka.util.ByteString
 
-/**
- * INTERNAL API.
- */
+/** INTERNAL API. */
 @InternalApi private[stream] object TLSActor {
 
   def props(
@@ -45,9 +43,7 @@ import akka.util.ByteString
   final val UserIn = 1
 }
 
-/**
- * INTERNAL API.
- */
+/** INTERNAL API. */
 @InternalApi private[stream] class TLSActor(
     maxInputBufferSize: Int,
     createSSLEngine: () => SSLEngine,
@@ -83,9 +79,7 @@ import akka.util.ByteString
 
     private var buffer = ByteString.empty
 
-    /**
-     * Whether there are no bytes lying on this chopping block.
-     */
+    /** Whether there are no bytes lying on this chopping block. */
     def isEmpty: Boolean = buffer.isEmpty
 
     /**
@@ -129,9 +123,7 @@ import akka.util.ByteString
         prepare(b)
       }
 
-    /**
-     * Prepare a fresh ByteBuffer for receiving a chop of data.
-     */
+    /** Prepare a fresh ByteBuffer for receiving a chop of data. */
     def prepare(b: ByteBuffer): Unit = {
       b.clear()
       b.limit(0)
@@ -371,7 +363,7 @@ import akka.util.ByteString
     if (tracing)
       log.debug(
         s"wrap: status=${result.getStatus} handshake=$lastHandshakeStatus remaining=${userInBuffer.remaining} out=${transportOutBuffer
-          .position()}")
+            .position()}")
 
     if (lastHandshakeStatus == FINISHED) handshakeFinished()
     runDelegatedTasks()
@@ -405,7 +397,7 @@ import akka.util.ByteString
     if (tracing)
       log.debug(
         s"unwrap: status=${result.getStatus} handshake=$lastHandshakeStatus remaining=${transportInBuffer.remaining} out=${userOutBuffer
-          .position()}")
+            .position()}")
     runDelegatedTasks()
     result.getStatus match {
       case OK =>
@@ -476,10 +468,10 @@ import akka.util.ByteString
     }
   }
 
-  override def receive = inputBunch.subreceive.orElse[Any, Unit](outputBunch.subreceive).orElse {
-    case ActorGraphInterpreter.Snapshot =>
+  override def receive =
+    inputBunch.subreceive.orElse[Any, Unit](outputBunch.subreceive).orElse { case ActorGraphInterpreter.Snapshot =>
       sender() ! StreamSnapshotImpl(self.path, Seq.empty, Seq.empty)
-  }
+    }
 
   initialPhase(2, bidirectional)
 
@@ -520,9 +512,7 @@ import akka.util.ByteString
   }
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object TlsUtils {
   def applySessionParameters(engine: SSLEngine, sessionParameters: NegotiateNewSession): Unit = {
     sessionParameters.enabledCipherSuites.foreach(cs => engine.setEnabledCipherSuites(cs.toArray))

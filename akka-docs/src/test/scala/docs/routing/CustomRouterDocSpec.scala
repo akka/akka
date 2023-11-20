@@ -40,7 +40,7 @@ akka.actor.deployment {
 #//#jconfig
 """
 
-  //#routing-logic
+  // #routing-logic
   import scala.collection.immutable
   import java.util.concurrent.ThreadLocalRandom
   import akka.routing.RoundRobinRoutingLogic
@@ -55,20 +55,20 @@ akka.actor.deployment {
       SeveralRoutees(targets)
     }
   }
-  //#routing-logic
+  // #routing-logic
 
   class Storage extends Actor {
-    def receive = {
-      case x => sender() ! x
+    def receive = { case x =>
+      sender() ! x
     }
   }
 
-  //#unit-test-logic
+  // #unit-test-logic
   final case class TestRoutee(n: Int) extends Routee {
     override def send(message: Any, sender: ActorRef): Unit = ()
   }
 
-  //#unit-test-logic
+  // #unit-test-logic
 }
 
 //#group
@@ -98,7 +98,7 @@ class CustomRouterDocSpec extends AkkaSpec(CustomRouterDocSpec.config) with Impl
   import akka.routing.SeveralRoutees
 
   "unit test routing logic" in {
-    //#unit-test-logic
+    // #unit-test-logic
     val logic = new RedundancyRoutingLogic(nbrCopies = 3)
 
     val routees = for (n <- 1 to 7) yield TestRoutee(n)
@@ -111,26 +111,26 @@ class CustomRouterDocSpec extends AkkaSpec(CustomRouterDocSpec.config) with Impl
 
     val r3 = logic.select("msg", routees)
     r3.asInstanceOf[SeveralRoutees].routees should be(Vector(TestRoutee(7), TestRoutee(1), TestRoutee(2)))
-    //#unit-test-logic
+    // #unit-test-logic
 
   }
 
   "demonstrate usage of custom router" in {
-    //#usage-1
+    // #usage-1
     for (n <- 1 to 10) system.actorOf(Props[Storage](), "s" + n)
 
-    val paths = for (n <- 1 to 10) yield ("/user/s" + n)
+    val paths = for (n <- 1 to 10) yield "/user/s" + n
     val redundancy1: ActorRef =
       system.actorOf(RedundancyGroup(paths, nbrCopies = 3).props(), name = "redundancy1")
     redundancy1 ! "important"
-    //#usage-1
+    // #usage-1
 
     for (_ <- 1 to 3) expectMsg("important")
 
-    //#usage-2
+    // #usage-2
     val redundancy2: ActorRef = system.actorOf(FromConfig.props(), name = "redundancy2")
     redundancy2 ! "very important"
-    //#usage-2
+    // #usage-2
 
     for (_ <- 1 to 5) expectMsg("very important")
 

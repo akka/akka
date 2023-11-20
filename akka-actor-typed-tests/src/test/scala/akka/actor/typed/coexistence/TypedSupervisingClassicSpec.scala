@@ -20,15 +20,14 @@ object TypedSupervisingClassicSpec {
   final case class SpawnClassicActor(props: classic.Props, replyTo: ActorRef[SpawnedClassicActor]) extends Protocol
   final case class SpawnedClassicActor(ref: classic.ActorRef)
 
-  def classicActorOf() = Behaviors.receive[Protocol] {
-    case (ctx, SpawnClassicActor(props, replyTo)) =>
-      replyTo ! SpawnedClassicActor(ctx.actorOf(props))
-      Behaviors.same
+  def classicActorOf() = Behaviors.receive[Protocol] { case (ctx, SpawnClassicActor(props, replyTo)) =>
+    replyTo ! SpawnedClassicActor(ctx.actorOf(props))
+    Behaviors.same
   }
 
   class CLassicActor(lifecycleProbe: ActorRef[String]) extends Actor {
-    override def receive: Receive = {
-      case "throw" => throw TestException("oh dear")
+    override def receive: Receive = { case "throw" =>
+      throw TestException("oh dear")
     }
 
     override def postStop(): Unit = {
@@ -42,9 +41,12 @@ object TypedSupervisingClassicSpec {
 
 }
 
-class TypedSupervisingClassicSpec extends ScalaTestWithActorTestKit("""
+class TypedSupervisingClassicSpec
+    extends ScalaTestWithActorTestKit("""
     akka.loglevel = INFO
-  """.stripMargin) with AnyWordSpecLike with LogCapturing {
+  """.stripMargin)
+    with AnyWordSpecLike
+    with LogCapturing {
   import TypedSupervisingClassicSpec._
 
   "Typed supervising classic" should {

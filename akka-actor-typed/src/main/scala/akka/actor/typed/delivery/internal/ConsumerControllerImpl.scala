@@ -355,8 +355,8 @@ private class ConsumerControllerImpl[A] private (
         case _: UnsealedInternalCommand =>
           Behaviors.unhandled
       }
-      .receiveSignal {
-        case (_, PostStop) => postStop(s)
+      .receiveSignal { case (_, PostStop) =>
+        postStop(s)
       }
   }
 
@@ -480,8 +480,8 @@ private class ConsumerControllerImpl[A] private (
         case _: UnsealedInternalCommand =>
           Behaviors.unhandled
       }
-      .receiveSignal {
-        case (_, PostStop) => postStop(s)
+      .receiveSignal { case (_, PostStop) =>
+        postStop(s)
       }
   }
 
@@ -638,8 +638,8 @@ private class ConsumerControllerImpl[A] private (
         case _: UnsealedInternalCommand =>
           Behaviors.unhandled
       }
-      .receiveSignal {
-        case (_, PostStop) => postStop(s)
+      .receiveSignal { case (_, PostStop) =>
+        postStop(s)
       }
   }
 

@@ -14,7 +14,8 @@ import akka.testkit.AkkaSpec
 @nowarn("msg=Unused import")
 class InmemEventAdaptersSpec extends AkkaSpec {
 
-  val config = ConfigFactory.parseString(s"""
+  val config = ConfigFactory
+    .parseString(s"""
       |akka.persistence.journal {
       |  plugin = "akka.persistence.journal.inmem"
       |
@@ -44,7 +45,8 @@ class InmemEventAdaptersSpec extends AkkaSpec {
       |    }
       |  }
       |}
-    """.stripMargin).withFallback(ConfigFactory.load())
+    """.stripMargin)
+    .withFallback(ConfigFactory.load())
 
   val extendedActorSystem = system.asInstanceOf[ExtendedActorSystem]
   val inmemConfig = config.getConfig("akka.persistence.journal.inmem")

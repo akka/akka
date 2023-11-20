@@ -16,7 +16,6 @@ import org.scalatest.wordspec.AnyWordSpec
 import akka.util.ccompat.JavaConverters._
 
 /**
- *
  */
 class TlsResourcesSpec extends AnyWordSpec with Matchers {
 
@@ -34,7 +33,7 @@ class TlsResourcesSpec extends AnyWordSpec with Matchers {
       val sameSan = baseServers + baseClient + baseNode + baseRsaClient
       sameSan.foreach { prefix =>
         val serverCert = loadCert(s"/ssl/$prefix.example.com.crt")
-        X509Readers.getAllSubjectNames(serverCert).contains("example.com") mustBe (true)
+        X509Readers.getAllSubjectNames(serverCert).contains("example.com") mustBe true
       }
     }
 
@@ -42,7 +41,7 @@ class TlsResourcesSpec extends AnyWordSpec with Matchers {
       val notExampleSan = arteryNodeSet + baseIslandServer
       notExampleSan.foreach { prefix =>
         val cert = loadCert(s"/ssl/$prefix.example.com.crt")
-        X509Readers.getAllSubjectNames(cert).contains("example.com") mustBe (false)
+        X509Readers.getAllSubjectNames(cert).contains("example.com") mustBe false
       }
     }
 
@@ -52,7 +51,7 @@ class TlsResourcesSpec extends AnyWordSpec with Matchers {
       val clients = Set(baseClient, baseNode, baseRsaClient) ++ arteryNodeSet
       clients.foreach { prefix =>
         val cert = loadCert(s"/ssl/$prefix.example.com.crt")
-        cert.getExtendedKeyUsage.asScala.contains(clientAuth) mustBe (true)
+        cert.getExtendedKeyUsage.asScala.contains(clientAuth) mustBe true
       }
     }
 
@@ -60,7 +59,7 @@ class TlsResourcesSpec extends AnyWordSpec with Matchers {
       val servers = baseServers + baseIslandServer + baseNode ++ arteryNodeSet
       servers.foreach { prefix =>
         val serverCert = loadCert(s"/ssl/$prefix.example.com.crt")
-        serverCert.getExtendedKeyUsage.asScala.contains(serverAuth) mustBe (true)
+        serverCert.getExtendedKeyUsage.asScala.contains(serverAuth) mustBe true
       }
     }
 

@@ -25,7 +25,7 @@ object BlockingFutureActor {
   def triggerFutureBlockingOperation(i: Int)(implicit ec: ExecutionContext): Future[Unit] = {
     println(s"Calling blocking Future: $i")
     Future {
-      Thread.sleep(5000) //block for 5 seconds
+      Thread.sleep(5000) // block for 5 seconds
       println(s"Blocking future finished $i")
     }
   }
@@ -48,7 +48,7 @@ object SeparateDispatcherFutureActor {
   def triggerFutureBlockingOperation(i: Int)(implicit ec: ExecutionContext): Future[Unit] = {
     println(s"Calling blocking Future: $i")
     Future {
-      Thread.sleep(5000) //block for 5 seconds
+      Thread.sleep(5000) // block for 5 seconds
       println(s"Blocking future finished $i")
     }
   }

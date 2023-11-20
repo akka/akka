@@ -29,9 +29,7 @@ import akka.remote.serialization.WrappedPayloadSupport
 import akka.serialization.{ BaseSerializer, SerializerWithStringManifest }
 import akka.util.ccompat.JavaConverters._
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object ReplicatedEventSourcingSerializer {
   object Comparator extends Comparator[Payload] {
     override def compare(a: Payload, b: Payload): Int = {
@@ -58,9 +56,7 @@ import akka.util.ccompat.JavaConverters._
   }
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] final class ReplicatedEventSourcingSerializer(val system: ExtendedActorSystem)
     extends SerializerWithStringManifest
     with BaseSerializer {
@@ -352,10 +348,10 @@ import akka.util.ccompat.JavaConverters._
 
   def orsetFromProto(orset: ReplicatedEventSourcing.ORSet): ORSet[Any] = {
     val elements: Iterator[Any] =
-      (orset.getStringElementsList.iterator.asScala ++
+      orset.getStringElementsList.iterator.asScala ++
       orset.getIntElementsList.iterator.asScala ++
       orset.getLongElementsList.iterator.asScala ++
-      orset.getOtherElementsList.iterator.asScala.map(wrappedSupport.deserializePayload))
+      orset.getOtherElementsList.iterator.asScala.map(wrappedSupport.deserializePayload)
 
     val dots = orset.getDotsList.asScala.map(versionVectorFromProto).iterator
     val elementsMap = elements.zip(dots).toMap
@@ -365,9 +361,8 @@ import akka.util.ccompat.JavaConverters._
 
   def versionVectorToProto(versionVector: VersionVector): ReplicatedEventSourcing.VersionVector = {
     val b = ReplicatedEventSourcing.VersionVector.newBuilder()
-    versionVector.versionsIterator.foreach {
-      case (key, value) =>
-        b.addEntries(ReplicatedEventSourcing.VersionVector.Entry.newBuilder().setKey(key).setVersion(value))
+    versionVector.versionsIterator.foreach { case (key, value) =>
+      b.addEntries(ReplicatedEventSourcing.VersionVector.Entry.newBuilder().setKey(key).setVersion(value))
     }
     b.build()
   }
@@ -383,7 +378,7 @@ import akka.util.ccompat.JavaConverters._
       VersionVector(entries.get(0).getKey, entries.get(0).getVersion)
     else {
       val versions = TreeMap.empty[String, Long] ++ versionVector.getEntriesList.asScala.map(entry =>
-          entry.getKey -> entry.getVersion)
+        entry.getKey -> entry.getVersion)
       VersionVector(versions)
     }
   }

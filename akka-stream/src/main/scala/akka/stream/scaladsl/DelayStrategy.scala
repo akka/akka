@@ -14,9 +14,7 @@ import scala.concurrent.duration.{ Duration, FiniteDuration }
  */
 trait DelayStrategy[-T] {
 
-  /**
-   * Returns delay for ongoing element, `Duration.Zero` means passing without delay
-   */
+  /** Returns delay for ongoing element, `Duration.Zero` means passing without delay */
   def nextDelay(elem: T): FiniteDuration
 
 }

@@ -22,9 +22,7 @@ import akka.dispatch.Envelope
 import akka.dispatch.MessageDispatcher
 import akka.util.ccompat._
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[akka] object RoutedActorCell {
   class RouterActorCreator(routerConfig: RouterConfig) extends IndirectActorProducer {
     override def actorClass = classOf[RouterActor]
@@ -33,9 +31,7 @@ private[akka] object RoutedActorCell {
 
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @ccompatUsedUntil213
 private[akka] class RoutedActorCell(
     _system: ActorSystemImpl,
@@ -131,9 +127,7 @@ private[akka] class RoutedActorCell(
    * end of construction
    */
 
-  /**
-   * Route the message via the router to the selected destination.
-   */
+  /** Route the message via the router to the selected destination. */
   override def sendMessage(envelope: Envelope): Unit = {
     if (routerConfig.isManagementMessage(envelope.message))
       super.sendMessage(envelope)
@@ -143,9 +137,7 @@ private[akka] class RoutedActorCell(
 
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[akka] class RouterActor extends Actor {
   val cell = context match {
     case x: RoutedActorCell => x
@@ -181,9 +173,7 @@ private[akka] class RouterActor extends Actor {
   }
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[akka] class RouterPoolActor(override val supervisorStrategy: SupervisorStrategy) extends RouterActor {
 
   val pool = cell.routerConfig match {
@@ -193,16 +183,15 @@ private[akka] class RouterPoolActor(override val supervisorStrategy: SupervisorS
   }
 
   override def receive =
-    ({
-      case AdjustPoolSize(change: Int) =>
-        if (change > 0) {
-          val newRoutees = Vector.fill(change)(pool.newRoutee(cell.routeeProps, context))
-          cell.addRoutees(newRoutees)
-        } else if (change < 0) {
-          val currentRoutees = cell.router.routees
-          val abandon = currentRoutees.drop(currentRoutees.length + change)
-          cell.removeRoutees(abandon, stopChild = true)
-        }
+    ({ case AdjustPoolSize(change: Int) =>
+      if (change > 0) {
+        val newRoutees = Vector.fill(change)(pool.newRoutee(cell.routeeProps, context))
+        cell.addRoutees(newRoutees)
+      } else if (change < 0) {
+        val currentRoutees = cell.router.routees
+        val abandon = currentRoutees.drop(currentRoutees.length + change)
+        cell.removeRoutees(abandon, stopChild = true)
+      }
     }: Actor.Receive).orElse(super.receive)
 
 }

@@ -41,12 +41,11 @@ class LocalActorRefProviderSpec extends AkkaSpec(LocalActorRefProviderSpec.confi
       val childName = "akka%3A%2F%2FClusterSystem%40127.0.0.1%3A2552"
       val a = system.actorOf(Props(new Actor {
         val child = context.actorOf(Props.empty, name = childName)
-        def receive = {
-          case "lookup" =>
-            if (childName == child.path.name) {
-              val resolved = system.asInstanceOf[ExtendedActorSystem].provider.resolveActorRef(child.path)
-              sender() ! resolved
-            } else sender() ! s"$childName is not ${child.path.name}!"
+        def receive = { case "lookup" =>
+          if (childName == child.path.name) {
+            val resolved = system.asInstanceOf[ExtendedActorSystem].provider.resolveActorRef(child.path)
+            sender() ! resolved
+          } else sender() ! s"$childName is not ${child.path.name}!"
         }
       }))
       a.tell("lookup", testActor)
@@ -112,11 +111,13 @@ class LocalActorRefProviderSpec extends AkkaSpec(LocalActorRefProviderSpec.confi
       expectTerminated(a)
       // the fields are cleared after the Terminated message has been sent,
       // so we need to check for a reasonable time after we receive it
-      awaitAssert({
-        val childProps2 = child.asInstanceOf[LocalActorRef].underlying.props
-        childProps2 should not be theSameInstanceAs(childProps1)
-        (childProps2 should be).theSameInstanceAs(ActorCell.terminatedProps)
-      }, 1 second)
+      awaitAssert(
+        {
+          val childProps2 = child.asInstanceOf[LocalActorRef].underlying.props
+          childProps2 should not be theSameInstanceAs(childProps1)
+          (childProps2 should be).theSameInstanceAs(ActorCell.terminatedProps)
+        },
+        1 second)
     }
   }
 
@@ -135,20 +136,19 @@ class LocalActorRefProviderSpec extends AkkaSpec(LocalActorRefProviderSpec.confi
           for (_ <- 1 to 4)
             yield Future(system.actorOf(Props(new Actor { def receive = { case _ => } }), address))
         val set: Set[Any] = Set() ++ actors.map(a =>
-            Await.ready(a, timeout.duration).value match {
-              case Some(Success(_: ActorRef))                  => 1
-              case Some(Failure(_: InvalidActorNameException)) => 2
-              case x                                           => x
-            })
+          Await.ready(a, timeout.duration).value match {
+            case Some(Success(_: ActorRef))                  => 1
+            case Some(Failure(_: InvalidActorNameException)) => 2
+            case x                                           => x
+          })
         set should ===(Set[Any](1, 2))
       }
     }
 
     "only create one instance of an actor from within the same message invocation" in {
       val supervisor = system.actorOf(Props(new Actor {
-        def receive = {
-          case "" =>
-            val a, b = context.actorOf(Props.empty, "duplicate")
+        def receive = { case "" =>
+          val a, b = context.actorOf(Props.empty, "duplicate")
         }
       }))
       EventFilter[InvalidActorNameException](occurrences = 1).intercept {

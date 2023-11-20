@@ -13,7 +13,8 @@ import akka.cluster.sharding.ShardRegion
 
 object LeastFrequentlyUsedSpec {
 
-  val config: Config = ConfigFactory.parseString("""
+  val config: Config = ConfigFactory
+    .parseString("""
     akka.cluster.sharding {
       passivation {
         strategy = lfu
@@ -23,9 +24,11 @@ object LeastFrequentlyUsedSpec {
         }
       }
     }
-    """).withFallback(EntityPassivationSpec.config)
+    """)
+    .withFallback(EntityPassivationSpec.config)
 
-  val dynamicAgingConfig: Config = ConfigFactory.parseString("""
+  val dynamicAgingConfig: Config = ConfigFactory
+    .parseString("""
     akka.cluster.sharding {
       passivation {
         strategy = lfuda
@@ -40,9 +43,11 @@ object LeastFrequentlyUsedSpec {
         }
       }
     }
-    """).withFallback(EntityPassivationSpec.config)
+    """)
+    .withFallback(EntityPassivationSpec.config)
 
-  val idleConfig: Config = ConfigFactory.parseString("""
+  val idleConfig: Config = ConfigFactory
+    .parseString("""
     akka.cluster.sharding {
       passivation {
         strategy = lfu-idle
@@ -53,7 +58,8 @@ object LeastFrequentlyUsedSpec {
         }
       }
     }
-    """).withFallback(EntityPassivationSpec.config)
+    """)
+    .withFallback(EntityPassivationSpec.config)
 }
 
 class LeastFrequentlyUsedSpec

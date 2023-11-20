@@ -16,8 +16,8 @@ import akka.testkit.TestProbe
 object ClusterShardingGetStateSpec {
   import MultiNodeClusterShardingSpec.PingPongActor
 
-  val extractEntityId: ShardRegion.ExtractEntityId = {
-    case msg @ PingPongActor.Ping(id) => (id.toString, msg)
+  val extractEntityId: ShardRegion.ExtractEntityId = { case msg @ PingPongActor.Ping(id) =>
+    (id.toString, msg)
   }
 
   val numberOfShards = 2
@@ -30,8 +30,7 @@ object ClusterShardingGetStateSpec {
   val shardTypeName = "Ping"
 }
 
-object ClusterShardingGetStateSpecConfig
-    extends MultiNodeClusterShardingConfig(additionalConfig = """
+object ClusterShardingGetStateSpecConfig extends MultiNodeClusterShardingConfig(additionalConfig = """
     akka.cluster.sharding {
       coordinator-failure-backoff = 3s
       shard-failure-backoff = 3s
@@ -112,8 +111,8 @@ abstract class ClusterShardingGetStateSpec extends MultiNodeClusterShardingSpec(
             val pingProbe = TestProbe()
             // trigger starting of 4 entities
             (1 to 4).foreach(n => region.tell(PingPongActor.Ping(n), pingProbe.ref))
-            pingProbe.receiveWhile(messages = 4) {
-              case PingPongActor.Pong => ()
+            pingProbe.receiveWhile(messages = 4) { case PingPongActor.Pong =>
+              ()
             }
           }
         }
@@ -136,8 +135,8 @@ abstract class ClusterShardingGetStateSpec extends MultiNodeClusterShardingSpec(
 
             system.actorSelection(path).tell(ShardRegion.GetShardRegionState, probe.ref)
           }
-          val states = probe.receiveWhile(messages = regions.size) {
-            case msg: ShardRegion.CurrentShardRegionState => msg
+          val states = probe.receiveWhile(messages = regions.size) { case msg: ShardRegion.CurrentShardRegionState =>
+            msg
           }
           val allEntityIds = for {
             state <- states

@@ -25,41 +25,41 @@ object BalancingSpec {
     lazy val id = counter.getAndIncrement()
     log.debug("Worker started")
 
-    def receive = {
-      case _: Int =>
-        latch.countDown()
-        if (id == 1) {
-          if (!latch.isOpen) {
-            log.debug("Waiting for all routees to receieve a message")
-            // wait for all routees to receive a message before processing
-            Await.result(latch, 1.minute)
-            log.debug("All routees receieved a message, continuing")
-          }
-        } else {
-          if (!startOthers.isCompleted) {
-            log.debug("Waiting for startOthers toggle")
-            // wait for the first worker to process messages before also processing
-            Await.result(startOthers, 1.minute)
-            log.debug("Continuing after wait for startOthers toggle")
-          }
+    def receive = { case _: Int =>
+      latch.countDown()
+      if (id == 1) {
+        if (!latch.isOpen) {
+          log.debug("Waiting for all routees to receieve a message")
+          // wait for all routees to receive a message before processing
+          Await.result(latch, 1.minute)
+          log.debug("All routees receieved a message, continuing")
         }
-        sender() ! id
+      } else {
+        if (!startOthers.isCompleted) {
+          log.debug("Waiting for startOthers toggle")
+          // wait for the first worker to process messages before also processing
+          Await.result(startOthers, 1.minute)
+          log.debug("Continuing after wait for startOthers toggle")
+        }
+      }
+      sender() ! id
     }
   }
 
   class Parent extends Actor {
     val pool =
       context.actorOf(
-        BalancingPool(2).props(
-          routeeProps = Props(classOf[Worker], TestLatch(0)(context.system), Future.successful(()))))
+        BalancingPool(2).props(routeeProps =
+          Props(classOf[Worker], TestLatch(0)(context.system), Future.successful(()))))
 
-    def receive = {
-      case msg => pool.forward(msg)
+    def receive = { case msg =>
+      pool.forward(msg)
     }
   }
 }
 
-class BalancingSpec extends AkkaSpec("""
+class BalancingSpec
+    extends AkkaSpec("""
     akka.loglevel=debug
     akka.actor.deployment {
       /balancingPool-2 {
@@ -77,7 +77,9 @@ class BalancingSpec extends AkkaSpec("""
         }
       }
     }
-    """) with ImplicitSender with BeforeAndAfterEach {
+    """)
+    with ImplicitSender
+    with BeforeAndAfterEach {
   import BalancingSpec._
 
   val poolSize = 5 // must be less than fork-join parallelism-min, which is 8 in AkkaSpec

@@ -41,9 +41,7 @@ final case class Subscribe[A <: ClusterDomainEvent](subscriber: ActorRef[A], eve
 
 object Subscribe {
 
-  /**
-   * Java API
-   */
+  /** Java API */
   def create[A <: ClusterDomainEvent](subscriber: ActorRef[A], eventClass: Class[A]): Subscribe[A] =
     Subscribe(subscriber, eventClass)
 }
@@ -69,9 +67,7 @@ final case class SelfRemoved(previousStatus: MemberStatus) extends ClusterDomain
 final case class Unsubscribe[T](subscriber: ActorRef[T]) extends ClusterStateSubscription
 final case class GetCurrentState(recipient: ActorRef[CurrentClusterState]) extends ClusterStateSubscription
 
-/**
- * Not intended for user extension.
- */
+/** Not intended for user extension. */
 @DoNotInherit
 sealed trait ClusterCommand
 
@@ -91,9 +87,7 @@ final case class Join(address: Address) extends ClusterCommand {
 
 object Join {
 
-  /**
-   * Java API
-   */
+  /** Java API */
   def create(address: Address): Join = Join(address)
 }
 
@@ -162,9 +156,7 @@ final case class Leave(address: Address) extends ClusterCommand
 
 object Leave {
 
-  /**
-   * Java API
-   */
+  /** Java API */
   def create(address: Address): Leave = Leave(address)
 }
 
@@ -192,22 +184,16 @@ final case class Down(address: Address) extends ClusterCommand
 
 case object PrepareForFullClusterShutdown extends PrepareForFullClusterShutdown {
 
-  /**
-   * Java API
-   */
+  /** Java API */
   def prepareForFullClusterShutdown(): PrepareForFullClusterShutdown = this
 }
 
-/**
- * Akka Typed Cluster API entry point
- */
+/** Akka Typed Cluster API entry point */
 object Cluster extends ExtensionId[Cluster] {
 
   def createExtension(system: ActorSystem[_]): Cluster = new AdapterClusterImpl(system)
 
-  /**
-   * Java API
-   */
+  /** Java API */
   def get(system: ActorSystem[_]): Cluster = apply(system)
 }
 
@@ -228,14 +214,10 @@ abstract class Cluster extends Extension {
   /** Current snapshot state of the cluster. */
   def state: CurrentClusterState
 
-  /**
-   * @return an actor that allows for subscribing to messages when the cluster state changes
-   */
+  /** @return an actor that allows for subscribing to messages when the cluster state changes */
   def subscriptions: ActorRef[ClusterStateSubscription]
 
-  /**
-   * @return an actor that accepts commands to join, leave and down nodes in a cluster
-   */
+  /** @return an actor that accepts commands to join, leave and down nodes in a cluster */
   def manager: ActorRef[ClusterCommand]
 
 }

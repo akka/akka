@@ -31,24 +31,16 @@ object TestInbox {
 @DoNotInherit
 abstract class TestInbox[T] {
 
-  /**
-   * The actor ref of the inbox
-   */
+  /** The actor ref of the inbox */
   def getRef(): ActorRef[T]
 
-  /**
-   * Get and remove the oldest message
-   */
+  /** Get and remove the oldest message */
   def receiveMessage(): T
 
-  /**
-   * Assert and remove the the oldest message.
-   */
+  /** Assert and remove the the oldest message. */
   def expectMessage(expectedMessage: T): TestInbox[T]
 
-  /**
-   * Collect all messages in the inbox and clear it out
-   */
+  /** Collect all messages in the inbox and clear it out */
   def getAllReceived(): java.util.List[T] = internalReceiveAll().asJava
 
   protected def internalReceiveAll(): immutable.Seq[T]
@@ -129,9 +121,7 @@ trait StatusReplyInbox[T] {
    */
   def expectErrorMessage(errorMessage: String): Unit
 
-  /**
-   * Assert that this inbox has *never* received a reply.
-   */
+  /** Assert that this inbox has *never* received a reply. */
   def expectNoReply(): StatusReplyInbox[T]
 
   def hasReply: Boolean

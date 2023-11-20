@@ -27,9 +27,7 @@ object ShardedDaemonProcessSettings {
   def create(system: ActorSystem[_]): ShardedDaemonProcessSettings =
     apply(system)
 
-  /**
-   * Load settings from a specific config location.
-   */
+  /** Load settings from a specific config location. */
   def fromConfig(config: Config): ShardedDaemonProcessSettings = {
     val keepAliveInterval = config.getDuration("keep-alive-interval").asScala
     val keepAliveFromNumberOfNodes = config.getInt("keep-alive-from-number-of-nodes")
@@ -44,9 +42,7 @@ object ShardedDaemonProcessSettings {
 
 }
 
-/**
- * Not for user constructions, use factory methods to instantiate.
- */
+/** Not for user constructions, use factory methods to instantiate. */
 final class ShardedDaemonProcessSettings @InternalApi private[akka] (
     val keepAliveInterval: FiniteDuration,
     val shardingSettings: Option[ClusterShardingSettings],
@@ -86,21 +82,15 @@ final class ShardedDaemonProcessSettings @InternalApi private[akka] (
   def withRole(role: String): ShardedDaemonProcessSettings =
     copy(role = Option(role))
 
-  /**
-   * Keep alive messages from this number of nodes.
-   */
+  /** Keep alive messages from this number of nodes. */
   def withKeepAliveFromNumberOfNodes(keepAliveFromNumberOfNodes: Int): ShardedDaemonProcessSettings =
     copy(keepAliveFromNumberOfNodes = keepAliveFromNumberOfNodes)
 
-  /**
-   * Scala API: Keep alive messages are sent with this delay between each message.
-   */
+  /** Scala API: Keep alive messages are sent with this delay between each message. */
   def withKeepAliveThrottleInterval(keepAliveThrottleInterval: FiniteDuration): ShardedDaemonProcessSettings =
     copy(keepAliveThrottleInterval = keepAliveThrottleInterval)
 
-  /**
-   * Java API: Keep alive messages are sent with this delay between each message.
-   */
+  /** Java API: Keep alive messages are sent with this delay between each message. */
   def withKeepAliveThrottleInterval(keepAliveThrottleInterval: JDuration): ShardedDaemonProcessSettings =
     copy(keepAliveThrottleInterval = keepAliveThrottleInterval.asScala)
 
@@ -130,9 +120,7 @@ trait ShardedDaemonProcessContext {
   def processNumber: Int
   def totalProcesses: Int
 
-  /**
-   * The revision starts at 0 and each time the number of processes is changed, the revision increases with 1
-   */
+  /** The revision starts at 0 and each time the number of processes is changed, the revision increases with 1 */
   def revision: Long
 
   def name: String

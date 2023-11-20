@@ -12,9 +12,7 @@ import akka.persistence.{ SelectedSnapshot, SnapshotMetadata, SnapshotSelectionC
 import akka.persistence.testkit.ProcessingPolicy.DefaultPolicies
 import akka.persistence.testkit.internal.TestKitStorage
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[testkit] trait SnapshotStorage
     extends TestKitStorage[SnapshotOperation, (SnapshotMetadata, Any)]
@@ -28,7 +26,9 @@ private[testkit] trait SnapshotStorage
   override protected val DefaultPolicy = SnapshotPolicies.PassAll
 
   def tryAdd(meta: SnapshotMetadata, payload: Any): Unit = {
-    currentPolicy.tryProcess(meta.persistenceId, WriteSnapshot(SnapshotMeta(meta.sequenceNr, meta.timestamp), payload)) match {
+    currentPolicy.tryProcess(
+      meta.persistenceId,
+      WriteSnapshot(SnapshotMeta(meta.sequenceNr, meta.timestamp), payload)) match {
       case ProcessingSuccess =>
         add(meta.persistenceId, (meta, payload))
         Success(())
@@ -56,7 +56,9 @@ private[testkit] trait SnapshotStorage
   }
 
   def tryDelete(meta: SnapshotMetadata): Unit = {
-    currentPolicy.tryProcess(meta.persistenceId, DeleteSnapshotByMeta(SnapshotMeta(meta.sequenceNr, meta.timestamp))) match {
+    currentPolicy.tryProcess(
+      meta.persistenceId,
+      DeleteSnapshotByMeta(SnapshotMeta(meta.sequenceNr, meta.timestamp))) match {
       case ProcessingSuccess =>
         delete(meta.persistenceId, _._1.sequenceNr == meta.sequenceNr)
       case f: ProcessingFailure => throw f.error
@@ -71,9 +73,7 @@ object SnapshotStorage {
 
 }
 
-/**
- * Snapshot metainformation.
- */
+/** Snapshot metainformation. */
 final case class SnapshotMeta(sequenceNr: Long, timestamp: Long = 0L) {
 
   def getSequenceNr() = sequenceNr
@@ -99,7 +99,6 @@ case object SnapshotMeta {
 sealed trait SnapshotOperation
 
 /**
- *
  * Storage read operation for recovery of the persistent actor.
  *
  * @param criteria criteria with which snapshot is searched
@@ -128,24 +127,18 @@ final case class WriteSnapshot(metadata: SnapshotMeta, snapshot: Any) extends Sn
 
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 sealed abstract class DeleteSnapshot extends SnapshotOperation
 
-/**
- * Delete snapshots from storage by criteria.
- */
+/** Delete snapshots from storage by criteria. */
 final case class DeleteSnapshotsByCriteria(criteria: SnapshotSelectionCriteria) extends DeleteSnapshot {
 
   def getCriteria() = criteria
 
 }
 
-/**
- * Delete particular snapshot from storage by its metadata.
- */
+/** Delete particular snapshot from storage by its metadata. */
 final case class DeleteSnapshotByMeta(metadata: SnapshotMeta) extends DeleteSnapshot {
 
   def getMetadata() = metadata

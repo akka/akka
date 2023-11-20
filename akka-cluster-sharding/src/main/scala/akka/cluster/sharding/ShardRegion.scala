@@ -34,9 +34,7 @@ import akka.pattern.pipe
 import akka.util.MessageBufferMap
 import akka.util.Timeout
 
-/**
- * @see [[ClusterSharding$ ClusterSharding extension]]
- */
+/** @see [[ClusterSharding$ ClusterSharding extension]] */
 object ShardRegion {
 
   /**
@@ -88,19 +86,13 @@ object ShardRegion {
         PoisonPill,
         None)).withDeploy(Deploy.local)
 
-  /**
-   * Marker type of entity identifier (`String`).
-   */
+  /** Marker type of entity identifier (`String`). */
   type EntityId = String
 
-  /**
-   * Marker type of shard identifier (`String`).
-   */
+  /** Marker type of shard identifier (`String`). */
   type ShardId = String
 
-  /**
-   * Marker type of application messages (`Any`).
-   */
+  /** Marker type of application messages (`Any`). */
   type Msg = Any
 
   /**
@@ -170,9 +162,7 @@ object ShardRegion {
    */
   abstract class HashCodeMessageExtractor(maxNumberOfShards: Int) extends MessageExtractor {
 
-    /**
-     * Default implementation pass on the message as is.
-     */
+    /** Default implementation pass on the message as is. */
     override def entityMessage(message: Any): Any = message
 
     override def shardId(message: Any): String = {
@@ -245,14 +235,10 @@ object ShardRegion {
    */
   def getCurrentRegionsInstance: GetCurrentRegions.type = GetCurrentRegions
 
-  /**
-   * Reply to `GetCurrentRegions`
-   */
+  /** Reply to `GetCurrentRegions` */
   @SerialVersionUID(1L) final case class CurrentRegions(regions: Set[Address]) extends ClusterShardingSerializable {
 
-    /**
-     * Java API
-     */
+    /** Java API */
     def getRegions: java.util.Set[Address] = {
       import akka.util.ccompat.JavaConverters._
       regions.asJava
@@ -280,9 +266,7 @@ object ShardRegion {
   @SerialVersionUID(1L) final case class ClusterShardingStats(regions: Map[Address, ShardRegionStats])
       extends ClusterShardingSerializable {
 
-    /**
-     * Java API
-     */
+    /** Java API */
     def getRegions(): java.util.Map[Address, ShardRegionStats] = {
       import akka.util.ccompat.JavaConverters._
       regions.asJava
@@ -301,13 +285,10 @@ object ShardRegion {
    */
   @SerialVersionUID(1L) case object GetShardRegionStats extends ShardRegionQuery with ClusterShardingSerializable
 
-  /**
-   * Java API:
-   */
+  /** Java API: */
   def getRegionStatsInstance = GetShardRegionStats
 
   /**
-   *
    * @param stats the region stats mapping of `ShardId` to number of entities
    * @param failed set of shards if any failed to respond within the timeout
    */
@@ -315,9 +296,7 @@ object ShardRegion {
       extends ClusterShardingSerializable
       with Product {
 
-    /**
-     * Java API
-     */
+    /** Java API */
     def getStats(): java.util.Map[ShardId, Int] = {
       import akka.util.ccompat.JavaConverters._
       stats.asJava
@@ -365,9 +344,7 @@ object ShardRegion {
    */
   @SerialVersionUID(1L) case object GetShardRegionState extends ShardRegionQuery with ClusterShardingSerializable
 
-  /**
-   * Java API:
-   */
+  /** Java API: */
   def getShardRegionStateInstance = GetShardRegionState
 
   /**
@@ -424,9 +401,7 @@ object ShardRegion {
 
   @SerialVersionUID(1L) final case class ShardState(shardId: ShardId, entityIds: Set[EntityId]) {
 
-    /**
-     * Java API:
-     */
+    /** Java API: */
     def getEntityIds(): java.util.Set[EntityId] = {
       import akka.util.ccompat.JavaConverters._
       entityIds.asJava
@@ -572,9 +547,7 @@ object ShardRegion {
     }
   }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[akka] object HandOffStopper {
     private case object StopTimeout
     private case object StopTimeoutWarning
@@ -804,8 +777,7 @@ private[akka] class ShardRegion(
       preparingForShutdown = true
 
     case _: MemberEvent => // these are expected, no need to warn about them
-
-    case _ => unhandled(evt)
+    case _              => unhandled(evt)
   }
 
   private def addMember(m: Member): Unit = {
@@ -830,7 +802,7 @@ private[akka] class ShardRegion(
         regionByShard = regionByShard.updated(shard, self)
         regions = regions.updated(self, regions.getOrElse(self, Set.empty) + shard)
 
-        //Start the shard, if already started this does nothing
+        // Start the shard, if already started this does nothing
         getShard(shard)
         sender() ! ShardStarted(shard)
       }
@@ -841,9 +813,8 @@ private[akka] class ShardRegion(
     case ShardHomes(homes) =>
       if (log.isDebugEnabled)
         log.debug("Got shard homes for regions [{}]", homes.keySet.mkString(", "))
-      homes.foreach {
-        case (shardRegionRef, shards) =>
-          shards.foreach(shardId => receiveShardHome(shardId, shardRegionRef))
+      homes.foreach { case (shardRegionRef, shards) =>
+        shards.foreach(shardId => receiveShardHome(shardId, shardRegionRef))
       }
 
     case RegisterAck(coord) =>
@@ -874,8 +845,10 @@ private[akka] class ShardRegion(
       // because they might be forwarded from other regions and there
       // is a risk or message re-ordering otherwise
       if (shardBuffers.contains(shard)) {
-        val dropped = shardBuffers
-          .drop(shard, "Avoiding reordering of buffered messages at shard handoff", context.system.deadLetters)
+        val dropped = shardBuffers.drop(
+          shard,
+          "Avoiding reordering of buffered messages at shard handoff",
+          context.system.deadLetters)
         if (dropped > 0)
           log.warning(
             "{}: Dropping [{}] buffered messages to shard [{}] during hand off to avoid re-ordering",
@@ -1085,8 +1058,8 @@ private[akka] class ShardRegion(
     }
   }
 
-  private def askOne[T: ClassTag](shard: ActorRef, msg: Any, shardId: ShardId)(
-      implicit timeout: Timeout): Future[Either[ShardId, T]] =
+  private def askOne[T: ClassTag](shard: ActorRef, msg: Any, shardId: ShardId)(implicit
+      timeout: Timeout): Future[Either[ShardId, T]] =
     (shard ? msg).mapTo[T].transform {
       case Success(t) => Success(Right(t))
       case Failure(_) => Success(Left(shardId))
@@ -1178,17 +1151,16 @@ private[akka] class ShardRegion(
       // Have to use vars because MessageBufferMap has no map, only foreach
       var totalBuffered = 0
       var shards = List.empty[String]
-      shardBuffers.foreach {
-        case (shard, buf) =>
-          totalBuffered += buf.size
-          shards ::= shard
-          log.debug(
-            "{}: Requesting shard home for [{}] from coordinator at [{}]. [{}] buffered messages.",
-            typeName,
-            shard,
-            coord,
-            buf.size)
-          coord ! GetShardHome(shard)
+      shardBuffers.foreach { case (shard, buf) =>
+        totalBuffered += buf.size
+        shards ::= shard
+        log.debug(
+          "{}: Requesting shard home for [{}] from coordinator at [{}]. [{}] buffered messages.",
+          typeName,
+          shard,
+          coord,
+          buf.size)
+        coord ! GetShardHome(shard)
       }
 
       if (retryCount >= 5 && retryCount % 5 == 0 && log.isWarningEnabled) {
@@ -1239,17 +1211,16 @@ private[akka] class ShardRegion(
       val buf = shardBuffers.getOrEmpty(shardId)
       log.debug("{}: Deliver [{}] buffered messages for shard [{}]", typeName, buf.size, shardId)
 
-      buf.foreach {
-        case (msg, snd) =>
-          msg match {
-            case msg @ RestartShard(_) if receiver != self =>
-              log.debug(
-                "{}: Dropping buffered message {}, these are only processed by a local ShardRegion.",
-                typeName,
-                msg)
-            case _ =>
-              receiver.tell(msg, snd)
-          }
+      buf.foreach { case (msg, snd) =>
+        msg match {
+          case msg @ RestartShard(_) if receiver != self =>
+            log.debug(
+              "{}: Dropping buffered message {}, these are only processed by a local ShardRegion.",
+              typeName,
+              msg)
+          case _ =>
+            receiver.tell(msg, snd)
+        }
       }
 
       shardBuffers.remove(shardId)

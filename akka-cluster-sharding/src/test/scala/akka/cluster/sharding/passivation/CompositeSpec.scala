@@ -13,7 +13,8 @@ import akka.cluster.sharding.ShardRegion
 
 object CompositeSpec {
 
-  val admissionWindowAndFilterConfig: Config = ConfigFactory.parseString("""
+  val admissionWindowAndFilterConfig: Config = ConfigFactory
+    .parseString("""
     akka.cluster.sharding {
       passivation {
         strategy = lru-fs-slru
@@ -39,9 +40,11 @@ object CompositeSpec {
         }
       }
     }
-    """).withFallback(EntityPassivationSpec.config)
+    """)
+    .withFallback(EntityPassivationSpec.config)
 
-  val admissionFilterNoWindowConfig: Config = ConfigFactory.parseString("""
+  val admissionFilterNoWindowConfig: Config = ConfigFactory
+    .parseString("""
     akka.cluster.sharding {
       passivation {
         strategy = fs-lru
@@ -55,9 +58,11 @@ object CompositeSpec {
         }
       }
     }
-    """).withFallback(EntityPassivationSpec.config)
+    """)
+    .withFallback(EntityPassivationSpec.config)
 
-  val adaptiveWindowConfig: Config = ConfigFactory.parseString("""
+  val adaptiveWindowConfig: Config = ConfigFactory
+    .parseString("""
     akka.cluster.sharding {
       passivation {
         strategy = lru-fs-lru-hc
@@ -86,9 +91,11 @@ object CompositeSpec {
         }
       }
     }
-    """).withFallback(EntityPassivationSpec.config)
+    """)
+    .withFallback(EntityPassivationSpec.config)
 
-  val idleConfig: Config = ConfigFactory.parseString("""
+  val idleConfig: Config = ConfigFactory
+    .parseString("""
     akka.cluster.sharding {
       passivation {
         strategy = default-strategy
@@ -98,7 +105,8 @@ object CompositeSpec {
         }
       }
     }
-    """).withFallback(EntityPassivationSpec.config)
+    """)
+    .withFallback(EntityPassivationSpec.config)
 }
 
 class AdmissionWindowAndFilterSpec

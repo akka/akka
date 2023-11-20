@@ -29,8 +29,7 @@ object DowningWhenOtherHasQuarantinedThisActorSystemSpec extends MultiNodeConfig
   commonConfig(
     debugConfig(on = false)
       .withFallback(MultiNodeClusterSpec.clusterConfig)
-      .withFallback(
-        ConfigFactory.parseString("""
+      .withFallback(ConfigFactory.parseString("""
         akka.remote.artery.enabled = on
         akka.cluster.downing-provider-class = "akka.cluster.sbr.SplitBrainResolverProvider"
         akka.cluster.split-brain-resolver.stable-after = 10s

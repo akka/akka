@@ -116,7 +116,6 @@ object RestartSource {
    *   random delay based on this factor is added, e.g. `0.2` adds up to `20%` delay.
    *   In order to skip this additional delay pass in `0`.
    * @param sourceFactory A factory for producing the [[Source]] to wrap.
-   *
    */
   @Deprecated
   @deprecated("Use the overloaded method which accepts akka.stream.RestartSettings instead.", since = "2.6.10")
@@ -147,7 +146,6 @@ object RestartSource {
    * @param maxRestarts the amount of restarts is capped to this amount within a time frame of minBackoff.
    *   Passing `0` will cause no restarts and a negative number will not cap the amount of restarts.
    * @param sourceFactory A factory for producing the [[Source]] to wrap.
-   *
    */
   @Deprecated
   @deprecated("Use the overloaded method which accepts akka.stream.RestartSettings instead.", since = "2.6.10")
@@ -174,7 +172,6 @@ object RestartSource {
    *
    * @param settings [[RestartSettings]] defining restart configuration
    * @param sourceFactory A factory for producing the [[Source]] to wrap.
-   *
    */
   def onFailuresWithBackoff[T](settings: RestartSettings)(sourceFactory: () => Source[T, _]): Source[T, NotUsed] =
     Source.fromGraph(new RestartWithBackoffSource(sourceFactory, settings, onlyOnFailures = true))

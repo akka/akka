@@ -13,9 +13,7 @@ import akka.cluster.MemberStatus.WeaklyUp
 import akka.cluster.UniqueAddress
 import akka.util.Version
 
-/**
- * Needed since the Member constructor is akka private
- */
+/** Needed since the Member constructor is akka private */
 object TestAddresses {
   private def dcRole(dc: ClusterSettings.DataCenter): String =
     ClusterSettings.DcRolePrefix + dc

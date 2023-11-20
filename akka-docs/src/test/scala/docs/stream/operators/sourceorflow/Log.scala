@@ -13,13 +13,13 @@ import akka.stream.Attributes
 object Log {
   def logExample(): Unit = {
     Flow[String]
-    //#log
+      // #log
       .log(name = "myStream")
       .addAttributes(
         Attributes.logLevels(
           onElement = Attributes.LogLevels.Off,
           onFinish = Attributes.LogLevels.Info,
           onFailure = Attributes.LogLevels.Error))
-    //#log
+    // #log
   }
 }

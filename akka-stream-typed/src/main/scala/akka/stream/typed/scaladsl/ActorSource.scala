@@ -8,9 +8,7 @@ import akka.actor.typed._
 import akka.stream.{ CompletionStrategy, OverflowStrategy }
 import akka.stream.scaladsl._
 
-/**
- * Collection of Sources aimed at integrating with typed Actors.
- */
+/** Collection of Sources aimed at integrating with typed Actors. */
 object ActorSource {
 
   import akka.actor.typed.scaladsl.adapter._

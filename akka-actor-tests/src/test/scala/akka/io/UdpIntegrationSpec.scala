@@ -14,10 +14,12 @@ import akka.testkit.{ AkkaSpec, ImplicitSender, TestProbe }
 import akka.testkit.SocketUtil.temporaryServerAddresses
 import akka.util.ByteString
 
-class UdpIntegrationSpec extends AkkaSpec("""
+class UdpIntegrationSpec
+    extends AkkaSpec("""
     akka.loglevel = INFO
     # tests expect to be able to mutate messages
-    """) with ImplicitSender {
+    """)
+    with ImplicitSender {
 
   def bindUdp(handler: ActorRef): InetSocketAddress = {
     val commander = TestProbe()
@@ -73,18 +75,16 @@ class UdpIntegrationSpec extends AkkaSpec("""
 
       def checkSendingToClient(): Unit = {
         server ! Send(data, clientAddress)
-        expectMsgPF() {
-          case Received(d, a) =>
-            d should ===(data)
-            a should ===(serverAddress)
+        expectMsgPF() { case Received(d, a) =>
+          d should ===(data)
+          a should ===(serverAddress)
         }
       }
       def checkSendingToServer(): Unit = {
         client ! Send(data, serverAddress)
-        expectMsgPF() {
-          case Received(d, a) =>
-            d should ===(data)
-            a should ===(clientAddress)
+        expectMsgPF() { case Received(d, a) =>
+          d should ===(data)
+          a should ===(clientAddress)
         }
       }
 

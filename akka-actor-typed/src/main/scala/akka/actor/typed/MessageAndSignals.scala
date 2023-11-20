@@ -6,9 +6,7 @@ package akka.actor.typed
 
 import akka.annotation.DoNotInherit
 
-/**
- * Exception that an actor fails with if it does not handle a Terminated message.
- */
+/** Exception that an actor fails with if it does not handle a Terminated message. */
 final case class DeathPactException(ref: ActorRef[Nothing])
     extends RuntimeException(s"death pact with $ref was triggered") {
 
@@ -88,14 +86,10 @@ object ChildFailed {
   def unapply(t: ChildFailed): Option[(ActorRef[Nothing], Throwable)] = Some((t.ref, t.cause))
 }
 
-/**
- * Child has failed due an uncaught exception
- */
+/** Child has failed due an uncaught exception */
 final class ChildFailed(ref: ActorRef[Nothing], val cause: Throwable) extends Terminated(ref) {
 
-  /**
-   * Java API
-   */
+  /** Java API */
   def getCause(): Throwable = cause
 
   override def toString: String = s"ChildFailed($ref,${cause.getClass.getName})"

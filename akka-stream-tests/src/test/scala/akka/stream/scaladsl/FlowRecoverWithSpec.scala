@@ -140,9 +140,8 @@ class FlowRecoverWithSpec extends StreamSpec {
         .map { a =>
           if (a == 3) throw new IndexOutOfBoundsException() else a
         }
-        .recoverWith {
-          case t: IndexOutOfBoundsException =>
-            Source(List(11, 22)).map(m => if (m == 22) throw ex else m)
+        .recoverWith { case t: IndexOutOfBoundsException =>
+          Source(List(11, 22)).map(m => if (m == 22) throw ex else m)
         }
         .runWith(TestSink[Int]())
         .request(2)
@@ -158,10 +157,11 @@ class FlowRecoverWithSpec extends StreamSpec {
         .map { a =>
           if (a == 3) throw new IndexOutOfBoundsException() else a
         }
-        .recoverWithRetries(3, {
-          case t: Throwable =>
+        .recoverWithRetries(
+          3,
+          { case t: Throwable =>
             Source(List(11, 22, 33)).map(m => if (m == 33) throw ex else m)
-        })
+          })
         .runWith(TestSink[Int]())
         .request(100)
         .expectNextN(List(1, 2))
@@ -221,9 +221,11 @@ class FlowRecoverWithSpec extends StreamSpec {
 
       val result = Source
         .failed(TE("trigger"))
-        .recoverWithRetries(1, {
-          case _: TE => Source.fromGraph(FailingInnerMat)
-        })
+        .recoverWithRetries(
+          1,
+          { case _: TE =>
+            Source.fromGraph(FailingInnerMat)
+          })
         .runWith(Sink.ignore)
 
       result.failed.futureValue should ===(matFail)

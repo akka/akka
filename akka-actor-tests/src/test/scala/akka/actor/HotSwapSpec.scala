@@ -17,7 +17,7 @@ class HotSwapSpec extends AkkaSpec with ImplicitSender {
     "be able to become in its constructor" in {
       val a = system.actorOf(Props(new Becomer {
         context.become { case always => sender() ! always }
-        def receive = { case _       => sender() ! "FAILURE" }
+        def receive = { case _ => sender() ! "FAILURE" }
       }))
       a ! "pigdog"
       expectMsg("pigdog")
@@ -25,7 +25,7 @@ class HotSwapSpec extends AkkaSpec with ImplicitSender {
 
     "be able to become multiple times in its constructor" in {
       val a = system.actorOf(Props(new Becomer {
-        for (i <- 1 to 4) context.become({ case always => sender() ! s"$i:$always" })
+        for (i <- 1 to 4) context.become { case always => sender() ! s"$i:$always" }
         def receive = { case _ => sender() ! "FAILURE" }
       }))
       a ! "pigdog"
@@ -35,7 +35,7 @@ class HotSwapSpec extends AkkaSpec with ImplicitSender {
     "be able to become with stacking in its constructor" in {
       val a = system.actorOf(Props(new Becomer {
         context.become({ case always => sender() ! "pigdog:" + always; context.unbecome() }, false)
-        def receive = { case always  => sender() ! "badass:" + always }
+        def receive = { case always => sender() ! "badass:" + always }
       }))
       a ! "pigdog"
       expectMsg("pigdog:pigdog")
@@ -62,7 +62,7 @@ class HotSwapSpec extends AkkaSpec with ImplicitSender {
       val a = system.actorOf(Props(new Actor {
         def receive = {
           case "init" => sender() ! "init"
-          case "swap" => context.become({ case x: String => context.sender() ! x })
+          case "swap" => context.become { case x: String => context.sender() ! x }
         }
       }))
 
@@ -78,10 +78,10 @@ class HotSwapSpec extends AkkaSpec with ImplicitSender {
         def receive = {
           case "init" => sender() ! "init"
           case "swap" =>
-            context.become({
+            context.become {
               case "swapped" => sender() ! "swapped"
               case "revert"  => context.unbecome()
-            })
+            }
         }
       }))
 
@@ -103,11 +103,11 @@ class HotSwapSpec extends AkkaSpec with ImplicitSender {
         def receive = {
           case "state" => sender() ! "0"
           case "swap" =>
-            context.become({
+            context.become {
               case "state"   => sender() ! "1"
               case "swapped" => sender() ! "swapped"
               case "crash"   => throw new Exception("Crash (expected)!")
-            })
+            }
             sender() ! "swapped"
         }
       }))

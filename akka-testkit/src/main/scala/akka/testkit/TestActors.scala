@@ -6,26 +6,19 @@ package akka.testkit
 
 import akka.actor.{ Actor, ActorRef, Props }
 
-/**
- * A collection of common actor patterns used in tests.
- */
+/** A collection of common actor patterns used in tests. */
 object TestActors {
 
-  /**
-   * EchoActor sends back received messages (unmodified).
-   */
+  /** EchoActor sends back received messages (unmodified). */
   class EchoActor extends Actor {
-    override def receive = {
-      case message => sender() ! message
+    override def receive = { case message =>
+      sender() ! message
     }
   }
 
-  /**
-   * BlackholeActor does nothing for incoming messages, its like a blackhole.
-   */
+  /** BlackholeActor does nothing for incoming messages, its like a blackhole. */
   class BlackholeActor extends Actor {
-    override def receive = {
-      case _ => // ignore...
+    override def receive = { case _ => // ignore...
     }
   }
 
@@ -35,8 +28,8 @@ object TestActors {
    * @param ref target ActorRef to forward messages to
    */
   class ForwardActor(ref: ActorRef) extends Actor {
-    override def receive = {
-      case message => ref.forward(message)
+    override def receive = { case message =>
+      ref.forward(message)
     }
   }
 

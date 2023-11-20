@@ -14,7 +14,8 @@ import akka.testkit.LongRunningTest
 
 object JoinConfigCompatCheckerRollingUpdateSpec {
 
-  val baseConfig = ConfigFactory.parseString("""
+  val baseConfig = ConfigFactory
+    .parseString("""
       akka.log-dead-letters = off
       akka.log-dead-letters-during-shutdown = off
       akka.cluster.downing-provider-class = akka.cluster.testkit.AutoDowning
@@ -27,7 +28,8 @@ object JoinConfigCompatCheckerRollingUpdateSpec {
         periodic-tasks-initial-delay        = 300 ms
         publish-stats-interval              = 0 s # always, when it happens
       }
-    """).withFallback(JoinConfigCompatCheckerSpec.baseConfig)
+    """)
+    .withFallback(JoinConfigCompatCheckerSpec.baseConfig)
 
   val v1Config: Config = baseConfig.withFallback(JoinConfigCompatCheckerSpec.configWithChecker)
 

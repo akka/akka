@@ -154,15 +154,11 @@ final class RotatingKeysSSLEngineProvider(val config: Config, protected val log:
 
 object RotatingKeysSSLEngineProvider {
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi
   private case class CachedContext(cached: ConfiguredContext, expires: Deadline)
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi
   private case class ConfiguredContext(context: SSLContext, sessionVerifier: SessionVerifier)
 

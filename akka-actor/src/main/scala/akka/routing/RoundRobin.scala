@@ -95,14 +95,10 @@ final case class RoundRobinPool(
 
   override def nrOfInstances(sys: ActorSystem) = this.nrOfInstances
 
-  /**
-   * Setting the supervisor strategy to be used for the “head” Router actor.
-   */
+  /** Setting the supervisor strategy to be used for the “head” Router actor. */
   def withSupervisorStrategy(strategy: SupervisorStrategy): RoundRobinPool = copy(supervisorStrategy = strategy)
 
-  /**
-   * Setting the resizer to be used.
-   */
+  /** Setting the resizer to be used. */
   def withResizer(resizer: Resizer): RoundRobinPool = copy(resizer = Some(resizer))
 
   /**

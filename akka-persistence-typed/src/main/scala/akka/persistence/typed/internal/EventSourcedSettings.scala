@@ -14,9 +14,7 @@ import akka.actor.typed.ActorSystem
 import akka.annotation.InternalApi
 import akka.persistence.Persistence
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object EventSourcedSettings {
 
   def apply(system: ActorSystem[_], journalPluginId: String, snapshotPluginId: String): EventSourcedSettings =
@@ -80,9 +78,7 @@ import akka.persistence.Persistence
 
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] final case class EventSourcedSettings(
     stashCapacity: Int,
@@ -100,15 +96,11 @@ private[akka] final case class EventSourcedSettings(
 
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] sealed trait StashOverflowStrategy
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] object StashOverflowStrategy {
   case object Drop extends StashOverflowStrategy

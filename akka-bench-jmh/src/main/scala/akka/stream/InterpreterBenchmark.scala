@@ -38,7 +38,7 @@ class InterpreterBenchmark {
         val b = builder(identities: _*).connect(source, identities.head.in).connect(identities.last.out, sink)
 
         // FIXME: This should not be here, this is pure setup overhead
-        for (i <- (0 until identities.size - 1)) {
+        for (i <- 0 until identities.size - 1) {
           b.connect(identities(i).out, identities(i + 1).in)
         }
 
@@ -77,13 +77,15 @@ object InterpreterBenchmark {
     override val in: akka.stream.Inlet[T] = Inlet[T]("in")
     in.id = 0
 
-    setHandler(in, new InHandler {
-      override def onPush(): Unit = {
-        expected -= 1
-        if (expected > 0) pull(in)
-        // Otherwise do nothing, it will exit the interpreter
-      }
-    })
+    setHandler(
+      in,
+      new InHandler {
+        override def onPush(): Unit = {
+          expected -= 1
+          if (expected > 0) pull(in)
+          // Otherwise do nothing, it will exit the interpreter
+        }
+      })
 
     def requestOne(): Unit = pull(in)
   }

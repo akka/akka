@@ -8,9 +8,7 @@ import org.slf4j.MDC
 
 import akka.annotation.InternalApi
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object ActorMdc {
   val SourceActorSystemKey = "sourceActorSystem"
   val AkkaSourceKey = "akkaSource"

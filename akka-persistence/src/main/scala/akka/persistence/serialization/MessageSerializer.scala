@@ -22,14 +22,10 @@ import akka.util.ccompat._
 import scala.concurrent.duration.Duration
 import scala.concurrent.duration.FiniteDuration
 
-/**
- * Marker trait for all protobuf-serializable messages in `akka.persistence`.
- */
+/** Marker trait for all protobuf-serializable messages in `akka.persistence`. */
 trait Message extends Serializable
 
-/**
- * Protobuf serializer for [[akka.persistence.PersistentRepr]], [[akka.persistence.AtLeastOnceDelivery]] and [[akka.persistence.fsm.PersistentFSM.StateChangeEvent]] messages.
- */
+/** Protobuf serializer for [[akka.persistence.PersistentRepr]], [[akka.persistence.AtLeastOnceDelivery]] and [[akka.persistence.fsm.PersistentFSM.StateChangeEvent]] messages. */
 @ccompatUsedUntil213
 @nowarn("msg=deprecated")
 class MessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer {
@@ -56,7 +52,7 @@ class MessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer 
     case a: AtLeastOnceDeliverySnapshot           => atLeastOnceDeliverySnapshotBuilder(a).build.toByteArray
     case s: StateChangeEvent                      => stateChangeBuilder(s).build.toByteArray
     case p: PersistentFSMSnapshot[Any @unchecked] => persistentFSMSnapshotBuilder(p).build.toByteArray
-    case _                                        => throw new IllegalArgumentException(s"Can't serialize object of type ${o.getClass}")
+    case _ => throw new IllegalArgumentException(s"Can't serialize object of type ${o.getClass}")
   }
 
   /**
@@ -74,7 +70,7 @@ class MessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer 
           atLeastOnceDeliverySnapshot(mf.AtLeastOnceDeliverySnapshot.parseFrom(bytes))
         case PersistentStateChangeEventClass => stateChange(mf.PersistentStateChangeEvent.parseFrom(bytes))
         case PersistentFSMSnapshotClass      => persistentFSMSnapshot(mf.PersistentFSMSnapshot.parseFrom(bytes))
-        case _                               => throw new NotSerializableException(s"Can't deserialize object of type ${c}")
+        case _ => throw new NotSerializableException(s"Can't deserialize object of type ${c}")
       }
   }
 

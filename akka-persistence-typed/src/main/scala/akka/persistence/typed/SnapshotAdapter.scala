@@ -13,9 +13,7 @@ package akka.persistence.typed
  */
 trait SnapshotAdapter[State] {
 
-  /**
-   * Transform the state to a different type before sending to the journal.
-   */
+  /** Transform the state to a different type before sending to the journal. */
   def toJournal(state: State): Any
 
   /**

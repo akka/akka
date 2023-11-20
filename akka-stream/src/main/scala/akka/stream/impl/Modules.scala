@@ -14,9 +14,7 @@ import akka.event.Logging
 import akka.stream._
 import akka.stream.impl.StreamLayout.AtomicModule
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @DoNotInherit private[akka] abstract class SourceModule[+Out, +Mat](val shape: SourceShape[Out])
     extends AtomicModule[SourceShape[Out], Mat] {
 

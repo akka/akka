@@ -147,9 +147,7 @@ object BehaviorInterceptor {
 abstract class BehaviorSignalInterceptor[Inner] extends BehaviorInterceptor[Inner, Inner](null) {
   import BehaviorInterceptor._
 
-  /**
-   * Only signals and not messages are intercepted by `BehaviorSignalInterceptor`.
-   */
+  /** Only signals and not messages are intercepted by `BehaviorSignalInterceptor`. */
   final override def aroundReceive(
       ctx: TypedActorContext[Inner],
       msg: Inner,

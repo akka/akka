@@ -56,15 +56,13 @@ import akka.persistence.journal.leveldb.SharedLeveldbStore
  */
 object RemoveInternalClusterShardingData {
 
-  /**
-   * @see [[RemoveInternalClusterShardingData$ RemoveInternalClusterShardingData companion object]]
-   */
+  /** @see [[RemoveInternalClusterShardingData$ RemoveInternalClusterShardingData companion object]] */
   def main(args: Array[String]): Unit = {
     if (args.isEmpty)
       println("Specify the Cluster Sharding type names to remove in program arguments")
     else {
       val system = ActorSystem("RemoveInternalClusterShardingData")
-      val remove2dot3Data = (args(0) == "-2.3")
+      val remove2dot3Data = args(0) == "-2.3"
       val typeNames = if (remove2dot3Data) args.tail.toSet else args.toSet
       if (typeNames.isEmpty)
         println("Specify the Cluster Sharding type names to remove in program arguments")
@@ -104,9 +102,7 @@ object RemoveInternalClusterShardingData {
     completion.future
   }
 
-  /**
-   * INTERNAL API: `Props` for [[RemoveInternalClusterShardingData]] actor.
-   */
+  /** INTERNAL API: `Props` for [[RemoveInternalClusterShardingData]] actor. */
   private[akka] def props(
       journalPluginId: String,
       typeNames: Set[String],
@@ -115,9 +111,7 @@ object RemoveInternalClusterShardingData {
     Props(new RemoveInternalClusterShardingData(journalPluginId, typeNames, completion, remove2dot3Data))
       .withDeploy(Deploy.local)
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   private[akka] object RemoveOnePersistenceId {
     def props(journalPluginId: String, persistenceId: String, replyTo: ActorRef): Props =
       Props(new RemoveOnePersistenceId(journalPluginId, persistenceId: String, replyTo))
@@ -163,13 +157,13 @@ object RemoveInternalClusterShardingData {
       }: Receive).orElse(handleFailure)
 
     def waitDeleteSnapshotsSuccess: Receive =
-      ({
-        case DeleteSnapshotsSuccess(_) => done()
+      ({ case DeleteSnapshotsSuccess(_) =>
+        done()
       }: Receive).orElse(handleFailure)
 
     def waitDeleteMessagesSuccess: Receive =
-      ({
-        case DeleteMessagesSuccess(_) => done()
+      ({ case DeleteMessagesSuccess(_) =>
+        done()
       }: Receive).orElse(handleFailure)
 
     def handleFailure: Receive = {
@@ -191,9 +185,7 @@ object RemoveInternalClusterShardingData {
 
 }
 
-/**
- * @see [[RemoveInternalClusterShardingData$ RemoveInternalClusterShardingData companion object]]
- */
+/** @see [[RemoveInternalClusterShardingData$ RemoveInternalClusterShardingData companion object]] */
 class RemoveInternalClusterShardingData(
     journalPluginId: String,
     typeNames: Set[String],

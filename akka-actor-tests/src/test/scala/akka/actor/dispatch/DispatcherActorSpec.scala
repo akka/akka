@@ -49,8 +49,8 @@ object DispatcherActorSpec {
     val oneWay = new CountDownLatch(1)
   }
   class OneWayTestActor extends Actor {
-    def receive = {
-      case "OneWay" => OneWayTestActor.oneWay.countDown()
+    def receive = { case "OneWay" =>
+      OneWayTestActor.oneWay.countDown()
     }
   }
 }
@@ -111,8 +111,8 @@ class DispatcherActorSpec extends AkkaSpec(DispatcherActorSpec.config) with Defa
       val ready = new CountDownLatch(1)
 
       val fastOne = system.actorOf(Props(new Actor {
-        def receive = {
-          case "ping" => if (works.get) latch.countDown(); context.stop(self)
+        def receive = { case "ping" =>
+          if (works.get) latch.countDown(); context.stop(self)
         }
       }).withDispatcher(throughputDispatcher))
 

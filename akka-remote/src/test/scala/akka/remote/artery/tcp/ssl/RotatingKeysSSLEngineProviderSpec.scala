@@ -294,8 +294,8 @@ class RemoteSystem(
   val sslContextRef = new AtomicReference[SSLContext]()
 
   val sslProviderSetup =
-    SSLEngineProviderSetup(
-      sys => new ProbedSSLEngineProvider(sys, sslContextRef, sslProviderServerProbe, sslProviderClientProbe))
+    SSLEngineProviderSetup(sys =>
+      new ProbedSSLEngineProvider(sys, sslContextRef, sslProviderServerProbe, sslProviderClientProbe))
 
   val actorSystem =
     newRemoteSystem(Some(configString), Some(name), Some(ActorSystemSetup(sslProviderSetup)))

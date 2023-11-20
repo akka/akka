@@ -45,10 +45,9 @@ final class ActorContextPipeToSelfSpec
           case Failure(ex) => throw ex
         }
 
-        Behaviors.receiveMessage {
-          case msg =>
-            probe.ref ! msg
-            Behaviors.same
+        Behaviors.receiveMessage { case msg =>
+          probe.ref ! msg
+          Behaviors.same
 
         }
       })

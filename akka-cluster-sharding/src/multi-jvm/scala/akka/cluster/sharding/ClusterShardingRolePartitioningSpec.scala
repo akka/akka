@@ -16,8 +16,8 @@ import akka.testkit._
 // See https://github.com/akka/akka/issues/28177#issuecomment-555013145
 object E1 {
   val TypeKey = "Datatype1"
-  val extractEntityId: ShardRegion.ExtractEntityId = {
-    case id: String => (id, id)
+  val extractEntityId: ShardRegion.ExtractEntityId = { case id: String =>
+    (id, id)
   }
 
   val extractShardId: ShardRegion.ExtractShardId = {
@@ -28,8 +28,8 @@ object E1 {
 
 object E2 {
   val TypeKey = "Datatype2"
-  val extractEntityId: ShardRegion.ExtractEntityId = {
-    case id: Int => (id.toString, id)
+  val extractEntityId: ShardRegion.ExtractEntityId = { case id: Int =>
+    (id.toString, id)
   }
 
   val extractShardId: ShardRegion.ExtractShardId = {

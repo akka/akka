@@ -8,21 +8,15 @@ import akka.annotation.DoNotInherit
 import akka.persistence.typed.internal.DisabledRetentionCriteria
 import akka.persistence.typed.internal.SnapshotCountRetentionCriteriaImpl
 
-/**
- * Criteria for retention/deletion of snapshots and events.
- */
+/** Criteria for retention/deletion of snapshots and events. */
 abstract class RetentionCriteria {
   def asScala: akka.persistence.typed.scaladsl.RetentionCriteria
 }
 
-/**
- * Criteria for retention/deletion of snapshots and events.
- */
+/** Criteria for retention/deletion of snapshots and events. */
 object RetentionCriteria {
 
-  /**
-   * Snapshots are not saved and deleted automatically, events are not deleted.
-   */
+  /** Snapshots are not saved and deleted automatically, events are not deleted. */
   val disabled: RetentionCriteria = DisabledRetentionCriteria
 
   /**

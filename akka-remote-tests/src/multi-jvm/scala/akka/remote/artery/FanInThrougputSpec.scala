@@ -31,8 +31,7 @@ object FanInThroughputSpec extends MultiNodeConfig {
 
   commonConfig(
     debugConfig(on = false)
-      .withFallback(
-        ConfigFactory.parseString("""
+      .withFallback(ConfigFactory.parseString("""
        # for serious measurements you should increase the totalMessagesFactor (20)
        akka.test.FanInThroughputSpec.totalMessagesFactor = 10.0
        akka.test.FanInThroughputSpec.real-message = off

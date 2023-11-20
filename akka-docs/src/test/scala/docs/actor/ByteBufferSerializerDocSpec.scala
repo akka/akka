@@ -13,7 +13,7 @@ import akka.serialization.SerializerWithStringManifest
 
 class ByteBufferSerializerDocSpec {
 
-  //#bytebufserializer-with-manifest
+  // #bytebufserializer-with-manifest
   class ExampleByteBufSerializer extends SerializerWithStringManifest with ByteBufferSerializer {
     override def identifier: Int = 1337
     override def manifest(o: AnyRef): String = "naive-toStringImpl"
@@ -38,6 +38,6 @@ class ByteBufferSerializerDocSpec {
     override def toBinary(o: AnyRef, buf: ByteBuffer): Unit = ??? // implement actual logic here
     override def fromBinary(buf: ByteBuffer, manifest: String): AnyRef = ??? // implement actual logic here
   }
-  //#bytebufserializer-with-manifest
+  // #bytebufserializer-with-manifest
 
 }

@@ -39,9 +39,7 @@ import akka.util.unused
  */
 @InternalApi private[akka] sealed trait Traversal {
 
-  /**
-   * Concatenates two traversals building a new Traversal which traverses both.
-   */
+  /** Concatenates two traversals building a new Traversal which traverses both. */
   def concat(that: Traversal): Traversal = {
     Concat.normalizeConcat(this, that)
   }
@@ -49,9 +47,7 @@ import akka.util.unused
   def rewireFirstTo(@unused relativeOffset: Int): Traversal = null
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object Concat {
 
   /**
@@ -136,31 +132,21 @@ import akka.util.unused
   override def concat(that: Traversal): Traversal = that
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] sealed trait MaterializedValueOp extends Traversal
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] case object Pop extends MaterializedValueOp
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] case object PushNotUsed extends MaterializedValueOp
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] final case class Transform(mapper: AnyFunction1) extends MaterializedValueOp {
   def apply(arg: Any): Any = mapper.asInstanceOf[Any => Any](arg)
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] final case class Compose(composer: AnyFunction2, reverse: Boolean = false)
     extends MaterializedValueOp {
   def apply(arg1: Any, arg2: Any): Any = {
@@ -171,29 +157,19 @@ import akka.util.unused
   }
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] final case class PushAttributes(attributes: Attributes) extends Traversal
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] case object PopAttributes extends Traversal
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] final case class EnterIsland(islandTag: IslandTag) extends Traversal
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] case object ExitIsland extends Traversal
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object TraversalBuilder {
   // The most generic function1 and function2 (also completely useless, as we have thrown away all types)
   // needs to be casted once to be useful (pending runtime exception in cases of bugs).
@@ -239,9 +215,7 @@ import akka.util.unused
     }
   }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[akka] def empty(attributes: Attributes = Attributes.none): TraversalBuilder = {
     if (attributes eq Attributes.none) cachedEmptyCompleted
     else CompletedTraversalBuilder(PushNotUsed, 0, Map.empty, attributes)
@@ -274,9 +248,7 @@ import akka.util.unused
     builder.setAttributes(attributes)
   }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[impl] def printTraversal(t: Traversal, indent: Int = 0): Unit = {
     var current: Traversal = t
 
@@ -307,9 +279,7 @@ import akka.util.unused
     }
   }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[impl] def printWiring(t: Traversal, baseSlot: Int = 0): Int = {
     var current: Traversal = t
     var slot = baseSlot
@@ -370,9 +340,7 @@ import akka.util.unused
     }
   }
 
-  /**
-   * Test if a Graph is an empty Source.
-   * */
+  /** Test if a Graph is an empty Source. */
   def isEmptySource(graph: Graph[SourceShape[_], _]): Boolean = graph match {
     case source: scaladsl.Source[_, _] if source eq scaladsl.Source.empty => true
     case source: javadsl.Source[_, _] if source eq javadsl.Source.empty() => true
@@ -436,14 +404,10 @@ import akka.util.unused
    */
   def offsetOfModule(out: OutPort): Int
 
-  /**
-   * Returns whether the given output port has been wired in the graph or not.
-   */
+  /** Returns whether the given output port has been wired in the graph or not. */
   def isUnwired(out: OutPort): Boolean
 
-  /**
-   * Returns whether the given input port has been wired in the graph or not.
-   */
+  /** Returns whether the given input port has been wired in the graph or not. */
   def isUnwired(in: InPort): Boolean
 
   /**
@@ -472,14 +436,10 @@ import akka.util.unused
    */
   def inSlots: Int
 
-  /**
-   * Returns the Traversal if ready for this (sub)graph.
-   */
+  /** Returns the Traversal if ready for this (sub)graph. */
   def traversal: Traversal = throw new IllegalStateException("Traversal can be only acquired from a completed builder")
 
-  /**
-   * The number of output ports that have not been wired.
-   */
+  /** The number of output ports that have not been wired. */
   def unwiredOuts: Int
 
   /**
@@ -621,9 +581,7 @@ import akka.util.unused
     TraversalBuilder.empty().add(this, module.shape, Keep.right).makeIsland(islandTag)
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object LinearTraversalBuilder {
 
   // TODO: Remove
@@ -761,9 +719,7 @@ import akka.util.unused
       "composite builder instead and add the second module to that.")
   }
 
-  /**
-   * This builder can always return a traversal.
-   */
+  /** This builder can always return a traversal. */
   override def traversal: Traversal = {
     if (outPort.isDefined)
       throw new IllegalStateException("Traversal cannot be acquired until all output ports have been wired")
@@ -880,8 +836,8 @@ import akka.util.unused
     if (toAppend.isEmpty) {
       copy(traversalSoFar = PushNotUsed.concat(LinearTraversalBuilder.addMatCompose(traversalSoFar, matCompose)))
     } else if (this.isEmpty) {
-      toAppend.copy(
-        traversalSoFar = toAppend.traversalSoFar.concat(LinearTraversalBuilder.addMatCompose(traversal, matCompose)))
+      toAppend.copy(traversalSoFar =
+        toAppend.traversalSoFar.concat(LinearTraversalBuilder.addMatCompose(traversal, matCompose)))
     } else {
       if (outPort.isDefined) {
         if (toAppend.inPort.isEmpty)
@@ -1114,9 +1070,7 @@ import akka.util.unused
     }
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @DoNotInherit private[akka] sealed trait TraversalBuildStep
 
 /**
@@ -1132,9 +1086,7 @@ import akka.util.unused
   override def toString = s"K:$hashCode"
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] final case class AppendTraversal(traversal: Traversal) extends TraversalBuildStep
 
 /**
@@ -1197,9 +1149,7 @@ import akka.util.unused
   override def internalSetAttributes(attributes: Attributes): TraversalBuilder =
     copy(attributes = attributes)
 
-  /**
-   * Convert this builder to a [[CompletedTraversalBuilder]] if there are no more unwired outputs.
-   */
+  /** Convert this builder to a [[CompletedTraversalBuilder]] if there are no more unwired outputs. */
   def completeIfPossible: TraversalBuilder = {
     if (unwiredOuts == 0) {
       var traversal: Traversal = finalSteps
@@ -1226,9 +1176,7 @@ import akka.util.unused
     } else this
   }
 
-  /**
-   * Assign an output port a relative slot (relative to the base input slot of its module, see [[MaterializeAtomic]])
-   */
+  /** Assign an output port a relative slot (relative to the base input slot of its module, see [[MaterializeAtomic]]) */
   override def assign(out: OutPort, relativeSlot: Int): TraversalBuilder = {
     // Which module out belongs to (indirection via BuilderKey and pendingBuilders)
     val builderKey = outOwners(out)

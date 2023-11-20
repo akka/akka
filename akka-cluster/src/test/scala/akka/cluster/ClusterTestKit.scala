@@ -29,9 +29,7 @@ trait ClusterTestKit extends TestKitBase {
 
     private var actorSystems: List[ActorSystem] = List.empty
 
-    /**
-     * Register an [[ActorSystem]].
-     */
+    /** Register an [[ActorSystem]]. */
     def register(actorSystem: ActorSystem) = {
       actorSystems = actorSystems :+ actorSystem
       actorSystem
@@ -47,9 +45,7 @@ trait ClusterTestKit extends TestKitBase {
       actorSystem
     }
 
-    /**
-     * Creates a new [[ActorSystem]] using the passed [[Config]] and register it.
-     */
+    /** Creates a new [[ActorSystem]] using the passed [[Config]] and register it. */
     def newActorSystem(config: Config): ActorSystem =
       register(ActorSystem(name, config))
 
@@ -135,22 +131,20 @@ trait ClusterTestKit extends TestKitBase {
       // remove from internal list
       actorSystems = actorSystems.filterNot(_ == actorSystem)
 
-      val newConfig = ConfigFactory.parseString(s"""
+      val newConfig = ConfigFactory
+        .parseString(s"""
           akka.remote.artery.canonical.port = $port
-          """).withFallback(config)
+          """)
+        .withFallback(config)
 
       if (firstSeedNode) newActorSystemAsFirst(newConfig)
       else newActorSystem(newConfig)
     }
 
-    /**
-     * Returns true if the cluster instance for the provided [[ActorSystem]] is [[MemberStatus.Up]].
-     */
+    /** Returns true if the cluster instance for the provided [[ActorSystem]] is [[MemberStatus.Up]]. */
     def isMemberUp(system: ActorSystem): Boolean = Cluster(system).selfMember.status == MemberStatus.Up
 
-    /**
-     * Returns true if the cluster instance for the provided [[ActorSystem]] has be shutdown.
-     */
+    /** Returns true if the cluster instance for the provided [[ActorSystem]] has be shutdown. */
     def isTerminated(system: ActorSystem): Boolean = Cluster(system).isTerminated
 
   }

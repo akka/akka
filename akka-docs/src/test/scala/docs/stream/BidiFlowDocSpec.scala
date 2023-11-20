@@ -14,24 +14,24 @@ import scala.concurrent.duration._
 import scala.concurrent.Await
 
 object BidiFlowDocSpec {
-  //#codec
+  // #codec
   trait Message
   case class Ping(id: Int) extends Message
   case class Pong(id: Int) extends Message
 
-  //#codec-impl
+  // #codec-impl
   def toBytes(msg: Message): ByteString = {
-    //#implementation-details-elided
+    // #implementation-details-elided
     implicit val order = ByteOrder.LITTLE_ENDIAN
     msg match {
       case Ping(id) => ByteString.newBuilder.putByte(1).putInt(id).result()
       case Pong(id) => ByteString.newBuilder.putByte(2).putInt(id).result()
     }
-    //#implementation-details-elided
+    // #implementation-details-elided
   }
 
   def fromBytes(bytes: ByteString): Message = {
-    //#implementation-details-elided
+    // #implementation-details-elided
     implicit val order = ByteOrder.LITTLE_ENDIAN
     val it = bytes.iterator
     it.getByte match {
@@ -39,9 +39,9 @@ object BidiFlowDocSpec {
       case 2     => Pong(it.getInt)
       case other => throw new RuntimeException(s"parse error: expected 1|2 got $other")
     }
-    //#implementation-details-elided
+    // #implementation-details-elided
   }
-  //#codec-impl
+  // #codec-impl
 
   val codecVerbose = BidiFlow.fromGraph(GraphDSL.create() { b =>
     // construct and add the top flow, going outbound
@@ -54,9 +54,9 @@ object BidiFlowDocSpec {
 
   // this is the same as the above
   val codec = BidiFlow.fromFunctions(toBytes _, fromBytes _)
-  //#codec
+  // #codec
 
-  //#framing
+  // #framing
   val framing = BidiFlow.fromGraph(GraphDSL.create() { b =>
     implicit val order = ByteOrder.LITTLE_ENDIAN
 
@@ -78,28 +78,32 @@ object BidiFlowDocSpec {
         // this holds the current message length or -1 if at a boundary
         var needed = -1
 
-        setHandler(out, new OutHandler {
-          override def onPull(): Unit = {
-            if (isClosed(in)) run()
-            else pull(in)
-          }
-        })
-        setHandler(in, new InHandler {
-          override def onPush(): Unit = {
-            val bytes = grab(in)
-            stash = stash ++ bytes
-            run()
-          }
+        setHandler(
+          out,
+          new OutHandler {
+            override def onPull(): Unit = {
+              if (isClosed(in)) run()
+              else pull(in)
+            }
+          })
+        setHandler(
+          in,
+          new InHandler {
+            override def onPush(): Unit = {
+              val bytes = grab(in)
+              stash = stash ++ bytes
+              run()
+            }
 
-          override def onUpstreamFinish(): Unit = {
-            // either we are done
-            if (stash.isEmpty) completeStage()
-            // or we still have bytes to emit
-            // wait with completion and let run() complete when the
-            // rest of the stash has been sent downstream
-            else if (isAvailable(out)) run()
-          }
-        })
+            override def onUpstreamFinish(): Unit = {
+              // either we are done
+              if (stash.isEmpty) completeStage()
+              // or we still have bytes to emit
+              // wait with completion and let run() complete when the
+              // rest of the stash has been sent downstream
+              else if (isAvailable(out)) run()
+            }
+          })
 
         private def run(): Unit = {
           if (needed == -1) {
@@ -132,7 +136,7 @@ object BidiFlowDocSpec {
     val inbound = b.add(Flow[ByteString].via(new FrameParser))
     BidiShape.fromFlows(outbound, inbound)
   })
-  //#framing
+  // #framing
 
   val chopUp = BidiFlow.fromGraph(GraphDSL.create() { b =>
     val f = Flow[ByteString].mapConcat(_.map(ByteString(_)))
@@ -151,7 +155,7 @@ class BidiFlowDocSpec extends AkkaSpec {
   "A BidiFlow" must {
 
     "compose" in {
-      //#compose
+      // #compose
       /* construct protocol stack
        *         +------------------------------------+
        *         | stack                              |
@@ -170,7 +174,7 @@ class BidiFlowDocSpec extends AkkaSpec {
       val flow = stack.atop(stack.reversed).join(pingpong)
       val result = Source((0 to 9).map(Ping(_))).via(flow).limit(20).runWith(Sink.seq)
       Await.result(result, 1.second) should ===((0 to 9).map(Pong(_)))
-      //#compose
+      // #compose
     }
 
     "work when chopped up" in {

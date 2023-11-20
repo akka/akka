@@ -31,9 +31,7 @@ trait ActorRef[-T] extends RecipientRef[T] with java.lang.Comparable[ActorRef[_]
    */
   def tell(msg: T): Unit
 
-  /**
-   * Narrow the type of this `ActorRef`, which is always a safe operation.
-   */
+  /** Narrow the type of this `ActorRef`, which is always a safe operation. */
   def narrow[U <: T]: ActorRef[U]
 
   /**
@@ -68,9 +66,7 @@ object ActorRef {
   }
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[akka] object SerializedActorRef {
   def apply[T](actorRef: ActorRef[T]): SerializedActorRef[T] = {
     new SerializedActorRef(actorRef)

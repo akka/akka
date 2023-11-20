@@ -12,9 +12,7 @@ import java.util.concurrent.TimeUnit.NANOSECONDS
  */
 trait FailureDetector {
 
-  /**
-   * Returns true if the resource is considered to be up and healthy and returns false otherwise.
-   */
+  /** Returns true if the resource is considered to be up and healthy and returns false otherwise. */
   def isAvailable: Boolean
 
   /**

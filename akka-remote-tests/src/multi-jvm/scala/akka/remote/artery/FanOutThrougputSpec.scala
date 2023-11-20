@@ -32,8 +32,7 @@ object FanOutThroughputSpec extends MultiNodeConfig {
 
   commonConfig(
     debugConfig(on = false)
-      .withFallback(
-        ConfigFactory.parseString("""
+      .withFallback(ConfigFactory.parseString("""
        # for serious measurements you should increase the totalMessagesFactor (20)
        akka.test.FanOutThroughputSpec.totalMessagesFactor = 10.0
        akka.test.FanOutThroughputSpec.real-message = off
@@ -155,13 +154,12 @@ abstract class FanOutThroughputSpec extends RemotingMultiNodeSpec(FanOutThroughp
         snd ! Run
         (snd, terminationProbe, plotProbe)
       }
-      senders.foreach {
-        case (snd, terminationProbe, plotProbe) =>
-          terminationProbe.expectTerminated(snd, barrierTimeout)
-          if (snd == senders.head._1) {
-            val plotResult = plotProbe.expectMsgType[PlotResult]
-            plot = plot.addAll(plotResult)
-          }
+      senders.foreach { case (snd, terminationProbe, plotProbe) =>
+        terminationProbe.expectTerminated(snd, barrierTimeout)
+        if (snd == senders.head._1) {
+          val plotResult = plotProbe.expectMsgType[PlotResult]
+          plot = plot.addAll(plotResult)
+        }
       }
       enterBarrier(testName + "-done")
     }

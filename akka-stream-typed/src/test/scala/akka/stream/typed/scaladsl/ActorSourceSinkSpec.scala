@@ -150,7 +150,8 @@ class ActorSourceSinkSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike
       val (in, out) = ActorSource
         .actorRefWithBackpressure[String, String](
           p.ref,
-          "ack", { case "complete" => CompletionStrategy.draining },
+          "ack",
+          { case "complete" => CompletionStrategy.draining },
           PartialFunction.empty)
         .toMat(Sink.seq)(Keep.both)
         .run()

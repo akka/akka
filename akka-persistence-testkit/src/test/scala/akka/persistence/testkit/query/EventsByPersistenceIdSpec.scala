@@ -21,8 +21,7 @@ import akka.persistence.typed.scaladsl.{ Effect, EventSourcedBehavior }
 import akka.stream.testkit.scaladsl.TestSink
 
 object EventsByPersistenceIdSpec {
-  val config = PersistenceTestKitPlugin.config.withFallback(
-    ConfigFactory.parseString("""
+  val config = PersistenceTestKitPlugin.config.withFallback(ConfigFactory.parseString("""
     akka.loglevel = DEBUG
     akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
     akka.persistence.testkit.events.serialize = off

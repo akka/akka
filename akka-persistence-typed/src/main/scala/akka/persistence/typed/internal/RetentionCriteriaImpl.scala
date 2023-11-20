@@ -26,9 +26,7 @@ import akka.persistence.typed.scaladsl
   def snapshotWhen(currentSequenceNr: Long): Boolean =
     currentSequenceNr % snapshotEveryNEvents == 0
 
-  /**
-   * Should only be used when `BehaviorSetup.isOnlyOneSnapshot` is true.
-   */
+  /** Should only be used when `BehaviorSetup.isOnlyOneSnapshot` is true. */
   def deleteUpperSequenceNr(lastSequenceNr: Long): Long = {
     // Delete old events, retain the latest
     math.max(0, lastSequenceNr - (keepNSnapshots.toLong * snapshotEveryNEvents))
@@ -42,9 +40,7 @@ import akka.persistence.typed.scaladsl
   override def asJava: javadsl.RetentionCriteria = this
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] case object DisabledRetentionCriteria
     extends javadsl.RetentionCriteria
     with scaladsl.RetentionCriteria {

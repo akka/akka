@@ -33,8 +33,8 @@ object ClusterRoundRobinMultiJvmSpec extends MultiNodeConfig {
   class SomeActor(routeeType: RouteeType) extends Actor {
     def this() = this(PoolRoutee)
 
-    def receive = {
-      case "hit" => sender() ! Reply(routeeType, self)
+    def receive = { case "hit" =>
+      sender() ! Reply(routeeType, self)
     }
   }
 
@@ -49,7 +49,9 @@ object ClusterRoundRobinMultiJvmSpec extends MultiNodeConfig {
   val third = role("third")
   val fourth = role("fourth")
 
-  commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString(s"""
+  commonConfig(
+    debugConfig(on = false)
+      .withFallback(ConfigFactory.parseString(s"""
       akka.actor {
         serialization-bindings {
           "akka.cluster.routing.ClusterRoundRobinMultiJvmSpec$$Reply" = java-test
@@ -89,7 +91,8 @@ object ClusterRoundRobinMultiJvmSpec extends MultiNodeConfig {
           }
         }
       }
-      """)).withFallback(MultiNodeClusterSpec.clusterConfig))
+      """))
+      .withFallback(MultiNodeClusterSpec.clusterConfig))
 
   nodeConfig(first, second)(ConfigFactory.parseString("""akka.cluster.roles =["a", "c"]"""))
   nodeConfig(third)(ConfigFactory.parseString("""akka.cluster.roles =["b", "c"]"""))
@@ -122,16 +125,14 @@ abstract class ClusterRoundRobinSpec
 
   def receiveReplies(routeeType: RouteeType, expectedReplies: Int): Map[Address, Int] = {
     val zero = Map.empty[Address, Int] ++ roles.map(address(_) -> 0)
-    receiveWhile(5 seconds, messages = expectedReplies) {
-      case Reply(`routeeType`, ref) => fullAddress(ref)
-    }.foldLeft(zero) {
-      case (replyMap, address) => replyMap + (address -> (replyMap(address) + 1))
+    receiveWhile(5 seconds, messages = expectedReplies) { case Reply(`routeeType`, ref) =>
+      fullAddress(ref)
+    }.foldLeft(zero) { case (replyMap, address) =>
+      replyMap + (address -> (replyMap(address) + 1))
     }
   }
 
-  /**
-   * Fills in self address for local ActorRef
-   */
+  /** Fills in self address for local ActorRef */
   private def fullAddress(actorRef: ActorRef): Address = actorRef.path.address match {
     case Address(_, _, None, None) => cluster.selfAddress
     case a                         => a

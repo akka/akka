@@ -10,9 +10,7 @@ import akka.stream._
 
 object SourceWithContext {
 
-  /**
-   * Creates a SourceWithContext from a regular source that operates on a tuple of `(data, context)` elements.
-   */
+  /** Creates a SourceWithContext from a regular source that operates on a tuple of `(data, context)` elements. */
   def fromTuples[Out, CtxOut, Mat](source: Source[(Out, CtxOut), Mat]): SourceWithContext[Out, CtxOut, Mat] =
     new SourceWithContext(source)
 }

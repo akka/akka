@@ -16,9 +16,7 @@ import akka.annotation.InternalApi
 import akka.util.Helpers
 import akka.util.Helpers.Requiring
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[sbr] object SplitBrainResolverSettings {
   final val KeepMajorityName = "keep-majority"
   final val LeaseMajorityName = "lease-majority"
@@ -30,9 +28,7 @@ import akka.util.Helpers.Requiring
     Set(KeepMajorityName, LeaseMajorityName, StaticQuorumName, KeepOldestName, DownAllName)
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[sbr] final class SplitBrainResolverSettings(config: Config) {
 
   import SplitBrainResolverSettings._
@@ -117,19 +113,13 @@ import akka.util.Helpers.Requiring
 
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[sbr] final case class StaticQuorumSettings(size: Int, role: Option[String])
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[sbr] final case class KeepOldestSettings(downIfAlone: Boolean, role: Option[String])
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[sbr] final case class LeaseMajoritySettings(
     leaseImplementation: String,
     acquireLeaseDelayForMinority: FiniteDuration,

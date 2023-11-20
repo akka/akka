@@ -29,25 +29,17 @@ abstract class PersistenceSpec(config: Config)
   lazy val extension = Persistence(system)
   val counter = new AtomicInteger(0)
 
-  /**
-   * Unique name per test.
-   */
+  /** Unique name per test. */
   def name = _name
 
-  /**
-   * Prefix for generating a unique name per test.
-   */
+  /** Prefix for generating a unique name per test. */
   def namePrefix: String = system.name
 
-  /**
-   * Creates a persistent actor with current name as constructor argument.
-   */
+  /** Creates a persistent actor with current name as constructor argument. */
   def namedPersistentActor[T <: NamedPersistentActor: ClassTag] =
     system.actorOf(Props(implicitly[ClassTag[T]].runtimeClass, name))
 
-  /**
-   * Creates a persistent actor with current name as constructor argument, plus a custom [[Config]]
-   */
+  /** Creates a persistent actor with current name as constructor argument, plus a custom [[Config]] */
   def namedPersistentActorWithProvidedConfig[T <: NamedPersistentActor: ClassTag](providedConfig: Config) =
     system.actorOf(Props(implicitly[ClassTag[T]].runtimeClass, name, providedConfig))
 
@@ -109,7 +101,7 @@ trait PersistenceMatchers {
   final class IndependentlyOrdered(prefixes: immutable.Seq[String]) extends Matcher[immutable.Seq[Any]] {
     override def apply(_left: immutable.Seq[Any]) = {
       val left = _left.map(_.toString)
-      val mapped = left.groupBy(l => prefixes.indexWhere(p => l.startsWith(p))) - (-1) // ignore other messages
+      val mapped = left.groupBy(l => prefixes.indexWhere(p => l.startsWith(p))) - -1 // ignore other messages
       val results = for {
         (pos, seq) <- mapped
         nrs = seq.map(_.replaceFirst(prefixes(pos), "").toInt)

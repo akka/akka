@@ -25,24 +25,16 @@ trait ReplicationContext {
 
   def replicationId: ReplicationId
 
-  /**
-   * @return The replica id of this replicated event sourced actor
-   */
+  /** @return The replica id of this replicated event sourced actor */
   def replicaId: ReplicaId
 
-  /**
-   * @return The ids of all replicas of this replicated event sourced actor
-   */
+  /** @return The ids of all replicas of this replicated event sourced actor */
   def getAllReplicas: JSet[ReplicaId]
 
-  /**
-   * @return The unique id of this replica, including the replica id
-   */
+  /** @return The unique id of this replica, including the replica id */
   def persistenceId: PersistenceId
 
-  /**
-   * @return The unique id of this replica, not including the replica id
-   */
+  /** @return The unique id of this replica, not including the replica id */
   def entityId: String
 
   /**
@@ -63,9 +55,7 @@ trait ReplicationContext {
    */
   def concurrent: Boolean
 
-  /**
-   * @return a timestamp that will always be increasing (is monotonic)
-   */
+  /** @return a timestamp that will always be increasing (is monotonic) */
   def currentTimeMillis(): Long
 }
 

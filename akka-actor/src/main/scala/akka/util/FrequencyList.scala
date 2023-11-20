@@ -9,9 +9,7 @@ import scala.concurrent.duration.FiniteDuration
 
 import akka.annotation.InternalApi
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] object FrequencyList {
   def empty[A](dynamicAging: Boolean = false): FrequencyList[A] =

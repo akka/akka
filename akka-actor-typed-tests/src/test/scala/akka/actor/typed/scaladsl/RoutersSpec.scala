@@ -20,9 +20,13 @@ import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.receptionist.ServiceKey
 import akka.actor.typed.scaladsl.adapter._
 
-class RoutersSpec extends ScalaTestWithActorTestKit("""
+class RoutersSpec
+    extends ScalaTestWithActorTestKit("""
     akka.loglevel=debug
-  """) with AnyWordSpecLike with Matchers with LogCapturing {
+  """)
+    with AnyWordSpecLike
+    with Matchers
+    with LogCapturing {
 
   // needed for the event filter
   implicit val classicSystem: ActorSystem = system.toClassic
@@ -121,11 +125,10 @@ class RoutersSpec extends ScalaTestWithActorTestKit("""
       case object BCast extends Cmd
 
       def behavior(replyTo: ActorRef[AnyRef]) = Behaviors.setup[Cmd] { ctx =>
-        Behaviors.receiveMessagePartial[Cmd] {
-          case ReplyWithAck | BCast =>
-            val reply = ctx.self.path
-            replyTo ! reply
-            Behaviors.same
+        Behaviors.receiveMessagePartial[Cmd] { case ReplyWithAck | BCast =>
+          val reply = ctx.self.path
+          replyTo ! reply
+          Behaviors.same
         }
       }
 

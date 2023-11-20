@@ -22,9 +22,8 @@ private[persistence] trait LeveldbCompaction extends Actor with ActorLogging wit
   import Key._
   import LeveldbCompaction._
 
-  def receiveCompactionInternal: Receive = {
-    case TryCompactLeveldb(persistenceId, toSeqNr) =>
-      tryCompactOnDelete(persistenceId, toSeqNr)
+  def receiveCompactionInternal: Receive = { case TryCompactLeveldb(persistenceId, toSeqNr) =>
+    tryCompactOnDelete(persistenceId, toSeqNr)
   }
 
   private def tryCompactOnDelete(persistenceId: String, toSeqNr: Long): Unit = {
@@ -57,7 +56,6 @@ private[persistence] trait LeveldbCompaction extends Actor with ActorLogging wit
  * considered to be those which include sequence numbers up to 'toSeqNr' AND whose size is equal to N (the compaction
  * interval). This rule implies that if 'toSeqNr' spans an incomplete portion of a rightmost segment, then
  * that segment will be omitted from the pending compaction, and will be included into the next one.
- *
  */
 private[persistence] trait CompactionSegmentManagement {
 

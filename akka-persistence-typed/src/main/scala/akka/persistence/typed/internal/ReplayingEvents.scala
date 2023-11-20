@@ -38,7 +38,8 @@ import akka.util.OptionVal
 import akka.util.PrettyDuration._
 import akka.util.unused
 
-/***
+/**
+ * *
  * INTERNAL API
  *
  * Third (of four) behavior of an EventSourcedBehavior.
@@ -110,8 +111,8 @@ private[akka] final class ReplayingEvents[C, E, S](
       case cmd: IncomingCommand[C @unchecked]         => onInternalCommand(cmd)
       case get: GetState[S @unchecked]                => stashInternal(get)
       case get: GetSeenSequenceNr                     => stashInternal(get)
-      case RecoveryPermitGranted                      => Behaviors.unhandled // should not happen, we already have the permit
-      case ContinueUnstash                            => Behaviors.unhandled
+      case RecoveryPermitGranted => Behaviors.unhandled // should not happen, we already have the permit
+      case ContinueUnstash       => Behaviors.unhandled
     }
   }
 

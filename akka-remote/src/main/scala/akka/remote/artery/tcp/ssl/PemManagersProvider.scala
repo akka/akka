@@ -24,15 +24,11 @@ import akka.annotation.InternalApi
 import akka.pki.pem.DERPrivateKeyLoader
 import akka.pki.pem.PEMDecoder
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[ssl] object PemManagersProvider {
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi
   private[ssl] def buildKeyManagers(
       privateKey: PrivateKey,
@@ -52,9 +48,7 @@ private[ssl] object PemManagersProvider {
     keyManagers
   }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi
   private[ssl] def buildTrustManagers(cacert: Certificate): Array[TrustManager] = {
     val trustStore = KeyStore.getInstance("JKS")
@@ -67,9 +61,7 @@ private[ssl] object PemManagersProvider {
     tmf.getTrustManagers
   }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi
   private[ssl] def loadPrivateKey(filename: String): PrivateKey = blocking {
     val bytes = Files.readAllBytes(new File(filename).toPath)
@@ -79,9 +71,7 @@ private[ssl] object PemManagersProvider {
 
   private val certFactory = CertificateFactory.getInstance("X.509")
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi
   private[ssl] def loadCertificate(filename: String): Certificate = blocking {
     val bytes = Files.readAllBytes(new File(filename).toPath)

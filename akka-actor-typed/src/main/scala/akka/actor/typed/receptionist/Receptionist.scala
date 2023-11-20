@@ -25,15 +25,11 @@ abstract class Receptionist extends Extension {
 
 object ServiceKey {
 
-  /**
-   * Scala API: Creates a service key. The given ID should uniquely define a service with a given protocol.
-   */
+  /** Scala API: Creates a service key. The given ID should uniquely define a service with a given protocol. */
   def apply[T](id: String)(implicit classTag: ClassTag[T]): ServiceKey[T] =
     DefaultServiceKey(id, classTag.runtimeClass.getName)
 
-  /**
-   * Java API: Creates a service key. The given ID should uniquely define a service with a given protocol.
-   */
+  /** Java API: Creates a service key. The given ID should uniquely define a service with a given protocol. */
   def create[T](clazz: Class[T], id: String): ServiceKey[T] =
     DefaultServiceKey(id, clazz.getName)
 
@@ -74,9 +70,7 @@ abstract class ServiceKey[T] extends AbstractServiceKey { key =>
       else None
   }
 
-  /**
-   * Scala API: Provides a type safe pattern match for registration acks
-   */
+  /** Scala API: Provides a type safe pattern match for registration acks */
   object Registered {
     def unapply(l: Receptionist.Registered): Option[ActorRef[T]] =
       if (l.isForKey(key)) Some(l.serviceInstance(key))
@@ -116,15 +110,11 @@ object Receptionist extends ExtensionId[Receptionist] {
    */
   object Register {
 
-    /**
-     * Create a Register without Ack that the service was registered
-     */
+    /** Create a Register without Ack that the service was registered */
     def apply[T](key: ServiceKey[T], service: ActorRef[T]): Command =
       new ReceptionistMessages.Register[T](key, service, None)
 
-    /**
-     * Create a Register with an actor that will get an ack that the service was registered
-     */
+    /** Create a Register with an actor that will get an ack that the service was registered */
     def apply[T](key: ServiceKey[T], service: ActorRef[T], replyTo: ActorRef[Registered]): Command =
       new ReceptionistMessages.Register[T](key, service, Some(replyTo))
   }
@@ -181,22 +171,16 @@ object Receptionist extends ExtensionId[Receptionist] {
     def getServiceInstance[T](key: ServiceKey[T]): ActorRef[T]
   }
 
-  /**
-   * Sent by the receptionist, available here for easier testing
-   */
+  /** Sent by the receptionist, available here for easier testing */
   object Registered {
 
-    /**
-     * Scala API
-     */
+    /** Scala API */
     def apply[T](key: ServiceKey[T], serviceInstance: ActorRef[T]): Registered =
       new ReceptionistMessages.Registered(key, serviceInstance)
 
   }
 
-  /**
-   * Java API: Sent by the receptionist, available here for easier testing
-   */
+  /** Java API: Sent by the receptionist, available here for easier testing */
   def registered[T](key: ServiceKey[T], serviceInstance: ActorRef[T]): Registered =
     Registered(key, serviceInstance)
 
@@ -212,27 +196,19 @@ object Receptionist extends ExtensionId[Receptionist] {
    */
   object Deregister {
 
-    /**
-     * Create a Deregister without Ack that the service was deregistered
-     */
+    /** Create a Deregister without Ack that the service was deregistered */
     def apply[T](key: ServiceKey[T], service: ActorRef[T]): Command =
       new ReceptionistMessages.Deregister[T](key, service, None)
 
-    /**
-     * Create a Deregister with an actor that will get an ack that the service was unregistered
-     */
+    /** Create a Deregister with an actor that will get an ack that the service was unregistered */
     def apply[T](key: ServiceKey[T], service: ActorRef[T], replyTo: ActorRef[Deregistered]): Command =
       new ReceptionistMessages.Deregister[T](key, service, Some(replyTo))
   }
 
-  /**
-   * Java API: A Deregister message without Ack that the service was unregistered
-   */
+  /** Java API: A Deregister message without Ack that the service was unregistered */
   def deregister[T](key: ServiceKey[T], service: ActorRef[T]): Command = Deregister(key, service)
 
-  /**
-   * Java API: A Deregister message with an actor that will get an ack that the service was unregistered
-   */
+  /** Java API: A Deregister message with an actor that will get an ack that the service was unregistered */
   def deregister[T](key: ServiceKey[T], service: ActorRef[T], replyTo: ActorRef[Deregistered]): Command =
     Deregister(key, service, replyTo)
 
@@ -264,21 +240,15 @@ object Receptionist extends ExtensionId[Receptionist] {
     def getServiceInstance[T](key: ServiceKey[T]): ActorRef[T]
   }
 
-  /**
-   * Sent by the receptionist, available here for easier testing
-   */
+  /** Sent by the receptionist, available here for easier testing */
   object Deregistered {
 
-    /**
-     * Scala API
-     */
+    /** Scala API */
     def apply[T](key: ServiceKey[T], serviceInstance: ActorRef[T]): Deregistered =
       new ReceptionistMessages.Deregistered(key, serviceInstance)
   }
 
-  /**
-   * Java API: Sent by the receptionist, available here for easier testing
-   */
+  /** Java API: Sent by the receptionist, available here for easier testing */
   def deregistered[T](key: ServiceKey[T], serviceInstance: ActorRef[T]): Deregistered =
     Deregistered(key, serviceInstance)
 
@@ -292,9 +262,7 @@ object Receptionist extends ExtensionId[Receptionist] {
    */
   object Subscribe {
 
-    /**
-     * Scala API:
-     */
+    /** Scala API: */
     def apply[T](key: ServiceKey[T], subscriber: ActorRef[Listing]): Command =
       new ReceptionistMessages.Subscribe(key, subscriber)
 
@@ -320,9 +288,7 @@ object Receptionist extends ExtensionId[Receptionist] {
     def apply[T](key: ServiceKey[T], replyTo: ActorRef[Listing]): Command =
       new ReceptionistMessages.Find(key, replyTo)
 
-    /**
-     * Special factory to make using Find with ask easier
-     */
+    /** Special factory to make using Find with ask easier */
     def apply[T](key: ServiceKey[T]): ActorRef[Listing] => Command = ref => new ReceptionistMessages.Find(key, ref)
   }
 
@@ -416,9 +382,7 @@ object Receptionist extends ExtensionId[Receptionist] {
 
   }
 
-  /**
-   * Sent by the receptionist, available here for easier testing
-   */
+  /** Sent by the receptionist, available here for easier testing */
   object Listing {
 
     /** Scala API: */
@@ -434,15 +398,11 @@ object Receptionist extends ExtensionId[Receptionist] {
       new ReceptionistMessages.Listing[T](key, serviceInstances, allServiceInstances, servicesWereAddedOrRemoved)
   }
 
-  /**
-   * Java API: Sent by the receptionist, available here for easier testing
-   */
+  /** Java API: Sent by the receptionist, available here for easier testing */
   def listing[T](key: ServiceKey[T], serviceInstances: java.util.Set[ActorRef[T]]): Listing =
     Listing(key, serviceInstances.asScala.toSet)
 
-  /**
-   * Java API: Sent by the receptionist, available here for easier testing
-   */
+  /** Java API: Sent by the receptionist, available here for easier testing */
   def listing[T](
       key: ServiceKey[T],
       serviceInstances: java.util.Set[ActorRef[T]],

@@ -29,15 +29,17 @@ class RoundRobinSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
       val helloLatch = new TestLatch(5)
       val stopLatch = new TestLatch(5)
 
-      val actor = system.actorOf(RoundRobinPool(5).props(routeeProps = Props(new Actor {
-        def receive = {
-          case "hello" => helloLatch.countDown()
-        }
+      val actor = system.actorOf(
+        RoundRobinPool(5).props(routeeProps = Props(new Actor {
+          def receive = { case "hello" =>
+            helloLatch.countDown()
+          }
 
-        override def postStop(): Unit = {
-          stopLatch.countDown()
-        }
-      })), "round-robin-shutdown")
+          override def postStop(): Unit = {
+            stopLatch.countDown()
+          }
+        })),
+        "round-robin-shutdown")
 
       actor ! "hello"
       actor ! "hello"
@@ -58,13 +60,15 @@ class RoundRobinSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
       val counter = new AtomicInteger
       var replies: Map[Int, Int] = Map.empty.withDefaultValue(0)
 
-      val actor = system.actorOf(RoundRobinPool(connectionCount).props(routeeProps = Props(new Actor {
-        lazy val id = counter.getAndIncrement()
-        def receive = {
-          case "hit" => sender() ! id
-          case "end" => doneLatch.countDown()
-        }
-      })), "round-robin")
+      val actor = system.actorOf(
+        RoundRobinPool(connectionCount).props(routeeProps = Props(new Actor {
+          lazy val id = counter.getAndIncrement()
+          def receive = {
+            case "hit" => sender() ! id
+            case "end" => doneLatch.countDown()
+          }
+        })),
+        "round-robin")
 
       for (_ <- 1 to iterationCount; _ <- 1 to connectionCount) {
         val id = Await.result((actor ? "hit").mapTo[Int], timeout.duration)
@@ -83,15 +87,17 @@ class RoundRobinSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
       val helloLatch = new TestLatch(5)
       val stopLatch = new TestLatch(5)
 
-      val actor = system.actorOf(RoundRobinPool(5).props(routeeProps = Props(new Actor {
-        def receive = {
-          case "hello" => helloLatch.countDown()
-        }
+      val actor = system.actorOf(
+        RoundRobinPool(5).props(routeeProps = Props(new Actor {
+          def receive = { case "hello" =>
+            helloLatch.countDown()
+          }
 
-        override def postStop(): Unit = {
-          stopLatch.countDown()
-        }
-      })), "round-robin-broadcast")
+          override def postStop(): Unit = {
+            stopLatch.countDown()
+          }
+        })),
+        "round-robin-broadcast")
 
       actor ! akka.routing.Broadcast("hello")
       Await.ready(helloLatch, 5 seconds)
@@ -101,9 +107,11 @@ class RoundRobinSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
     }
 
     "be controlled with management messages" in {
-      val actor = system.actorOf(RoundRobinPool(3).props(routeeProps = Props(new Actor {
-        def receive = Actor.emptyBehavior
-      })), "round-robin-managed")
+      val actor = system.actorOf(
+        RoundRobinPool(3).props(routeeProps = Props(new Actor {
+          def receive = Actor.emptyBehavior
+        })),
+        "round-robin-managed")
 
       routeeSize(actor) should ===(3)
       actor ! AdjustPoolSize(+4)
@@ -129,12 +137,14 @@ class RoundRobinSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
       var replies: Map[String, Int] = Map.empty.withDefaultValue(0)
 
       val paths = (1 to connectionCount).map { n =>
-        val ref = system.actorOf(Props(new Actor {
-          def receive = {
-            case "hit" => sender() ! self.path.name
-            case "end" => doneLatch.countDown()
-          }
-        }), name = "target-" + n)
+        val ref = system.actorOf(
+          Props(new Actor {
+            def receive = {
+              case "hit" => sender() ! self.path.name
+              case "end" => doneLatch.countDown()
+            }
+          }),
+          name = "target-" + n)
         ref.path.toStringWithoutAddress
       }
 

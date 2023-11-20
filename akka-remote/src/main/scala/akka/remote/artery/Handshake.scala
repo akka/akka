@@ -21,9 +21,7 @@ import akka.stream.stage._
 import akka.util.OptionVal
 import akka.util.unused
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[remote] object OutboundHandshake {
 
   /**
@@ -47,9 +45,7 @@ private[remote] object OutboundHandshake {
 
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[remote] class OutboundHandshake(
     @unused system: ActorSystem,
     outboundContext: OutboundContext,
@@ -216,9 +212,7 @@ private[remote] class OutboundHandshake(
 
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[remote] class InboundHandshake(inboundContext: InboundContext, inControlStream: Boolean)
     extends GraphStage[FlowShape[InboundEnvelope, InboundEnvelope]] {
   val in: Inlet[InboundEnvelope] = Inlet("InboundHandshake.in")
@@ -257,16 +251,18 @@ private[remote] class InboundHandshake(inboundContext: InboundContext, inControl
             }
           })
       else
-        setHandler(in, new InHandler {
-          override def onPush(): Unit = {
-            val env = grab(in)
-            env.message match {
-              case HandshakeReq(from, to) => onHandshakeReq(from, to)
-              case _ =>
-                onMessage(env)
+        setHandler(
+          in,
+          new InHandler {
+            override def onPush(): Unit = {
+              val env = grab(in)
+              env.message match {
+                case HandshakeReq(from, to) => onHandshakeReq(from, to)
+                case _ =>
+                  onMessage(env)
+              }
             }
-          }
-        })
+          })
 
       private def onHandshakeReq(from: UniqueAddress, to: Address): Unit = {
         if (to == inboundContext.localAddress.address) {
@@ -298,8 +294,8 @@ private[remote] class InboundHandshake(inboundContext: InboundContext, inControl
             // periodically.
             thenInside(result.isSuccess)
           case None =>
-            first.onComplete(result => runInStage.invoke(() => thenInside(result.isSuccess)))(
-              ExecutionContexts.parasitic)
+            first
+              .onComplete(result => runInStage.invoke(() => thenInside(result.isSuccess)))(ExecutionContexts.parasitic)
         }
 
       }

@@ -41,9 +41,7 @@ object CachePolicy {
     }
     def fromPositive(value: java.time.Duration): Ttl = fromPositive(value.asScala)
 
-    /**
-     * INTERNAL API
-     */
+    /** INTERNAL API */
     @InternalApi
     private[akka] def toTll(policy: CachePolicy): Ttl = policy match {
       case Never    => Ttl.never

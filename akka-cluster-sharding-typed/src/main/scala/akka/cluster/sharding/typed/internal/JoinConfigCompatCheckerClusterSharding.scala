@@ -11,9 +11,7 @@ import com.typesafe.config.Config
 import akka.annotation.InternalApi
 import akka.cluster.{ ConfigValidation, JoinConfigCompatChecker, Valid }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] final class JoinConfigCompatCheckerClusterSharding extends JoinConfigCompatChecker {
 

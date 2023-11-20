@@ -23,9 +23,7 @@ import akka.actor.typed.internal.adapter.ActorAdapter.TypedActorFailedException
 import akka.annotation.InternalApi
 import akka.util.OptionVal
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[typed] object ActorAdapter {
 
   /**
@@ -38,8 +36,8 @@ import akka.util.OptionVal
    */
   final case class TypedActorFailedException(cause: Throwable) extends RuntimeException
 
-  private val DummyReceive: classic.Actor.Receive = {
-    case _ => throw new RuntimeException("receive should never be called on the typed ActorAdapter")
+  private val DummyReceive: classic.Actor.Receive = { case _ =>
+    throw new RuntimeException("receive should never be called on the typed ActorAdapter")
   }
 
   private val classicSupervisorDecider: Throwable => classic.SupervisorStrategy.Directive = { exc =>
@@ -49,9 +47,7 @@ import akka.util.OptionVal
 
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[typed] final class ActorAdapter[T](_initialBehavior: Behavior[T], rethrowTypedFailure: Boolean)
     extends classic.Actor {
 
@@ -120,7 +116,7 @@ import akka.util.OptionVal
       if (c.hasTimer) {
         msg match {
           case timerMsg: TimerMsg =>
-            //we can only get this kind of message if the timer is of this concrete class
+            // we can only get this kind of message if the timer is of this concrete class
             c.timer.asInstanceOf[TimerSchedulerImpl[T]].interceptTimerMsg(ctx.log, timerMsg) match {
               case OptionVal.Some(m) =>
                 next(Behavior.interpretMessage(behavior, c, m), m)
@@ -189,17 +185,18 @@ import akka.util.OptionVal
 
   private def withSafelyAdapted[U, V](adapt: () => U)(body: U => V): Unit = {
     var failed = false
-    val adapted: U = try {
-      adapt()
-    } catch {
-      case NonFatal(ex) =>
-        // pass it on through the signal handler chain giving supervision a chance to deal with it
-        handleSignal(MessageAdaptionFailure(ex))
-        // Signal handler should actually throw so this is mostly to keep compiler happy (although a user could override
-        // the MessageAdaptionFailure handling to do something weird)
-        failed = true
-        null.asInstanceOf[U]
-    }
+    val adapted: U =
+      try {
+        adapt()
+      } catch {
+        case NonFatal(ex) =>
+          // pass it on through the signal handler chain giving supervision a chance to deal with it
+          handleSignal(MessageAdaptionFailure(ex))
+          // Signal handler should actually throw so this is mostly to keep compiler happy (although a user could override
+          // the MessageAdaptionFailure handling to do something weird)
+          failed = true
+          null.asInstanceOf[U]
+      }
     if (!failed) {
       if (adapted != null) body(adapted)
       else
@@ -220,10 +217,10 @@ import akka.util.OptionVal
       super.unhandled(other)
   }
 
-  final override def supervisorStrategy = classic.OneForOneStrategy(loggingEnabled = false) {
-    case ex =>
-      ctx.setCurrentActorThread()
-      try ex match {
+  final override def supervisorStrategy = classic.OneForOneStrategy(loggingEnabled = false) { case ex =>
+    ctx.setCurrentActorThread()
+    try
+      ex match {
         case TypedActorFailedException(cause) =>
           // These have already been optionally logged by typed supervision
           recordChildFailure(cause)
@@ -250,9 +247,10 @@ import akka.util.OptionVal
             classic.SupervisorStrategy.Stop
           else
             ActorAdapter.classicSupervisorDecider(ex)
-      } finally {
-        ctx.clearCurrentActorThread()
       }
+    finally {
+      ctx.clearCurrentActorThread()
+    }
   }
 
   private def recordChildFailure(ex: Throwable): Unit = {
@@ -326,9 +324,7 @@ import akka.util.OptionVal
 
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[typed] final class ComposedStoppingBehavior[T](
     lastBehavior: Behavior[T],
     stopBehavior: StoppedBehavior[T])

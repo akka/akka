@@ -228,10 +228,9 @@ import akka.util.ccompat.JavaConverters._
       val seqNr = offset.seen.head._2
       str.append(timestampOffsetSeparator).append(pid).append(timestampOffsetSeparator).append(seqNr)
     } else if (offset.seen.nonEmpty) {
-      offset.seen.toList.sortBy(_._1).foreach {
-        case (pid, seqNr) =>
-          checkSeparator(pid)
-          str.append(timestampOffsetSeparator).append(pid).append(timestampOffsetSeparator).append(seqNr)
+      offset.seen.toList.sortBy(_._1).foreach { case (pid, seqNr) =>
+        checkSeparator(pid)
+        str.append(timestampOffsetSeparator).append(pid).append(timestampOffsetSeparator).append(seqNr)
       }
     }
     str.toString

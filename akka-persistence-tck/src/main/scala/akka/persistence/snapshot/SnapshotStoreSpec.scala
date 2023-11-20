@@ -215,8 +215,8 @@ abstract class SnapshotStoreSpec(config: Config)
         snapshotStore.tell(LoadSnapshot(pid, SnapshotSelectionCriteria.Latest, Long.MaxValue), senderProbe.ref)
         senderProbe.expectMsgPF() {
           case LoadSnapshotResult(
-              Some(SelectedSnapshot(meta @ SnapshotMetadata(Pid, 100, _), payload)),
-              Long.MaxValue) =>
+                Some(SelectedSnapshot(meta @ SnapshotMetadata(Pid, 100, _), payload)),
+                Long.MaxValue) =>
             payload should be(snap)
             meta.metadata should ===(Some(fictionalMeta))
         }

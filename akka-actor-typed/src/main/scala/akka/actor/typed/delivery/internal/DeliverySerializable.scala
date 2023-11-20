@@ -6,7 +6,5 @@ package akka.actor.typed.delivery.internal
 
 import akka.annotation.InternalApi
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] trait DeliverySerializable

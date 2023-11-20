@@ -68,20 +68,20 @@ class LeaseDocSpec extends AkkaSpec(LeaseDocSpec.config) {
   "A docs lease" should {
     "scala lease be loadable from scala" in {
 
-      //#lease-usage
+      // #lease-usage
       val lease = LeaseProvider(system).getLease("<name of the lease>", "docs-lease", "owner")
       val acquired: Future[Boolean] = lease.acquire()
       val stillAcquired: Boolean = lease.checkLease()
       val released: Future[Boolean] = lease.release()
-      //#lease-usage
+      // #lease-usage
 
-      //#lost-callback
+      // #lost-callback
       lease.acquire(leaseLostReason => doSomethingImportant(leaseLostReason))
-      //#lost-callback
+      // #lost-callback
 
-      //#cluster-owner
+      // #cluster-owner
       val owner = Cluster(system).selfAddress.hostPort
-      //#cluster-owner
+      // #cluster-owner
 
       // remove compiler warnings
       blackhole(acquired, stillAcquired, released, owner)

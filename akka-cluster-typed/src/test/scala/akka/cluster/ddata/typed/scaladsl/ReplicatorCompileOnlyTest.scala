@@ -50,7 +50,7 @@ object ReplicatorCompileOnlyTest {
     val replyTo: ActorRef[Int] = ???
     val key = GCounterKey("counter")
 
-    //#curried-update
+    // #curried-update
     // alternative way to define the `createRequest` function
     // Replicator.Update instance has a curried `apply` method
     replicatorAdapter.askUpdate(
@@ -61,9 +61,9 @@ object ReplicatorCompileOnlyTest {
     replicatorAdapter.askUpdate(
       askReplyTo => Replicator.Update(key, GCounter.empty, Replicator.WriteLocal, askReplyTo)(_ :+ 1),
       InternalUpdateResponse.apply)
-    //#curried-update
+    // #curried-update
 
-    //#curried-get
+    // #curried-get
     // alternative way to define the `createRequest` function
     // Replicator.Get instance has a curried `apply` method
     replicatorAdapter.askGet(Replicator.Get(key, Replicator.ReadLocal), value => InternalGetResponse(value, replyTo))
@@ -72,7 +72,7 @@ object ReplicatorCompileOnlyTest {
     replicatorAdapter.askGet(
       askReplyTo => Replicator.Get(key, Replicator.ReadLocal, askReplyTo),
       value => InternalGetResponse(value, replyTo))
-    //#curried-get
+    // #curried-get
   }
 
   def shouldHaveUnapplyForResponseTypes(): Unit = {

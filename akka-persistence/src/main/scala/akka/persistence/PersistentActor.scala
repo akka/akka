@@ -18,15 +18,11 @@ import akka.japi.Util
 
 abstract class RecoveryCompleted
 
-/**
- * Sent to a [[PersistentActor]] when the journal replay has been finished.
- */
+/** Sent to a [[PersistentActor]] when the journal replay has been finished. */
 @SerialVersionUID(1L)
 case object RecoveryCompleted extends RecoveryCompleted {
 
-  /**
-   * Java API: get the singleton instance
-   */
+  /** Java API: get the singleton instance */
   def getInstance = this
 }
 
@@ -111,14 +107,10 @@ final class RecoveryTimedOut(message: String) extends RuntimeException(message) 
  */
 sealed trait StashOverflowStrategy
 
-/**
- * Discard the message to [[akka.actor.DeadLetter]].
- */
+/** Discard the message to [[akka.actor.DeadLetter]]. */
 case object DiscardToDeadLetterStrategy extends StashOverflowStrategy {
 
-  /**
-   * Java API: get the singleton instance
-   */
+  /** Java API: get the singleton instance */
   def getInstance = this
 }
 
@@ -130,9 +122,7 @@ case object DiscardToDeadLetterStrategy extends StashOverflowStrategy {
  */
 case object ThrowOverflowExceptionStrategy extends StashOverflowStrategy {
 
-  /**
-   * Java API: get the singleton instance
-   */
+  /** Java API: get the singleton instance */
   def getInstance = this
 }
 
@@ -159,9 +149,7 @@ final class DiscardConfigurator extends StashOverflowStrategyConfigurator {
   override def create(config: Config) = DiscardToDeadLetterStrategy
 }
 
-/**
- * Scala API: A persistent Actor - can be used to implement command or Event Sourcing.
- */
+/** Scala API: A persistent Actor - can be used to implement command or Event Sourcing. */
 trait PersistentActor extends Eventsourced with PersistenceIdentity {
   def receive = receiveCommand
 
@@ -289,9 +277,7 @@ trait PersistentActor extends Eventsourced with PersistenceIdentity {
   }
 }
 
-/**
- * Java API: an persistent actor - can be used to implement command or Event Sourcing.
- */
+/** Java API: an persistent actor - can be used to implement command or Event Sourcing. */
 abstract class AbstractPersistentActor extends AbstractActor with AbstractPersistentActorLike {
 
   /**
@@ -323,9 +309,7 @@ abstract class AbstractPersistentActor extends AbstractActor with AbstractPersis
   // AbstractPersistentActorLike. They were included here also for binary compatibility reasons.
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] trait AbstractPersistentActorLike extends Eventsourced {
 
   /**
@@ -472,7 +456,5 @@ abstract class AbstractPersistentActor extends AbstractActor with AbstractPersis
 
 }
 
-/**
- * Java API: Combination of [[AbstractPersistentActor]] and [[akka.actor.AbstractActorWithTimers]].
- */
+/** Java API: Combination of [[AbstractPersistentActor]] and [[akka.actor.AbstractActorWithTimers]]. */
 abstract class AbstractPersistentActorWithTimers extends AbstractActor with Timers with AbstractPersistentActorLike

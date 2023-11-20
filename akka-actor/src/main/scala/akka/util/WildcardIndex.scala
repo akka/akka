@@ -58,9 +58,8 @@ private[akka] final case class WildcardTree[T](
         throw new IllegalArgumentException(
           "double wildcard can't be used as a suffix (e.g. /user/actor**), only as a full subPath element (e.g. /user/actor/**)")
       else if (e != "*" && e != "**" && e.endsWith("*"))
-        copy(
-          wildcardSuffixChildren = wildcardSuffixChildren
-            .updated(e.stripSuffix("*"), wildcardSuffixChildren.getOrElse(e, WildcardTree[T]()).insert(elems, d)))
+        copy(wildcardSuffixChildren = wildcardSuffixChildren
+          .updated(e.stripSuffix("*"), wildcardSuffixChildren.getOrElse(e, WildcardTree[T]()).insert(elems, d)))
       else
         copy(children = children.updated(e, children.getOrElse(e, WildcardTree[T]()).insert(elems, d)))
     }

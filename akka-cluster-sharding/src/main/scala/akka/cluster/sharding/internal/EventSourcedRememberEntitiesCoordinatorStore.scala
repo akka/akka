@@ -15,9 +15,7 @@ import akka.cluster.sharding.ShardCoordinator.Internal
 import akka.cluster.sharding.ShardRegion.ShardId
 import akka.persistence._
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] object EventSourcedRememberEntitiesCoordinatorStore {
   def props(typeName: String, settings: ClusterShardingSettings): Props =
@@ -28,9 +26,7 @@ private[akka] object EventSourcedRememberEntitiesCoordinatorStore {
   case object MigrationMarker extends ClusterShardingSerializable
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] final class EventSourcedRememberEntitiesCoordinatorStore(
     typeName: String,

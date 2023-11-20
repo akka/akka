@@ -227,32 +227,22 @@ trait ActorContext extends ActorRefFactory with ClassicActorContextProvider {
    */
   def unwatch(subject: ActorRef): ActorRef
 
-  /**
-   * ActorContexts shouldn't be Serializable
-   */
+  /** ActorContexts shouldn't be Serializable */
   final protected def writeObject(@unused o: ObjectOutputStream): Unit =
     throw new NotSerializableException("ActorContext is not serializable!")
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] trait Cell {
 
-  /**
-   * The “self” reference which this Cell is attached to.
-   */
+  /** The “self” reference which this Cell is attached to. */
   def self: ActorRef
 
-  /**
-   * The system within which this Cell lives.
-   */
+  /** The system within which this Cell lives. */
   def system: ActorSystem
 
-  /**
-   * The system internals where this Cell lives.
-   */
+  /** The system internals where this Cell lives. */
   def systemImpl: ActorSystemImpl
 
   /**
@@ -261,24 +251,16 @@ private[akka] trait Cell {
    */
   def start(): this.type
 
-  /**
-   * Recursively suspend this actor and all its children. Is only allowed to throw Fatal Throwables.
-   */
+  /** Recursively suspend this actor and all its children. Is only allowed to throw Fatal Throwables. */
   def suspend(): Unit
 
-  /**
-   * Recursively resume this actor and all its children. Is only allowed to throw Fatal Throwables.
-   */
+  /** Recursively resume this actor and all its children. Is only allowed to throw Fatal Throwables. */
   def resume(causedByFailure: Throwable): Unit
 
-  /**
-   * Restart this actor (will recursively restart or stop all children). Is only allowed to throw Fatal Throwables.
-   */
+  /** Restart this actor (will recursively restart or stop all children). Is only allowed to throw Fatal Throwables. */
   def restart(cause: Throwable): Unit
 
-  /**
-   * Recursively terminate this actor and all its children. Is only allowed to throw Fatal Throwables.
-   */
+  /** Recursively terminate this actor and all its children. Is only allowed to throw Fatal Throwables. */
   def stop(): Unit
 
   /**
@@ -287,19 +269,13 @@ private[akka] trait Cell {
    */
   private[akka] def isTerminated: Boolean
 
-  /**
-   * The supervisor of this actor.
-   */
+  /** The supervisor of this actor. */
   def parent: InternalActorRef
 
-  /**
-   * All children of this actor, including only reserved-names.
-   */
+  /** All children of this actor, including only reserved-names. */
   def childrenRefs: ChildrenContainer
 
-  /**
-   * Get the stats for the named child, if that exists.
-   */
+  /** Get the stats for the named child, if that exists. */
   def getChildByName(name: String): Option[ChildStats]
 
   /**
@@ -350,9 +326,7 @@ private[akka] trait Cell {
    */
   def numberOfMessages: Int
 
-  /**
-   * The props for this actor cell.
-   */
+  /** The props for this actor cell. */
   def props: Props
 }
 
@@ -467,7 +441,7 @@ private[akka] class ActorCell(
   /*
    * MESSAGE PROCESSING
    */
-  //Memory consistency is handled by the Mailbox (reading mailbox status then processing messages, then writing mailbox status
+  // Memory consistency is handled by the Mailbox (reading mailbox status then processing messages, then writing mailbox status
   final def systemInvoke(message: SystemMessage): Unit = {
     /*
      * When recreate/suspend/resume are received while restarting (i.e. between
@@ -520,9 +494,10 @@ private[akka] class ActorCell(
           case Supervise(child, async)                                      => supervise(child, async)
           case NoMessage                                                    => // only here to suppress warning
         }
-      } catch handleNonFatalOrInterruptedException { e =>
-        handleInvokeFailure(Nil, e)
-      }
+      } catch
+        handleNonFatalOrInterruptedException { e =>
+          handleInvokeFailure(Nil, e)
+        }
       val newState = calculateState
       // As each state accepts a strict subset of another state, it is enough to unstash if we "walk up" the state
       // chain
@@ -535,7 +510,7 @@ private[akka] class ActorCell(
     invokeAll(new EarliestFirstSystemMessageList(message), calculateState)
   }
 
-  //Memory consistency is handled by the Mailbox (reading mailbox status then processing messages, then writing mailbox status
+  // Memory consistency is handled by the Mailbox (reading mailbox status then processing messages, then writing mailbox status
   final def invoke(messageHandle: Envelope): Unit = {
     val msg = messageHandle.message
     val timeoutBeforeReceive = cancelReceiveTimeoutIfNeeded(msg)
@@ -547,11 +522,13 @@ private[akka] class ActorCell(
         receiveMessage(msg)
       }
       currentMessage = null // reset current message after successful invocation
-    } catch handleNonFatalOrInterruptedException { e =>
-      handleInvokeFailure(Nil, e)
-    } finally
-    // Schedule or reschedule receive timeout
-    checkReceiveTimeoutIfNeeded(msg, timeoutBeforeReceive)
+    } catch
+      handleNonFatalOrInterruptedException { e =>
+        handleInvokeFailure(Nil, e)
+      }
+    finally
+      // Schedule or reschedule receive timeout
+      checkReceiveTimeoutIfNeeded(msg, timeoutBeforeReceive)
   }
 
   def autoReceiveMessage(msg: Envelope): Unit = {
@@ -566,7 +543,9 @@ private[akka] class ActorCell(
       case sel: ActorSelectionMessage => receiveSelection(sel)
       case Identify(messageId)        => sender() ! ActorIdentity(messageId, Some(self))
       case unexpected =>
-        throw new RuntimeException(s"Unexpected message for autoreceive: $unexpected") // for exhaustiveness check, will not happen
+        throw new RuntimeException(
+          s"Unexpected message for autoreceive: $unexpected"
+        ) // for exhaustiveness check, will not happen
     }
   }
 
@@ -607,7 +586,7 @@ private[akka] class ActorCell(
    * ACTOR INSTANCE HANDLING
    */
 
-  //This method is in charge of setting up the contextStack and create a new instance of the Actor
+  // This method is in charge of setting up the contextStack and create a new instance of the Actor
   protected def newActor(): Actor = {
     contextStack.set(this :: contextStack.get)
     try {
@@ -624,7 +603,9 @@ private[akka] class ActorCell(
     } finally {
       val stackAfter = contextStack.get
       if (stackAfter.nonEmpty)
-        contextStack.set(if (stackAfter.head eq null) stackAfter.tail.tail else stackAfter.tail) // pop null marker plus our context
+        contextStack.set(
+          if (stackAfter.head eq null) stackAfter.tail.tail else stackAfter.tail
+        ) // pop null marker plus our context
     }
   }
 

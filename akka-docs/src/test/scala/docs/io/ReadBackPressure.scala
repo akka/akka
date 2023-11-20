@@ -21,28 +21,27 @@ object PullReadingExample {
     import context.system
 
     override def preStart(): Unit =
-      //#pull-mode-bind
+      // #pull-mode-bind
       IO(Tcp) ! Bind(self, new InetSocketAddress("localhost", 0), pullMode = true)
-    //#pull-mode-bind
+    // #pull-mode-bind
 
     def receive = {
-      //#pull-accepting
+      // #pull-accepting
       case Bound(localAddress) =>
         // Accept connections one by one
         sender() ! ResumeAccepting(batchSize = 1)
         context.become(listening(sender()))
-        //#pull-accepting
+        // #pull-accepting
         monitor ! localAddress
     }
 
-    //#pull-accepting-cont
-    def listening(listener: ActorRef): Receive = {
-      case Connected(remote, local) =>
-        val handler = context.actorOf(Props(classOf[PullEcho], sender()))
-        sender() ! Register(handler, keepOpenOnPeerClosed = true)
-        listener ! ResumeAccepting(batchSize = 1)
+    // #pull-accepting-cont
+    def listening(listener: ActorRef): Receive = { case Connected(remote, local) =>
+      val handler = context.actorOf(Props(classOf[PullEcho], sender()))
+      sender() ! Register(handler, keepOpenOnPeerClosed = true)
+      listener ! ResumeAccepting(batchSize = 1)
     }
-    //#pull-accepting-cont
+    // #pull-accepting-cont
 
   }
 
@@ -50,14 +49,14 @@ object PullReadingExample {
 
   class PullEcho(connection: ActorRef) extends Actor {
 
-    //#pull-reading-echo
+    // #pull-reading-echo
     override def preStart(): Unit = connection ! ResumeReading
 
     def receive = {
       case Received(data) => connection ! Write(data, Ack)
       case Ack            => connection ! ResumeReading
     }
-    //#pull-reading-echo
+    // #pull-reading-echo
   }
 
 }
@@ -69,9 +68,9 @@ class PullReadingSpec extends AkkaSpec with ImplicitSender {
     system.actorOf(Props(classOf[PullReadingExample.Listener], probe.ref), "server")
     val listenAddress = probe.expectMsgType[InetSocketAddress]
 
-    //#pull-mode-connect
+    // #pull-mode-connect
     IO(Tcp) ! Connect(listenAddress, pullMode = true)
-    //#pull-mode-connect
+    // #pull-mode-connect
     expectMsgType[Connected]
     val connection = lastSender
 

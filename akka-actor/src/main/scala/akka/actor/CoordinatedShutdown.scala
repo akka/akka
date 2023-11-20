@@ -39,19 +39,13 @@ object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with Extensi
    */
   val PhaseBeforeServiceUnbind = "before-service-unbind"
 
-  /**
-   * Stop accepting new incoming requests in for example HTTP.
-   */
+  /** Stop accepting new incoming requests in for example HTTP. */
   val PhaseServiceUnbind = "service-unbind"
 
-  /**
-   * Wait for requests that are in progress to be completed.
-   */
+  /** Wait for requests that are in progress to be completed. */
   val PhaseServiceRequestsDone = "service-requests-done"
 
-  /**
-   * Final shutdown of service endpoints.
-   */
+  /** Final shutdown of service endpoints. */
   val PhaseServiceStop = "service-stop"
 
   /**
@@ -60,29 +54,19 @@ object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with Extensi
    */
   val PhaseBeforeClusterShutdown = "before-cluster-shutdown"
 
-  /**
-   * Graceful shutdown of the Cluster Sharding regions.
-   */
+  /** Graceful shutdown of the Cluster Sharding regions. */
   val PhaseClusterShardingShutdownRegion = "cluster-sharding-shutdown-region"
 
-  /**
-   * Emit the leave command for the node that is shutting down.
-   */
+  /** Emit the leave command for the node that is shutting down. */
   val PhaseClusterLeave = "cluster-leave"
 
-  /**
-   * Shutdown cluster singletons
-   */
+  /** Shutdown cluster singletons */
   val PhaseClusterExiting = "cluster-exiting"
 
-  /**
-   * Wait until exiting has been completed
-   */
+  /** Wait until exiting has been completed */
   val PhaseClusterExitingDone = "cluster-exiting-done"
 
-  /**
-   * Shutdown the cluster extension
-   */
+  /** Shutdown the cluster extension */
   val PhaseClusterShutdown = "cluster-shutdown"
 
   /**
@@ -106,74 +90,46 @@ object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with Extensi
    */
   trait Reason
 
-  /**
-   * Scala API: The reason for the shutdown was unknown. Needed for backwards compatibility.
-   */
+  /** Scala API: The reason for the shutdown was unknown. Needed for backwards compatibility. */
   case object UnknownReason extends Reason
 
-  /**
-   * Java API: The reason for the shutdown was unknown. Needed for backwards compatibility.
-   */
+  /** Java API: The reason for the shutdown was unknown. Needed for backwards compatibility. */
   def unknownReason: Reason = UnknownReason
 
-  /**
-   * Scala API: The shutdown was initiated by ActorSystem.terminate.
-   */
+  /** Scala API: The shutdown was initiated by ActorSystem.terminate. */
   case object ActorSystemTerminateReason extends Reason
 
-  /**
-   * Java API: The shutdown was initiated by ActorSystem.terminate.
-   */
+  /** Java API: The shutdown was initiated by ActorSystem.terminate. */
   def actorSystemTerminateReason: Reason = ActorSystemTerminateReason
 
-  /**
-   * Scala API: The shutdown was initiated by a JVM shutdown hook, e.g. triggered by SIGTERM.
-   */
+  /** Scala API: The shutdown was initiated by a JVM shutdown hook, e.g. triggered by SIGTERM. */
   case object JvmExitReason extends Reason
 
-  /**
-   * Java API: The shutdown was initiated by a JVM shutdown hook, e.g. triggered by SIGTERM.
-   */
+  /** Java API: The shutdown was initiated by a JVM shutdown hook, e.g. triggered by SIGTERM. */
   def jvmExitReason: Reason = JvmExitReason
 
-  /**
-   * Scala API: The shutdown was initiated by Cluster downing.
-   */
+  /** Scala API: The shutdown was initiated by Cluster downing. */
   case object ClusterDowningReason extends Reason
 
-  /**
-   * Java API: The shutdown was initiated by Cluster downing.
-   */
+  /** Java API: The shutdown was initiated by Cluster downing. */
   def clusterDowningReason: Reason = ClusterDowningReason
 
-  /**
-   * Scala API: The shutdown was initiated by a failure to join a seed node.
-   */
+  /** Scala API: The shutdown was initiated by a failure to join a seed node. */
   case object ClusterJoinUnsuccessfulReason extends Reason
 
-  /**
-   * Java API: The shutdown was initiated by a failure to join a seed node.
-   */
+  /** Java API: The shutdown was initiated by a failure to join a seed node. */
   def clusterJoinUnsuccessfulReason: Reason = ClusterJoinUnsuccessfulReason
 
-  /**
-   * Scala API: The shutdown was initiated by a configuration clash within the existing cluster and the joining node
-   */
+  /** Scala API: The shutdown was initiated by a configuration clash within the existing cluster and the joining node */
   case object IncompatibleConfigurationDetectedReason extends Reason
 
-  /**
-   * Java API: The shutdown was initiated by a configuration clash within the existing cluster and the joining node
-   */
+  /** Java API: The shutdown was initiated by a configuration clash within the existing cluster and the joining node */
   def incompatibleConfigurationDetectedReason: Reason = IncompatibleConfigurationDetectedReason
 
-  /**
-   * Scala API: The shutdown was initiated by Cluster leaving.
-   */
+  /** Scala API: The shutdown was initiated by Cluster leaving. */
   case object ClusterLeavingReason extends Reason
 
-  /**
-   * Java API: The shutdown was initiated by Cluster leaving.
-   */
+  /** Java API: The shutdown was initiated by Cluster leaving. */
   def clusterLeavingReason: Reason = ClusterLeavingReason
 
   @volatile private var runningJvmHook = false
@@ -286,18 +242,14 @@ object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with Extensi
     }
   }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   private[akka] final case class Phase(
       dependsOn: Set[String],
       timeout: FiniteDuration,
       recover: Boolean,
       enabled: Boolean)
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   private[akka] def phasesFromConfig(conf: Config): Map[String, Phase] = {
     import akka.util.ccompat.JavaConverters._
     val defaultPhaseTimeout = conf.getString("default-phase-timeout")
@@ -321,9 +273,7 @@ object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with Extensi
     }
   }
 
-  /**
-   * INTERNAL API: https://en.wikipedia.org/wiki/Topological_sorting
-   */
+  /** INTERNAL API: https://en.wikipedia.org/wiki/Topological_sorting */
   private[akka] def topologicalSort(phases: Map[String, Phase]): List[String] = {
     var result = List.empty[String]
     var unmarked = phases.keySet ++ phases.values.flatMap(_.dependsOn) // in case phase is not defined as key
@@ -355,18 +305,14 @@ object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with Extensi
 
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] trait JVMShutdownHooks {
   def addHook(t: Thread): Unit
   def removeHook(t: Thread): Boolean
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] object JVMShutdownHooks extends JVMShutdownHooks {
   override def addHook(t: Thread): Unit = Runtime.getRuntime.addShutdownHook(t)
@@ -460,8 +406,10 @@ final class CoordinatedShutdown private[akka] (
           }
           nextTaskState match {
             case Cancelled =>
-              registeredPhases
-                .merge(phaseName, StrictPhaseDefinition.empty, (previous, incoming) => previous.merge(incoming))
+              registeredPhases.merge(
+                phaseName,
+                StrictPhaseDefinition.empty,
+                (previous, incoming) => previous.merge(incoming))
               if (log.isDebugEnabled) {
                 log.debug("Successfully cancelled CoordinatedShutdown task [{}] from phase [{}].", name, phaseName)
               }
@@ -504,9 +452,8 @@ final class CoordinatedShutdown private[akka] (
 
     def totalDuration(): FiniteDuration = {
       import akka.util.ccompat.JavaConverters._
-      registeredPhases.keySet.asScala.foldLeft(Duration.Zero) {
-        case (acc, phase) =>
-          acc + timeout(phase)
+      registeredPhases.keySet.asScala.foldLeft(Duration.Zero) { case (acc, phase) =>
+        acc + timeout(phase)
       }
     }
 
@@ -527,15 +474,11 @@ final class CoordinatedShutdown private[akka] (
   private val _jvmHooksLatch = new AtomicReference[CountDownLatch](new CountDownLatch(0))
   @volatile private var actorSystemJvmHook: OptionVal[Cancellable] = OptionVal.None
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   private[akka] lazy val terminationWatcher =
     system.systemActorOf(CoordinatedShutdownTerminationWatcher.props, "coordinatedShutdownTerminationWatcher")
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   private[akka] def jvmHooksLatch: CountDownLatch = _jvmHooksLatch.get
 
   /**
@@ -729,25 +672,26 @@ final class CoordinatedShutdown private[akka] (
                 val result = phaseDef.run(recoverEnabled)
                 val timeout = phases(phaseName).timeout
                 val deadline = Deadline.now + timeout
-                val timeoutFut = try {
-                  after(timeout, system.scheduler) {
-                    if (phaseName == CoordinatedShutdown.PhaseActorSystemTerminate && deadline.hasTimeLeft()) {
-                      // too early, i.e. triggered by system termination
+                val timeoutFut =
+                  try {
+                    after(timeout, system.scheduler) {
+                      if (phaseName == CoordinatedShutdown.PhaseActorSystemTerminate && deadline.hasTimeLeft()) {
+                        // too early, i.e. triggered by system termination
+                        result
+                      } else if (result.isCompleted)
+                        Future.successful(Done)
+                      else if (recoverEnabled) {
+                        log.warning("Coordinated shutdown phase [{}] timed out after {}", phaseName, timeout)
+                        Future.successful(Done)
+                      } else
+                        Future.failed(
+                          new TimeoutException(s"Coordinated shutdown phase [$phaseName] timed out after $timeout"))
+                    }
+                  } catch {
+                    case _: IllegalStateException =>
+                      // The call to `after` threw IllegalStateException, triggered by system termination
                       result
-                    } else if (result.isCompleted)
-                      Future.successful(Done)
-                    else if (recoverEnabled) {
-                      log.warning("Coordinated shutdown phase [{}] timed out after {}", phaseName, timeout)
-                      Future.successful(Done)
-                    } else
-                      Future.failed(
-                        new TimeoutException(s"Coordinated shutdown phase [$phaseName] timed out after $timeout"))
                   }
-                } catch {
-                  case _: IllegalStateException =>
-                    // The call to `after` threw IllegalStateException, triggered by system termination
-                    result
-                }
                 Future.firstCompletedOf(List(result, timeoutFut))
             }
             if (remaining.isEmpty)
@@ -789,9 +733,7 @@ final class CoordinatedShutdown private[akka] (
         throw new IllegalArgumentException(s"Unknown phase [$phase]. All phases must be defined in configuration")
     }
 
-  /**
-   * Sum of timeouts of all phases that have some task.
-   */
+  /** Sum of timeouts of all phases that have some task. */
   def totalTimeout(): FiniteDuration = {
     tasks.totalDuration()
   }

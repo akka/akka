@@ -12,9 +12,7 @@ import akka.actor.typed.TypedActorContext
 import akka.annotation.InternalApi
 import akka.persistence.typed.internal.ReplicationContextImpl
 
-/**
- * Base class for replicated event sourced behaviors.
- */
+/** Base class for replicated event sourced behaviors. */
 abstract class ReplicatedEventSourcedBehavior[Command, Event, State](
     replicationContext: ReplicationContext,
     onPersistFailure: Optional[BackoffSupervisorStrategy])
@@ -30,12 +28,10 @@ abstract class ReplicatedEventSourcedBehavior[Command, Event, State](
 
   protected def getReplicationContext(): ReplicationContext = replicationContext
 
-  /**
-   * INTERNAL API: DeferredBehavior init, not for user extension
-   */
+  /** INTERNAL API: DeferredBehavior init, not for user extension */
   @InternalApi override def apply(context: TypedActorContext[Command]): Behavior[Command] = {
     createEventSourcedBehavior()
-    // context not user extendable so there should never be any other impls
+      // context not user extendable so there should never be any other impls
       .withReplication(replicationContext.asInstanceOf[ReplicationContextImpl])
       .withEventPublishing(withEventPublishing)
   }

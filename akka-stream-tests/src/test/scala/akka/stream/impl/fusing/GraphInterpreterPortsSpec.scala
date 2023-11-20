@@ -704,7 +704,8 @@ class GraphInterpreterPortsSpec extends StreamSpec with GraphInterpreterSpecKit 
         an[IllegalArgumentException] should be thrownBy { in.grab() }
       }
 
-      s"ignore any completion if they are concurrent (cancel first) (chasing = $chasing)" in new PortTestSetup(chasing) {
+      s"ignore any completion if they are concurrent (cancel first) (chasing = $chasing)" in new PortTestSetup(
+        chasing) {
         in.cancel()
         out.complete()
 

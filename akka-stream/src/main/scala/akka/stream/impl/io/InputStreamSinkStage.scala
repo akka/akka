@@ -37,9 +37,7 @@ private[stream] object InputStreamSinkStage {
   }
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi final private[stream] class InputStreamSinkStage(readTimeout: FiniteDuration)
     extends GraphStageWithMaterializedValue[SinkShape[ByteString], InputStream] {
 
@@ -75,7 +73,7 @@ private[stream] object InputStreamSinkStage {
       }
 
       def onPush(): Unit = {
-        //1 is buffer for Finished or Failed callback
+        // 1 is buffer for Finished or Failed callback
         require(dataQueue.remainingCapacity() > 1)
         val bs = grab(in)
         if (bs.nonEmpty) {
@@ -221,8 +219,8 @@ private[stream] object InputStreamSinkStage {
     if (!isInitialized) {
       sharedBuffer.poll(readTimeout.toMillis, TimeUnit.MILLISECONDS) match {
         case Initialized => isInitialized = true
-        case null        => throw new IOException(s"Timeout after $readTimeout waiting for Initialized message from stage")
-        case entry       => require(false, s"First message must be Initialized notification, got $entry")
+        case null  => throw new IOException(s"Timeout after $readTimeout waiting for Initialized message from stage")
+        case entry => require(false, s"First message must be Initialized notification, got $entry")
       }
     }
   }

@@ -54,9 +54,9 @@ class UUIDComparator extends Comparator[UUID] {
      * but if signs don't agree need to resolve differently
      */
     if (i1 < 0) {
-      if (i2 < 0) (i1 - i2) else 1
+      if (i2 < 0) i1 - i2 else 1
     } else {
-      if (i2 < 0) -1 else (i1 - i2)
+      if (i2 < 0) -1 else i1 - i2
     }
 
 }

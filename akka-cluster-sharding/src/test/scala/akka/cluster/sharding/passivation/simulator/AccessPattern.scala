@@ -29,41 +29,31 @@ abstract class SyntheticGenerator(events: Int) extends AccessPattern {
 object SyntheticGenerator {
   import site.ycsb.generator._
 
-  /**
-   * Generate a sequence of unique id events.
-   */
+  /** Generate a sequence of unique id events. */
   final class Sequence(start: Long, events: Int) extends SyntheticGenerator(events) {
     private val generator = new CounterGenerator(start)
     override protected def nextValue(event: Int): Long = generator.nextValue()
   }
 
-  /**
-   * Generate a looping sequence of id events.
-   */
+  /** Generate a looping sequence of id events. */
   final class Loop(start: Long, end: Long, events: Int) extends SyntheticGenerator(events) {
     private val generator = new SequentialGenerator(start, end)
     override protected def nextValue(event: Int): Long = generator.nextValue().longValue
   }
 
-  /**
-   * Generate id events randomly using a uniform distribution, from the inclusive range min to max.
-   */
+  /** Generate id events randomly using a uniform distribution, from the inclusive range min to max. */
   final class Uniform(min: Long, max: Long, events: Int) extends SyntheticGenerator(events) {
     private val generator = new UniformLongGenerator(min, max)
     override protected def nextValue(event: Int): Long = generator.nextValue()
   }
 
-  /**
-   * Generate id events based on an exponential distribution given the mean (expected value) of the distribution.
-   */
+  /** Generate id events based on an exponential distribution given the mean (expected value) of the distribution. */
   final class Exponential(mean: Double, events: Int) extends SyntheticGenerator(events) {
     private val generator = new ExponentialGenerator(mean)
     override protected def nextValue(event: Int): Long = generator.nextValue().longValue
   }
 
-  /**
-   * Generate id events for a hotspot distribution, where x% ('rate') of operations access y% ('hot') of the id space.
-   */
+  /** Generate id events for a hotspot distribution, where x% ('rate') of operations access y% ('hot') of the id space. */
   final class Hotspot(min: Long, max: Long, hot: Double, rate: Double, events: Int) extends SyntheticGenerator(events) {
     private val generator = new HotspotIntegerGenerator(min, max, hot, rate)
     override protected def nextValue(event: Int): Long = generator.nextValue()
@@ -115,16 +105,12 @@ abstract class TraceFileReader(path: String) extends AccessPattern {
 
 object TraceFileReader {
 
-  /**
-   * Simple trace file format: entity id per line.
-   */
+  /** Simple trace file format: entity id per line. */
   final class Simple(path: String) extends TraceFileReader(path: String) {
     override def entityIds: Source[EntityId, NotUsed] = lines
   }
 
-  /**
-   * Text trace file format with a simple word tokenizer for ASCII text.
-   */
+  /** Text trace file format with a simple word tokenizer for ASCII text. */
   final class Text(path: String) extends TraceFileReader(path: String) {
     override def entityIds: Source[EntityId, NotUsed] = lines.mapConcat { line =>
       line.split("[^\\w-]+").filter(_.nonEmpty).map(_.toLowerCase)
@@ -144,9 +130,7 @@ object TraceFileReader {
     }
   }
 
-  /**
-   * Read binary traces from R3 Corda traces.
-   */
+  /** Read binary traces from R3 Corda traces. */
   final class Corda(path: String) extends AccessPattern {
     override val isSynthetic = false
 

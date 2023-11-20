@@ -190,7 +190,7 @@ class FlowFlatMapPrefixSpec extends StreamSpec("akka.loglevel = debug") {
         downstream.request(1000)
 
         upstream.expectRequest()
-        //completing publisher
+        // completing publisher
         upstream.sendComplete()
 
         matValue.futureValue should ===(Nil)
@@ -299,7 +299,7 @@ class FlowFlatMapPrefixSpec extends StreamSpec("akka.loglevel = debug") {
         // inner stream was materialized
         innerMatVal.futureValue should ===(NotUsed)
 
-        subUpstream.expectRequest() should be >= (1L)
+        subUpstream.expectRequest() should be >= 1L
         subDownstream.request(1)
         subscriber.expectNext(2)
         subUpstream.sendNext(22)
@@ -335,16 +335,16 @@ class FlowFlatMapPrefixSpec extends StreamSpec("akka.loglevel = debug") {
         val subDownstream = subscriber.expectSubscription()
         val subUpstream = publisher.expectSubscription()
         subDownstream.request(1)
-        subUpstream.expectRequest() should be >= (1L)
+        subUpstream.expectRequest() should be >= 1L
         subUpstream.sendNext(0)
         subUpstream.sendNext(1)
 
-        //subflow not materialized yet, hence mat value (future) isn't ready yet
+        // subflow not materialized yet, hence mat value (future) isn't ready yet
         matFlowWatchTerm.value should be(empty)
 
         if (delayDownstreamCancellation) {
           srcWatchTermF.value should be(empty)
-          //this one is sent AFTER downstream cancellation
+          // this one is sent AFTER downstream cancellation
           subUpstream.sendNext(2)
 
           subDownstream.cancel()
@@ -381,7 +381,7 @@ class FlowFlatMapPrefixSpec extends StreamSpec("akka.loglevel = debug") {
         val subDownstream = subscriber.expectSubscription()
         val subUpstream = publisher.expectSubscription()
         subDownstream.request(1)
-        subUpstream.expectRequest() should be >= (1L)
+        subUpstream.expectRequest() should be >= 1L
         subUpstream.sendNext(0)
         subUpstream.sendNext(1)
         subDownstream.asInstanceOf[SubscriptionWithCancelException].cancel(TE("that again?!"))
@@ -431,7 +431,7 @@ class FlowFlatMapPrefixSpec extends StreamSpec("akka.loglevel = debug") {
 
         notUsedF.futureValue should ===(NotUsed)
 
-        subUpstream.expectRequest() should be >= (1L)
+        subUpstream.expectRequest() should be >= 1L
         subDownstream.request(1)
         subscriber.expectNext(2)
         subUpstream.sendNext(2)
@@ -482,8 +482,8 @@ class FlowFlatMapPrefixSpec extends StreamSpec("akka.loglevel = debug") {
             prefix should ===(0 until 2)
             Flow[Int]
               .concat(Source.repeat(3))
-              .fold(0L) {
-                case (acc, _) => acc + 1
+              .fold(0L) { case (acc, _) =>
+                acc + 1
               }
               .alsoToMat(Sink.head)(Keep.right)
           }(Keep.right)
@@ -491,9 +491,9 @@ class FlowFlatMapPrefixSpec extends StreamSpec("akka.loglevel = debug") {
           .withAttributes(attributes)
           .run()(mat)
         val countF = countFF.futureValue
-        //at this point we know the flow was materialized, now we can stop the materializer
+        // at this point we know the flow was materialized, now we can stop the materializer
         mat.shutdown()
-        //expect the nested flow to be terminated abruptly.
+        // expect the nested flow to be terminated abruptly.
         countF.failed.futureValue should be(a[AbruptStageTerminationException])
       }
 
@@ -579,12 +579,12 @@ class FlowFlatMapPrefixSpec extends StreamSpec("akka.loglevel = debug") {
         subscriber.expectNoMessage()
         subsc.sendNext(1)
         val sinkSubscription = subscriber.expectSubscription()
-        //this indicates
+        // this indicates
         fHeadOpt.futureValue should be(empty)
 
-        //materialize flow immediately cancels upstream
+        // materialize flow immediately cancels upstream
         subsc.expectCancellation()
-        //at this point both ends of the 'external' fow are closed
+        // at this point both ends of the 'external' fow are closed
 
         sinkSubscription.request(10)
         subscriber.expectNext("a", "b", "c")
@@ -602,11 +602,11 @@ class FlowFlatMapPrefixSpec extends StreamSpec("akka.loglevel = debug") {
             log.debug("closing sink")
             closeSink()
             log.debug("sink closed")
-            //closing the sink before returning means that it's higly probably
-            //for the flatMapPrefix stage to receive the downstream cancellation before the actor graph interpreter
-            //gets a chance to complete the new interpreter shell's registration.
-            //this in turn exposes a bug in the actor graph interpreter when all active flows complete
-            //but there are pending new interpreter shells to be registered.
+            // closing the sink before returning means that it's higly probably
+            // for the flatMapPrefix stage to receive the downstream cancellation before the actor graph interpreter
+            // gets a chance to complete the new interpreter shell's registration.
+            // this in turn exposes a bug in the actor graph interpreter when all active flows complete
+            // but there are pending new interpreter shells to be registered.
             Flow[Int].prepend(Source(seq))
           }(Keep.right)
           .toMat(Sink.queue(10))(Keep.both)

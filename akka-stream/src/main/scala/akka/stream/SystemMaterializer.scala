@@ -42,9 +42,7 @@ final class SystemMaterializer(system: ExtendedActorSystem) extends Extension {
   private val systemMaterializerPromise = Promise[Materializer]()
 
   // load these here so we can share the same instance across materializer guardian and other uses
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi @nowarn("msg=deprecated")
   private[akka] val materializerSettings = ActorMaterializerSettings(system)
 
@@ -60,9 +58,7 @@ final class SystemMaterializer(system: ExtendedActorSystem) extends Extension {
       .withDeploy(Deploy.local),
     "Materializers")
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi
   private[akka] def createAdditionalSystemMaterializer(): Materializer = {
     val started =
@@ -80,9 +76,7 @@ final class SystemMaterializer(system: ExtendedActorSystem) extends Extension {
     Await.result(started, materializerTimeout.duration).materializer
   }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi
   private[akka] def createAdditionalLegacySystemMaterializer(
       namePrefix: String,

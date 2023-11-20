@@ -58,9 +58,7 @@ trait Serializer {
    */
   def toBinary(o: AnyRef): Array[Byte]
 
-  /**
-   * Returns whether this serializer needs a manifest in the fromBinary method
-   */
+  /** Returns whether this serializer needs a manifest in the fromBinary method */
   def includeManifest: Boolean
 
   /**
@@ -70,14 +68,10 @@ trait Serializer {
   @throws(classOf[NotSerializableException])
   def fromBinary(bytes: Array[Byte], manifest: Option[Class[_]]): AnyRef
 
-  /**
-   * Java API: deserialize without type hint
-   */
+  /** Java API: deserialize without type hint */
   final def fromBinary(bytes: Array[Byte]): AnyRef = fromBinary(bytes, None)
 
-  /**
-   * Java API: deserialize with type hint
-   */
+  /** Java API: deserialize with type hint */
   @throws(classOf[NotSerializableException])
   final def fromBinary(bytes: Array[Byte], clazz: Class[_]): AnyRef = fromBinary(bytes, Option(clazz))
 }
@@ -189,7 +183,6 @@ abstract class SerializerWithStringManifest extends Serializer {
  *   // you need to know the maximum size in bytes of the serialized messages
  *   val pool = new akka.io.DirectByteBufferPool(defaultBufferSize = 1024 * 1024, maxPoolEntries = 10)
  *
- *
  *  // Implement this method for compatibility with `SerializerWithStringManifest`.
  *  override def toBinary(o: AnyRef): Array[Byte] = {
  *    val buf = pool.acquire()
@@ -213,9 +206,7 @@ abstract class SerializerWithStringManifest extends Serializer {
 //#ByteBufferSerializer
 trait ByteBufferSerializer {
 
-  /**
-   * Serializes the given object into the `ByteBuffer`.
-   */
+  /** Serializes the given object into the `ByteBuffer`. */
   def toBinary(o: AnyRef, buf: ByteBuffer): Unit
 
   /**
@@ -234,9 +225,7 @@ trait ByteBufferSerializer {
  */
 trait BaseSerializer extends Serializer {
 
-  /**
-   *  Actor system which is required by most serializer implementations.
-   */
+  /** Actor system which is required by most serializer implementations. */
   def system: ExtendedActorSystem
 
   /**
@@ -256,9 +245,7 @@ trait BaseSerializer extends Serializer {
    */
   override val identifier: Int = identifierFromConfig
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi
   private[akka] def identifierFromConfig: Int =
     BaseSerializer.identifierFromConfig(getClass, system)
@@ -298,9 +285,7 @@ abstract class JSerializer extends Serializer {
   final def fromBinary(bytes: Array[Byte], manifest: Option[Class[_]]): AnyRef =
     fromBinaryJava(bytes, manifest.orNull)
 
-  /**
-   * This method must be implemented, manifest may be null.
-   */
+  /** This method must be implemented, manifest may be null. */
   protected def fromBinaryJava(bytes: Array[Byte], manifest: Class[_]): AnyRef
 }
 
@@ -337,9 +322,7 @@ object JavaSerializer {
   }
 }
 
-/**
- * This Serializer uses standard Java Serialization
- */
+/** This Serializer uses standard Java Serialization */
 class JavaSerializer(val system: ExtendedActorSystem) extends BaseSerializer {
   if (!system.settings.AllowJavaSerialization)
     throw new DisabledJavaSerializer.JavaSerializationException(
@@ -364,9 +347,7 @@ class JavaSerializer(val system: ExtendedActorSystem) extends BaseSerializer {
   }
 }
 
-/**
- * This Serializer is used when `akka.actor.java-serialization = off`
- */
+/** This Serializer is used when `akka.actor.java-serialization = off` */
 final case class DisabledJavaSerializer(system: ExtendedActorSystem) extends Serializer with ByteBufferSerializer {
   import DisabledJavaSerializer._
 
@@ -420,9 +401,7 @@ object DisabledJavaSerializer {
     "Attempted to deserialize message using Java serialization while `akka.actor.allow-java-serialization` was disabled. Check WARNING logs for more details.")
 }
 
-/**
- * This is a special Serializer that Serializes and deserializes nulls only
- */
+/** This is a special Serializer that Serializes and deserializes nulls only */
 class NullSerializer extends Serializer {
   val nullAsBytes = Array[Byte]()
   def includeManifest: Boolean = false

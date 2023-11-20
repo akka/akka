@@ -43,9 +43,7 @@ trait LoggingBus extends ActorEventBus {
   private var loggers = Seq.empty[ActorRef]
   @volatile private var _logLevel: LogLevel = _
 
-  /**
-   * Query currently set log level. See object Logging for more information.
-   */
+  /** Query currently set log level. See object Logging for more information. */
   def logLevel = _logLevel
 
   /**
@@ -93,17 +91,13 @@ trait LoggingBus extends ActorEventBus {
     }
   }
 
-  /**
-   * Internal Akka use only
-   */
+  /** Internal Akka use only */
   private[akka] def startStdoutLogger(config: Settings): Unit = {
     setUpStdoutLogger(config)
     publish(Debug(simpleName(this), this.getClass, "StandardOutLogger started"))
   }
 
-  /**
-   * Internal Akka use only
-   */
+  /** Internal Akka use only */
   private[akka] def startDefaultLoggers(system: ActorSystemImpl): Unit = {
     val logName = simpleName(this) + "(" + system + ")"
     val level = levelFor(system.settings.LogLevel).getOrElse {
@@ -127,12 +121,11 @@ trait LoggingBus extends ActorEventBus {
             .map { actorClass =>
               addLogger(system, actorClass, level, logName)
             }
-            .recover {
-              case e =>
-                throw new ConfigurationException(
-                  "Logger specified in config can't be loaded [" + loggerName +
-                  "] due to [" + e.toString + "]",
-                  e)
+            .recover { case e =>
+              throw new ConfigurationException(
+                "Logger specified in config can't be loaded [" + loggerName +
+                "] due to [" + e.toString + "]",
+                e)
             }
             .get
         }
@@ -143,12 +136,13 @@ trait LoggingBus extends ActorEventBus {
       try {
         if (system.settings.DebugUnhandledMessage)
           subscribe(
-            system.systemActorOf(Props(new Actor {
-              def receive = {
-                case UnhandledMessage(msg, sender, rcp) =>
+            system.systemActorOf(
+              Props(new Actor {
+                def receive = { case UnhandledMessage(msg, sender, rcp) =>
                   publish(Debug(rcp.path.toString, rcp.getClass, "unhandled message from " + sender + ": " + msg))
-              }
-            }), "UnhandledMessageForwarder"),
+                }
+              }),
+              "UnhandledMessageForwarder"),
             classOf[UnhandledMessage])
       } catch {
         case _: InvalidActorNameException => // ignore if it is already running
@@ -165,9 +159,7 @@ trait LoggingBus extends ActorEventBus {
     }
   }
 
-  /**
-   * Internal Akka use only
-   */
+  /** Internal Akka use only */
   private[akka] def stopDefaultLoggers(system: ActorSystem): Unit = {
     @nowarn("msg=never used")
     val level = _logLevel // volatile access before reading loggers
@@ -189,9 +181,7 @@ trait LoggingBus extends ActorEventBus {
     publish(Debug(simpleName(this), this.getClass, "all default loggers stopped"))
   }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   private def addLogger(
       system: ActorSystemImpl,
       clazz: Class[_ <: Actor],
@@ -201,16 +191,17 @@ trait LoggingBus extends ActorEventBus {
     val actor = system.systemActorOf(Props(clazz).withDispatcher(system.settings.LoggersDispatcher), name)
     implicit def timeout: Timeout = system.settings.LoggerStartTimeout
     import akka.pattern.ask
-    val response = try Await.result(actor ? InitializeLogger(this), timeout.duration)
-    catch {
-      case _: TimeoutException =>
-        publish(
-          Warning(
-            logName,
-            this.getClass,
-            "Logger " + name + " did not respond within " + timeout + " to InitializeLogger(bus)"))
-        "[TIMEOUT]"
-    }
+    val response =
+      try Await.result(actor ? InitializeLogger(this), timeout.duration)
+      catch {
+        case _: TimeoutException =>
+          publish(
+            Warning(
+              logName,
+              this.getClass,
+              "Logger " + name + " did not respond within " + timeout + " to InitializeLogger(bus)"))
+          "[TIMEOUT]"
+      }
     if (response != LoggerInitialized)
       throw new LoggerInitializationException(
         "Logger " + name + " did not respond with LoggerInitialized, sent instead " + response)
@@ -271,9 +262,7 @@ trait LoggingBus extends ActorEventBus {
   def getClazz(t: T): Class[_] = t.getClass
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] final case class ActorWithLogClass(actor: Actor, logClass: Class[_])
 
 /**
@@ -325,9 +314,7 @@ object LogSource {
       }
   }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[akka] implicit val fromActorWithLoggerClass: LogSource[ActorWithLogClass] =
     new LogSource[ActorWithLogClass] {
       def genString(a: ActorWithLogClass) = fromActor.genString(a.actor)
@@ -452,25 +439,19 @@ object Logging {
     case m                              => m.getClass.getName
   }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   private[akka] object LogExt extends ExtensionId[LogExt] {
     override def createExtension(system: ExtendedActorSystem): LogExt =
       new LogExt(system)
   }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   private[akka] class LogExt(@unused system: ExtendedActorSystem) extends Extension {
     private val loggerId = new AtomicInteger
     def id() = loggerId.incrementAndGet()
   }
 
-  /**
-   * Marker trait for annotating LogLevel, which must be Int after erasure.
-   */
+  /** Marker trait for annotating LogLevel, which must be Int after erasure. */
   final case class LogLevel(asInt: Int) extends AnyVal {
     @inline final def >=(other: LogLevel): Boolean = asInt >= other.asInt
     @inline final def <=(other: LogLevel): Boolean = asInt <= other.asInt
@@ -524,9 +505,7 @@ object Logging {
     else DebugLevel
   }
 
-  /**
-   * Returns the event class associated with the given LogLevel
-   */
+  /** Returns the event class associated with the given LogLevel */
   def classFor(level: LogLevel): Class[_ <: LogEvent] = level match {
     case ErrorLevel   => classOf[Error]
     case WarningLevel => classOf[Warning]
@@ -698,58 +677,38 @@ object Logging {
    */
   class LoggerException extends AkkaException("")
 
-  /**
-   * Exception that wraps a LogEvent.
-   */
+  /** Exception that wraps a LogEvent. */
   class LogEventException(val event: LogEvent, cause: Throwable) extends NoStackTrace {
     override def getMessage: String = event.toString
     override def getCause: Throwable = cause
   }
 
-  /**
-   * Base type of LogEvents
-   */
+  /** Base type of LogEvents */
   sealed trait LogEvent extends NoSerializationVerificationNeeded {
 
-    /**
-     * The thread that created this log event
-     */
+    /** The thread that created this log event */
     @transient
     val thread: Thread = Thread.currentThread()
 
-    /**
-     * When this LogEvent was created according to System.currentTimeMillis
-     */
+    /** When this LogEvent was created according to System.currentTimeMillis */
     val timestamp: Long = System.currentTimeMillis
 
-    /**
-     * The LogLevel of this LogEvent
-     */
+    /** The LogLevel of this LogEvent */
     def level: LogLevel
 
-    /**
-     * The source of this event
-     */
+    /** The source of this event */
     def logSource: String
 
-    /**
-     * The class of the source of this event
-     */
+    /** The class of the source of this event */
     def logClass: Class[_]
 
-    /**
-     * The message, may be any object or null.
-     */
+    /** The message, may be any object or null. */
     def message: Any
 
-    /**
-     * Extra values for adding to MDC
-     */
+    /** Extra values for adding to MDC */
     def mdc: MDC = emptyMDC
 
-    /**
-     * Java API: Retrieve the contents of the MDC.
-     */
+    /** Java API: Retrieve the contents of the MDC. */
     def getMDC: java.util.Map[String, Any] = {
       import akka.util.ccompat.JavaConverters._
       mdc.asJava
@@ -793,9 +752,7 @@ object Logging {
     def cause: Throwable
   }
 
-  /**
-   * For ERROR Logging
-   */
+  /** For ERROR Logging */
   case class Error(override val cause: Throwable, logSource: String, logClass: Class[_], message: Any = "")
       extends LogEvent
       with LogEventWithCause {
@@ -846,9 +803,7 @@ object Logging {
   }
   def noCause = Error.NoCause
 
-  /**
-   * For WARNING Logging
-   */
+  /** For WARNING Logging */
   case class Warning(logSource: String, logClass: Class[_], message: Any = "") extends LogEvent {
     override def level = WarningLevel
   }
@@ -884,9 +839,7 @@ object Logging {
       new Warning4(logSource, logClass, message, mdc, marker, cause)
   }
 
-  /**
-   * For INFO Logging
-   */
+  /** For INFO Logging */
   case class Info(logSource: String, logClass: Class[_], message: Any = "") extends LogEvent {
     override def level = InfoLevel
   }
@@ -907,9 +860,7 @@ object Logging {
       new Info3(logSource, logClass, message, mdc, marker)
   }
 
-  /**
-   * For DEBUG Logging
-   */
+  /** For DEBUG Logging */
   case class Debug(logSource: String, logClass: Class[_], message: Any = "") extends LogEvent {
     override def level = DebugLevel
   }
@@ -961,21 +912,15 @@ object Logging {
   abstract class LoggerInitialized
   case object LoggerInitialized extends LoggerInitialized {
 
-    /**
-     * Java API: get the singleton instance
-     */
+    /** Java API: get the singleton instance */
     def getInstance = this
   }
 
-  /**
-   * Java API to create a LoggerInitialized message.
-   */
+  /** Java API to create a LoggerInitialized message. */
   // weird return type due to binary compatibility
   def loggerInitialized(): LoggerInitialized.type = LoggerInitialized
 
-  /**
-   * LoggerInitializationException is thrown to indicate that there was a problem initializing a logger
-   */
+  /** LoggerInitializationException is thrown to indicate that there was a problem initializing a logger */
   class LoggerInitializationException(msg: String) extends AkkaException(msg)
 
   trait StdOutLogger {
@@ -1113,9 +1058,7 @@ object Logging {
 
   private val serializedStandardOutLogger = new SerializedStandardOutLogger
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @SerialVersionUID(1L) private[akka] class SerializedStandardOutLogger extends Serializable {
     @throws(classOf[java.io.ObjectStreamException])
     private def readResolve(): AnyRef = Logging.StandardOutLogger
@@ -1135,9 +1078,7 @@ object Logging {
     }
   }
 
-  /**
-   * Returns the StackTrace for the given Throwable as a String
-   */
+  /** Returns the StackTrace for the given Throwable as a String */
   def stackTraceFor(e: Throwable): String = e match {
     case null | Error.NoCause => ""
     case _: NoStackTrace      => s" (${e.getClass.getName}: ${e.getMessage})"
@@ -1446,9 +1387,7 @@ trait LoggingAdapter {
     if (isDebugEnabled) notifyDebug(format(template, arg1, arg2, arg3, arg4))
   }
 
-  /**
-   * Log message at the specified log level.
-   */
+  /** Log message at the specified log level. */
   def log(level: Logging.LogLevel, message: String): Unit = { if (isEnabled(level)) notifyLog(level, message) }
 
   /**
@@ -1461,30 +1400,22 @@ trait LoggingAdapter {
     if (isEnabled(level)) notifyLog(level, format1(template, arg1))
   }
 
-  /**
-   * Message template with 2 replacement arguments.
-   */
+  /** Message template with 2 replacement arguments. */
   def log(level: Logging.LogLevel, template: String, arg1: Any, arg2: Any): Unit = {
     if (isEnabled(level)) notifyLog(level, format(template, arg1, arg2))
   }
 
-  /**
-   * Message template with 3 replacement arguments.
-   */
+  /** Message template with 3 replacement arguments. */
   def log(level: Logging.LogLevel, template: String, arg1: Any, arg2: Any, arg3: Any): Unit = {
     if (isEnabled(level)) notifyLog(level, format(template, arg1, arg2, arg3))
   }
 
-  /**
-   * Message template with 4 replacement arguments.
-   */
+  /** Message template with 4 replacement arguments. */
   def log(level: Logging.LogLevel, template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit = {
     if (isEnabled(level)) notifyLog(level, format(template, arg1, arg2, arg3, arg4))
   }
 
-  /**
-   * @return true if the specified log level is enabled
-   */
+  /** @return true if the specified log level is enabled */
   final def isEnabled(level: Logging.LogLevel): Boolean = level match {
     case Logging.ErrorLevel   => isErrorEnabled
     case Logging.WarningLevel => isWarningEnabled
@@ -1664,13 +1595,11 @@ trait DiagnosticLoggingAdapter extends LoggingAdapter {
    */
   def setMDC(jMdc: java.util.Map[String, Any]): Unit = mdc(if (jMdc != null) jMdc.asScala.toMap else emptyMDC)
 
-  /**
-   * Clear all entries in the MDC
-   */
+  /** Clear all entries in the MDC */
   def clearMDC(): Unit = mdc(emptyMDC)
 }
 
-/** DO NOT INHERIT: Class is open only for use by akka-slf4j*/
+/** DO NOT INHERIT: Class is open only for use by akka-slf4j */
 @DoNotInherit
 class LogMarker(val name: String, val properties: Map[String, Any]) {
 
@@ -1706,9 +1635,7 @@ object LogMarker {
 
   private[akka] final val Security = apply("SECURITY")
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[akka] object Properties {
     val MessageClass = "akkaMessageClass"
     val RemoteAddress = "akkaRemoteAddress"
@@ -1717,9 +1644,7 @@ object LogMarker {
 
 }
 
-/**
- * [[LoggingAdapter]] extension which adds Marker support.
- */
+/** [[LoggingAdapter]] extension which adds Marker support. */
 class MarkerLoggingAdapter(
     override val bus: LoggingBus,
     override val logSource: String,
@@ -1963,9 +1888,7 @@ class MarkerLoggingAdapter(
     if (isDebugEnabled(marker))
       bus.publish(Debug(logSource, logClass, format(template, arg1, arg2, arg3, arg4), mdc, marker))
 
-  /**
-   * Log message at the specified log level.
-   */
+  /** Log message at the specified log level. */
   def log(marker: LogMarker, level: Logging.LogLevel, message: String): Unit = {
     level match {
       case Logging.DebugLevel   => debug(marker, message)
@@ -1979,8 +1902,8 @@ class MarkerLoggingAdapter(
   // Copy of LoggingAdapter.format1 due to binary compatibility restrictions
   private def format1(t: String, arg: Any): String = arg match {
     case a: Array[_] if !a.getClass.getComponentType.isPrimitive => format(t, a.toIndexedSeq)
-    case a: Array[_]                                             => format(t, a.map(_.asInstanceOf[AnyRef]).toIndexedSeq)
-    case x                                                       => format(t, x)
+    case a: Array[_] => format(t, a.map(_.asInstanceOf[AnyRef]).toIndexedSeq)
+    case x           => format(t, x)
   }
 }
 
@@ -1992,9 +1915,7 @@ final class DiagnosticMarkerBusLoggingAdapter(
     extends MarkerLoggingAdapter(bus, logSource, logClass, loggingFilter)
     with DiagnosticLoggingAdapter
 
-/**
- * [[akka.event.LoggingAdapter]] that publishes [[akka.event.Logging.LogEvent]] to event stream.
- */
+/** [[akka.event.LoggingAdapter]] that publishes [[akka.event.Logging.LogEvent]] to event stream. */
 class BusLogging(val bus: LoggingBus, val logSource: String, val logClass: Class[_], loggingFilter: LoggingFilter)
     extends LoggingAdapter {
 
@@ -2024,9 +1945,7 @@ class BusLogging(val bus: LoggingBus, val logSource: String, val logClass: Class
     bus.publish(Debug(logSource, logClass, message, mdc))
 }
 
-/**
- * NoLogging is a LoggingAdapter that does absolutely nothing – no logging at all.
- */
+/** NoLogging is a LoggingAdapter that does absolutely nothing – no logging at all. */
 object NoLogging extends LoggingAdapter {
 
   /**
@@ -2048,9 +1967,7 @@ object NoLogging extends LoggingAdapter {
   final protected override def notifyDebug(message: String): Unit = ()
 }
 
-/**
- * NoLogging is a MarkerLoggingAdapter that does absolutely nothing – no logging at all.
- */
+/** NoLogging is a MarkerLoggingAdapter that does absolutely nothing – no logging at all. */
 object NoMarkerLogging extends MarkerLoggingAdapter(null, "source", classOf[String], null) {
 
   /**

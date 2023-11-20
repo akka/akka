@@ -42,10 +42,9 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with AnyWordSpec
         case class PrintMe(message: String)
 
         def apply(): Behavior[PrintMe] =
-          Behaviors.receive {
-            case (context, PrintMe(message)) =>
-              context.log.info(message)
-              Behaviors.same
+          Behaviors.receive { case (context, PrintMe(message)) =>
+            context.log.info(message)
+            Behaviors.same
           }
       }
       // #fire-and-forget-definition
@@ -75,11 +74,10 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with AnyWordSpec
 
         // #request-response-respond
         def apply(): Behaviors.Receive[Request] =
-          Behaviors.receiveMessage[Request] {
-            case Request(query, replyTo) =>
-              // ... process query ...
-              replyTo ! Response(s"Here are the cookies for [$query]!")
-              Behaviors.same
+          Behaviors.receiveMessage[Request] { case Request(query, replyTo) =>
+            // ... process query ...
+            replyTo ! Response(s"Here are the cookies for [$query]!")
+            Behaviors.same
           }
         // #request-response-respond
       }
@@ -175,7 +173,7 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with AnyWordSpec
 
   "contain a sample for scheduling messages to self" in {
 
-    //#timer
+    // #timer
     object Buncher {
 
       sealed trait Command
@@ -219,7 +217,7 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with AnyWordSpec
         }
       }
     }
-    //#timer
+    // #timer
 
     val probe = createTestProbe[Buncher.Batch]()
     val buncher: ActorRef[Buncher.Command] = spawn(Buncher(probe.ref, 1.second, 10))
@@ -241,10 +239,9 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with AnyWordSpec
       case class Response(message: String)
 
       def apply(): Behaviors.Receive[Hal.Command] =
-        Behaviors.receiveMessage[Command] {
-          case OpenThePodBayDoorsPlease(replyTo) =>
-            replyTo ! Response("I'm sorry, Dave. I'm afraid I can't do that.")
-            Behaviors.same
+        Behaviors.receiveMessage[Command] { case OpenThePodBayDoorsPlease(replyTo) =>
+          replyTo ! Response("I'm sorry, Dave. I'm afraid I can't do that.")
+          Behaviors.same
         }
     }
 
@@ -307,11 +304,10 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with AnyWordSpec
       case class OpenThePodBayDoorsPlease(replyTo: ActorRef[StatusReply[String]]) extends Command
 
       def apply(): Behaviors.Receive[Hal.Command] =
-        Behaviors.receiveMessage[Command] {
-          case OpenThePodBayDoorsPlease(replyTo) =>
-            // reply with a validation error description
-            replyTo ! StatusReply.Error("I'm sorry, Dave. I'm afraid I can't do that.")
-            Behaviors.same
+        Behaviors.receiveMessage[Command] { case OpenThePodBayDoorsPlease(replyTo) =>
+          // reply with a validation error description
+          replyTo ! StatusReply.Error("I'm sorry, Dave. I'm afraid I can't do that.")
+          Behaviors.same
         }
     }
 
@@ -359,10 +355,9 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with AnyWordSpec
       case class GetKeys(whoseKeys: String, replyTo: ActorRef[Keys])
 
       def apply(): Behavior[GetKeys] =
-        Behaviors.receiveMessage {
-          case GetKeys(_, replyTo) =>
-            replyTo ! Keys()
-            Behaviors.same
+        Behaviors.receiveMessage { case GetKeys(_, replyTo) =>
+          replyTo ! Keys()
+          Behaviors.same
         }
     }
 
@@ -370,10 +365,9 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with AnyWordSpec
       case class GetWallet(whoseWallet: String, replyTo: ActorRef[Wallet])
 
       def apply(): Behavior[GetWallet] =
-        Behaviors.receiveMessage {
-          case GetWallet(_, replyTo) =>
-            replyTo ! Wallet()
-            Behaviors.same
+        Behaviors.receiveMessage { case GetWallet(_, replyTo) =>
+          replyTo ! Wallet()
+          Behaviors.same
         }
     }
 
@@ -389,10 +383,9 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with AnyWordSpec
           val keyCabinet: ActorRef[KeyCabinet.GetKeys] = context.spawn(KeyCabinet(), "key-cabinet")
           val drawer: ActorRef[Drawer.GetWallet] = context.spawn(Drawer(), "drawer")
 
-          Behaviors.receiveMessage[Command] {
-            case LeaveHome(who, replyTo) =>
-              context.spawn(prepareToLeaveHome(who, replyTo, keyCabinet, drawer), s"leaving-$who")
-              Behaviors.same
+          Behaviors.receiveMessage[Command] { case LeaveHome(who, replyTo) =>
+            context.spawn(prepareToLeaveHome(who, replyTo, keyCabinet, drawer), s"leaving-$who")
+            Behaviors.same
           }
         }
       }
@@ -580,7 +573,7 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with AnyWordSpec
   }
 
   "contain a sample for pipeToSelf" in {
-    //#pipeToSelf
+    // #pipeToSelf
 
     trait CustomerDataAccess {
       def update(value: Customer): Future[Done]
@@ -631,7 +624,7 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with AnyWordSpec
         }
       }
     }
-    //#pipeToSelf
+    // #pipeToSelf
 
     val dataAccess = new CustomerDataAccess {
       override def update(value: Customer): Future[Done] = Future.successful(Done)

@@ -307,8 +307,8 @@ abstract class JournalSpec(config: Config)
           case ReplayedMessage(PersistentImpl(payload, 6L, Pid, _, _, Actor.noSender, WriterUuid, _, _)) =>
             payload should be(event)
         }
-        receiverProbe.expectMsgPF() {
-          case RecoverySuccess(highestSequenceNr) => highestSequenceNr should be >= 6L
+        receiverProbe.expectMsgPF() { case RecoverySuccess(highestSequenceNr) =>
+          highestSequenceNr should be >= 6L
         }
       }
     }
@@ -335,8 +335,8 @@ abstract class JournalSpec(config: Config)
         val WriterUuid = writerUuid
         probe.expectMsgPF() {
           case WriteMessageSuccess(
-              PersistentImpl(payload, 6L, Pid, _, _, Actor.noSender, WriterUuid, _, Some(`meta`)),
-              _) =>
+                PersistentImpl(payload, 6L, Pid, _, _, Actor.noSender, WriterUuid, _, Some(`meta`)),
+                _) =>
             payload should be(event)
         }
 

@@ -22,14 +22,10 @@ import akka.remote.FailureDetectorRegistry
 import akka.remote.RemoteSettings
 import akka.remote.RemoteWatcher
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[cluster] object ClusterRemoteWatcher {
 
-  /**
-   * Factory method for `ClusterRemoteWatcher` [[akka.actor.Props]].
-   */
+  /** Factory method for `ClusterRemoteWatcher` [[akka.actor.Props]]. */
   def props(failureDetector: FailureDetectorRegistry[Address], settings: RemoteSettings): Props =
     Props(
       new ClusterRemoteWatcher(

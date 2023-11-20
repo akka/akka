@@ -50,9 +50,7 @@ import akka.util.unused
 private[akka] object Shard {
   import ShardRegion.EntityId
 
-  /**
-   * A Shard command
-   */
+  /** A Shard command */
   sealed trait RememberEntityCommand
 
   /**
@@ -67,9 +65,7 @@ private[akka] object Shard {
    */
   final case class EntitiesMovedToOtherShard(ids: Set[ShardRegion.ShardId]) extends RememberEntityCommand
 
-  /**
-   * A query for information about the shard
-   */
+  /** A query for information about the shard */
   sealed trait ShardQuery
 
   @SerialVersionUID(1L) case object GetCurrentShardState extends ShardQuery
@@ -154,7 +150,7 @@ private[akka] object Shard {
    *        +------------------------------------------------------------------------------------------+------------------------------------------------+<-------------+
    *                       stop stored/passivation complete
    * }}}
-   **/
+   */
   sealed trait EntityState {
     def transition(newState: EntityState, entities: Entities): EntityState
     final def invalidTransition(to: EntityState, entities: Entities): EntityState = {
@@ -179,9 +175,9 @@ private[akka] object Shard {
   case object NoState extends EntityState {
     override def transition(newState: EntityState, entities: Entities): EntityState = newState match {
       case RememberedButNotCreated if entities.rememberingEntities => RememberedButNotCreated
-      case remembering: RememberingStart                           => remembering // we go via this state even if not really remembering
-      case active: Active if !entities.rememberingEntities         => active
-      case _                                                       => invalidTransition(newState, entities)
+      case remembering: RememberingStart => remembering // we go via this state even if not really remembering
+      case active: Active if !entities.rememberingEntities => active
+      case _                                               => invalidTransition(newState, entities)
     }
   }
 
@@ -371,9 +367,7 @@ private[akka] object Shard {
     // only called for getting shard stats
     def activeEntityIds(): Set[EntityId] = byRef.values.asScala.toSet
 
-    /**
-     * @return (remembering start, remembering stop)
-     */
+    /** @return (remembering start, remembering stop) */
     def pendingRememberEntities(): (Map[EntityId, RememberingStart], Set[EntityId]) = {
       if (remembering.isEmpty) {
         (Map.empty, Set.empty)
@@ -384,7 +378,7 @@ private[akka] object Shard {
           entityState(entityId) match {
             case r: RememberingStart => starts += (entityId -> r)
             case RememberingStop     => stops += entityId
-            case wat                 => throw new IllegalStateException(s"$entityId was in the remembering set but has state $wat")
+            case wat => throw new IllegalStateException(s"$entityId was in the remembering set but has state $wat")
           })
         (starts.result(), stops.result())
       }
@@ -482,8 +476,8 @@ private[akka] class Shard(
     case None    => 5.seconds // not used
   }
 
-  def receive: Receive = {
-    case _ => throw new IllegalStateException("Default receive never expected to actually be used")
+  def receive: Receive = { case _ =>
+    throw new IllegalStateException("Default receive never expected to actually be used")
   }
 
   override def preStart(): Unit = {
@@ -545,8 +539,8 @@ private[akka] class Shard(
 
   private def tryGetLease(l: Lease): Unit = {
     log.info("{}: Acquiring lease {}", typeName, l.settings)
-    pipe(l.acquire(reason => self ! LeaseLost(reason)).map(r => LeaseAcquireResult(r, None)).recover {
-      case t => LeaseAcquireResult(acquired = false, Some(t))
+    pipe(l.acquire(reason => self ! LeaseLost(reason)).map(r => LeaseAcquireResult(r, None)).recover { case t =>
+      LeaseAcquireResult(acquired = false, Some(t))
     }).to(self)
   }
 
@@ -885,9 +879,9 @@ private[akka] class Shard(
             HandOffStopper.props(typeName, shardId, replyTo, activeEntities, handOffStopMessage, entityHandOffTimeout),
             "HandOffStopper")))
 
-        //During hand off we only care about watching for termination of the hand off stopper
-        context.become {
-          case Terminated(ref) => receiveTerminated(ref)
+        // During hand off we only care about watching for termination of the hand off stopper
+        context.become { case Terminated(ref) =>
+          receiveTerminated(ref)
         }
       } else {
         replyTo ! ShardStopped(shardId)
@@ -1155,7 +1149,7 @@ private[akka] class Shard(
 
   // After entity started
   def sendMsgBuffer(entityId: EntityId): Unit = {
-    //Get the buffered messages and remove the buffer
+    // Get the buffered messages and remove the buffer
     val messages = messageBuffers.getOrEmpty(entityId)
     messageBuffers.remove(entityId)
 

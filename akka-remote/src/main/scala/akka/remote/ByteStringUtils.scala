@@ -11,9 +11,7 @@ import akka.util.ByteString
 import akka.util.ByteString.ByteString1
 import akka.util.ByteString.ByteString1C
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] object ByteStringUtils {
   def toProtoByteStringUnsafe(bytes: ByteString): ProtoByteString = {

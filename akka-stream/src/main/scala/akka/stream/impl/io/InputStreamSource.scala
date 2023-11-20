@@ -23,9 +23,7 @@ import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.stage.{ GraphStageLogic, GraphStageLogicWithLogging, GraphStageWithMaterializedValue, OutHandler }
 import akka.util.ByteString
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] final class InputStreamSource(factory: () => InputStream, chunkSize: Int)
     extends GraphStageWithMaterializedValue[SourceShape[ByteString], Future[IOResult]] {

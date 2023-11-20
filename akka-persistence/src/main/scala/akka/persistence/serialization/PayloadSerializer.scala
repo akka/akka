@@ -14,9 +14,7 @@ import akka.persistence.serialization.{ MessageFormats => mf }
 import akka.protobufv3.internal.ByteString
 import akka.protobufv3.internal.UnsafeByteOperations
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 final class PayloadSerializer(val system: ExtendedActorSystem)
     extends SerializerWithStringManifest

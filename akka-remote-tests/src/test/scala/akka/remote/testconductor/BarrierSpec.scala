@@ -138,7 +138,9 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender {
             if thr == ClientLost(Data(Set(nodeA), "bar6", a.ref :: Nil, thr.data.deadline), B) =>
         case x =>
           fail(
-            "Expected " + Failed(barrier, ClientLost(Data(Set(nodeA), "bar6", a.ref :: Nil, null), B)) + " but got " + x)
+            "Expected " + Failed(
+              barrier,
+              ClientLost(Data(Set(nodeA), "bar6", a.ref :: Nil, null), B)) + " but got " + x)
       }
     }
 
@@ -161,7 +163,9 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender {
             if thr == ClientLost(Data(Set(nodeA, nodeC), "bar7", a.ref :: Nil, thr.data.deadline), B) =>
         case x =>
           fail(
-            "Expected " + Failed(barrier, ClientLost(Data(Set(nodeA, nodeC), "bar7", a.ref :: Nil, null), B)) + " but got " + x)
+            "Expected " + Failed(
+              barrier,
+              ClientLost(Data(Set(nodeA, nodeC), "bar7", a.ref :: Nil, null), B)) + " but got " + x)
       }
     }
 
@@ -198,12 +202,15 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender {
       msg match {
         case Failed(_, thr: BarrierEmpty)
             if thr == BarrierEmpty(
-                Data(Set(), "", Nil, thr.data.deadline),
-                "cannot remove RoleName(a): no client to remove") =>
+              Data(Set(), "", Nil, thr.data.deadline),
+              "cannot remove RoleName(a): no client to remove") =>
         case x =>
-          fail("Expected " + Failed(
-            barrier,
-            BarrierEmpty(Data(Set(), "", Nil, null), "cannot remove RoleName(a): no client to remove")) + " but got " + x)
+          fail(
+            "Expected " + Failed(
+              barrier,
+              BarrierEmpty(
+                Data(Set(), "", Nil, null),
+                "cannot remove RoleName(a): no client to remove")) + " but got " + x)
       }
       barrier ! NodeInfo(A, AddressFromURIString("akka://sys"), a.ref)
       a.send(barrier, EnterBarrier("bar9", None))
@@ -225,7 +232,9 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender {
               if thr == BarrierTimeout(Data(Set(nodeA, nodeB), "bar10", a.ref :: Nil, thr.data.deadline)) =>
           case x =>
             fail(
-              "Expected " + Failed(barrier, BarrierTimeout(Data(Set(nodeA, nodeB), "bar10", a.ref :: Nil, null))) + " but got " + x)
+              "Expected " + Failed(
+                barrier,
+                BarrierTimeout(Data(Set(nodeA, nodeB), "bar10", a.ref :: Nil, null))) + " but got " + x)
         }
       }
     }
@@ -548,11 +557,11 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender {
       val controller =
         context.actorOf(Props(classOf[Controller], participants, new InetSocketAddress(InetAddress.getLocalHost, 0)))
       controller ! GetSockAddr
-      override def supervisorStrategy = OneForOneStrategy() {
-        case x => testActor ! Failed(controller, x); SupervisorStrategy.Restart
+      override def supervisorStrategy = OneForOneStrategy() { case x =>
+        testActor ! Failed(controller, x); SupervisorStrategy.Restart
       }
-      def receive = {
-        case _: InetSocketAddress => testActor ! controller
+      def receive = { case _: InetSocketAddress =>
+        testActor ! controller
       }
     }).withDeploy(Deploy.local))
     val actor = expectMsgType[ActorRef]
@@ -567,11 +576,11 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender {
   private def getBarrier(): ActorRef = {
     system.actorOf(Props(new Actor {
       val barrier = context.actorOf(Props[BarrierCoordinator]())
-      override def supervisorStrategy = OneForOneStrategy() {
-        case x => testActor ! Failed(barrier, x); SupervisorStrategy.Restart
+      override def supervisorStrategy = OneForOneStrategy() { case x =>
+        testActor ! Failed(barrier, x); SupervisorStrategy.Restart
       }
-      def receive = {
-        case _ => sender() ! barrier
+      def receive = { case _ =>
+        sender() ! barrier
       }
     }).withDeploy(Deploy.local)) ! ""
     expectMsgType[ActorRef]

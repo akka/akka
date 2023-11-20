@@ -12,9 +12,7 @@ import scala.collection.immutable
 import scala.util.Random
 import scala.util.control.NonFatal
 
-/**
- * Utilities to get free socket address.
- */
+/** Utilities to get free socket address. */
 object SocketUtil {
 
   val RANDOM_LOOPBACK_ADDRESS = "RANDOM_LOOPBACK_ADDRESS"
@@ -90,15 +88,17 @@ object SocketUtil {
         }
 
         val addr = new InetSocketAddress(address, 0)
-        try if (udp) {
-          val ds = DatagramChannel.open().socket()
-          ds.bind(addr)
-          (ds, new InetSocketAddress(address, ds.getLocalPort))
-        } else {
-          val ss = ServerSocketChannel.open().socket()
-          ss.bind(addr)
-          (ss, new InetSocketAddress(address, ss.getLocalPort))
-        } catch {
+        try
+          if (udp) {
+            val ds = DatagramChannel.open().socket()
+            ds.bind(addr)
+            (ds, new InetSocketAddress(address, ds.getLocalPort))
+          } else {
+            val ss = ServerSocketChannel.open().socket()
+            ss.bind(addr)
+            (ss, new InetSocketAddress(address, ss.getLocalPort))
+          }
+        catch {
           case NonFatal(ex) =>
             throw new RuntimeException(s"Binding to $addr failed with ${ex.getMessage}", ex)
         }

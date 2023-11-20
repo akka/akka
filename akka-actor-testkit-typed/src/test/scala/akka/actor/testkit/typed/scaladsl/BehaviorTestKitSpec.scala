@@ -92,9 +92,11 @@ object BehaviorTestKitSpec {
               }
               Behaviors.same
             case SpawnAdapterWithName(name) =>
-              context.spawnMessageAdapter({ (r: Reproduce) =>
-                SpawnAnonymous(r.times)
-              }, name)
+              context.spawnMessageAdapter(
+                { (r: Reproduce) =>
+                  SpawnAnonymous(r.times)
+                },
+                name)
               Behaviors.same
             case SpawnAndWatchUnwatch(name) =>
               val c = context.spawn(Child.initial, name)
@@ -165,10 +167,9 @@ object BehaviorTestKitSpec {
               throw new RuntimeException(s"Unexpected command: $unexpected")
           }
         }
-        .receiveSignal {
-          case (context, Terminated(_)) =>
-            context.log.debug("Terminated")
-            Behaviors.same
+        .receiveSignal { case (context, Terminated(_)) =>
+          context.log.debug("Terminated")
+          Behaviors.same
         }
     }
   }
@@ -231,8 +232,7 @@ class BehaviorTestKitSpec extends AnyWordSpec with Matchers with LogCapturing {
       val testkit = BehaviorTestKit[Parent.Command](Parent.init)
       testkit.run(SpawnChildren(1))
       val ae = intercept[AssertionError] {
-        testkit.expectEffectPF {
-          case SpawnedAnonymous(_, _) =>
+        testkit.expectEffectPF { case SpawnedAnonymous(_, _) =>
         }
       }
       ae.getMessage should startWith("expected matching effect but got: ")
@@ -241,16 +241,16 @@ class BehaviorTestKitSpec extends AnyWordSpec with Matchers with LogCapturing {
     "allow assertions using partial functions - match" in {
       val testkit = BehaviorTestKit[Parent.Command](Parent.init)
       testkit.run(SpawnChildren(1))
-      val childName = testkit.expectEffectPF {
-        case Spawned(_, name, _) => name
+      val childName = testkit.expectEffectPF { case Spawned(_, name, _) =>
+        name
       }
       childName should ===("child0")
     }
 
     "allow assertions using partial functions - match on NoEffect" in {
       val testkit = BehaviorTestKit[Parent.Command](Parent.init)
-      val hasEffects = testkit.expectEffectPF {
-        case NoEffects => false
+      val hasEffects = testkit.expectEffectPF { case NoEffects =>
+        false
       }
       hasEffects should ===(false)
     }
@@ -350,11 +350,11 @@ class BehaviorTestKitSpec extends AnyWordSpec with Matchers with LogCapturing {
       adaptorRef ! 2
       testkit.selfInbox().hasMessages should be(true)
       testkit.runOne()
-      testkit.expectEffectPF {
-        case Spawned(_, childName, _) => childName should equal("child0")
+      testkit.expectEffectPF { case Spawned(_, childName, _) =>
+        childName should equal("child0")
       }
-      testkit.expectEffectPF {
-        case Spawned(_, childName, _) => childName should equal("child1")
+      testkit.expectEffectPF { case Spawned(_, childName, _) =>
+        childName should equal("child1")
       }
     }
   }
@@ -455,20 +455,19 @@ class BehaviorTestKitSpec extends AnyWordSpec with Matchers with LogCapturing {
       testkit.run(ScheduleCommand("abc", 42.seconds, Effect.TimerScheduled.SingleMode, SpawnChild))
       testkit.expectEffectPF {
         case Effect.TimerScheduled(
-            "abc",
-            SpawnChild,
-            finiteDuration,
-            Effect.TimerScheduled.SingleMode,
-            false /*not overriding*/ ) =>
+              "abc",
+              SpawnChild,
+              finiteDuration,
+              Effect.TimerScheduled.SingleMode,
+              false /*not overriding*/ ) =>
           finiteDuration should equal(42.seconds)
       }
 
       testkit.runAsk(IsTimerActive("abc", _)).expectReply(true)
 
       testkit.run(CancelScheduleCommand("abc"))
-      testkit.expectEffectPF {
-        case Effect.TimerCancelled(key) =>
-          key should equal("abc")
+      testkit.expectEffectPF { case Effect.TimerCancelled(key) =>
+        key should equal("abc")
       }
 
       testkit.runAsk(IsTimerActive("abc", _)).expectReply(false)
@@ -489,10 +488,9 @@ class BehaviorTestKitSpec extends AnyWordSpec with Matchers with LogCapturing {
       }
       send()
       testkit.runOne()
-      testkit.expectEffectPF {
-        case Effect.Spawned(_, "child", _) =>
+      testkit.expectEffectPF { case Effect.Spawned(_, "child", _) =>
       }
-      //no effect since the timer's mode was single, hence removed after fired
+      // no effect since the timer's mode was single, hence removed after fired
       send()
       testkit.selfInbox().hasMessages should be(false)
     }
@@ -513,19 +511,18 @@ class BehaviorTestKitSpec extends AnyWordSpec with Matchers with LogCapturing {
       }
       send()
       testkit.runOne()
-      val child: ActorRef[String] = testkit.expectEffectPF {
-        case spawned @ Effect.Spawned(_, "child", _) => spawned.asInstanceOf[Effect.Spawned[String]].ref
+      val child: ActorRef[String] = testkit.expectEffectPF { case spawned @ Effect.Spawned(_, "child", _) =>
+        spawned.asInstanceOf[Effect.Spawned[String]].ref
       }
 
       testkit.run(StopChild(child))
       testkit.expectEffect {
         Effect.Stopped("child")
       }
-      //when scheduling with fixed rate the timer remains scheduled
+      // when scheduling with fixed rate the timer remains scheduled
       send()
       testkit.runOne()
-      testkit.expectEffectPF {
-        case Effect.Spawned(_, "child", _) =>
+      testkit.expectEffectPF { case Effect.Spawned(_, "child", _) =>
       }
 
       testkit.run(CancelScheduleCommand("abc"))

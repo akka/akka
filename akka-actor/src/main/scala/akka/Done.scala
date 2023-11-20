@@ -17,9 +17,7 @@ import akka.annotation.DoNotInherit
 
 case object Done extends Done {
 
-  /**
-   * Java API: the singleton instance
-   */
+  /** Java API: the singleton instance */
   def getInstance(): Done = this
 
   /**

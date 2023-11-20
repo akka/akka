@@ -5,7 +5,7 @@
 package docs.actor
 
 object TimerDocSpec {
-  //#timers
+  // #timers
   import scala.concurrent.duration._
 
   import akka.actor.Actor
@@ -29,5 +29,5 @@ object TimerDocSpec {
       // do something useful here
     }
   }
-  //#timers
+  // #timers
 }

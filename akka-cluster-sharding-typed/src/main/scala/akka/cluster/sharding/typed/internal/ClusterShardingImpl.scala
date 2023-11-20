@@ -53,7 +53,7 @@ import akka.util.JavaDurationConverters._
     extends ShardingMessageExtractor[Any, M] {
   override def entityId(message: Any): String = {
     message match {
-      case ShardingEnvelope(entityId, _) => entityId //also covers ClassicStartEntity in ShardingEnvelope
+      case ShardingEnvelope(entityId, _) => entityId // also covers ClassicStartEntity in ShardingEnvelope
       case ClassicStartEntity(entityId)  => entityId
       case msg                           => delegate.entityId(msg.asInstanceOf[E])
     }
@@ -64,7 +64,7 @@ import akka.util.JavaDurationConverters._
   override def unwrapMessage(message: Any): M = {
     message match {
       case ShardingEnvelope(_, msg: M @unchecked) =>
-        //also covers ClassicStartEntity in ShardingEnvelope
+        // also covers ClassicStartEntity in ShardingEnvelope
         msg
       case msg: ClassicStartEntity =>
         // not really of type M, but erased and StartEntity is only handled internally, not delivered to the entity
@@ -77,9 +77,7 @@ import akka.util.JavaDurationConverters._
   override def toString: String = delegate.toString
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] final case class EntityTypeKeyImpl[T](name: String, messageClassName: String)
     extends javadsl.EntityTypeKey[T]
     with scaladsl.EntityTypeKey[T] {
@@ -305,9 +303,7 @@ import akka.util.JavaDurationConverters._
 
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] final class EntityRefImpl[M](
     shardRegion: akka.actor.ActorRef,
     override val entityId: String,
@@ -413,18 +409,14 @@ import akka.util.JavaDurationConverters._
 
   override def toString: String = s"EntityRef($typeKey, $entityId)"
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   override private[akka] def asJava: javadsl.EntityRef[M] = this
 
   private[internal] def withDataCenter(dataCenter: Option[String]): EntityRefImpl[M] =
     new EntityRefImpl[M](shardRegion, entityId, typeKey, dataCenter)
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object ShardCommandActor {
   import akka.actor.typed.scaladsl.adapter._
   import akka.cluster.sharding.ShardRegion.{ Passivate => ClassicPassivate }

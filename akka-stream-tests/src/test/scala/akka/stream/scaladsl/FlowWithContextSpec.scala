@@ -26,7 +26,7 @@ class FlowWithContextSpec extends StreamSpec {
         .asSource
         .runWith(TestSink[(Message, Long)]())
         .request(1)
-        .expectNext(((Message("az", 1L), 1L)))
+        .expectNext((Message("az", 1L), 1L))
         .expectComplete()
     }
 
@@ -42,15 +42,15 @@ class FlowWithContextSpec extends StreamSpec {
         .toMat(TestSink[(Message, Long)]())(Keep.both)
         .run()
       matValue shouldBe (42 -> materializedValue)
-      probe.request(1).expectNext(((Message("a", 1L), 1L))).expectComplete()
+      probe.request(1).expectNext((Message("a", 1L), 1L)).expectComplete()
     }
 
     "be able to map error via FlowWithContext.mapError" in {
       val ex = new RuntimeException("ex") with NoStackTrace
       val boom = new Exception("BOOM!") with NoStackTrace
       val mapErrorFlow = FlowWithContext[Message, Long]
-        .map {
-          case m @ Message(_, offset) => if (offset == 3) throw ex else m
+        .map { case m @ Message(_, offset) =>
+          if (offset == 3) throw ex else m
         }
         .mapError { case _: Throwable => boom }
 

@@ -91,10 +91,14 @@ class EventSourcedBehaviorWatchSpec
 
           context.watch(child)
 
-          EventSourcedBehavior[Command, String, String](nextPid, emptyState = "", commandHandler = (_, cmd) => {
-            child ! cmd
-            Effect.none
-          }, eventHandler = (state, evt) => state + evt)
+          EventSourcedBehavior[Command, String, String](
+            nextPid,
+            emptyState = "",
+            commandHandler = (_, cmd) => {
+              child ! cmd
+              Effect.none
+            },
+            eventHandler = (state, evt) => state + evt)
         })
 
       LoggingTestKit.error[TestException].expect {
@@ -106,10 +110,9 @@ class EventSourcedBehaviorWatchSpec
     }
 
     "behave as expected if a user's signal handler is side effecting" in {
-      val signalHandler: PartialFunction[(String, Signal), Unit] = {
-        case (_, RecoveryCompleted) =>
-          java.time.Instant.now.getNano
-          Behaviors.same
+      val signalHandler: PartialFunction[(String, Signal), Unit] = { case (_, RecoveryCompleted) =>
+        java.time.Instant.now.getNano
+        Behaviors.same
       }
 
       Behaviors.setup[Command] { context =>
@@ -129,10 +132,14 @@ class EventSourcedBehaviorWatchSpec
 
           context.watch(child)
 
-          EventSourcedBehavior[Command, String, String](nextPid, emptyState = "", commandHandler = (_, cmd) => {
-            child ! cmd
-            Effect.none
-          }, eventHandler = (state, evt) => state + evt).receiveSignal(signalHandler)
+          EventSourcedBehavior[Command, String, String](
+            nextPid,
+            emptyState = "",
+            commandHandler = (_, cmd) => {
+              child ! cmd
+              Effect.none
+            },
+            eventHandler = (state, evt) => state + evt).receiveSignal(signalHandler)
         })
 
       LoggingTestKit.error[TestException].expect {
@@ -158,13 +165,16 @@ class EventSourcedBehaviorWatchSpec
           probe.ref ! child
           context.watch(child)
 
-          EventSourcedBehavior[Stop.type, String, String](nextPid, emptyState = "", commandHandler = (_, cmd) => {
-            child ! cmd
-            Effect.none
-          }, eventHandler = (state, evt) => state + evt).receiveSignal {
-            case (_, t: Terminated) =>
-              probe.ref ! HasTerminated(t.ref)
-              Behaviors.stopped
+          EventSourcedBehavior[Stop.type, String, String](
+            nextPid,
+            emptyState = "",
+            commandHandler = (_, cmd) => {
+              child ! cmd
+              Effect.none
+            },
+            eventHandler = (state, evt) => state + evt).receiveSignal { case (_, t: Terminated) =>
+            probe.ref ! HasTerminated(t.ref)
+            Behaviors.stopped
           }
         })
 
@@ -186,13 +196,16 @@ class EventSourcedBehaviorWatchSpec
           probe.ref ! child
           context.watch(child)
 
-          EventSourcedBehavior[Fail.type, String, String](nextPid, emptyState = "", commandHandler = (_, cmd) => {
-            child ! cmd
-            Effect.none
-          }, eventHandler = (state, evt) => state + evt).receiveSignal {
-            case (_, t: ChildFailed) =>
-              probe.ref ! ChildHasFailed(t)
-              Behaviors.same
+          EventSourcedBehavior[Fail.type, String, String](
+            nextPid,
+            emptyState = "",
+            commandHandler = (_, cmd) => {
+              child ! cmd
+              Effect.none
+            },
+            eventHandler = (state, evt) => state + evt).receiveSignal { case (_, t: ChildFailed) =>
+            probe.ref ! ChildHasFailed(t)
+            Behaviors.same
           }
         })
 

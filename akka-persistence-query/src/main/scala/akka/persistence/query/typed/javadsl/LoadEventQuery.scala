@@ -9,9 +9,7 @@ import java.util.concurrent.CompletionStage
 import akka.persistence.query.javadsl.ReadJournal
 import akka.persistence.query.typed.EventEnvelope
 
-/**
- * [[EventsBySliceQuery]] that is using a timestamp based offset should also implement this query.
- */
+/** [[EventsBySliceQuery]] that is using a timestamp based offset should also implement this query. */
 trait LoadEventQuery extends ReadJournal {
 
   /**

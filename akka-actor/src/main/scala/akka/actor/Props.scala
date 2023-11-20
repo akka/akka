@@ -21,29 +21,19 @@ import akka.routing._
  */
 object Props extends AbstractProps {
 
-  /**
-   * The defaultCreator, simply throws an UnsupportedOperationException when applied, which is used when creating a Props
-   */
+  /** The defaultCreator, simply throws an UnsupportedOperationException when applied, which is used when creating a Props */
   final val defaultCreator: () => Actor = () => throw new UnsupportedOperationException("No actor creator specified!")
 
-  /**
-   * The defaultRoutedProps is NoRouter which is used when creating a Props
-   */
+  /** The defaultRoutedProps is NoRouter which is used when creating a Props */
   final val defaultRoutedProps: RouterConfig = NoRouter
 
-  /**
-   * The default Deploy instance which is used when creating a Props
-   */
+  /** The default Deploy instance which is used when creating a Props */
   final val defaultDeploy = Deploy()
 
-  /**
-   * A Props instance whose creator will create an actor that doesn't respond to any message
-   */
+  /** A Props instance whose creator will create an actor that doesn't respond to any message */
   final val empty = Props[EmptyActor]()
 
-  /**
-   * The default Props instance, uses the settings from the Props object starting with default*.
-   */
+  /** The default Props instance, uses the settings from the Props object starting with default*. */
   final val default = Props(defaultDeploy, classOf[CreatorFunctionConsumer], List(defaultCreator))
 
   /**
@@ -80,9 +70,7 @@ object Props extends AbstractProps {
   private def mkProps(classOfActor: Class[_], ctor: () => Actor): Props =
     Props(classOf[TypedCreatorFunctionConsumer], classOfActor, ctor)
 
-  /**
-   * Scala API: create a Props given a class and its constructor arguments.
-   */
+  /** Scala API: create a Props given a class and its constructor arguments. */
   def apply(clazz: Class[_], args: Any*): Props = apply(defaultDeploy, clazz, args.toList)
 
 }
@@ -123,9 +111,7 @@ final case class Props(deploy: Deploy, clazz: Class[_], args: immutable.Seq[Any]
   @transient
   private[this] var _cachedActorClass: Class[_ <: Actor] = _
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   private[akka] def producer: IndirectActorProducer = {
     if (_producer eq null)
       _producer = IndirectActorProducer(clazz, args)
@@ -167,42 +153,30 @@ final case class Props(deploy: Deploy, clazz: Class[_], args: immutable.Seq[Any]
    */
   def routerConfig: RouterConfig = deploy.routerConfig
 
-  /**
-   * Returns a new Props with the specified dispatcher set.
-   */
+  /** Returns a new Props with the specified dispatcher set. */
   def withDispatcher(d: String): Props = deploy.dispatcher match {
     case NoDispatcherGiven => copy(deploy = deploy.copy(dispatcher = d))
     case x                 => if (x == d) this else copy(deploy = deploy.copy(dispatcher = d))
   }
 
-  /**
-   * Returns a new Props with the specified mailbox set.
-   */
+  /** Returns a new Props with the specified mailbox set. */
   def withMailbox(m: String): Props = deploy.mailbox match {
     case NoMailboxGiven => copy(deploy = deploy.copy(mailbox = m))
     case x              => if (x == m) this else copy(deploy = deploy.copy(mailbox = m))
   }
 
-  /**
-   * Returns a new Props with the specified router config set.
-   */
+  /** Returns a new Props with the specified router config set. */
   def withRouter(r: RouterConfig): Props = copy(deploy = deploy.copy(routerConfig = r))
 
-  /**
-   * Returns a new Props with the specified deployment configuration.
-   */
+  /** Returns a new Props with the specified deployment configuration. */
   def withDeploy(d: Deploy): Props = copy(deploy = d.withFallback(deploy))
 
-  /**
-   * Returns a new Props with the specified set of tags.
-   */
+  /** Returns a new Props with the specified set of tags. */
   @varargs
   def withActorTags(tags: String*): Props =
     withActorTags(tags.toSet)
 
-  /**
-   * Scala API: Returns a new Props with the specified set of tags.
-   */
+  /** Scala API: Returns a new Props with the specified set of tags. */
   def withActorTags(tags: Set[String]): Props =
     copy(deploy = deploy.withTags(tags))
 

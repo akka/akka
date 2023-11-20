@@ -19,15 +19,15 @@ class CompositionDocSpec extends AkkaSpec {
   implicit val ec: ExecutionContext = system.dispatcher
 
   "nonnested flow" in {
-    //#non-nested-flow
+    // #non-nested-flow
     Source.single(0).map(_ + 1).filter(_ != 0).map(_ - 2).to(Sink.fold(0)(_ + _))
 
     // ... where is the nesting?
-    //#non-nested-flow
+    // #non-nested-flow
   }
 
   "nested flow" in {
-    //#nested-flow
+    // #nested-flow
     val nestedSource =
       Source
         .single(0) // An atomic source
@@ -47,7 +47,7 @@ class CompositionDocSpec extends AkkaSpec {
 
     // Create a RunnableGraph
     val runnableGraph = nestedSource.to(nestedSink)
-    //#nested-flow
+    // #nested-flow
   }
 
   "reusing components" in {
@@ -68,13 +68,13 @@ class CompositionDocSpec extends AkkaSpec {
         .to(Sink.fold(0)(_ + _)) // wire an atomic sink to the nestedFlow
         .named("nestedSink") // wrap it up
 
-    //#reuse
+    // #reuse
     // Create a RunnableGraph from our components
     val runnableGraph = nestedSource.to(nestedSink)
 
     // Usage is uniform, no matter if modules are composite or atomic
     val runnableGraph2 = Source.single(0).to(Sink.fold(0)(_ + _))
-    //#reuse
+    // #reuse
   }
 
   "complex graph" in {
@@ -136,9 +136,9 @@ class CompositionDocSpec extends AkkaSpec {
     //#partial-graph
     // format: ON
 
-    //#partial-use
+    // #partial-use
     Source.single(0).via(partial).to(Sink.ignore)
-    //#partial-use
+    // #partial-use
 
     // format: OFF
     //#partial-flow-dsl
@@ -169,18 +169,18 @@ class CompositionDocSpec extends AkkaSpec {
   }
 
   "closed graph" in {
-    //#embed-closed
+    // #embed-closed
     val closed1 = Source.single(0).to(Sink.foreach(println))
     val closed2 = RunnableGraph.fromGraph(GraphDSL.create() { implicit builder =>
       val embeddedClosed: ClosedShape = builder.add(closed1)
       // …
       embeddedClosed
     })
-    //#embed-closed
+    // #embed-closed
   }
 
   "materialized values" in {
-    //#mat-combine-1
+    // #mat-combine-1
     // Materializes to Promise[Option[Int]]                                   (red)
     val source: Source[Int, Promise[Option[Int]]] = Source.maybe[Int]
 
@@ -190,9 +190,9 @@ class CompositionDocSpec extends AkkaSpec {
     // Materializes to Promise[Int]                                          (red)
     val nestedSource: Source[Int, Promise[Option[Int]]] =
       source.viaMat(flow1)(Keep.left).named("nestedSource")
-    //#mat-combine-1
+    // #mat-combine-1
 
-    //#mat-combine-2
+    // #mat-combine-2
     // Materializes to NotUsed                                                (orange)
     val flow2: Flow[Int, ByteString, NotUsed] = Flow[Int].map { i =>
       ByteString(i.toString)
@@ -205,18 +205,18 @@ class CompositionDocSpec extends AkkaSpec {
     // Materializes to Future[OutgoingConnection]                             (yellow)
     val nestedFlow: Flow[Int, ByteString, Future[OutgoingConnection]] =
       flow2.viaMat(flow3)(Keep.right).named("nestedFlow")
-    //#mat-combine-2
+    // #mat-combine-2
 
-    //#mat-combine-3
+    // #mat-combine-3
     // Materializes to Future[String]                                         (green)
     val sink: Sink[ByteString, Future[String]] = Sink.fold("")(_ + _.utf8String)
 
     // Materializes to (Future[OutgoingConnection], Future[String])           (blue)
     val nestedSink: Sink[Int, (Future[OutgoingConnection], Future[String])] =
       nestedFlow.toMat(sink)(Keep.both)
-    //#mat-combine-3
+    // #mat-combine-3
 
-    //#mat-combine-4
+    // #mat-combine-4
     case class MyClass(private val p: Promise[Option[Int]], conn: OutgoingConnection) {
       def close() = p.trySuccess(None)
     }
@@ -230,11 +230,11 @@ class CompositionDocSpec extends AkkaSpec {
     // Materializes to Future[MyClass]                                        (purple)
     val runnableGraph: RunnableGraph[Future[MyClass]] =
       nestedSource.toMat(nestedSink)(f)
-    //#mat-combine-4
+    // #mat-combine-4
   }
 
   "attributes" in {
-    //#attributes-inheritance
+    // #attributes-inheritance
     import Attributes._
     val nestedSource =
       Source.single(0).map(_ + 1).named("nestedSource") // Wrap, no inputBuffer set
@@ -249,6 +249,6 @@ class CompositionDocSpec extends AkkaSpec {
       nestedFlow
         .to(Sink.fold(0)(_ + _)) // wire an atomic sink to the nestedFlow
         .withAttributes(name("nestedSink") and inputBuffer(3, 3)) // override
-    //#attributes-inheritance
+    // #attributes-inheritance
   }
 }

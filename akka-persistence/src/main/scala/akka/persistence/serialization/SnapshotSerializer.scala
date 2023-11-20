@@ -19,9 +19,7 @@ import akka.util.ByteString.UTF_8
 @SerialVersionUID(1L)
 final case class Snapshot(data: Any)
 
-/**
- * [[Snapshot]] serializer.
- */
+/** [[Snapshot]] serializer. */
 class SnapshotSerializer(val system: ExtendedActorSystem) extends BaseSerializer {
 
   override val includeManifest: Boolean = false
@@ -58,7 +56,7 @@ class SnapshotSerializer(val system: ExtendedActorSystem) extends BaseSerializer
     val in = new ByteArrayInputStream(bytes)
     val serializerId = readInt(in)
 
-    if ((serializerId & 0xEDAC) == 0xEDAC) // Java Serialization magic value
+    if ((serializerId & 0xedac) == 0xedac) // Java Serialization magic value
       throw new NotSerializableException(s"Replaying snapshot from akka 2.3.x version is not supported any more")
 
     val remaining = in.available

@@ -78,7 +78,7 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
 
       // if we are in push mode or already have resumed reading in pullMode while waiting for Register
       // then register OP_READ interest
-      if (!pullMode || (/*pullMode && */ !readingSuspended)) resumeReading(info, None)
+      if (!pullMode || ( /*pullMode && */ !readingSuspended)) resumeReading(info, None)
 
     case ResumeReading =>
       readingSuspended = false
@@ -284,17 +284,19 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
         } else MoreDataWaiting
 
       val buffer = bufferPool.acquire()
-      try innerRead(buffer, ReceivedMessageSizeLimit) match {
-        case AllRead => // nothing to do
-        case MoreDataWaiting =>
-          if (!pullMode) self ! ChannelReadable
-        case EndOfStream if channel.socket.isOutputShutdown =>
-          if (TraceLogging) log.debug("Read returned end-of-stream, our side already closed")
-          doCloseConnection(info.handler, closeCommander, ConfirmedClosed)
-        case EndOfStream =>
-          if (TraceLogging) log.debug("Read returned end-of-stream, our side not yet closed")
-          handleClose(info, closeCommander, PeerClosed)
-      } catch {
+      try
+        innerRead(buffer, ReceivedMessageSizeLimit) match {
+          case AllRead => // nothing to do
+          case MoreDataWaiting =>
+            if (!pullMode) self ! ChannelReadable
+          case EndOfStream if channel.socket.isOutputShutdown =>
+            if (TraceLogging) log.debug("Read returned end-of-stream, our side already closed")
+            doCloseConnection(info.handler, closeCommander, ConfirmedClosed)
+          case EndOfStream =>
+            if (TraceLogging) log.debug("Read returned end-of-stream, our side not yet closed")
+            handleClose(info, closeCommander, PeerClosed)
+        }
+      catch {
         case e: IOException => handleError(info.handler, e)
       } finally bufferPool.release(buffer)
     }
@@ -426,7 +428,7 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
   def PendingWrite(commander: ActorRef, write: WriteCommand): PendingWrite = {
     @tailrec def create(head: WriteCommand, tail: WriteCommand): PendingWrite =
       head match {
-        case Write.empty                       => if (tail eq Write.empty) EmptyPendingWrite else create(tail, Write.empty)
+        case Write.empty => if (tail eq Write.empty) EmptyPendingWrite else create(tail, Write.empty)
         case Write(data, ack) if data.nonEmpty => PendingBufferWrite(commander, data, ack, tail)
         case WriteFile(path, offset, count, ack) =>
           PendingWriteFile(commander, Paths.get(path), offset, count, ack, tail)
@@ -528,7 +530,7 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
           self ! UpdatePendingWriteAndThen(updated, TcpConnection.doNothing)
         } else {
           release()
-          val andThen = if (!ack.isInstanceOf[NoAck])() => commander ! ack else doNothing
+          val andThen = if (!ack.isInstanceOf[NoAck]) () => commander ! ack else doNothing
           self ! UpdatePendingWriteAndThen(PendingWrite(commander, tail), andThen)
         }
       } catch {
@@ -537,9 +539,7 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
   }
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[io] object TcpConnection {
   sealed trait ReadResult
   object EndOfStream extends ReadResult
@@ -552,9 +552,7 @@ private[io] object TcpConnection {
    */
   final case class CloseInformation(notificationsTo: Set[ActorRef], closedEvent: Event)
 
-  /**
-   * Groups required connection-related data that are only available once the connection has been fully established.
-   */
+  /** Groups required connection-related data that are only available once the connection has been fully established. */
   final case class ConnectionInfo(
       registration: ChannelRegistration,
       handler: ActorRef,

@@ -56,9 +56,7 @@ object BootstrapSetup {
       defaultExecutionContext: Option[ExecutionContext]): BootstrapSetup =
     new BootstrapSetup(classLoader, config, defaultExecutionContext)
 
-  /**
-   * Scala API: Short for using custom config but keeping default classloader and default execution context
-   */
+  /** Scala API: Short for using custom config but keeping default classloader and default execution context */
   def apply(config: Config): BootstrapSetup = apply(None, Some(config), None)
 
   /**
@@ -72,9 +70,7 @@ object BootstrapSetup {
       defaultExecutionContext: Optional[ExecutionContext]): BootstrapSetup =
     apply(classLoader.asScala, config.asScala, defaultExecutionContext.asScala)
 
-  /**
-   * Java  API: Short for using custom config but keeping default classloader and default execution context
-   */
+  /** Java  API: Short for using custom config but keeping default classloader and default execution context */
   def create(config: Config): BootstrapSetup = apply(config)
 
   /**
@@ -106,19 +102,13 @@ object ProviderSelection {
   case object Cluster extends ProviderSelection("cluster", ClusterActorRefProvider, hasCluster = true)
   final case class Custom(override val fqcn: String) extends ProviderSelection("custom", fqcn, hasCluster = false)
 
-  /**
-   * JAVA API
-   */
+  /** JAVA API */
   def local(): ProviderSelection = Local
 
-  /**
-   * JAVA API
-   */
+  /** JAVA API */
   def remote(): ProviderSelection = Remote
 
-  /**
-   * JAVA API
-   */
+  /** JAVA API */
   def cluster(): ProviderSelection = Cluster
 
   /** INTERNAL API */
@@ -315,9 +305,7 @@ object ActorSystem {
       defaultExecutionContext: Option[ExecutionContext] = None): ActorSystem =
     apply(name, ActorSystemSetup(BootstrapSetup(classLoader, config, defaultExecutionContext)))
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[akka] object Settings {
 
     /**
@@ -338,7 +326,7 @@ object ActorSystem {
 
       val loggingFilterAlreadyConfigured =
         configuredLoggingFilter == slf4jLoggingFilterClassName || configuredLoggingFilter != classOf[
-            DefaultLoggingFilter].getName
+          DefaultLoggingFilter].getName
 
       def newLoggingFilterConfStr = s"""$loggingFilterConfKey = "$slf4jLoggingFilterClassName""""
 
@@ -351,7 +339,7 @@ object ActorSystem {
       } else {
         val confKey = "akka.use-slf4j"
         if (config.hasPath(confKey) && config.getBoolean(confKey) && dynamicAccess.classIsOnClasspath(
-              slf4jLoggerClassName)) {
+            slf4jLoggerClassName)) {
           val newLoggers = slf4jLoggerClassName +: configuredLoggers.filterNot(_ == classOf[DefaultLogger].getName)
           val newLoggersConfStr = s"$loggersConfKey = [${newLoggers.mkString("\"", "\", \"", "\"")}]"
           val newConfStr =
@@ -476,9 +464,7 @@ object ActorSystem {
       throw new akka.ConfigurationException(
         "Akka JAR version [" + Version + "] does not match the provided config version [" + ConfigVersion + "]")
 
-    /**
-     * Returns the String representation of the Config that this Settings is backed by
-     */
+    /** Returns the String representation of the Config that this Settings is backed by */
     override def toString: String = config.root.render
 
   }
@@ -526,59 +512,37 @@ abstract class ActorSystem extends ActorRefFactory with ClassicActorSystemProvid
    */
   def name: String
 
-  /**
-   * The core settings extracted from the supplied configuration.
-   */
+  /** The core settings extracted from the supplied configuration. */
   def settings: Settings
 
-  /**
-   * Log the configuration.
-   */
+  /** Log the configuration. */
   def logConfiguration(): Unit
 
-  /**
-   * Construct a path below the application guardian to be used with [[ActorSystem#actorSelection]].
-   */
+  /** Construct a path below the application guardian to be used with [[ActorSystem#actorSelection]]. */
   def /(name: String): ActorPath
 
-  /**
-   * Java API: Create a new child actor path.
-   */
+  /** Java API: Create a new child actor path. */
   def child(child: String): ActorPath = /(child)
 
-  /**
-   * Construct a path below the application guardian to be used with [[ActorSystem#actorSelection]].
-   */
+  /** Construct a path below the application guardian to be used with [[ActorSystem#actorSelection]]. */
   def /(name: Iterable[String]): ActorPath
 
-  /**
-   * Java API: Recursively create a descendant’s path by appending all child names.
-   */
+  /** Java API: Recursively create a descendant’s path by appending all child names. */
   def descendant(names: java.lang.Iterable[String]): ActorPath = /(immutableSeq(names))
 
-  /**
-   * Start-up time in milliseconds since the epoch.
-   */
+  /** Start-up time in milliseconds since the epoch. */
   val startTime: Long = System.currentTimeMillis
 
-  /**
-   * Up-time of this actor system in seconds.
-   */
+  /** Up-time of this actor system in seconds. */
   def uptime: Long = (System.currentTimeMillis - startTime) / 1000
 
-  /**
-   * Main event bus of this actor system, used for example for logging.
-   */
+  /** Main event bus of this actor system, used for example for logging. */
   def eventStream: EventStream
 
-  /**
-   * Java API: Main event bus of this actor system, used for example for logging.
-   */
+  /** Java API: Main event bus of this actor system, used for example for logging. */
   def getEventStream: EventStream = eventStream
 
-  /**
-   * Convenient logging adapter for logging to the [[ActorSystem#eventStream]].
-   */
+  /** Convenient logging adapter for logging to the [[ActorSystem#eventStream]]. */
   def log: LoggingAdapter
 
   /**
@@ -600,9 +564,7 @@ abstract class ActorSystem extends ActorRefFactory with ClassicActorSystemProvid
    */
   def getScheduler: Scheduler = scheduler
 
-  /**
-   * Helper object for looking up configured dispatchers.
-   */
+  /** Helper object for looking up configured dispatchers. */
   def dispatchers: Dispatchers
 
   /**
@@ -621,9 +583,7 @@ abstract class ActorSystem extends ActorRefFactory with ClassicActorSystemProvid
    */
   def getDispatcher: ExecutionContextExecutor = dispatcher
 
-  /**
-   * Helper object for looking up configured mailbox types.
-   */
+  /** Helper object for looking up configured mailbox types. */
   def mailboxes: Mailboxes
 
   /**
@@ -724,19 +684,13 @@ abstract class ActorSystem extends ActorRefFactory with ClassicActorSystemProvid
 @DoNotInherit
 abstract class ExtendedActorSystem extends ActorSystem {
 
-  /**
-   * The ActorRefProvider is the only entity which creates all actor references within this actor system.
-   */
+  /** The ActorRefProvider is the only entity which creates all actor references within this actor system. */
   def provider: ActorRefProvider
 
-  /**
-   * The top-level supervisor of all actors created using system.actorOf(...).
-   */
+  /** The top-level supervisor of all actors created using system.actorOf(...). */
   def guardian: InternalActorRef
 
-  /**
-   * The top-level supervisor of all system-internal services like logging.
-   */
+  /** The top-level supervisor of all system-internal services like logging. */
   def systemGuardian: InternalActorRef
 
   /**
@@ -748,9 +702,7 @@ abstract class ExtendedActorSystem extends ActorSystem {
    */
   def systemActorOf(props: Props, name: String): ActorRef
 
-  /**
-   * A ThreadFactory that can be used if the transport needs to create any Threads
-   */
+  /** A ThreadFactory that can be used if the transport needs to create any Threads */
   def threadFactory: ThreadFactory
 
   /**
@@ -782,21 +734,15 @@ abstract class ExtendedActorSystem extends ActorSystem {
    */
   def uid: Long
 
-  /**
-   * INTERNAL API: final step of `terminate()`
-   */
+  /** INTERNAL API: final step of `terminate()` */
   @InternalApi private[akka] def finalTerminate(): Unit
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[akka] def isTerminating(): Boolean
 
 }
 
-/**
- * Internal API
- */
+/** Internal API */
 @InternalApi
 private[akka] class ActorSystemImpl(
     val name: String,
@@ -969,19 +915,20 @@ private[akka] class ActorSystemImpl(
 
   val scheduler: Scheduler = createScheduler()
 
-  val provider: ActorRefProvider = try {
-    val arguments = Vector(
-      classOf[String] -> name,
-      classOf[Settings] -> settings,
-      classOf[EventStream] -> eventStream,
-      classOf[DynamicAccess] -> dynamicAccess)
+  val provider: ActorRefProvider =
+    try {
+      val arguments = Vector(
+        classOf[String] -> name,
+        classOf[Settings] -> settings,
+        classOf[EventStream] -> eventStream,
+        classOf[DynamicAccess] -> dynamicAccess)
 
-    dynamicAccess.createInstanceFor[ActorRefProvider](ProviderClass, arguments).get
-  } catch {
-    case NonFatal(e) =>
-      Try(stopScheduler())
-      throw e
-  }
+      dynamicAccess.createInstanceFor[ActorRefProvider](ProviderClass, arguments).get
+    } catch {
+      case NonFatal(e) =>
+        Try(stopScheduler())
+        throw e
+    }
 
   def deadLetters: ActorRef = provider.deadLetters
 
@@ -1059,28 +1006,29 @@ private[akka] class ActorSystemImpl(
         "The calling code expected that the ActorSystem was initialized but it wasn't yet. " +
         "This is probably a bug in the ActorSystem initialization sequence often related to initialization of extensions. " +
         "Please report at https://github.com/akka/akka/issues.")
-  private lazy val _start: this.type = try {
+  private lazy val _start: this.type =
+    try {
 
-    registerOnTermination(stopScheduler())
-    // the provider is expected to start default loggers, LocalActorRefProvider does this
-    provider.init(this)
-    // at this point it should be initialized "enough" for most extensions that we might want to guard against otherwise
-    _initialized = true
+      registerOnTermination(stopScheduler())
+      // the provider is expected to start default loggers, LocalActorRefProvider does this
+      provider.init(this)
+      // at this point it should be initialized "enough" for most extensions that we might want to guard against otherwise
+      _initialized = true
 
-    if (settings.LogDeadLetters > 0)
-      logDeadLetterListener = Some(systemActorOf(Props[DeadLetterListener](), "deadLetterListener"))
-    eventStream.startUnsubscriber()
-    ManifestInfo(this).checkSameVersion("Akka", allModules, logWarning = true)
-    if (!terminating)
-      loadExtensions()
-    if (LogConfigOnStart) logConfiguration()
-    this
-  } catch {
-    case NonFatal(e) =>
-      try terminate()
-      catch { case NonFatal(_) => Try(stopScheduler()) }
-      throw e
-  }
+      if (settings.LogDeadLetters > 0)
+        logDeadLetterListener = Some(systemActorOf(Props[DeadLetterListener](), "deadLetterListener"))
+      eventStream.startUnsubscriber()
+      ManifestInfo(this).checkSameVersion("Akka", allModules, logWarning = true)
+      if (!terminating)
+        loadExtensions()
+      if (LogConfigOnStart) logConfiguration()
+      this
+    } catch {
+      case NonFatal(e) =>
+        try terminate()
+        catch { case NonFatal(_) => Try(stopScheduler()) }
+        throw e
+    }
 
   def start(): this.type = _start
   def registerOnTermination[T](code: => T): Unit = { registerOnTermination(new Runnable { def run() = code }) }
@@ -1129,7 +1077,7 @@ private[akka] class ActorSystemImpl(
     terminate()
   }
 
-  //#create-scheduler
+  // #create-scheduler
   /**
    * Create the scheduler service. This one needs one special behavior: if
    * Closeable, it MUST execute all outstanding tasks upon .close() in order
@@ -1148,7 +1096,7 @@ private[akka] class ActorSystemImpl(
           classOf[LoggingAdapter] -> log,
           classOf[ThreadFactory] -> threadFactory.withName(threadFactory.name + "-scheduler")))
       .get
-  //#create-scheduler
+  // #create-scheduler
 
   /*
    * This is called after the last actor has signaled its termination, i.e.
@@ -1166,9 +1114,7 @@ private[akka] class ActorSystemImpl(
   // 3) the registered extension.
   private val extensions = new ConcurrentHashMap[ExtensionId[_], AnyRef]
 
-  /**
-   * Returns any extension registered to the specified Extension or returns null if not registered
-   */
+  /** Returns any extension registered to the specified Extension or returns null if not registered */
   @tailrec
   private def findExtension[T <: Extension](ext: ExtensionId[T]): T = extensions.get(ext) match {
     case c: CountDownLatch =>
@@ -1181,16 +1127,16 @@ private[akka] class ActorSystemImpl(
                "A serializer must not access the SerializationExtension from its constructor. Use lazy init."
              else "Could be deadlock due to cyclic initialization of extensions."))
       }
-      findExtension(ext) //Registration in process, await completion and retry
-    case t: Throwable => throw t //Initialization failed, throw same again
+      findExtension(ext) // Registration in process, await completion and retry
+    case t: Throwable => throw t // Initialization failed, throw same again
     case other =>
-      other.asInstanceOf[T] //could be a T or null, in which case we return the null as T
+      other.asInstanceOf[T] // could be a T or null, in which case we return the null as T
   }
 
   @tailrec
   final def registerExtension[T <: Extension](ext: ExtensionId[T]): T = {
     findExtension(ext) match {
-      case null => //Doesn't already exist, commence registration
+      case null => // Doesn't already exist, commence registration
         val inProcessOfRegistration = new CountDownLatch(1)
         extensions.putIfAbsent(ext, inProcessOfRegistration) match { // Signal that registration is in process
           case null =>
@@ -1199,18 +1145,26 @@ private[akka] class ActorSystemImpl(
                 case null =>
                   throw new IllegalStateException(s"Extension instance created as 'null' for extension [$ext]")
                 case instance =>
-                  extensions.replace(ext, inProcessOfRegistration, instance) //Replace our in process signal with the initialized extension
-                  instance //Profit!
+                  extensions.replace(
+                    ext,
+                    inProcessOfRegistration,
+                    instance
+                  ) // Replace our in process signal with the initialized extension
+                  instance // Profit!
               }
             } catch {
               case t: Throwable =>
-                extensions.replace(ext, inProcessOfRegistration, t) //In case shit hits the fan, remove the inProcess signal
-                throw t //Escalate to caller
+                extensions.replace(
+                  ext,
+                  inProcessOfRegistration,
+                  t
+                ) // In case shit hits the fan, remove the inProcess signal
+                throw t // Escalate to caller
             } finally {
-              inProcessOfRegistration.countDown() //Always notify listeners of the inProcess signal
+              inProcessOfRegistration.countDown() // Always notify listeners of the inProcess signal
             }
           case _ =>
-            registerExtension(ext) //Someone else is in process of registering an extension for this Extension, retry
+            registerExtension(ext) // Someone else is in process of registering an extension for this Extension, retry
         }
       case existing => existing.asInstanceOf[T]
     }
@@ -1233,9 +1187,8 @@ private[akka] class ActorSystemImpl(
     def loadExtensions(key: String, throwOnLoadFail: Boolean): Unit = {
 
       immutableSeq(settings.config.getStringList(key)).foreach { fqcn =>
-        dynamicAccess.getObjectFor[AnyRef](fqcn).recoverWith {
-          case firstProblem =>
-            dynamicAccess.createInstanceFor[AnyRef](fqcn, Nil).recoverWith { case _ => Failure(firstProblem) }
+        dynamicAccess.getObjectFor[AnyRef](fqcn).recoverWith { case firstProblem =>
+          dynamicAccess.createInstanceFor[AnyRef](fqcn, Nil).recoverWith { case _ => Failure(firstProblem) }
         } match {
           case Success(p: ExtensionIdProvider) =>
             registerExtension(p.lookup)
@@ -1314,16 +1267,14 @@ private[akka] class ActorSystemImpl(
      */
     final def add(r: Runnable): Unit = {
       @tailrec def addRec(r: Runnable, p: Promise[T]): Unit = ref.get match {
-        case null                               => throw new RejectedExecutionException("ActorSystem already terminated.")
+        case null => throw new RejectedExecutionException("ActorSystem already terminated.")
         case some if ref.compareAndSet(some, p) => some.completeWith(p.future.andThen { case _ => r.run() })
         case _                                  => addRec(r, p)
       }
       addRec(r, Promise[T]())
     }
 
-    /**
-     * Returns a Future which will be completed once all registered callbacks have been executed.
-     */
+    /** Returns a Future which will be completed once all registered callbacks have been executed. */
     def terminationFuture: Future[T] = done.future
   }
 

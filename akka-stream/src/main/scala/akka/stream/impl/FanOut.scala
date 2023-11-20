@@ -15,9 +15,7 @@ import akka.stream.ActorAttributes
 import akka.stream.Attributes
 import akka.util.unused
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object FanOut {
 
   final case class SubstreamRequestMore(id: Int, demand: Long)
@@ -228,9 +226,8 @@ import akka.util.unused
     def subreceive: SubReceive =
       new SubReceive({
         case ExposedPublishers(publishers) =>
-          publishers.zip(outputs).foreach {
-            case (pub, output) =>
-              output.subreceive(ExposedPublisher(pub))
+          publishers.zip(outputs).foreach { case (pub, output) =>
+            output.subreceive(ExposedPublisher(pub))
           }
 
         case SubstreamRequestMore(id, demand) =>
@@ -257,9 +254,7 @@ import akka.util.unused
 
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @DoNotInherit private[akka] abstract class FanOut(attributes: Attributes, val outputCount: Int)
     extends Actor
     with ActorLogging
@@ -304,17 +299,13 @@ import akka.util.unused
   def receive = primaryInputs.subreceive.orElse[Any, Unit](outputBunch.subreceive)
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object Unzip {
   def props(attributes: Attributes): Props =
     Props(new Unzip(attributes)).withDeploy(Deploy.local)
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] class Unzip(attributes: Attributes) extends FanOut(attributes, outputCount = 2) {
   outputBunch.markAllOutputs()
 

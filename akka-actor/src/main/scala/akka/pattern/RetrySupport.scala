@@ -11,9 +11,7 @@ import scala.util.control.NonFatal
 import akka.actor.Scheduler
 import akka.util.ConstantFun
 
-/**
- * This trait provides the retry utility function
- */
+/** This trait provides the retry utility function */
 trait RetrySupport {
 
   /**
@@ -58,8 +56,8 @@ trait RetrySupport {
    *   shouldRetry = { (ex) => ex.isInstanceOf[IllegalArgumentException] })
    * }}}
    */
-  def retry[T](attempt: () => Future[T], shouldRetry: Throwable => Boolean, attempts: Int)(
-      implicit ec: ExecutionContext): Future[T] =
+  def retry[T](attempt: () => Future[T], shouldRetry: Throwable => Boolean, attempts: Int)(implicit
+      ec: ExecutionContext): Future[T] =
     RetrySupport.retry(attempt, attempts, ConstantFun.scalaAnyToNone, attempted = 0, shouldRetry)(ec, null)
 
   /**
@@ -171,8 +169,8 @@ trait RetrySupport {
    * )
    * }}}
    */
-  def retry[T](attempt: () => Future[T], attempts: Int, delay: FiniteDuration)(
-      implicit ec: ExecutionContext,
+  def retry[T](attempt: () => Future[T], attempts: Int, delay: FiniteDuration)(implicit
+      ec: ExecutionContext,
       scheduler: Scheduler): Future[T] = {
     retry(attempt, attempts, _ => Some(delay))
   }
@@ -202,8 +200,7 @@ trait RetrySupport {
    * )
    * }}}
    */
-  def retry[T](attempt: () => Future[T], attempts: Int, delayFunction: Int => Option[FiniteDuration])(
-      implicit
+  def retry[T](attempt: () => Future[T], attempts: Int, delayFunction: Int => Option[FiniteDuration])(implicit
       ec: ExecutionContext,
       scheduler: Scheduler): Future[T] = {
     RetrySupport.retry(attempt, attempts, delayFunction, attempted = 0, ConstantFun.anyToTrue)
@@ -251,8 +248,8 @@ trait RetrySupport {
 
 object RetrySupport extends RetrySupport {
 
-  private def retry[T](attempt: () => Future[T], maxAttempts: Int, attempted: Int)(
-      implicit ec: ExecutionContext): Future[T] =
+  private def retry[T](attempt: () => Future[T], maxAttempts: Int, attempted: Int)(implicit
+      ec: ExecutionContext): Future[T] =
     retry(attempt, maxAttempts, ConstantFun.scalaAnyToNone, attempted, ConstantFun.anyToTrue)(ec, null)
 
   private def retry[T](

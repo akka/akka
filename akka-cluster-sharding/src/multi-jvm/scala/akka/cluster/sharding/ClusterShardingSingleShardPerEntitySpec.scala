@@ -11,9 +11,7 @@ import akka.remote.testconductor.RoleName
 import akka.remote.testkit.Direction
 import akka.testkit._
 
-/**
- * one-to-one mapping between shards and entities is not efficient but some use that anyway
- */
+/** one-to-one mapping between shards and entities is not efficient but some use that anyway */
 object ClusterShardingSingleShardPerEntitySpecConfig
     extends MultiNodeClusterShardingConfig(additionalConfig = "akka.cluster.sharding.updating-state-timeout = 1s") {
 

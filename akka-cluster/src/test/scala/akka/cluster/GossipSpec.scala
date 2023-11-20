@@ -96,7 +96,7 @@ class GossipSpec extends AnyWordSpec with Matchers {
 
     "not reach convergence when unreachable" in {
       val r1 = Reachability.empty.unreachable(b1.uniqueAddress, a1.uniqueAddress)
-      val g1 = (Gossip(members = SortedSet(a1, b1), overview = GossipOverview(reachability = r1)))
+      val g1 = Gossip(members = SortedSet(a1, b1), overview = GossipOverview(reachability = r1))
         .seen(a1.uniqueAddress)
         .seen(b1.uniqueAddress)
       state(g1, b1).convergence(Set.empty) should ===(false)
@@ -107,7 +107,7 @@ class GossipSpec extends AnyWordSpec with Matchers {
     "reach convergence when downed node has observed unreachable" in {
       // e3 is Down
       val r1 = Reachability.empty.unreachable(e3.uniqueAddress, a1.uniqueAddress)
-      val g1 = (Gossip(members = SortedSet(a1, b1, e3), overview = GossipOverview(reachability = r1)))
+      val g1 = Gossip(members = SortedSet(a1, b1, e3), overview = GossipOverview(reachability = r1))
         .seen(a1.uniqueAddress)
         .seen(b1.uniqueAddress)
         .seen(e3.uniqueAddress)
@@ -219,10 +219,9 @@ class GossipSpec extends AnyWordSpec with Matchers {
       state(g1).youngestMember should ===(b1)
       val g2 = Gossip(
         members = SortedSet(a2, b1.copyUp(3), e1),
-        overview = GossipOverview(
-          reachability = Reachability.empty
-            .unreachable(a2.uniqueAddress, b1.uniqueAddress)
-            .unreachable(a2.uniqueAddress, e1.uniqueAddress)))
+        overview = GossipOverview(reachability = Reachability.empty
+          .unreachable(a2.uniqueAddress, b1.uniqueAddress)
+          .unreachable(a2.uniqueAddress, e1.uniqueAddress)))
       state(g2).youngestMember should ===(b1)
       val g3 = Gossip(members = SortedSet(a2, b1.copyUp(3), e2.copyUp(4)))
       state(g3).youngestMember should ===(e2)
@@ -391,10 +390,9 @@ class GossipSpec extends AnyWordSpec with Matchers {
     "clear out a bunch of stuff when removing a node" in {
       val g = Gossip(
         members = SortedSet(dc1a1, dc1b1, dc2d2),
-        overview = GossipOverview(
-          reachability = Reachability.empty
-            .unreachable(dc1b1.uniqueAddress, dc2d2.uniqueAddress)
-            .unreachable(dc2d2.uniqueAddress, dc1b1.uniqueAddress)))
+        overview = GossipOverview(reachability = Reachability.empty
+          .unreachable(dc1b1.uniqueAddress, dc2d2.uniqueAddress)
+          .unreachable(dc2d2.uniqueAddress, dc1b1.uniqueAddress)))
         .:+(VectorClock.Node(Gossip.vclockName(dc1b1.uniqueAddress)))
         .:+(VectorClock.Node(Gossip.vclockName(dc2d2.uniqueAddress)))
         .remove(dc1b1.uniqueAddress, System.currentTimeMillis())
@@ -422,7 +420,7 @@ class GossipSpec extends AnyWordSpec with Matchers {
         .remove(dc2d1.uniqueAddress, System.currentTimeMillis())
 
       gdc2.tombstones.keys should contain(dc2d1.uniqueAddress)
-      gdc2.members should not contain (dc2d1)
+      gdc2.members should not contain dc2d1
       gdc2.overview.reachability.records.filter(r =>
         r.subject == dc2d1.uniqueAddress || r.observer == dc2d1.uniqueAddress) should be(empty)
       gdc2.overview.reachability.versions.keys should not contain (dc2d1.uniqueAddress)
@@ -432,7 +430,7 @@ class GossipSpec extends AnyWordSpec with Matchers {
       merged1.members should ===(SortedSet(dc1a1, dc1b1, dc2c1))
 
       merged1.tombstones.keys should contain(dc2d1.uniqueAddress)
-      merged1.members should not contain (dc2d1)
+      merged1.members should not contain dc2d1
       merged1.overview.reachability.records.filter(r =>
         r.subject == dc2d1.uniqueAddress || r.observer == dc2d1.uniqueAddress) should be(empty)
       merged1.overview.reachability.versions.keys should not contain (dc2d1.uniqueAddress)

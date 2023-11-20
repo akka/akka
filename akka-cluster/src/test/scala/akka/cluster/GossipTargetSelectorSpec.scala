@@ -182,7 +182,8 @@ class GossipTargetSelectorSpec extends AnyWordSpec with Matchers {
         Gossip(members = SortedSet(aDc1, bDc1, cDc1)),
         aDc1,
         aDc1.dataCenter,
-        crossDcConnections = 1) // means only a e and g are oldest
+        crossDcConnections = 1
+      ) // means only a e and g are oldest
 
       val randomNodes = defaultSelector.randomNodesForFullGossip(state, 3)
 
@@ -194,7 +195,8 @@ class GossipTargetSelectorSpec extends AnyWordSpec with Matchers {
         Gossip(members = SortedSet(aDc1, bDc1, cDc1, eDc2, fDc2, gDc3, hDc3)),
         bDc1,
         bDc1.dataCenter,
-        crossDcConnections = 1) // means only a, e and g are oldest
+        crossDcConnections = 1
+      ) // means only a, e and g are oldest
 
       val randomNodes = defaultSelector.randomNodesForFullGossip(state, 3)
 
@@ -206,7 +208,8 @@ class GossipTargetSelectorSpec extends AnyWordSpec with Matchers {
         Gossip(members = SortedSet(aDc1, bDc1, cDc1, eDc2, fDc2)),
         aDc1,
         aDc1.dataCenter,
-        crossDcConnections = 1) // means only a and e are oldest
+        crossDcConnections = 1
+      ) // means only a and e are oldest
 
       val randomNodes = defaultSelector.randomNodesForFullGossip(state, 3)
 

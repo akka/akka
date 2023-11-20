@@ -25,9 +25,7 @@ import akka.serialization.BaseSerializer
 import akka.serialization.SerializerWithStringManifest
 import akka.util.ccompat.JavaConverters._
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] class ReliableDeliverySerializer(val system: akka.actor.ExtendedActorSystem)
     extends SerializerWithStringManifest
     with BaseSerializer {
@@ -173,8 +171,8 @@ import akka.util.ccompat.JavaConverters._
     val b = ReliableDelivery.State.newBuilder()
     b.setCurrentSeqNr(m.currentSeqNr)
     b.setHighestConfirmedSeqNr(m.highestConfirmedSeqNr)
-    b.addAllConfirmed(m.confirmedSeqNr.map {
-      case (qualifier, (seqNr, timestamp)) => durableQueueConfirmedToProto(qualifier, seqNr, timestamp)
+    b.addAllConfirmed(m.confirmedSeqNr.map { case (qualifier, (seqNr, timestamp)) =>
+      durableQueueConfirmedToProto(qualifier, seqNr, timestamp)
     }.asJava)
     b.addAllUnconfirmed(m.unconfirmed.map(durableQueueMessageSentToProto).asJava)
     b.build().toByteArray()

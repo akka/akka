@@ -15,9 +15,7 @@ import akka.persistence.testkit.PersistenceTestKitPlugin
 import akka.persistence.testkit.ProcessingPolicy
 import akka.persistence.testkit.scaladsl.PersistenceTestKit
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[testkit] object InMemStorageExtension extends ExtensionId[InMemStorageExtension] with ExtensionIdProvider {
 
@@ -30,9 +28,7 @@ private[testkit] object InMemStorageExtension extends ExtensionId[InMemStorageEx
 
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 final class InMemStorageExtension(system: ExtendedActorSystem) extends Extension {
 
@@ -46,13 +42,15 @@ final class InMemStorageExtension(system: ExtendedActorSystem) extends Extension
   def resetPolicy(): Unit = defaultStorage().resetPolicy()
 
   def storageFor(key: String): EventStorage =
-    stores.computeIfAbsent(key, _ => {
-      // we don't really care about the key here, we just want separate instances
-      if (PersistenceTestKit.Settings(system).serialize) {
-        new SerializedEventStorageImpl(system)
-      } else {
-        new SimpleEventStorageImpl
-      }
-    })
+    stores.computeIfAbsent(
+      key,
+      _ => {
+        // we don't really care about the key here, we just want separate instances
+        if (PersistenceTestKit.Settings(system).serialize) {
+          new SerializedEventStorageImpl(system)
+        } else {
+          new SimpleEventStorageImpl
+        }
+      })
 
 }

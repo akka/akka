@@ -42,9 +42,7 @@ object ServiceDiscovery {
       extends DeadLetterSuppression
       with NoSerializationVerificationNeeded {
 
-    /**
-     * Java API
-     */
+    /** Java API */
     def getAddresses: java.util.List[ResolvedTarget] = {
       import akka.util.ccompat.JavaConverters._
       addresses.asJava
@@ -96,15 +94,11 @@ object ServiceDiscovery {
   final class ResolvedTarget(val host: String, val port: Option[Int], val address: Option[InetAddress])
       extends NoSerializationVerificationNeeded {
 
-    /**
-     * Java API
-     */
+    /** Java API */
     def getPort: Optional[Int] =
       port.asJava
 
-    /**
-     * Java API
-     */
+    /** Java API */
     def getAddress: Optional[InetAddress] =
       address.asJava
 
@@ -153,15 +147,11 @@ final class Lookup(val serviceName: String, val portName: Option[String], val pr
    */
   def withProtocol(value: String): Lookup = copy(protocol = Some(value))
 
-  /**
-   * Java API
-   */
+  /** Java API */
   def getPortName: Optional[String] =
     portName.asJava
 
-  /**
-   * Java API
-   */
+  /** Java API */
   def getProtocol: Optional[String] =
     protocol.asJava
 
@@ -197,9 +187,7 @@ case object Lookup {
    */
   def apply(serviceName: String): Lookup = new Lookup(serviceName, None, None)
 
-  /**
-   * Create a service Lookup with `serviceName`, optional `portName` and optional `protocol`.
-   */
+  /** Create a service Lookup with `serviceName`, optional `portName` and optional `protocol`. */
   def apply(serviceName: String, portName: Option[String], protocol: Option[String]): Lookup =
     new Lookup(serviceName, portName, protocol)
 
@@ -265,9 +253,7 @@ case object Lookup {
         throw new IllegalArgumentException(s"Unable to create Lookup from passed SRV string, invalid format: $str")
     }
 
-  /**
-   * Returns true if passed string conforms with SRV format. Otherwise returns false.
-   */
+  /** Returns true if passed string conforms with SRV format. Otherwise returns false. */
   def isValidSrv(srv: String): Boolean =
     srv match {
       case SrvQuery(_, _, serviceName) => validDomainName(serviceName)
@@ -279,10 +265,7 @@ case object Lookup {
 
 }
 
-/**
- * Implement to provide a service discovery method
- *
- */
+/** Implement to provide a service discovery method */
 abstract class ServiceDiscovery {
 
   import ServiceDiscovery._
@@ -319,7 +302,6 @@ abstract class ServiceDiscovery {
    * eagerness to wait for a result for this specific lookup.
    *
    * The returned future should be failed once resolveTimeout has passed with a [[DiscoveryTimeoutException]].
-   *
    */
   def lookup(query: Lookup, resolveTimeout: java.time.Duration): CompletionStage[Resolved] = {
     import scala.compat.java8.FutureConverters._

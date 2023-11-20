@@ -17,8 +17,7 @@ import akka.testkit.WithLogCapturing
 object ClusterShardingInternalsSpec {
   case class HandOffStopMessage() extends NoSerializationVerificationNeeded
   class EmptyHandlerActor extends Actor {
-    override def receive: Receive = {
-      case _ =>
+    override def receive: Receive = { case _ =>
     }
 
     override def postStop(): Unit = {
@@ -27,14 +26,16 @@ object ClusterShardingInternalsSpec {
   }
 }
 
-class ClusterShardingInternalsSpec extends AkkaSpec("""
+class ClusterShardingInternalsSpec
+    extends AkkaSpec("""
     |akka.actor.provider = cluster
     |akka.remote.artery.canonical.port = 0
     |akka.loglevel = DEBUG
     |akka.cluster.sharding.verbose-debug-logging = on
     |akka.cluster.sharding.fail-on-invalid-entity-state-transition = on
     |akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
-    |""".stripMargin) with WithLogCapturing {
+    |""".stripMargin)
+    with WithLogCapturing {
   import ClusterShardingInternalsSpec._
 
   case class StartingProxy(

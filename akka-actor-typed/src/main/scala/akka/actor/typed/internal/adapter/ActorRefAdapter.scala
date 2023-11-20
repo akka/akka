@@ -12,9 +12,7 @@ import akka.actor.InvalidMessageException
 import akka.annotation.InternalApi
 import akka.dispatch.sysmsg
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[typed] class ActorRefAdapter[-T](val classicRef: classic.InternalActorRef)
     extends ActorRef[T]
     with internal.ActorRefImpl[T]

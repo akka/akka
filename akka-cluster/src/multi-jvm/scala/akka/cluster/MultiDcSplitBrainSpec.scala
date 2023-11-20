@@ -23,7 +23,9 @@ object MultiDcSplitBrainMultiJvmSpec extends MultiNodeConfig {
   val fourth = role("fourth")
   val fifth = role("fifth")
 
-  commonConfig(ConfigFactory.parseString("""
+  commonConfig(
+    ConfigFactory
+      .parseString("""
       akka.loglevel = DEBUG # issue #24955
       akka.cluster.debug.verbose-heartbeat-logging = on
       akka.cluster.debug.verbose-gossip-logging = on
@@ -39,7 +41,8 @@ object MultiDcSplitBrainMultiJvmSpec extends MultiNodeConfig {
         downing-provider-class = akka.cluster.testkit.AutoDowning
         testkit.auto-down-unreachable-after = 1s
       }
-    """).withFallback(MultiNodeClusterSpec.clusterConfig))
+    """)
+      .withFallback(MultiNodeClusterSpec.clusterConfig))
 
   nodeConfig(first, second)(ConfigFactory.parseString("""
       akka.cluster.multi-data-center.self-data-center = "dc1"
@@ -251,10 +254,12 @@ abstract class MultiDcSplitBrainSpec extends MultiNodeClusterSpec(MultiDcSplitBr
         val port = Cluster(system).selfAddress.port.get
         val restartedSystem = ActorSystem(
           system.name,
-          ConfigFactory.parseString(s"""
+          ConfigFactory
+            .parseString(s"""
             akka.remote.artery.canonical.port = $port
             akka.coordinated-shutdown.terminate-actor-system = on
-            """).withFallback(system.settings.config))
+            """)
+            .withFallback(system.settings.config))
         Cluster(restartedSystem).join(thirdAddress)
         Await.ready(restartedSystem.whenTerminated, remaining)
       }
@@ -297,9 +302,9 @@ abstract class MultiDcSplitBrainSpec extends MultiNodeClusterSpec(MultiDcSplitBr
       }
 
       runOn(first, second, third) {
-        awaitAssert({
+        awaitAssert {
           clusterView.members.map(_.address) should ===(Set(address(first), address(second), address(third)))
-        })
+        }
       }
       runOn(remainingRoles: _*) {
         enterBarrier("restarted-fifth-removed")

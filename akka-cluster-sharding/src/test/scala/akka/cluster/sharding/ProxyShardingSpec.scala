@@ -34,8 +34,8 @@ class ProxyShardingSpec extends AkkaSpec(ProxyShardingSpec.config) with WithLogC
     override def entityId(message: Any) = "dummyId"
   }
 
-  val idExtractor: ShardRegion.ExtractEntityId = {
-    case msg => (msg.toString, msg)
+  val idExtractor: ShardRegion.ExtractEntityId = { case msg =>
+    (msg.toString, msg)
   }
 
   val shardResolver: ShardRegion.ExtractShardId = {

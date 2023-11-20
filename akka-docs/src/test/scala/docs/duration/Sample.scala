@@ -7,7 +7,7 @@ package docs.duration
 import language.postfixOps
 
 object Scala {
-  //#dsl
+  // #dsl
   import scala.concurrent.duration._
 
   val fivesec = 5.seconds
@@ -16,11 +16,11 @@ object Scala {
   assert(diff < fivesec)
   val fourmillis = threemillis * 4 / 3 // you cannot write it the other way around
   val n = threemillis / (1 millisecond)
-  //#dsl
+  // #dsl
 
-  //#deadline
+  // #deadline
   val deadline = 10.seconds.fromNow
   // do something
   val rest = deadline.timeLeft
-  //#deadline
+  // #deadline
 }

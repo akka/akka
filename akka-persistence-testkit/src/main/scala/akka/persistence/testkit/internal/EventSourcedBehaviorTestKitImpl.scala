@@ -31,9 +31,7 @@ import akka.persistence.typed.internal.EventSourcedBehaviorImpl
 import akka.persistence.typed.internal.EventSourcedBehaviorImpl.GetStateReply
 import akka.stream.scaladsl.Sink
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object EventSourcedBehaviorTestKitImpl {
   final case class CommandResultImpl[Command, Event, State, Reply](
       command: Command,
@@ -77,9 +75,7 @@ import akka.stream.scaladsl.Sink
   final case class RestartResultImpl[State](state: State) extends RestartResult[State]
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] class EventSourcedBehaviorTestKitImpl[Command, Event, State](
     actorTestKit: ActorTestKit,
     behavior: Behavior[Command],
@@ -90,7 +86,7 @@ import akka.stream.scaladsl.Sink
 
   private def system: ActorSystem[_] = actorTestKit.system
   if (system.settings.config.getBoolean("akka.persistence.testkit.events.serialize") ||
-      system.settings.config.getBoolean("akka.persistence.testkit.snapshots.serialize")) {
+    system.settings.config.getBoolean("akka.persistence.testkit.snapshots.serialize")) {
     system.log.warn(
       "Persistence TestKit serialization enabled when using EventSourcedBehaviorTestKit, this is not intended. " +
       "make sure you create the system used in the test with the config from EventSourcedBehaviorTestKit.config " +
@@ -148,14 +144,15 @@ import akka.stream.scaladsl.Sink
 
     actor ! command
 
-    val reply = try {
-      replyProbe.receiveMessage()
-    } catch {
-      case NonFatal(_) =>
-        throw new AssertionError(s"Missing expected reply for command [$command].")
-    } finally {
-      replyProbe.stop()
-    }
+    val reply =
+      try {
+        replyProbe.receiveMessage()
+      } catch {
+        case NonFatal(_) =>
+          throw new AssertionError(s"Missing expected reply for command [$command].")
+      } finally {
+        replyProbe.stop()
+      }
 
     val newState = getState()
     val newEvents = getEvents(seqNrBefore + 1)
@@ -255,7 +252,7 @@ import akka.stream.scaladsl.Sink
     stateOption.foreach { state =>
       snapshotTestKit match {
         case Some(kit) => kit.persistForRecovery(persistenceId.id, (SnapshotMeta(0), state))
-        case _         => throw new IllegalArgumentException("Cannot initialize from state when snapshots are not used.")
+        case _ => throw new IllegalArgumentException("Cannot initialize from state when snapshots are not used.")
       }
     }
     persistenceTestKit.persistForRecovery(persistenceId.id, collection.immutable.Seq.empty ++ events)

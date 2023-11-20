@@ -58,9 +58,9 @@ class JavaLoggerSpec extends AkkaSpec(JavaLoggerSpec.config) {
 
       val record = expectMsgType[logging.LogRecord]
 
-      record should not be (null)
-      record.getMillis should not be (0)
-      record.getThreadID should not be (0)
+      record should not be null
+      record.getMillis should not be 0
+      record.getThreadID should not be 0
       record.getLevel should ===(logging.Level.SEVERE)
       record.getMessage should ===("Simulated error")
       record.getThrown.getClass should ===(classOf[JavaLoggerSpec.SimulatedExc])
@@ -73,9 +73,9 @@ class JavaLoggerSpec extends AkkaSpec(JavaLoggerSpec.config) {
 
       val record = expectMsgType[logging.LogRecord]
 
-      record should not be (null)
-      record.getMillis should not be (0)
-      record.getThreadID should not be (0)
+      record should not be null
+      record.getMillis should not be 0
+      record.getThreadID should not be 0
       record.getLevel should ===(logging.Level.INFO)
       record.getMessage should ===("3 is the magic number")
       record.getThrown should ===(null)

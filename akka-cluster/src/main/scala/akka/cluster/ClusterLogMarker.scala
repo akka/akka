@@ -16,9 +16,7 @@ import akka.event.LogMarker
  */
 object ClusterLogMarker {
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[akka] object Properties {
     val MemberStatus = "akkaMemberStatus"
     val SbrDecision = "akkaSbrDecision"
@@ -38,9 +36,7 @@ object ClusterLogMarker {
   def reachable(node: Address): LogMarker =
     LogMarker("akkaReachable", Map(LogMarker.Properties.RemoteAddress -> node))
 
-  /**
-   * Marker "akkaHeartbeatStarvation" of log event when scheduled heartbeat was delayed.
-   */
+  /** Marker "akkaHeartbeatStarvation" of log event when scheduled heartbeat was delayed. */
   val heartbeatStarvation: LogMarker =
     LogMarker("akkaHeartbeatStarvation")
 
@@ -51,15 +47,11 @@ object ClusterLogMarker {
   val leaderIncapacitated: LogMarker =
     LogMarker("akkaClusterLeaderIncapacitated")
 
-  /**
-   * Marker "akkaClusterLeaderRestored" of log event when leader can perform its duties again.
-   */
+  /** Marker "akkaClusterLeaderRestored" of log event when leader can perform its duties again. */
   val leaderRestored: LogMarker =
     LogMarker("akkaClusterLeaderRestored")
 
-  /**
-   * Marker "akkaJoinFailed" of log event when node couldn't join seed nodes.
-   */
+  /** Marker "akkaJoinFailed" of log event when node couldn't join seed nodes. */
   val joinFailed: LogMarker =
     LogMarker("akkaJoinFailed")
 
@@ -134,9 +126,7 @@ object ClusterLogMarker {
   def sbrLeaseDenied(reverseDecision: DowningStrategy.Decision): LogMarker =
     LogMarker("akkaSbrLeaseDenied", Map(Properties.SbrDecision -> reverseDecision))
 
-  /**
-   * Marker "akkaSbrLeaseReleased" of log event when Split Brain Resolver has released the lease.
-   */
+  /** Marker "akkaSbrLeaseReleased" of log event when Split Brain Resolver has released the lease. */
   val sbrLeaseReleased: LogMarker =
     LogMarker("akkaSbrLeaseReleased")
 

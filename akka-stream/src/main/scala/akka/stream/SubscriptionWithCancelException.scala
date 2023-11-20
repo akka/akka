@@ -25,9 +25,7 @@ trait SubscriptionWithCancelException extends Subscription {
 }
 object SubscriptionWithCancelException {
 
-  /**
-   * Not for user extension
-   */
+  /** Not for user extension */
   @DoNotInherit
   sealed abstract class NonFailureCancellation extends RuntimeException with NoStackTrace
   case object NoMoreElementsNeeded extends NonFailureCancellation

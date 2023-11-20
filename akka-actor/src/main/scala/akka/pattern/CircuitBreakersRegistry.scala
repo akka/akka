@@ -19,9 +19,7 @@ import akka.actor.{
 import akka.pattern.internal.CircuitBreakerTelemetryProvider
 import akka.util.ccompat.JavaConverters._
 
-/**
- * Companion object providing factory methods for Circuit Breaker which runs callbacks in caller's thread
- */
+/** Companion object providing factory methods for Circuit Breaker which runs callbacks in caller's thread */
 object CircuitBreakersRegistry extends ExtensionId[CircuitBreakersRegistry] with ExtensionIdProvider {
 
   /**
@@ -31,9 +29,7 @@ object CircuitBreakersRegistry extends ExtensionId[CircuitBreakersRegistry] with
   override def createExtension(system: ExtendedActorSystem): CircuitBreakersRegistry =
     new CircuitBreakersRegistry(system)
 
-  /**
-   * Returns the canonical ExtensionId for this Extension
-   */
+  /** Returns the canonical ExtensionId for this Extension */
   override def lookup: ExtensionId[_ <: Extension] = CircuitBreakersRegistry
 
   /**
@@ -49,9 +45,7 @@ object CircuitBreakersRegistry extends ExtensionId[CircuitBreakersRegistry] with
   override def get(system: ClassicActorSystemProvider): CircuitBreakersRegistry = super.get(system)
 }
 
-/**
- * A CircuitBreakersPanel is a central point collecting all circuit breakers in Akka.
- */
+/** A CircuitBreakersPanel is a central point collecting all circuit breakers in Akka. */
 final class CircuitBreakersRegistry(system: ExtendedActorSystem) extends Extension {
 
   private val breakers = new ConcurrentHashMap[String, CircuitBreaker]

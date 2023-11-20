@@ -33,8 +33,8 @@ object OptionalSnapshotStoreSpec {
       commandHandler = CommandHandler.command { _ =>
         Effect.persist(Event()).thenRun(probe.ref ! _)
       },
-      eventHandler = {
-        case (_, _) => State()
+      eventHandler = { case (_, _) =>
+        State()
       }).snapshotWhen { case _ => true }
 
   def persistentBehaviorWithSnapshotPlugin(probe: TestProbe[State]) =
@@ -42,14 +42,17 @@ object OptionalSnapshotStoreSpec {
 
 }
 
-class OptionalSnapshotStoreSpec extends ScalaTestWithActorTestKit(s"""
+class OptionalSnapshotStoreSpec
+    extends ScalaTestWithActorTestKit(s"""
     akka.persistence.publish-plugin-commands = on
     akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
     akka.persistence.journal.inmem.test-serialization = on
 
     # snapshot store plugin is NOT defined, things should still work
     akka.persistence.snapshot-store.local.dir = "target/snapshots-${classOf[OptionalSnapshotStoreSpec].getName}/"
-    """) with AnyWordSpecLike with LogCapturing {
+    """)
+    with AnyWordSpecLike
+    with LogCapturing {
 
   import OptionalSnapshotStoreSpec._
 

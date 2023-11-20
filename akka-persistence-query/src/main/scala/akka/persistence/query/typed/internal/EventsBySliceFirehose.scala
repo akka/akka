@@ -220,7 +220,8 @@ import akka.util.unused
           val fastestConsumer = trackingValues.maxBy(_.offsetTimestamp)
           val behind = elementsBehind(fastestConsumer.history, slowestConsumer.history)
           if (behind > 0) {
-            val diffSlowestFastestsMillis = fastestConsumer.offsetTimestamp.toEpochMilli - slowestConsumer.offsetTimestamp.toEpochMilli
+            val diffSlowestFastestsMillis =
+              fastestConsumer.offsetTimestamp.toEpochMilli - slowestConsumer.offsetTimestamp.toEpochMilli
             val fastestLagMillis = now.toEpochMilli - fastestConsumer.offsetTimestamp.toEpochMilli
 
             val diffFastest = fastestConsumer.offsetTimestamp.toEpochMilli - tracking.offsetTimestamp.toEpochMilli
@@ -288,9 +289,9 @@ import akka.util.unused
           if (confirmedSlowConsumers.nonEmpty) {
             if (log.isInfoEnabled) {
               val behindMillis = fastestConsumer.offsetTimestamp.toEpochMilli - confirmedSlowConsumers
-                  .maxBy(_.offsetTimestamp)
-                  .offsetTimestamp
-                  .toEpochMilli
+                .maxBy(_.offsetTimestamp)
+                .offsetTimestamp
+                .toEpochMilli
               log.info(
                 s"Firehose entityType [$entityType] sliceRange [$sliceRangeStr], [${confirmedSlowConsumers.size}] " +
                 s"slow consumers are aborted [${confirmedSlowConsumers.map(_.consumerId).mkString(", ")}], " +
@@ -345,7 +346,8 @@ import akka.util.unused
             else "same as slowest"
           val consumerBehind = elementsBehind(fastestConsumer.history, tracking.history)
 
-          val logMessage = s"Firehose entityType [$entityType] sliceRange [$sliceRangeStr] consumer [${tracking.consumerId}], " +
+          val logMessage =
+            s"Firehose entityType [$entityType] sliceRange [$sliceRangeStr] consumer [${tracking.consumerId}], " +
             s"behind [$consumerBehind] events from fastest, " +
             s"$diffFastestStr, $diffSlowestStr, firehoseOnly [${tracking.firehoseOnly}]"
 
@@ -394,9 +396,7 @@ import akka.util.unused
     JDuration.between(from, to).compareTo(duration) > 0
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] class EventsBySliceFirehose(system: ActorSystem) extends Extension {
   import EventsBySliceFirehose._
   private val log = Logging(system, classOf[EventsBySliceFirehose])
@@ -568,9 +568,7 @@ import akka.util.unused
 
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object CatchupOrFirehose {
   private sealed trait Mode
   private case object CatchUpOnly extends Mode
@@ -580,9 +578,7 @@ import akka.util.unused
   private case class DeduplicationCacheEntry(pid: String, seqNr: Long, source: String)
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] class CatchupOrFirehose(
     consumerId: String,
     firehose: EventsBySliceFirehose.Firehose,
@@ -620,12 +616,14 @@ import akka.util.unused
 
       override protected def logSource: Class[_] = classOf[CatchupOrFirehose]
 
-      setHandler(out, new OutHandler {
-        override def onPull(): Unit = {
-          tryPushOutput()
-          tryPullAllIfNeeded()
-        }
-      })
+      setHandler(
+        out,
+        new OutHandler {
+          override def onPull(): Unit = {
+            tryPushOutput()
+            tryPullAllIfNeeded()
+          }
+        })
 
       setHandler(firehoseInlet, firehoseHandler)
       setHandler(catchupInlet, catchupHandler)

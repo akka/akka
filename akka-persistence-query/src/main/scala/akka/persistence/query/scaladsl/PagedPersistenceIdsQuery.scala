@@ -7,9 +7,7 @@ package akka.persistence.query.scaladsl
 import akka.NotUsed
 import akka.stream.scaladsl.Source
 
-/**
- * A plugin ReadJournal may optionally support this query by implementing this trait.
- */
+/** A plugin ReadJournal may optionally support this query by implementing this trait. */
 trait PagedPersistenceIdsQuery extends ReadJournal {
 
   /**

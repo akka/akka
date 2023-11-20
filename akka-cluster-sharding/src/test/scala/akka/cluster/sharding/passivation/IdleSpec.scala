@@ -10,13 +10,15 @@ import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 
 object IdleSpec {
-  val config: Config = ConfigFactory.parseString("""
+  val config: Config = ConfigFactory
+    .parseString("""
     akka.cluster.sharding {
       passivation {
         default-idle-strategy.idle-entity.timeout = 1s
       }
     }
-    """).withFallback(EntityPassivationSpec.config)
+    """)
+    .withFallback(EntityPassivationSpec.config)
 }
 
 class IdleSpec extends AbstractEntityPassivationSpec(IdleSpec.config, expectedEntities = 2) {

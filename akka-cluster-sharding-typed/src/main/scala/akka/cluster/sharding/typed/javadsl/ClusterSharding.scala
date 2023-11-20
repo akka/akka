@@ -207,14 +207,10 @@ abstract class ClusterSharding {
    */
   def entityRefFor[M](typeKey: EntityTypeKey[M], entityId: String, dataCenter: String): EntityRef[M]
 
-  /**
-   * Actor for querying Cluster Sharding state
-   */
+  /** Actor for querying Cluster Sharding state */
   def shardState: ActorRef[ClusterShardingQuery]
 
-  /**
-   * The default `ShardAllocationStrategy` is configured by `least-shard-allocation-strategy` properties.
-   */
+  /** The default `ShardAllocationStrategy` is configured by `least-shard-allocation-strategy` properties. */
   def defaultShardAllocationStrategy(settings: ClusterShardingSettings): ShardAllocationStrategy
 }
 
@@ -245,9 +241,7 @@ object Entity {
 
 }
 
-/**
- * Defines how the entity should be created. Used in [[ClusterSharding#init]].
- */
+/** Defines how the entity should be created. Used in [[ClusterSharding#init]]. */
 final class Entity[M, E] private (
     val createBehavior: JFunction[EntityContext[M], Behavior[M]],
     val typeKey: EntityTypeKey[M],
@@ -259,15 +253,11 @@ final class Entity[M, E] private (
     val role: Optional[String],
     val dataCenter: Optional[String]) {
 
-  /**
-   * [[akka.actor.typed.Props]] of the entity actors, such as dispatcher settings.
-   */
+  /** [[akka.actor.typed.Props]] of the entity actors, such as dispatcher settings. */
   def withEntityProps(newEntityProps: Props): Entity[M, E] =
     copy(entityProps = newEntityProps)
 
-  /**
-   * Additional settings, typically loaded from configuration.
-   */
+  /** Additional settings, typically loaded from configuration. */
   def withSettings(newSettings: ClusterShardingSettings): Entity[M, E] =
     copy(settings = Optional.ofNullable(newSettings))
 
@@ -281,7 +271,6 @@ final class Entity[M, E] private (
     copy(stopMessage = Optional.ofNullable(newStopMessage))
 
   /**
-   *
    * If a `messageExtractor` is not specified the messages are sent to the entities by wrapping
    * them in [[ShardingEnvelope]] with the entityId of the recipient actor. That envelope
    * is used by the [[HashCodeMessageExtractor]] for extracting entityId and shardId. The number of
@@ -300,9 +289,7 @@ final class Entity[M, E] private (
       role,
       dataCenter)
 
-  /**
-   *  Run the Entity actors on nodes with the given role.
-   */
+  /** Run the Entity actors on nodes with the given role. */
   def withRole(role: String): Entity[M, E] =
     copy(role = Optional.ofNullable(role))
 
@@ -342,9 +329,7 @@ final class Entity[M, E] private (
       dataCenter)
   }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi
   private[akka] def toScala: akka.cluster.sharding.typed.scaladsl.Entity[M, E] =
     new akka.cluster.sharding.typed.scaladsl.Entity(
@@ -405,23 +390,17 @@ object StartEntity {
  */
 @DoNotInherit abstract class EntityTypeKey[-T] { scaladslSelf: scaladsl.EntityTypeKey[T] =>
 
-  /**
-   * Name of the entity type.
-   */
+  /** Name of the entity type. */
   def name: String
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[akka] def asScala: scaladsl.EntityTypeKey[T] = scaladslSelf
 
 }
 
 object EntityTypeKey {
 
-  /**
-   * Creates an `EntityTypeKey`. The `name` must be unique.
-   */
+  /** Creates an `EntityTypeKey`. The `name` must be unique. */
   def create[T](messageClass: Class[T], name: String): EntityTypeKey[T] =
     EntityTypeKeyImpl(name, messageClass.getName)
 
@@ -443,14 +422,10 @@ object EntityTypeKey {
 @DoNotInherit abstract class EntityRef[-M] extends RecipientRef[M] {
   scaladslSelf: scaladsl.EntityRef[M] with InternalRecipientRef[M] =>
 
-  /**
-   * The identifier for the particular entity referenced by this EntityRef.
-   */
+  /** The identifier for the particular entity referenced by this EntityRef. */
   def getEntityId: String = entityId
 
-  /**
-   * The name of the EntityTypeKey associated with this EntityRef
-   */
+  /** The name of the EntityTypeKey associated with this EntityRef */
   def getTypeKey: javadsl.EntityTypeKey[M] = typeKey.asJava
 
   /**
@@ -485,9 +460,7 @@ object EntityTypeKey {
    */
   def askWithStatus[Res](f: ActorRef[StatusReply[Res]] => M, timeout: Duration): CompletionStage[Res]
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[akka] def asScala: scaladsl.EntityRef[M] = scaladslSelf
 
 }

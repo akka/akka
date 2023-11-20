@@ -57,9 +57,8 @@ class DurableStateRevisionSpec
               case "snapshot" =>
                 Effect.persist("snapshot")
             }
-        }).receiveSignal {
-      case (_, RecoveryCompleted) =>
-        probe ! s"${DurableStateBehavior.lastSequenceNumber(ctx)} onRecoveryComplete"
+        }).receiveSignal { case (_, RecoveryCompleted) =>
+      probe ! s"${DurableStateBehavior.lastSequenceNumber(ctx)} onRecoveryComplete"
     }
   }
 

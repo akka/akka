@@ -34,15 +34,13 @@ object ClusterSingletonLeavingSpeedSpec {
       probe ! "stopped"
     }
 
-    override def receive: Receive = {
-      case msg => sender() ! msg
+    override def receive: Receive = { case msg =>
+      sender() ! msg
     }
   }
 }
 
-class ClusterSingletonLeavingSpeedSpec
-    extends AkkaSpec(
-      """
+class ClusterSingletonLeavingSpeedSpec extends AkkaSpec("""
   akka.loglevel = DEBUG
   akka.actor.provider = akka.cluster.ClusterActorRefProvider
   akka.cluster.downing-provider-class = akka.cluster.testkit.AutoDowning
@@ -131,11 +129,10 @@ class ClusterSingletonLeavingSpeedSpec
         (stoppedDuration, startedDuration)
       }
 
-      durations.zipWithIndex.foreach {
-        case ((stoppedDuration, startedDuration), i) =>
-          println(
-            s"Singleton $i stopped in ${stoppedDuration.toMillis} ms, started in ${startedDuration.toMillis} ms, " +
-            s"diff ${(startedDuration - stoppedDuration).toMillis} ms")
+      durations.zipWithIndex.foreach { case ((stoppedDuration, startedDuration), i) =>
+        println(
+          s"Singleton $i stopped in ${stoppedDuration.toMillis} ms, started in ${startedDuration.toMillis} ms, " +
+          s"diff ${(startedDuration - stoppedDuration).toMillis} ms")
       }
 
     }

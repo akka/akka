@@ -116,7 +116,7 @@ class AsyncDnsResolverIntegrationSpec
       val answer = (IO(Dns) ? DnsProtocol.Resolve(name)).mapTo[DnsProtocol.Resolved].futureValue
       answer.name shouldEqual name
       answer.records.collect { case r: CNameRecord => r.canonicalName }.toSet shouldEqual Set("a-single.bar.example")
-      answer.records.collect { case r: ARecord     => r.ip }.toSet shouldEqual Set(InetAddress.getByName("192.168.2.20"))
+      answer.records.collect { case r: ARecord => r.ip }.toSet shouldEqual Set(InetAddress.getByName("192.168.2.20"))
     }
 
     "resolve internal CNAME record" in {
@@ -124,7 +124,7 @@ class AsyncDnsResolverIntegrationSpec
       val answer = resolve(name)
       answer.name shouldEqual name
       answer.records.collect { case r: CNameRecord => r.canonicalName }.toSet shouldEqual Set("a-double.foo.test")
-      answer.records.collect { case r: ARecord     => r.ip }.toSet shouldEqual Set(
+      answer.records.collect { case r: ARecord => r.ip }.toSet shouldEqual Set(
         InetAddress.getByName("192.168.1.21"),
         InetAddress.getByName("192.168.1.22"))
     }

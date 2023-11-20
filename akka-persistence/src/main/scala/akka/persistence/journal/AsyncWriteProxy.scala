@@ -94,17 +94,13 @@ private[persistence] trait AsyncWriteProxy extends AsyncWriteJournal with Stash 
 
 }
 
-/**
- * INTERNAL API.
- */
+/** INTERNAL API. */
 private[persistence] object AsyncWriteProxy {
   final case class SetStore(ref: ActorRef)
   case object InitTimeout
 }
 
-/**
- * INTERNAL API.
- */
+/** INTERNAL API. */
 private[persistence] object AsyncWriteTarget {
   @SerialVersionUID(1L)
   final case class WriteMessages(messages: immutable.Seq[AtomicWrite])
@@ -123,9 +119,7 @@ private[persistence] object AsyncWriteTarget {
 
 }
 
-/**
- * Thrown if replay inactivity exceeds a specified timeout.
- */
+/** Thrown if replay inactivity exceeds a specified timeout. */
 @SerialVersionUID(1L)
 class AsyncReplayTimeoutException(msg: String) extends AkkaException(msg)
 

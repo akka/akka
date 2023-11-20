@@ -11,9 +11,7 @@ import org.slf4j.event.Level
 
 import akka.annotation.InternalApi
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object LogbackUtil {
   def loggerNameOrRoot(loggerName: String): String =
     if (loggerName == "") org.slf4j.Logger.ROOT_LOGGER_NAME else loggerName

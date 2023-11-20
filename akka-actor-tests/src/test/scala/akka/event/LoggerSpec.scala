@@ -27,40 +27,49 @@ import akka.util.Helpers
 
 object LoggerSpec {
 
-  val defaultConfig = ConfigFactory.parseString("""
+  val defaultConfig = ConfigFactory
+    .parseString("""
       akka {
         stdout-loglevel = "WARNING"
         loglevel = "DEBUG" # test verifies debug
         loggers = ["akka.event.LoggerSpec$TestLogger1"]
       }
-    """).withFallback(AkkaSpec.testConf)
+    """)
+    .withFallback(AkkaSpec.testConf)
 
-  val slowConfig = ConfigFactory.parseString("""
+  val slowConfig = ConfigFactory
+    .parseString("""
       akka {
         stdout-loglevel = "ERROR"
         loglevel = "ERROR"
         loggers = ["akka.event.LoggerSpec$SlowLogger"]
       }
-    """).withFallback(AkkaSpec.testConf)
+    """)
+    .withFallback(AkkaSpec.testConf)
 
-  val noLoggingConfig = ConfigFactory.parseString("""
+  val noLoggingConfig = ConfigFactory
+    .parseString("""
       akka {
         stdout-loglevel = "OFF"
         loglevel = "OFF"
         loggers = ["akka.event.LoggerSpec$TestLogger1"]
       }
-    """).withFallback(AkkaSpec.testConf)
+    """)
+    .withFallback(AkkaSpec.testConf)
 
   val multipleConfig =
-    ConfigFactory.parseString("""
+    ConfigFactory
+      .parseString("""
       akka {
         stdout-loglevel = "OFF"
         loglevel = "WARNING"
         loggers = ["akka.event.LoggerSpec$TestLogger1", "akka.event.LoggerSpec$TestLogger2"]
       }
-    """).withFallback(AkkaSpec.testConf)
+    """)
+      .withFallback(AkkaSpec.testConf)
 
-  val ticket3165Config = ConfigFactory.parseString(s"""
+  val ticket3165Config = ConfigFactory
+    .parseString(s"""
       akka {
         stdout-loglevel = "WARNING"
         loglevel = "DEBUG" # test verifies debug
@@ -74,15 +83,18 @@ object LoggerSpec {
           }
         }
       }
-    """).withFallback(AkkaSpec.testConf)
+    """)
+    .withFallback(AkkaSpec.testConf)
 
-  val ticket3671Config = ConfigFactory.parseString("""
+  val ticket3671Config = ConfigFactory
+    .parseString("""
       akka {
         stdout-loglevel = "WARNING"
         loglevel = "WARNING"
         loggers = ["akka.event.LoggerSpec$TestLogger1"]
       }
-    """).withFallback(AkkaSpec.testConf)
+    """)
+    .withFallback(AkkaSpec.testConf)
 
   final case class SetTarget(ref: ActorRef, qualifier: Int)
 
@@ -96,7 +108,7 @@ object LoggerSpec {
         sender() ! LoggerInitialized
       case SetTarget(ref, `qualifier`) =>
         target = Some(ref)
-        ref ! ("OK")
+        ref ! "OK"
       case event: LogEvent if !event.mdc.isEmpty =>
         print(event)
         target.foreach { _ ! event }
@@ -133,8 +145,8 @@ object LoggerSpec {
       always ++ perMessage
     }
 
-    def receive: Receive = {
-      case m: String => log.warning(m)
+    def receive: Receive = { case m: String =>
+      log.warning(m)
     }
   }
 
@@ -173,7 +185,7 @@ class LoggerSpec extends AnyWordSpec with Matchers {
 
     "log messages to standard output" in {
       val out = createSystemAndLogToBuffer("defaultLogger", defaultConfig, true)
-      out.size should be > (0)
+      out.size should be > 0
     }
 
     "drain logger queue on system.terminate" in {

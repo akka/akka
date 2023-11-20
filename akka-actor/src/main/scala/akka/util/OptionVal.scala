@@ -6,9 +6,7 @@ package akka.util
 
 import akka.annotation.InternalStableApi
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalStableApi
 private[akka] object OptionVal {
 
@@ -21,9 +19,7 @@ private[akka] object OptionVal {
 
   def none[A]: OptionVal[A] = None.asInstanceOf[OptionVal[A]]
 
-  /**
-   * Represents non-existent values, `null` values.
-   */
+  /** Represents non-existent values, `null` values. */
   val None = new OptionVal[Null](null)
 }
 
@@ -39,15 +35,11 @@ private[akka] object OptionVal {
 @InternalStableApi
 private[akka] final class OptionVal[+A](val x: A) extends AnyVal {
 
-  /**
-   * Returns true if the option is `OptionVal.None`, false otherwise.
-   */
+  /** Returns true if the option is `OptionVal.None`, false otherwise. */
   def isEmpty: Boolean =
     x == null
 
-  /**
-   * Returns false if the option is `OptionVal.None`, true otherwise.
-   */
+  /** Returns false if the option is `OptionVal.None`, true otherwise. */
   def isDefined: Boolean = !isEmpty
 
   /**
@@ -57,18 +49,14 @@ private[akka] final class OptionVal[+A](val x: A) extends AnyVal {
   def getOrElse[B >: A](default: B): B =
     if (x == null) default else x
 
-  /**
-   * Convert to `scala.Option`
-   */
+  /** Convert to `scala.Option` */
   def toOption: Option[A] =
     Option(x)
 
   def contains[B >: A](it: B): Boolean =
     x != null && x == it
 
-  /**
-   *  Returns the option's value if it is nonempty, or `null` if it is empty.
-   */
+  /** Returns the option's value if it is nonempty, or `null` if it is empty. */
   def orNull[A1 >: A](implicit ev: Null <:< A1): A1 = this.getOrElse(ev(null))
 
   /**

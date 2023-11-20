@@ -15,9 +15,7 @@ import akka.Done
 import akka.dispatch.ExecutionContexts
 import akka.stream.QueueOfferResult
 
-/**
- * This trait allows to have a queue as a data source for some stream.
- */
+/** This trait allows to have a queue as a data source for some stream. */
 trait SourceQueue[T] {
 
   /**
@@ -43,9 +41,7 @@ trait SourceQueue[T] {
   def watchCompletion(): CompletionStage[Done]
 }
 
-/**
- * This trait adds completion support to [[SourceQueue]].
- */
+/** This trait adds completion support to [[SourceQueue]]. */
 trait SourceQueueWithComplete[T] extends SourceQueue[T] {
 
   /**
@@ -76,9 +72,7 @@ trait SourceQueueWithComplete[T] extends SourceQueue[T] {
 
 object SourceQueueWithComplete {
 
-  /**
-   * Converts the queue into a `scaladsl.SourceQueueWithComplete`
-   */
+  /** Converts the queue into a `scaladsl.SourceQueueWithComplete` */
   def asScala[T](queue: SourceQueueWithComplete[T]): akka.stream.scaladsl.SourceQueueWithComplete[T] = {
     // would have been better to add `asScala` in SourceQueueWithComplete trait, but not doing
     // that for backwards compatibility reasons
@@ -109,22 +103,16 @@ trait SinkQueue[T] {
   def pull(): CompletionStage[Optional[T]]
 }
 
-/**
- * This trait adds cancel support to [[SinkQueue]].
- */
+/** This trait adds cancel support to [[SinkQueue]]. */
 trait SinkQueueWithCancel[T] extends SinkQueue[T] {
 
-  /**
-   * Cancels the stream. This method returns right away without waiting for actual finalizing the stream.
-   */
+  /** Cancels the stream. This method returns right away without waiting for actual finalizing the stream. */
   def cancel(): Unit
 }
 
 object SinkQueueWithCancel {
 
-  /**
-   * Converts the queue into a `scaladsl.SinkQueueWithCancel`
-   */
+  /** Converts the queue into a `scaladsl.SinkQueueWithCancel` */
   def asScala[T](queue: SinkQueueWithCancel[T]): akka.stream.scaladsl.SinkQueueWithCancel[T] = {
     // would have been better to add `asScala` in SinkQueueWithCancel trait, but not doing
     // that for backwards compatibility reasons

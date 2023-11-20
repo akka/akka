@@ -10,24 +10,18 @@ import scala.annotation.tailrec
 import scala.concurrent.duration.Deadline
 import scala.concurrent.duration.FiniteDuration
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[remote] object RestartCounter {
   final case class State(count: Int, deadline: Deadline)
 }
 
-/**
- * INTERNAL API: Thread safe "restarts with duration" counter
- */
+/** INTERNAL API: Thread safe "restarts with duration" counter */
 private[remote] class RestartCounter(maxRestarts: Int, restartTimeout: FiniteDuration) {
   import RestartCounter._
 
   private val state = new AtomicReference[State](State(0, Deadline.now + restartTimeout))
 
-  /**
-   * Current number of restarts.
-   */
+  /** Current number of restarts. */
   def count(): Int = state.get.count
 
   /**

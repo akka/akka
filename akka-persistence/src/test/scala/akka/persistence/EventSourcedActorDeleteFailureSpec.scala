@@ -27,8 +27,8 @@ object EventSourcedActorDeleteFailureSpec {
 
   class DoesNotHandleDeleteFailureActor(name: String) extends PersistentActor {
     override def persistenceId = name
-    override def receiveCommand: Receive = {
-      case DeleteTo(n) => deleteMessages(n)
+    override def receiveCommand: Receive = { case DeleteTo(n) =>
+      deleteMessages(n)
     }
     override def receiveRecover: Receive = Actor.emptyBehavior
   }
@@ -49,8 +49,7 @@ class EventSourcedActorDeleteFailureSpec
       PersistenceSpec.config(
         "inmem",
         "SnapshotFailureRobustnessSpec",
-        extraConfig = Some(
-          """
+        extraConfig = Some("""
   akka.persistence.journal.inmem.class = "akka.persistence.EventSourcedActorDeleteFailureSpec$DeleteFailingInmemJournal"
   """)))
     with ImplicitSender {

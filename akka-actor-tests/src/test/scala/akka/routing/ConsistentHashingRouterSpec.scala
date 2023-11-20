@@ -86,8 +86,8 @@ class ConsistentHashingRouterSpec
     }
 
     "select destination with defined hashMapping" in {
-      def hashMapping: ConsistentHashMapping = {
-        case Msg2(key, _) => key
+      def hashMapping: ConsistentHashMapping = { case Msg2(key, _) =>
+        key
       }
       val router2 =
         system.actorOf(

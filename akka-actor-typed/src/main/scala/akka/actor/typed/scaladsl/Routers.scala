@@ -46,9 +46,7 @@ object Routers {
 @DoNotInherit
 trait GroupRouter[T] extends Behavior[T] {
 
-  /**
-   * Route messages by randomly selecting the routee from the available routees. This is the default for group routers.
-   */
+  /** Route messages by randomly selecting the routee from the available routees. This is the default for group routers. */
   def withRandomRouting(): GroupRouter[T]
 
   /**
@@ -162,18 +160,12 @@ trait PoolRouter[T] extends Behavior[T] {
    */
   def withConsistentHashingRouting(virtualNodesFactor: Int, mapping: T => String): PoolRouter[T]
 
-  /**
-   * Set a new pool size from the one set at construction
-   */
+  /** Set a new pool size from the one set at construction */
   def withPoolSize(poolSize: Int): PoolRouter[T]
 
-  /**
-   * Set the props used to spawn the pool's routees
-   */
+  /** Set the props used to spawn the pool's routees */
   def withRouteeProps(routeeProps: Props): PoolRouter[T]
 
-  /**
-   * Any message that the predicate returns true for will be broadcast to all routees.
-   */
+  /** Any message that the predicate returns true for will be broadcast to all routees. */
   def withBroadcastPredicate(pred: T => Boolean): PoolRouter[T]
 }

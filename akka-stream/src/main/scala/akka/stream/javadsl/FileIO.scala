@@ -15,9 +15,7 @@ import akka.stream.scaladsl.SourceToCompletionStage
 import akka.util.ByteString
 import akka.util.ccompat.JavaConverters._
 
-/**
- * Java API: Factories to create sinks and sources from files
- */
+/** Java API: Factories to create sinks and sources from files */
 object FileIO {
 
   /**

@@ -79,9 +79,7 @@ object ShardingConsumerController {
     def withConsumerControllerSettings(newConsumerControllerSettings: ConsumerController.Settings): Settings =
       copy(consumerControllerSettings = newConsumerControllerSettings)
 
-    /**
-     * Private copy method for internal use only.
-     */
+    /** Private copy method for internal use only. */
     private def copy(
         bufferSize: Int = bufferSize,
         consumerControllerSettings: ConsumerController.Settings = consumerControllerSettings) =

@@ -8,9 +8,7 @@ import scala.annotation.tailrec
 
 import org.reactivestreams.{ Subscriber, Subscription }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[akka] object SubscriberManagement {
 
   sealed trait EndOfStream {
@@ -34,9 +32,7 @@ private[akka] object SubscriberManagement {
   val ShutDown = new ErrorCompleted(ActorPublisher.NormalShutdownReason)
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[akka] trait SubscriptionWithCursor[T] extends Subscription with ResizableMultiReaderRingBuffer.Cursor {
   import ReactiveStreamsCompliance._
 
@@ -51,9 +47,7 @@ private[akka] trait SubscriptionWithCursor[T] extends Subscription with Resizabl
   var cursor: Int = 0 // buffer cursor, managed by buffer
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[akka] trait SubscriberManagement[T] extends ResizableMultiReaderRingBuffer.Cursors {
   import SubscriberManagement._
   type S <: SubscriptionWithCursor[T]
@@ -74,14 +68,10 @@ private[akka] trait SubscriberManagement[T] extends ResizableMultiReaderRingBuff
    */
   protected def cancelUpstream(): Unit
 
-  /**
-   * called when the spi.Publisher/Processor is ready to be shut down
-   */
+  /** called when the spi.Publisher/Processor is ready to be shut down */
   protected def shutdown(completed: Boolean): Unit
 
-  /**
-   * Use to register a subscriber
-   */
+  /** Use to register a subscriber */
   protected def createSubscription(subscriber: Subscriber[_ >: T]): S
 
   private[this] val buffer = new ResizableMultiReaderRingBuffer[T](initialBufferSize, maxBufferSize, this)
@@ -99,9 +89,7 @@ private[akka] trait SubscriberManagement[T] extends ResizableMultiReaderRingBuff
 
   def cursors = subscriptions
 
-  /**
-   * more demand was signaled from a given subscriber
-   */
+  /** more demand was signaled from a given subscriber */
   protected def moreRequested(subscription: S, elements: Long): Unit =
     if (subscription.active) {
       import ReactiveStreamsCompliance._
@@ -122,14 +110,15 @@ private[akka] trait SubscriberManagement[T] extends ResizableMultiReaderRingBuff
                 // if we are at end-of-stream and have nothing more to read we complete now rather than after the next `requestMore`
                 if ((eos ne NotReached) && buffer.count(subscription) == 0) Long.MinValue else 0
               } else if (buffer.count(subscription) > 0) {
-                val goOn = try {
-                  subscription.dispatch(buffer.read(subscription))
-                  true
-                } catch {
-                  case _: SpecViolation =>
-                    unregisterSubscriptionInternal(subscription)
-                    false
-                }
+                val goOn =
+                  try {
+                    subscription.dispatch(buffer.read(subscription))
+                    true
+                  } catch {
+                    case _: SpecViolation =>
+                      unregisterSubscriptionInternal(subscription)
+                      false
+                  }
                 if (goOn) dispatchFromBufferAndReturnRemainingRequested(requested - 1, eos)
                 else Long.MinValue
               } else if (eos ne NotReached) Long.MinValue
@@ -162,9 +151,7 @@ private[akka] trait SubscriberManagement[T] extends ResizableMultiReaderRingBuff
     }
   }
 
-  /**
-   * this method must be called by the implementing class whenever a new value is available to be pushed downstream
-   */
+  /** this method must be called by the implementing class whenever a new value is available to be pushed downstream */
   protected def pushToDownstream(value: T): Unit = {
     @tailrec def dispatch(remaining: Subscriptions, sent: Boolean = false): Boolean =
       remaining match {
@@ -210,18 +197,14 @@ private[akka] trait SubscriberManagement[T] extends ResizableMultiReaderRingBuff
     } // else ignore, we need to be idempotent
   }
 
-  /**
-   * this method must be called by the implementing class to push an error downstream
-   */
+  /** this method must be called by the implementing class to push an error downstream */
   protected def abortDownstream(cause: Throwable): Unit = {
     endOfStream = ErrorCompleted(cause)
     subscriptions.foreach(s => endOfStream(s.subscriber))
     subscriptions = Nil
   }
 
-  /**
-   * Register a new subscriber.
-   */
+  /** Register a new subscriber. */
   protected def registerSubscriber(subscriber: Subscriber[_ >: T]): Unit = endOfStream match {
     case NotReached if subscriptions.exists(_.subscriber == subscriber) =>
       ReactiveStreamsCompliance.rejectDuplicateSubscriber(subscriber)

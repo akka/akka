@@ -15,7 +15,7 @@ class GraphStageLoggingDocSpec extends AkkaSpec("akka.loglevel = DEBUG") {
 
   implicit val ec: ExecutionContext = system.dispatcher
 
-  //#operator-with-logging
+  // #operator-with-logging
   import akka.stream.stage.{ GraphStage, GraphStageLogic, OutHandler, StageLogging }
 
   final class RandomLettersSource extends GraphStage[SourceShape[String]] {
@@ -24,22 +24,24 @@ class GraphStageLoggingDocSpec extends AkkaSpec("akka.loglevel = DEBUG") {
 
     override def createLogic(inheritedAttributes: Attributes) =
       new GraphStageLogic(shape) with StageLogging {
-        setHandler(out, new OutHandler {
-          override def onPull(): Unit = {
-            val c = nextChar() // ASCII lower case letters
+        setHandler(
+          out,
+          new OutHandler {
+            override def onPull(): Unit = {
+              val c = nextChar() // ASCII lower case letters
 
-            // `log` is obtained from materializer automatically (via StageLogging)
-            log.debug("Randomly generated: [{}]", c)
+              // `log` is obtained from materializer automatically (via StageLogging)
+              log.debug("Randomly generated: [{}]", c)
 
-            push(out, c.toString)
-          }
-        })
+              push(out, c.toString)
+            }
+          })
       }
 
     def nextChar(): Char =
       ThreadLocalRandom.current().nextInt('a', 'z'.toInt + 1).toChar
   }
-  //#operator-with-logging
+  // #operator-with-logging
 
   "demonstrate logging in custom graphstage" in {
     val n = 10

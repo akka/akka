@@ -27,35 +27,37 @@ object ReplicatedShardingCompileOnlySpec {
     def apply(replicationId: ReplicationId): Behavior[Command] = ???
   }
 
-  //#bootstrap
+  // #bootstrap
   ReplicatedEntityProvider[Command]("MyEntityType", Set(ReplicaId("DC-A"), ReplicaId("DC-B"))) {
     (entityTypeKey, replicaId) =>
-      ReplicatedEntity(replicaId, Entity(entityTypeKey) { entityContext =>
-        // the sharding entity id contains the business entityId, entityType, and replica id
-        // which you'll need to create a ReplicatedEventSourcedBehavior
-        val replicationId = ReplicationId.fromString(entityContext.entityId)
-        MyEventSourcedBehavior(replicationId)
-      })
+      ReplicatedEntity(
+        replicaId,
+        Entity(entityTypeKey) { entityContext =>
+          // the sharding entity id contains the business entityId, entityType, and replica id
+          // which you'll need to create a ReplicatedEventSourcedBehavior
+          val replicationId = ReplicationId.fromString(entityContext.entityId)
+          MyEventSourcedBehavior(replicationId)
+        })
   }
-  //#bootstrap
+  // #bootstrap
 
-  //#bootstrap-dc
+  // #bootstrap-dc
   ReplicatedEntityProvider.perDataCenter("MyEntityType", Set(ReplicaId("DC-A"), ReplicaId("DC-B"))) { replicationId =>
     MyEventSourcedBehavior(replicationId)
   }
-  //#bootstrap-dc
+  // #bootstrap-dc
 
-  //#bootstrap-role
+  // #bootstrap-role
   val provider = ReplicatedEntityProvider.perRole("MyEntityType", Set(ReplicaId("DC-A"), ReplicaId("DC-B"))) {
     replicationId =>
       MyEventSourcedBehavior(replicationId)
   }
-  //#bootstrap-role
+  // #bootstrap-role
 
-  //#sending-messages
+  // #sending-messages
   val myReplicatedSharding: ReplicatedSharding[Command] =
     ReplicatedShardingExtension(system).init(provider)
 
   val entityRefs: Map[ReplicaId, EntityRef[Command]] = myReplicatedSharding.entityRefsFor("myEntityId")
-  //#sending-messages
+  // #sending-messages
 }

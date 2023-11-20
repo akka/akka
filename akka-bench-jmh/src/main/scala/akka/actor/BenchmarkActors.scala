@@ -19,15 +19,14 @@ object BenchmarkActors {
 
   class PingPong(val messagesPerPair: Int, latch: CountDownLatch) extends Actor {
     var left = messagesPerPair / 2
-    def receive = {
-      case Message =>
-        if (left == 0) {
-          latch.countDown()
-          context.stop(self)
-        }
+    def receive = { case Message =>
+      if (left == 0) {
+        latch.countDown()
+        context.stop(self)
+      }
 
-        sender() ! Message
-        left -= 1
+      sender() ! Message
+      left -= 1
     }
   }
 
@@ -36,9 +35,8 @@ object BenchmarkActors {
   }
 
   class Echo extends Actor {
-    def receive = {
-      case Message =>
-        sender() ! Message
+    def receive = { case Message =>
+      sender() ! Message
     }
   }
 
@@ -53,15 +51,14 @@ object BenchmarkActors {
     private var left = messagesPerPair / 2
     private var batch = 0
 
-    def receive = {
-      case Message =>
-        batch -= 1
-        if (batch <= 0) {
-          if (!sendBatch()) {
-            latch.countDown()
-            context.stop(self)
-          }
+    def receive = { case Message =>
+      batch -= 1
+      if (batch <= 0) {
+        if (!sendBatch()) {
+          latch.countDown()
+          context.stop(self)
         }
+      }
     }
 
     private def sendBatch(): Boolean = {
@@ -93,8 +90,8 @@ object BenchmarkActors {
     def props(next: Option[ActorRef]) = Props(new Pipe(next))
   }
 
-  private def startPingPongActorPairs(messagesPerPair: Int, numPairs: Int, dispatcher: String)(
-      implicit system: ActorSystem): (Vector[(ActorRef, ActorRef)], CountDownLatch) = {
+  private def startPingPongActorPairs(messagesPerPair: Int, numPairs: Int, dispatcher: String)(implicit
+      system: ActorSystem): (Vector[(ActorRef, ActorRef)], CountDownLatch) = {
     val fullPathToDispatcher = "akka.actor." + dispatcher
     val latch = new CountDownLatch(numPairs * 2)
     val actors = List
@@ -116,8 +113,8 @@ object BenchmarkActors {
     }
   }
 
-  private def startEchoActorPairs(messagesPerPair: Int, numPairs: Int, dispatcher: String, batchSize: Int)(
-      implicit system: ActorSystem): (Vector[ActorRef], CountDownLatch) = {
+  private def startEchoActorPairs(messagesPerPair: Int, numPairs: Int, dispatcher: String, batchSize: Int)(implicit
+      system: ActorSystem): (Vector[ActorRef], CountDownLatch) = {
 
     val fullPathToDispatcher = "akka.actor." + dispatcher
     val latch = new CountDownLatch(numPairs)

@@ -34,24 +34,16 @@ object TestInbox {
 @ApiMayChange
 trait TestInbox[T] {
 
-  /**
-   * The actor ref of the inbox
-   */
+  /** The actor ref of the inbox */
   def ref: ActorRef[T]
 
-  /**
-   * Get and remove the oldest message
-   */
+  /** Get and remove the oldest message */
   def receiveMessage(): T
 
-  /**
-   * Assert and remove the the oldest message.
-   */
+  /** Assert and remove the the oldest message. */
   def expectMessage(expectedMessage: T): TestInbox[T]
 
-  /**
-   * Collect all messages in the inbox and clear it out
-   */
+  /** Collect all messages in the inbox and clear it out */
   def receiveAll(): immutable.Seq[T] = internalReceiveAll()
 
   protected def internalReceiveAll(): immutable.Seq[T]
@@ -83,9 +75,7 @@ trait ReplyInbox[T] {
    */
   def expectReply(expectedReply: T): Unit
 
-  /**
-   * Assert that this inbox has *never* received a reply.
-   */
+  /** Assert that this inbox has *never* received a reply. */
   def expectNoReply(): ReplyInbox[T]
 
   def hasReply: Boolean
@@ -143,9 +133,7 @@ trait StatusReplyInbox[T] {
   @annotation.nowarn("msg=never used")
   def expectDone()(implicit ev: T =:= Done): Unit = expectValue(Done.asInstanceOf[T])
 
-  /**
-   * Assert that this inbox has *never* received a reply.
-   */
+  /** Assert that this inbox has *never* received a reply. */
   def expectNoReply(): StatusReplyInbox[T]
 
   def hasReply: Boolean

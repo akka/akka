@@ -30,8 +30,8 @@ object AdaptationFailureSpec {
 
     def onMessage(msg: Any): Behavior[Any] = this
 
-    override def onSignal: PartialFunction[Signal, Behavior[Any]] = {
-      case PreRestart => Behaviors.same
+    override def onSignal: PartialFunction[Signal, Behavior[Any]] = { case PreRestart =>
+      Behaviors.same
     }
   }
 
@@ -41,8 +41,8 @@ object AdaptationFailureSpec {
 
     def onMessage(msg: Any): Behavior[Any] = this
 
-    override def onSignal: PartialFunction[Signal, Behavior[Any]] = {
-      case MessageAdaptionFailure(_) => Behaviors.same
+    override def onSignal: PartialFunction[Signal, Behavior[Any]] = { case MessageAdaptionFailure(_) =>
+      Behaviors.same
     }
   }
 
@@ -57,8 +57,8 @@ class AdaptationFailureSpec extends ScalaTestWithActorTestKit with AnyWordSpecLi
     "receivePartial" -> Behaviors.receivePartial[Any](PartialFunction.empty) ::
     "receiveSignal" -> Behaviors.receiveSignal[Any](PartialFunction.empty) ::
     "receiveSignal not catching adaption failure" ->
-    Behaviors.receiveSignal[Any] {
-      case (_, PreRestart) => Behaviors.same
+    Behaviors.receiveSignal[Any] { case (_, PreRestart) =>
+      Behaviors.same
     } ::
     "AbstractBehavior" -> emptyAbstractBehavior ::
     "AbstractBehavior handling other signals" -> abstractBehaviorHandlingOtherSignals ::
@@ -68,53 +68,50 @@ class AdaptationFailureSpec extends ScalaTestWithActorTestKit with AnyWordSpecLi
     "empty" -> Behaviors.empty[Any] ::
     "ignore" -> Behaviors.ignore[Any] ::
     "receiveSignal catching adaption failure" ->
-    Behaviors.receiveSignal[Any] {
-      case (_, MessageAdaptionFailure(_)) => Behaviors.same
+    Behaviors.receiveSignal[Any] { case (_, MessageAdaptionFailure(_)) =>
+      Behaviors.same
     } ::
     "AbstractBehavior handling MessageAdaptionFailure" -> abstractBehaviorHandlingMessageAdaptionFailure ::
     Nil
 
   "Failure in an adapter" must {
 
-    crashingBehaviors.foreach {
-      case (name, behavior) =>
-        s"default to crash the actor or $name" in {
-          val probe = createTestProbe()
-          val ref = spawn(Behaviors.setup[Any] { ctx =>
-            val adapter = ctx.messageAdapter[Any](_ => throw TestException("boom"))
-            adapter ! "go boom"
+    crashingBehaviors.foreach { case (name, behavior) =>
+      s"default to crash the actor or $name" in {
+        val probe = createTestProbe()
+        val ref = spawn(Behaviors.setup[Any] { ctx =>
+          val adapter = ctx.messageAdapter[Any](_ => throw TestException("boom"))
+          adapter ! "go boom"
 
-            behavior
-          })
-          probe.expectTerminated(ref)
-        }
+          behavior
+        })
+        probe.expectTerminated(ref)
+      }
     }
 
-    nonCrashingBehaviors.foreach {
-      case (name, behavior) =>
-        s"ignore the failure for $name" in {
-          val probe = createTestProbe[Any]()
-          val threw = Promise[Done]()
-          val ref = spawn(Behaviors.setup[Any] { ctx =>
-            val adapter = ctx.messageAdapter[Any] { _ =>
-              threw.success(Done)
-              throw TestException("boom")
-            }
-            adapter ! "go boom"
-            behavior
-          })
-          spawn(Behaviors.setup[Any] { ctx =>
-            ctx.watch(ref)
+    nonCrashingBehaviors.foreach { case (name, behavior) =>
+      s"ignore the failure for $name" in {
+        val probe = createTestProbe[Any]()
+        val threw = Promise[Done]()
+        val ref = spawn(Behaviors.setup[Any] { ctx =>
+          val adapter = ctx.messageAdapter[Any] { _ =>
+            threw.success(Done)
+            throw TestException("boom")
+          }
+          adapter ! "go boom"
+          behavior
+        })
+        spawn(Behaviors.setup[Any] { ctx =>
+          ctx.watch(ref)
 
-            Behaviors.receiveSignal {
-              case (_, Terminated(`ref`)) =>
-                probe.ref ! "actor-stopped"
-                Behaviors.same
-            }
-          })
+          Behaviors.receiveSignal { case (_, Terminated(`ref`)) =>
+            probe.ref ! "actor-stopped"
+            Behaviors.same
+          }
+        })
 
-          probe.expectNoMessage()
-        }
+        probe.expectNoMessage()
+      }
     }
 
   }

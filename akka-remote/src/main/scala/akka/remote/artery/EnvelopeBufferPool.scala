@@ -15,14 +15,10 @@ import akka.remote.artery.compress.{ CompressionTable, InboundCompressions, NoIn
 import akka.serialization.Serialization
 import akka.util.{ OptionVal, Unsafe }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[remote] class OutOfBuffersException extends RuntimeException("Out of usable ByteBuffers")
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[remote] class EnvelopeBufferPool(maximumPayload: Int, maximumBuffers: Int) {
   private val availableBuffers = new ManyToManyConcurrentArrayQueue[EnvelopeBuffer](maximumBuffers)
 
@@ -51,9 +47,7 @@ private[remote] final class ByteFlag(val mask: Byte) extends AnyVal {
   override def toString = s"ByteFlag(${ByteFlag.binaryLeftPad(mask)})"
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[remote] object ByteFlag {
   def binaryLeftPad(byte: Byte): String = {
     val string = Integer.toBinaryString(byte)
@@ -83,8 +77,8 @@ private[remote] object ByteFlag {
  */
 private[remote] object EnvelopeBuffer {
 
-  val TagTypeMask = 0xFF000000
-  val TagValueMask = 0x0000FFFF
+  val TagTypeMask = 0xff000000
+  val TagValueMask = 0x0000ffff
 
   // Flags (1 byte allocated for them)
   val MetadataPresentFlag = new ByteFlag(0x1)
@@ -122,9 +116,7 @@ private[remote] object HeaderBuilder {
   final val DeadLettersCode = -1
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[remote] sealed trait HeaderBuilder {
   def setVersion(v: Byte): Unit
   def version: Byte
@@ -220,9 +212,7 @@ private[remote] final class SerializationFormatCache
   override protected def isCacheable(v: String): Boolean = true
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[remote] final class HeaderBuilderImpl(
     inboundCompression: InboundCompressions,
     var _outboundActorRefCompression: CompressionTable[ActorRef],
@@ -392,9 +382,7 @@ private[remote] final class HeaderBuilderImpl(
 
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[remote] final class EnvelopeBuffer(val byteBuffer: ByteBuffer) {
   import EnvelopeBuffer._
   val aeronBuffer = new UnsafeBuffer(byteBuffer)

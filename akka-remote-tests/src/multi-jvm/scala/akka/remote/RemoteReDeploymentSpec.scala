@@ -87,10 +87,9 @@ object RemoteReDeploymentMultiJvmSpec {
   }
 
   class Echo(target: ActorRef) extends Actor with ActorLogging {
-    def receive = {
-      case msg =>
-        log.info(s"received $msg from ${sender()}")
-        target ! msg
+    def receive = { case msg =>
+      log.info(s"received $msg from ${sender()}")
+      target ! msg
     }
   }
   def echoProps(target: ActorRef) = Props(new Echo(target))
@@ -137,7 +136,8 @@ abstract class RemoteReDeploymentMultiJvmSpec extends RemotingMultiNodeSpec(Remo
             // The quarantine of node 2, where the Parent lives, should cause the Hello child to be stopped:
             expectMsg("PostStop")
             expectNoMessage()
-          } else expectNoMessage(sleepAfterKill)
+          }
+        else expectNoMessage(sleepAfterKill)
         awaitAssert(node(second), 10.seconds, 100.millis)
       }
 

@@ -18,9 +18,7 @@ import akka.actor.ExtendedActorSystem
 import akka.event.{ Logging, LoggingAdapter }
 import akka.util.ccompat._
 
-/**
- * `EventAdapters` serves as a per-journal collection of bound event adapters.
- */
+/** `EventAdapters` serves as a per-journal collection of bound event adapters. */
 @ccompatUsedUntil213
 class EventAdapters(
     map: ConcurrentHashMap[Class[_], EventAdapter],
@@ -85,7 +83,7 @@ private[akka] object EventAdapters {
     } require(
       adapterNames(boundAdapter.toString),
       s"$fqn was bound to undefined event-adapter: $boundAdapter (bindings: ${boundToAdapters
-        .mkString("[", ", ", "]")}, known adapters: ${adapters.keys.mkString})")
+          .mkString("[", ", ", "]")}, known adapters: ${adapters.keys.mkString})")
 
     // A Map of handler from alias to implementation (i.e. class implementing akka.serialization.Serializer)
     // For example this defines a handler named 'country': `"country" -> com.example.comain.CountryTagsAdapter`
@@ -106,8 +104,8 @@ private[akka] object EventAdapters {
       sort(bs)
     }
 
-    val backing = bindings.foldLeft(new ConcurrentHashMap[Class[_], EventAdapter]) {
-      case (map, (c, s)) => map.put(c, s); map
+    val backing = bindings.foldLeft(new ConcurrentHashMap[Class[_], EventAdapter]) { case (map, (c, s)) =>
+      map.put(c, s); map
     }
 
     new EventAdapters(backing, bindings, Logging(system, classOf[EventAdapters]))
@@ -133,7 +131,9 @@ private[akka] object EventAdapters {
     override def toJournal(event: Any): Any = throw onlyReadSideException
 
     override def fromJournal(event: Any, manifest: String): EventSeq =
-      EventSeq(adapters.flatMap(_.fromJournal(event, manifest).events): _*) // TODO could we could make EventSeq flatMappable
+      EventSeq(
+        adapters.flatMap(_.fromJournal(event, manifest).events): _*
+      ) // TODO could we could make EventSeq flatMappable
 
     override def toString =
       s"CombinedReadEventAdapter(${adapters.map(_.getClass.getCanonicalName).mkString(",")})"
@@ -154,13 +154,12 @@ private[akka] object EventAdapters {
    */
   private def sort[T](in: Iterable[(Class[_], T)]): immutable.Seq[(Class[_], T)] =
     in.foldLeft(new ArrayBuffer[(Class[_], T)](in.size)) { (buf, ca) =>
-        buf.indexWhere(_._1.isAssignableFrom(ca._1)) match {
-          case -1 => buf.append(ca)
-          case x  => buf.insert(x, ca)
-        }
-        buf
+      buf.indexWhere(_._1.isAssignableFrom(ca._1)) match {
+        case -1 => buf.append(ca)
+        case x  => buf.insert(x, ca)
       }
-      .to(immutable.Seq)
+      buf
+    }.to(immutable.Seq)
 
   private final def configToMap(config: Config, path: String): Map[String, String] = {
     import akka.util.ccompat.JavaConverters._

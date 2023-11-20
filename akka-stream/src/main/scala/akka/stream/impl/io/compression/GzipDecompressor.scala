@@ -34,7 +34,7 @@ import akka.util.ByteString
     case object ReadHeaders extends Step {
       override def parse(reader: ByteStringParser.ByteReader): ParseResult[ByteString] = {
         import reader._
-        if (readByte() != 0x1F || readByte() != 0x8B) fail("Not in GZIP format") // check magic header
+        if (readByte() != 0x1f || readByte() != 0x8b) fail("Not in GZIP format") // check magic header
         if (readByte() != 8) fail("Unsupported GZIP compression method") // check compression method
         val flags = readByte()
         skip(6) // skip MTIME, XFL and OS fields
@@ -65,15 +65,15 @@ import akka.util.ByteString
   private def crc16(data: ByteString) = {
     val crc = new CRC32
     crc.update(data.toArrayUnsafe())
-    crc.getValue.toInt & 0xFFFF
+    crc.getValue.toInt & 0xffff
   }
 }
 
 /** INTERNAL API */
 @InternalApi private[akka] object GzipDecompressor {
   // RFC 1952: https://www.rfc-editor.org/rfc/rfc1952.html section 2.2
-  private[impl] val Header = ByteString(0x1F, // ID1
-    0x8B, // ID2
+  private[impl] val Header = ByteString(0x1f, // ID1
+    0x8b, // ID2
     8, // CM = Deflate
     0, // FLG
     0, // MTIME 1
@@ -82,5 +82,5 @@ import akka.util.ByteString
     0, // MTIME 4
     0, // XFL
     0 // OS
-    )
+  )
 }

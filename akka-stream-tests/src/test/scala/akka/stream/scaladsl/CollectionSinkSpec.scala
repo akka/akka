@@ -20,7 +20,7 @@ class CollectionSinkSpec extends StreamSpec("""
   "Sink.collection" when {
     "using Seq as Collection" must {
       "return a Seq[T] from a Source" in {
-        val input = (1 to 6)
+        val input = 1 to 6
         val future: Future[immutable.Seq[Int]] = Source(input).runWith(Sink.collection)
         val result: immutable.Seq[Int] = Await.result(future, remainingOrDefault)
         result should be(input.toSeq)
@@ -43,7 +43,7 @@ class CollectionSinkSpec extends StreamSpec("""
     }
     "using Vector as Collection" must {
       "return a Vector[T] from a Source" in {
-        val input = (1 to 6)
+        val input = 1 to 6
         val future: Future[immutable.Vector[Int]] = Source(input).runWith(Sink.collection)
         val result: immutable.Vector[Int] = Await.result(future, remainingOrDefault)
         result should be(input.toVector)

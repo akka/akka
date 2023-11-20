@@ -55,9 +55,7 @@ object Effect {
     def adaptTimeout(msg: String): T = mapResponse(timeoutTry(msg))
     def adaptTimeout: T = adaptTimeout(timeoutMsg)
 
-    /**
-     * Java API
-     */
+    /** Java API */
     def getResponseTimeout: java.time.Duration = responseTimeout.asJava
 
     private var sentResponse: Boolean = false
@@ -82,9 +80,7 @@ object Effect {
     }
   }
 
-  /**
-   * The behavior spawned a named child with the given behavior (and optionally specific props)
-   */
+  /** The behavior spawned a named child with the given behavior (and optionally specific props) */
   final class Spawned[T](val behavior: Behavior[T], val childName: String, val props: Props, val ref: ActorRef[T])
       extends Effect
       with Product3[Behavior[T], String, Props]
@@ -113,9 +109,7 @@ object Effect {
     def unapply[T](s: Spawned[T]): Option[(Behavior[T], String, Props)] = Some((s.behavior, s.childName, s.props))
   }
 
-  /**
-   * The behavior spawned an anonymous child with the given behavior (and optionally specific props)
-   */
+  /** The behavior spawned an anonymous child with the given behavior (and optionally specific props) */
   final class SpawnedAnonymous[T](val behavior: Behavior[T], val props: Props, val ref: ActorRef[T])
       extends Effect
       with Product2[Behavior[T], Props]
@@ -196,54 +190,36 @@ object Effect {
     override def canEqual(o: Any): Boolean = o.isInstanceOf[SpawnedAnonymousAdapter[_]]
   }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi
   private[akka] object SpawnedAnonymousAdapter {
     def apply[T]() = new SpawnedAnonymousAdapter[T](null)
     def unapply[T](@unused s: SpawnedAnonymousAdapter[T]): Boolean = true
   }
 
-  /**
-   * The behavior create a message adapter for the messages of type clazz
-   */
+  /** The behavior create a message adapter for the messages of type clazz */
   final case class MessageAdapter[A, T](messageClass: Class[A], adapt: A => T) extends Effect {
 
-    /**
-     * JAVA API
-     */
+    /** JAVA API */
     def adaptFunction: java.util.function.Function[A, T] = adapt.asJava
   }
 
-  /**
-   * The behavior stopped `childName`
-   */
+  /** The behavior stopped `childName` */
   final case class Stopped(childName: String) extends Effect
 
-  /**
-   * The behavior started watching `other`, through `context.watch(other)`
-   */
+  /** The behavior started watching `other`, through `context.watch(other)` */
   final case class Watched[T](other: ActorRef[T]) extends Effect
 
-  /**
-   * The behavior started watching `other`, through `context.watchWith(other, message)`
-   */
+  /** The behavior started watching `other`, through `context.watchWith(other, message)` */
   final case class WatchedWith[U, T](other: ActorRef[U], message: T) extends Effect
 
-  /**
-   * The behavior stopped watching `other`, through `context.unwatch(other)`
-   */
+  /** The behavior stopped watching `other`, through `context.unwatch(other)` */
   final case class Unwatched[T](other: ActorRef[T]) extends Effect
 
-  /**
-   * The behavior set a new receive timeout, with `message` as timeout notification
-   */
+  /** The behavior set a new receive timeout, with `message` as timeout notification */
   final case class ReceiveTimeoutSet[T](d: FiniteDuration, message: T) extends Effect {
 
-    /**
-     * Java API
-     */
+    /** Java API */
     def duration(): java.time.Duration = d.asJava
   }
 
@@ -292,13 +268,9 @@ object Effect {
 
   final case class TimerCancelled(key: Any) extends Effect
 
-  /**
-   * Used to represent an empty list of effects - in other words, the behavior didn't do anything observable
-   */
+  /** Used to represent an empty list of effects - in other words, the behavior didn't do anything observable */
   case object NoEffects extends NoEffects
 
-  /**
-   * Used for NoEffects expectations by type
-   */
+  /** Used for NoEffects expectations by type */
   sealed abstract class NoEffects extends Effect
 }

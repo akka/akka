@@ -25,14 +25,17 @@ object MultiDcClusterShardingSpecConfig extends MultiNodeConfig {
   val third = role("third")
   val fourth = role("fourth")
 
-  commonConfig(ConfigFactory.parseString("""
+  commonConfig(
+    ConfigFactory
+      .parseString("""
         akka.loglevel = DEBUG
         akka.cluster.sharding {
           number-of-shards = 10
           # First is likely to be ignored as shard coordinator not ready
           retry-interval = 0.2s
         }
-      """).withFallback(MultiNodeClusterSpec.clusterConfig))
+      """)
+      .withFallback(MultiNodeClusterSpec.clusterConfig))
 
   nodeConfig(first, second)(ConfigFactory.parseString("""
       akka.cluster.multi-data-center.self-data-center = "dc1"
@@ -111,10 +114,10 @@ abstract class MultiDcClusterShardingSpec
   "be able to message cross dc via proxy, defined with Entity" in {
     runOn(first, second) {
       val system = typedSystem
-      //#proxy-dc
+      // #proxy-dc
       val proxy: ActorRef[ShardingEnvelope[Command]] =
         ClusterSharding(system).init(Entity(typeKey)(_ => MultiDcPinger()).withDataCenter("dc2"))
-      //#proxy-dc
+      // #proxy-dc
       val probe = TestProbe[Pong]()
       proxy ! ShardingEnvelope(entityId, Ping(probe.ref))
       probe.expectMessage(remainingOrDefault, Pong("dc2"))
@@ -125,12 +128,12 @@ abstract class MultiDcClusterShardingSpec
   "be able to message cross dc via proxy, defined with EntityRef" in {
     runOn(first, second) {
       val system = typedSystem
-      //#proxy-dc-entityref
+      // #proxy-dc-entityref
       // it must still be started before usage
       ClusterSharding(system).init(Entity(typeKey)(_ => MultiDcPinger()).withDataCenter("dc2"))
 
       val entityRef = ClusterSharding(system).entityRefFor(typeKey, entityId, "dc2")
-      //#proxy-dc-entityref
+      // #proxy-dc-entityref
 
       val probe = TestProbe[Pong]()
       entityRef ! Ping(probe.ref)

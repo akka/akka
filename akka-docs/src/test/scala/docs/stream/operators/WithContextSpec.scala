@@ -28,7 +28,7 @@ class WithContextSpec extends AkkaSpec {
         .map(_._1) // keep the first tuple element as stream element
 
     val mapped: SourceWithContext[String, Int, NotUsed] = sourceWithContext
-    // regular operators apply to the element without seeing the context
+      // regular operators apply to the element without seeing the context
       .map(s => s.reverse)
 
     // running the source and asserting the outcome
@@ -63,7 +63,7 @@ class WithContextSpec extends AkkaSpec {
         .map(_._1) // keep the first pair element as stream element
 
     val mapped = flowWithContext
-    // regular operators apply to the element without seeing the context
+      // regular operators apply to the element without seeing the context
       .map(_.reverse)
 
     // running the flow with some sample data and asserting the outcome

@@ -10,8 +10,7 @@ import akka.routing.ConsistentHash
 import akka.routing.ConsistentRoutee
 import akka.testkit.AkkaSpec
 
-class RemoteConsistentHashingRouterSpec
-    extends AkkaSpec("""
+class RemoteConsistentHashingRouterSpec extends AkkaSpec("""
     akka.remote.artery.canonical.port = 0                                                         
     akka.actor.provider = remote """) {
 

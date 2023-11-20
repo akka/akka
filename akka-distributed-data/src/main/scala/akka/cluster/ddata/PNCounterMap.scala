@@ -13,9 +13,7 @@ import akka.cluster.ddata.ORMap._
 
 object PNCounterMap {
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[akka] case object PNCounterMapTag extends ZeroTag {
     override def zero: DeltaReplicatedData = PNCounterMap.empty
     override final val value: Int = 1
@@ -24,14 +22,10 @@ object PNCounterMap {
   def empty[A]: PNCounterMap[A] = new PNCounterMap(new ORMap(ORSet.empty, Map.empty, zeroTag = PNCounterMapTag))
   def apply[A](): PNCounterMap[A] = empty
 
-  /**
-   * Java API
-   */
+  /** Java API */
   def create[A](): PNCounterMap[A] = empty
 
-  /**
-   * Extract the [[PNCounterMap#entries]].
-   */
+  /** Extract the [[PNCounterMap#entries]]. */
   def unapply[A](m: PNCounterMap[A]): Option[Map[A, BigInt]] = Some(m.entries)
 }
 
@@ -58,14 +52,10 @@ final class PNCounterMap[A] private[akka] (private[akka] val underlying: ORMap[A
     underlying.entries.map { case (k, c) => k -> c.value.bigInteger }.asJava
   }
 
-  /**
-   *  Scala API: The count for a key
-   */
+  /** Scala API: The count for a key */
   def get(key: A): Option[BigInt] = underlying.get(key).map(_.value)
 
-  /**
-   * Java API: The count for a key, or `null` if it doesn't exist
-   */
+  /** Java API: The count for a key, or `null` if it doesn't exist */
   def getValue(key: A): BigInteger = underlying.get(key).map(_.value.bigInteger).orNull
 
   def contains(key: A): Boolean = underlying.contains(key)
@@ -95,9 +85,7 @@ final class PNCounterMap[A] private[akka] (private[akka] val underlying: ORMap[A
   def increment(node: SelfUniqueAddress, key: A, delta: Long): PNCounterMap[A] =
     increment(node.uniqueAddress, key, delta)
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[akka] def increment(node: UniqueAddress, key: A, delta: Long): PNCounterMap[A] =
     new PNCounterMap(underlying.updated(node, key, PNCounter())(_.increment(node, delta)))
 
@@ -117,9 +105,7 @@ final class PNCounterMap[A] private[akka] (private[akka] val underlying: ORMap[A
   def decrement(node: SelfUniqueAddress, key: A, delta: Long): PNCounterMap[A] =
     decrement(node.uniqueAddress, key, delta)
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[akka] def decrement(node: UniqueAddress, key: A, delta: Long): PNCounterMap[A] = {
     new PNCounterMap(underlying.updated(node, key, PNCounter())(_.decrement(node, delta)))
   }
@@ -132,9 +118,7 @@ final class PNCounterMap[A] private[akka] (private[akka] val underlying: ORMap[A
   def remove(key: A)(implicit node: SelfUniqueAddress): PNCounterMap[A] =
     remove(node.uniqueAddress, key)
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[akka] def remove(node: UniqueAddress, key: A): PNCounterMap[A] =
     new PNCounterMap(underlying.remove(node, key))
 

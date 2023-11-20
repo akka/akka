@@ -25,9 +25,7 @@ import akka.pattern.StatusReply
 import akka.util.OptionVal
 import akka.util.ccompat.JavaConverters._
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] final class BehaviorTestKitImpl[T](
     system: ActorSystemStub,
@@ -120,7 +118,7 @@ private[akka] final class BehaviorTestKitImpl[T](
       case null =>
         throw new AssertionError(s"expected: effect type ${effectClass.getName} but no effects were recorded")
       case effect if effectClass.isAssignableFrom(effect.getClass) => effect.asInstanceOf[E]
-      case other                                                   => throw new AssertionError(s"expected: effect class ${effectClass.getName} but found $other")
+      case other => throw new AssertionError(s"expected: effect class ${effectClass.getName} but found $other")
     }
   }
 
@@ -142,13 +140,17 @@ private[akka] final class BehaviorTestKitImpl[T](
   def currentBehavior: Behavior[T] = current
   def isAlive: Boolean = Behavior.isAlive(current)
 
-  private def handleException: Catcher[Unit] = {
-    case NonFatal(e) =>
-      try Behavior.canonicalize(Behavior.interpretSignal(current, context, PostStop), current, context) // TODO why canonicalize here?
-      catch {
-        case NonFatal(_) => /* ignore, real is logging */
-      }
-      throw e
+  private def handleException: Catcher[Unit] = { case NonFatal(e) =>
+    try
+      Behavior.canonicalize(
+        Behavior.interpretSignal(current, context, PostStop),
+        current,
+        context
+      ) // TODO why canonicalize here?
+    catch {
+      case NonFatal(_) => /* ignore, real is logging */
+    }
+    throw e
   }
 
   private def runAllTasks(): Unit = {
@@ -162,11 +164,11 @@ private[akka] final class BehaviorTestKitImpl[T](
     try {
       context.setCurrentActorThread()
       try {
-        //we need this to handle message adapters related messages
+        // we need this to handle message adapters related messages
         val intercepted = BehaviorTestKitImpl.Interceptor.inteceptBehaviour(current, context)
         currentUncanonical = Behavior.interpretMessage(intercepted, context, message)
-        //notice we pass current and not intercepted, this way Behaviors.same will be resolved to current which will be intercepted again on the next message
-        //otherwise we would have risked intercepting an already intercepted behavior (or would have had to explicitly check if the current behavior is already intercepted by us)
+        // notice we pass current and not intercepted, this way Behaviors.same will be resolved to current which will be intercepted again on the next message
+        // otherwise we would have risked intercepting an already intercepted behavior (or would have had to explicitly check if the current behavior is already intercepted by us)
         current = Behavior.canonicalize(currentUncanonical, current, context)
       } finally {
         context.clearCurrentActorThread()
@@ -230,9 +232,11 @@ private[akka] object BehaviorTestKitImpl {
 
     def inteceptBehaviour[T](behavior: Behavior[T], ctx: TypedActorContext[T]): Behavior[T] =
       Behavior
-        .start(Behaviors.intercept { () =>
-          this.asInstanceOf[BehaviorInterceptor[Any, T]]
-        }(behavior), ctx.asInstanceOf[TypedActorContext[Any]])
+        .start(
+          Behaviors.intercept { () =>
+            this.asInstanceOf[BehaviorInterceptor[Any, T]]
+          }(behavior),
+          ctx.asInstanceOf[TypedActorContext[Any]])
         .unsafeCast[T]
   }
 }

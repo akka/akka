@@ -39,15 +39,11 @@ import akka.persistence.typed.ReplicationId
 @InternalApi
 private[akka] object ShardingDirectReplication {
 
-  /**
-   * Not for user extension
-   */
+  /** Not for user extension */
   @DoNotInherit
   sealed trait Command
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi
   private[akka] case class VerifyStarted(replyTo: ActorRef[Done]) extends Command
 
@@ -73,15 +69,14 @@ private[akka] object ShardingDirectReplication {
                 "Forwarding event for persistence id [{}] sequence nr [{}] to replicas.",
                 event.persistenceId,
                 event.sequenceNumber)
-              replicaShardingProxies.foreach {
-                case (replica, proxy) =>
-                  val newId = replicationId.withReplica(replica)
-                  // receiving side is responsible for any tagging, so drop/unwrap any tags added by the local tagger
-                  val withoutTags = event.withoutTags
-                  val envelopedEvent = ShardingEnvelope(newId.persistenceId.id, withoutTags)
-                  if (!selfReplica.contains(replica)) {
-                    proxy.asInstanceOf[ActorRef[ShardingEnvelope[PublishedEvent]]] ! envelopedEvent
-                  }
+              replicaShardingProxies.foreach { case (replica, proxy) =>
+                val newId = replicationId.withReplica(replica)
+                // receiving side is responsible for any tagging, so drop/unwrap any tags added by the local tagger
+                val withoutTags = event.withoutTags
+                val envelopedEvent = ShardingEnvelope(newId.persistenceId.id, withoutTags)
+                if (!selfReplica.contains(replica)) {
+                  proxy.asInstanceOf[ActorRef[ShardingEnvelope[PublishedEvent]]] ! envelopedEvent
+                }
               }
             } else {
               context.log.traceN(

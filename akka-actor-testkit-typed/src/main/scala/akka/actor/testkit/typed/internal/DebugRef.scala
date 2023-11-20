@@ -15,9 +15,7 @@ import akka.actor.typed.internal.{ ActorRefImpl, SystemMessage }
 import akka.actor.typed.internal.InternalRecipientRef
 import akka.annotation.InternalApi
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] final class DebugRef[T](override val path: classic.ActorPath, override val isLocal: Boolean)
     extends ActorRef[T]
     with ActorRefImpl[T]

@@ -9,9 +9,7 @@ import scala.collection.immutable
 import akka.actor.{ ActorRef, ChildNameReserved, ChildRestartStats, ChildStats, InvalidActorNameException }
 import akka.util.Collections.{ EmptyImmutableSeq, PartialImmutableValuesIterable }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[akka] trait ChildrenContainer {
 
   def add(name: String, stats: ChildRestartStats): ChildrenContainer
@@ -80,9 +78,7 @@ private[akka] object ChildrenContainer {
     override def unreserve(name: String): ChildrenContainer = this
   }
 
-  /**
-   * This is the empty container, shared among all leaf actors.
-   */
+  /** This is the empty container, shared among all leaf actors. */
   object EmptyChildrenContainer extends EmptyChildrenContainer {
     override def toString = "no children"
   }
@@ -173,7 +169,8 @@ private[akka] object ChildrenContainer {
       if (t.isEmpty) reason match {
         case Termination => TerminatedChildrenContainer
         case _           => NormalChildrenContainer(c - child.path.name)
-      } else copy(c - child.path.name, t)
+      }
+      else copy(c - child.path.name, t)
     }
 
     override def getByName(name: String): Option[ChildStats] = c.get(name)

@@ -12,7 +12,7 @@ object GroupedWeighted {
 
     implicit val system: ActorSystem = ActorSystem()
 
-    //#groupedWeighted
+    // #groupedWeighted
     val collections = immutable.Iterable(Seq(1, 2), Seq(3, 4), Seq(5, 6))
     Source[Seq[Int]](collections).groupedWeighted(4)(_.length).runForeach(println)
     // Vector(Seq(1, 2), Seq(3, 4))
@@ -21,7 +21,7 @@ object GroupedWeighted {
     Source[Seq[Int]](collections).groupedWeighted(3)(_.length).runForeach(println)
     // Vector(Seq(1, 2), Seq(3, 4))
     // Vector(Seq(5, 6))
-    //#groupedWeighted
+    // #groupedWeighted
   }
 
 }

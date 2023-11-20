@@ -31,9 +31,7 @@ import akka.actor.typed.scaladsl.StashBuffer
 import akka.annotation.InternalApi
 import akka.util.Timeout
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object WorkPullingProducerControllerImpl {
 
   import WorkPullingProducerController.Command
@@ -372,8 +370,9 @@ private class WorkPullingProducerControllerImpl[A: ClassTag](
               // msg ResendDurableMsg, and stashed before storage
               false
             } else {
-              throw new IllegalStateException(s"Invalid combination of hasRequested [${s.requested}], " +
-              s"wasStashed [$wasStashed], hasMoreDemand [$hasMoreDemand], stashBuffer.isEmpty [${stashBuffer.isEmpty}]")
+              throw new IllegalStateException(
+                s"Invalid combination of hasRequested [${s.requested}], " +
+                s"wasStashed [$wasStashed], hasMoreDemand [$hasMoreDemand], stashBuffer.isEmpty [${stashBuffer.isEmpty}]")
             }
 
           s.copy(out = newOut, requested = newRequested, preselectedWorkers = s.preselectedWorkers - totalSeqNr)
@@ -388,8 +387,8 @@ private class WorkPullingProducerControllerImpl[A: ClassTag](
 
     def selectWorker(): Option[(OutKey, OutState[A])] = {
       val preselected = s.preselectedWorkers.valuesIterator.map(_.outKey).toSet
-      val workers = workersWithDemand.filterNot {
-        case (outKey, _) => preselected(outKey)
+      val workers = workersWithDemand.filterNot { case (outKey, _) =>
+        preselected(outKey)
       }
       if (workers.isEmpty) {
         None
@@ -443,7 +442,8 @@ private class WorkPullingProducerControllerImpl[A: ClassTag](
               currentSeqNr = s.currentSeqNr + 1,
               preselectedWorkers =
                 s.preselectedWorkers.updated(s.currentSeqNr, PreselectedWorker(outKey, out.confirmationQualifier)),
-              handOver = s.handOver.updated(s.currentSeqNr, HandOver(resend.oldConfirmationQualifier, resend.oldSeqNr))))
+              handOver =
+                s.handOver.updated(s.currentSeqNr, HandOver(resend.oldConfirmationQualifier, resend.oldSeqNr))))
         case None =>
           checkStashFull(stashBuffer)
           // no demand from any workers, or all already preselected
@@ -488,8 +488,8 @@ private class WorkPullingProducerControllerImpl[A: ClassTag](
     }
 
     def onAck(outState: OutState[A], confirmedSeqNr: OutSeqNr): Vector[Unconfirmed[A]] = {
-      val (confirmed, newUnconfirmed) = outState.unconfirmed.partition {
-        case Unconfirmed(_, seqNr, _, _) => seqNr <= confirmedSeqNr
+      val (confirmed, newUnconfirmed) = outState.unconfirmed.partition { case Unconfirmed(_, seqNr, _, _) =>
+        seqNr <= confirmedSeqNr
       }
 
       if (confirmed.nonEmpty) {
@@ -582,12 +582,11 @@ private class WorkPullingProducerControllerImpl[A: ClassTag](
                 key,
                 outState.unconfirmed.head.outSeqNr,
                 outState.unconfirmed.last.outSeqNr)
-            outState.unconfirmed.foreach {
-              case Unconfirmed(totalSeqNr, _, msg, replyTo) =>
-                if (durableQueue.isEmpty)
-                  context.self ! Msg(msg, wasStashed = true, replyTo)
-                else
-                  context.self ! ResendDurableMsg(msg, outState.confirmationQualifier, totalSeqNr)
+            outState.unconfirmed.foreach { case Unconfirmed(totalSeqNr, _, msg, replyTo) =>
+              if (durableQueue.isEmpty)
+                context.self ! Msg(msg, wasStashed = true, replyTo)
+              else
+                context.self ! ResendDurableMsg(msg, outState.confirmationQualifier, totalSeqNr)
             }
             acc.copy(out = acc.out - key)
 

@@ -121,7 +121,7 @@ object ScalaTestMessages {
       extends TestMessage
   // #jackson-scala-enumeration
 
-  //delegate to AkkaSerialization
+  // delegate to AkkaSerialization
   object HasAkkaSerializer {
     def apply(description: String): HasAkkaSerializer = new HasAkkaSerializer(description)
   }
@@ -462,16 +462,18 @@ class JacksonJsonSerializerSpec extends JacksonSerializerSpec("jackson-json") {
     "be possible to create custom ObjectMapper" in {
       val customJavaTimeModule = new SimpleModule() {
         import com.fasterxml.jackson.databind.ser.std._
-        addSerializer(classOf[Instant], new StdSerializer[Instant](classOf[Instant]) {
-          override def serialize(value: Instant, gen: JsonGenerator, provider: SerializerProvider): Unit = {
-            gen.writeStartObject()
-            gen.writeFieldName("nanos")
-            gen.writeNumber(value.getNano)
-            gen.writeFieldName("custom")
-            gen.writeString("field")
-            gen.writeEndObject()
-          }
-        })
+        addSerializer(
+          classOf[Instant],
+          new StdSerializer[Instant](classOf[Instant]) {
+            override def serialize(value: Instant, gen: JsonGenerator, provider: SerializerProvider): Unit = {
+              gen.writeStartObject()
+              gen.writeFieldName("nanos")
+              gen.writeNumber(value.getNano)
+              gen.writeFieldName("custom")
+              gen.writeString("field")
+              gen.writeEndObject()
+            }
+          })
       }
 
       val customJacksonObjectMapperFactory = new JacksonObjectMapperFactory {
@@ -629,8 +631,7 @@ class JacksonJsonSerializerSpec extends JacksonSerializerSpec("jackson-json") {
   "JacksonJsonSerializer without type in manifest" should {
     import ScalaTestMessages._
 
-    "deserialize messages using the serialization bindings" in withSystem(
-      """
+    "deserialize messages using the serialization bindings" in withSystem("""
         akka.actor {
           serializers.animal = "akka.serialization.jackson.JacksonJsonSerializer"
           serialization-identifiers.animal = 9091
@@ -648,8 +649,7 @@ class JacksonJsonSerializerSpec extends JacksonSerializerSpec("jackson-json") {
       deserialized should ===(msg)
     }
 
-    "deserialize messages using the configured deserialization type" in withSystem(
-      """
+    "deserialize messages using the configured deserialization type" in withSystem("""
         akka.actor {
           serializers.animal = "akka.serialization.jackson.JacksonJsonSerializer"
           serialization-identifiers.animal = 9091
@@ -861,8 +861,7 @@ abstract class JacksonSerializerSpec(serializerName: String)
     }
 
     // TODO: Consider moving the migrations Specs to a separate Spec
-    "deserialize with migrations" in withSystem(
-      """
+    "deserialize with migrations" in withSystem("""
         akka.serialization.jackson.migrations {
           ## Usually the key is a FQCN but we're hacking the name to use multiple migrations for the
           ## same type in a single test.
@@ -1088,8 +1087,7 @@ abstract class JacksonSerializerSpec(serializerName: String)
     }
 
     // TODO: Consider moving the migrations Specs to a separate Spec
-    "deserialize with migrations" in withSystem(
-      """
+    "deserialize with migrations" in withSystem("""
         akka.serialization.jackson.migrations {
           ## Usually the key is a FQCN but we're hacking the name to use multiple migrations for the
           ## same type in a single test.
@@ -1257,12 +1255,14 @@ abstract class JacksonSerializerSpec(serializerName: String)
           intercept[IllegalArgumentException] {
             val sys = ActorSystem(
               system.name,
-              ConfigFactory.parseString(s"""
+              ConfigFactory
+                .parseString(s"""
               akka.actor.serialization-bindings {
                 "$className" = $serializerName
                 "akka.serialization.jackson.ScalaTestMessages$$TestMessage" = $serializerName
               }
-              """).withFallback(system.settings.config))
+              """)
+                .withFallback(system.settings.config))
             try {
               SerializationExtension(sys).serialize(SimpleCommand("hi")).get
             } finally shutdown(sys)

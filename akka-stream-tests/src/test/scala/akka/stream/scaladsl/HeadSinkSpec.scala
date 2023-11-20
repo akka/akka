@@ -12,20 +12,22 @@ import akka.stream.AbruptTerminationException
 import akka.stream.Materializer
 import akka.stream.testkit._
 
-class HeadSinkSpec extends StreamSpec("""
+class HeadSinkSpec
+    extends StreamSpec("""
     akka.stream.materializer.initial-input-buffer-size = 2
-  """) with ScriptedTest {
+  """)
+    with ScriptedTest {
 
   "A Flow with Sink.head" must {
 
     "yield the first value for simple source" in {
       implicit val ec = system.dispatcher
-      //#head-operator-example
+      // #head-operator-example
       val source = Source(1 to 10)
       val result: Future[Int] = source.runWith(Sink.head)
       result.map(println)
       // 1
-      //#head-operator-example
+      // #head-operator-example
       result.futureValue shouldEqual 1
     }
 

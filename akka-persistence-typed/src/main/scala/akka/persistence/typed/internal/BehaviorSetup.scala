@@ -25,9 +25,7 @@ import akka.persistence.typed.scaladsl.EventSourcedBehavior
 import akka.persistence.typed.scaladsl.RetentionCriteria
 import akka.util.OptionVal
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object BehaviorSetup {
   sealed trait SnapshotAfterPersist
   case object NoSnapshot extends SnapshotAfterPersist
@@ -35,9 +33,7 @@ import akka.util.OptionVal
   case object SnapshotWithoutRetention extends SnapshotAfterPersist
 }
 
-/**
- * INTERNAL API: Carry state for the Persistent behavior implementation behaviors.
- */
+/** INTERNAL API: Carry state for the Persistent behavior implementation behaviors. */
 @InternalApi
 private[akka] final class BehaviorSetup[C, E, S](
     val context: ActorContext[InternalProtocol],
@@ -77,9 +73,9 @@ private[akka] final class BehaviorSetup[C, E, S](
   }
 
   if (isSnapshotOptional && (retention match {
-        case SnapshotCountRetentionCriteriaImpl(_, _, true) => true
-        case _                                              => false
-      })) {
+      case SnapshotCountRetentionCriteriaImpl(_, _, true) => true
+      case _                                              => false
+    })) {
     throw new IllegalArgumentException(
       "Retention criteria with delete events can't be used together with snapshot-is-optional=false. " +
       "That can result in wrong recovered state if snapshot load fails.")
@@ -283,9 +279,7 @@ private[akka] final class BehaviorSetup[C, E, S](
 
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] object PersistenceMdc {
   // format: OFF

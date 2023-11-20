@@ -50,10 +50,9 @@ class StashStateSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with
               Behaviors.same[InternalProtocol]
             case _: IncomingCommand[_] => Behaviors.stopped
           }
-          .receiveSignal {
-            case (_, _) =>
-              stashState.clearStashBuffers()
-              Behaviors.stopped[InternalProtocol]
+          .receiveSignal { case (_, _) =>
+            stashState.clearStashBuffers()
+            Behaviors.stopped[InternalProtocol]
           }
       }
     }

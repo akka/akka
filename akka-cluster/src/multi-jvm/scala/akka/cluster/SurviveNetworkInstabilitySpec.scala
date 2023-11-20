@@ -44,8 +44,8 @@ object SurviveNetworkInstabilityMultiJvmSpec extends MultiNodeConfig {
   testTransport(on = true)
 
   class Echo extends Actor {
-    def receive = {
-      case m => sender() ! m
+    def receive = { case m =>
+      sender() ! m
     }
   }
 
@@ -225,7 +225,7 @@ abstract class SurviveNetworkInstabilitySpec
       val joining = Vector(sixth, seventh)
       val others = Vector(second, third, fourth, fifth)
       runOn(first) {
-        for (role1 <- (joining :+ first); role2 <- others) {
+        for (role1 <- joining :+ first; role2 <- others) {
           testConductor.blackhole(role1, role2, Direction.Both).await
         }
       }
@@ -252,7 +252,7 @@ abstract class SurviveNetworkInstabilitySpec
       enterBarrier("more-unreachable-5")
 
       runOn(first) {
-        for (role1 <- (joining :+ first); role2 <- others) {
+        for (role1 <- joining :+ first; role2 <- others) {
           testConductor.passThrough(role1, role2, Direction.Both).await
         }
       }

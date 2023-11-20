@@ -20,9 +20,7 @@ import akka.stream.impl.PartitionedBuffer
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.stage._
 
-/**
- * Internal API
- */
+/** Internal API */
 @InternalApi
 private[akka] object MapAsyncPartitioned {
   final class Holder[P, I, O](
@@ -51,9 +49,7 @@ private[akka] object MapAsyncPartitioned {
   val NotYetThere = MapAsync.NotYetThere
 }
 
-/**
- * Internal API
- */
+/** Internal API */
 @InternalApi
 private[akka] final case class MapAsyncPartitioned[In, Out, Partition](
     parallelism: Int,

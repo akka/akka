@@ -12,17 +12,13 @@ import akka.util.OptionVal
 import akka.util.WallClock
 import akka.util.ccompat.JavaConverters._
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] object ReplicationContextImpl {
   val NoPlugin = "no-plugin"
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] final class ReplicationContextImpl(
     val replicationId: ReplicationId,
@@ -58,7 +54,7 @@ private[akka] final class ReplicationContextImpl(
     checkAccess("origin")
     _origin match {
       case OptionVal.Some(origin) => origin
-      case _                      => throw new IllegalStateException("origin can only be accessed from the event handler")
+      case _ => throw new IllegalStateException("origin can only be accessed from the event handler")
     }
   }
 
@@ -84,9 +80,7 @@ private[akka] final class ReplicationContextImpl(
   override def getAllReplicas: java.util.Set[ReplicaId] = allReplicas.asJava
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] final case class ReplicationSetup(
     replicaId: ReplicaId,
@@ -95,9 +89,7 @@ private[akka] final case class ReplicationSetup(
 
   val allReplicas: Set[ReplicaId] = allReplicasAndQueryPlugins.keySet
 
-  /**
-   * Must only be called on the same thread that will execute the user code
-   */
+  /** Must only be called on the same thread that will execute the user code */
   def setContext(recoveryRunning: Boolean, originReplica: ReplicaId, concurrent: Boolean): Unit = {
     replicationContext._currentThread = OptionVal.Some(Thread.currentThread())
     replicationContext._recoveryRunning = recoveryRunning

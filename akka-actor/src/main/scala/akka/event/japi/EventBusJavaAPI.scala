@@ -27,14 +27,10 @@ trait EventBus[E, S, C] {
    */
   def unsubscribe(subscriber: S, from: C): Boolean
 
-  /**
-   * Attempts to deregister the subscriber from all Classifiers it may be subscribed to
-   */
+  /** Attempts to deregister the subscriber from all Classifiers it may be subscribed to */
   def unsubscribe(subscriber: S): Unit
 
-  /**
-   * Publishes the specified Event to this bus
-   */
+  /** Publishes the specified Event to this bus */
   def publish(event: E): Unit
 }
 
@@ -62,24 +58,16 @@ abstract class LookupEventBus[E, S, C] extends EventBus[E, S, C] {
       LookupEventBus.this.publish(event, subscriber)
   }
 
-  /**
-   * This is a size hint for the number of Classifiers you expect to have (use powers of 2)
-   */
+  /** This is a size hint for the number of Classifiers you expect to have (use powers of 2) */
   protected def mapSize(): Int
 
-  /**
-   * Provides a total ordering of Subscribers (think java.util.Comparator.compare)
-   */
+  /** Provides a total ordering of Subscribers (think java.util.Comparator.compare) */
   protected def compareSubscribers(a: S, b: S): Int
 
-  /**
-   * Returns the Classifier associated with the given Event
-   */
+  /** Returns the Classifier associated with the given Event */
   protected def classify(event: E): C
 
-  /**
-   * Publishes the given Event to the given Subscriber
-   */
+  /** Publishes the given Event to the given Subscriber */
   protected def publish(event: E, subscriber: S): Unit
 
   override def subscribe(subscriber: S, to: C): Boolean = bus.subscribe(subscriber, to)
@@ -111,19 +99,13 @@ abstract class SubchannelEventBus[E, S, C] extends EventBus[E, S, C] {
       SubchannelEventBus.this.publish(event, subscriber)
   }
 
-  /**
-   * The logic to form sub-class hierarchy
-   */
+  /** The logic to form sub-class hierarchy */
   def subclassification: Subclassification[C]
 
-  /**
-   * Returns the Classifier associated with the given Event
-   */
+  /** Returns the Classifier associated with the given Event */
   protected def classify(event: E): C
 
-  /**
-   * Publishes the given Event to the given Subscriber
-   */
+  /** Publishes the given Event to the given Subscriber */
   protected def publish(event: E, subscriber: S): Unit
 
   override def subscribe(subscriber: S, to: C): Boolean = bus.subscribe(subscriber, to)
@@ -158,24 +140,16 @@ abstract class ScanningEventBus[E, S, C] extends EventBus[E, S, C] {
       ScanningEventBus.this.publish(event, subscriber)
   }
 
-  /**
-   * Provides a total ordering of Classifiers (think java.util.Comparator.compare)
-   */
+  /** Provides a total ordering of Classifiers (think java.util.Comparator.compare) */
   protected def compareClassifiers(a: C, b: C): Int
 
-  /**
-   * Provides a total ordering of Subscribers (think java.util.Comparator.compare)
-   */
+  /** Provides a total ordering of Subscribers (think java.util.Comparator.compare) */
   protected def compareSubscribers(a: S, b: S): Int
 
-  /**
-   * Returns whether the specified Classifier matches the specified Event
-   */
+  /** Returns whether the specified Classifier matches the specified Event */
   protected def matches(classifier: C, event: E): Boolean
 
-  /**
-   * Publishes the specified Event to the specified Subscriber
-   */
+  /** Publishes the specified Event to the specified Subscriber */
   protected def publish(event: E, subscriber: S): Unit
 
   override def subscribe(subscriber: S, to: C): Boolean = bus.subscribe(subscriber, to)
@@ -191,8 +165,9 @@ abstract class ScanningEventBus[E, S, C] extends EventBus[E, S, C] {
  * E is the Event type
  */
 abstract class ManagedActorEventBus[E](system: ActorSystem) extends EventBus[E, ActorRef, ActorRef] {
-  private val bus = new akka.event.ActorEventBus with akka.event.ManagedActorClassification
-  with akka.event.ActorClassifier {
+  private val bus = new akka.event.ActorEventBus
+    with akka.event.ManagedActorClassification
+    with akka.event.ActorClassifier {
     type Event = E
 
     override val system = ManagedActorEventBus.this.system
@@ -203,14 +178,10 @@ abstract class ManagedActorEventBus[E](system: ActorSystem) extends EventBus[E, 
       ManagedActorEventBus.this.classify(event)
   }
 
-  /**
-   * This is a size hint for the number of Classifiers you expect to have (use powers of 2)
-   */
+  /** This is a size hint for the number of Classifiers you expect to have (use powers of 2) */
   protected def mapSize(): Int
 
-  /**
-   * Returns the Classifier associated with the given Event
-   */
+  /** Returns the Classifier associated with the given Event */
   protected def classify(event: E): ActorRef
 
   override def subscribe(subscriber: ActorRef, to: ActorRef): Boolean = bus.subscribe(subscriber, to)

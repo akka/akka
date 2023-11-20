@@ -23,9 +23,7 @@ import akka.testkit.{ DefaultTimeout, ImplicitSender, TestActors, TestKit }
 import scala.concurrent.duration._
 import scala.collection.immutable
 
-/**
- * a Test to show some TestKit examples
- */
+/** a Test to show some TestKit examples */
 class TestKitUsageSpec
     extends TestKit(ActorSystem("TestKitUsageSpec", ConfigFactory.parseString(TestKitUsageSpec.config)))
     with DefaultTimeout
@@ -79,8 +77,8 @@ class TestKitUsageSpec
         filterRef ! "text"
         filterRef ! 1
 
-        receiveWhile(500 millis) {
-          case msg: String => messages = msg +: messages
+        receiveWhile(500 millis) { case msg: String =>
+          messages = msg +: messages
         }
       }
       messages.length should be(3)
@@ -90,13 +88,13 @@ class TestKitUsageSpec
   "A SequencingActor" should {
     "receive an interesting message at some point " in {
       within(500 millis) {
-        ignoreMsg {
-          case msg: String => msg != "something"
+        ignoreMsg { case msg: String =>
+          msg != "something"
         }
         seqRef ! "something"
         expectMsg("something")
-        ignoreMsg {
-          case msg: String => msg == "1"
+        ignoreMsg { case msg: String =>
+          msg == "1"
         }
         expectNoMessage()
         ignoreNoMsg()
@@ -113,18 +111,14 @@ object TestKitUsageSpec {
     }
     """
 
-  /**
-   * An Actor that forwards every message to a next Actor
-   */
+  /** An Actor that forwards every message to a next Actor */
   class ForwardingActor(next: ActorRef) extends Actor {
-    def receive = {
-      case msg => next ! msg
+    def receive = { case msg =>
+      next ! msg
     }
   }
 
-  /**
-   * An Actor that only forwards certain messages to a next Actor
-   */
+  /** An Actor that only forwards certain messages to a next Actor */
   class FilteringActor(next: ActorRef) extends Actor {
     def receive = {
       case msg: String => next ! msg

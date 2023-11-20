@@ -22,9 +22,9 @@ class DeviceSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike {
       response.requestId should ===(42)
       response.value should ===(None)
     }
-    //#device-read-test
+    // #device-read-test
 
-    //#device-write-read-test
+    // #device-write-read-test
     "reply with latest temperature reading" in {
       val recordProbe = createTestProbe[TemperatureRecorded]()
       val readProbe = createTestProbe[RespondTemperature]()
@@ -46,9 +46,9 @@ class DeviceSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike {
       response2.requestId should ===(4)
       response2.value should ===(Some(55.0))
     }
-    //#device-write-read-test
+    // #device-write-read-test
 
   }
-  //#device-read-test
+  // #device-read-test
 }
 //#device-read-test

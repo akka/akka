@@ -44,18 +44,13 @@ object EventStream {
    *   def subscribe(actorSystem: ActorSystem[_], actorRef: ActorRef[A]) =
    *     actorSystem.eventStream ! EventStream.Subscribe[A1](actorRef)
    * }}}
-   *
    */
   final case class Subscribe[E](subscriber: ActorRef[E])(implicit classTag: ClassTag[E]) extends Command {
 
-    /**
-     * Java API.
-     */
+    /** Java API. */
     def this(clazz: Class[E], subscriber: ActorRef[E]) = this(subscriber)(ClassTag(clazz))
 
-    /**
-     * INTERNAL API
-     */
+    /** INTERNAL API */
     @InternalApi private[akka] def topic: Class[_] = classTag.runtimeClass
   }
 

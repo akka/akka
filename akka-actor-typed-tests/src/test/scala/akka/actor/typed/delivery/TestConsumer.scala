@@ -105,7 +105,8 @@ class TestConsumer(
         case job @ SomeAsyncJob(_, confirmTo, producerId, seqNr) =>
           // when replacing producer the seqNr may start from 1 again
           val cleanProcessed =
-            if (seqNr == 1L) processed.filterNot { case (pid, _) => pid == producerId } else processed
+            if (seqNr == 1L) processed.filterNot { case (pid, _) => pid == producerId }
+            else processed
 
           if (cleanProcessed((producerId, seqNr)))
             throw new RuntimeException(s"Received duplicate [($producerId,$seqNr)]")

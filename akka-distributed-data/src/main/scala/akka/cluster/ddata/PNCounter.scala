@@ -14,14 +14,10 @@ object PNCounter {
   val empty: PNCounter = new PNCounter(GCounter.empty, GCounter.empty)
   def apply(): PNCounter = empty
 
-  /**
-   * Java API
-   */
+  /** Java API */
   def create(): PNCounter = empty
 
-  /**
-   * Extract the [[GCounter#value]].
-   */
+  /** Extract the [[GCounter#value]]. */
   def unapply(c: PNCounter): Option[BigInt] = Some(c.value)
 }
 
@@ -49,14 +45,10 @@ final class PNCounter private[akka] (private[akka] val increments: GCounter, pri
   type T = PNCounter
   type D = PNCounter
 
-  /**
-   * Scala API: Current total value of the counter.
-   */
+  /** Scala API: Current total value of the counter. */
   def value: BigInt = increments.value - decrements.value
 
-  /**
-   * Java API: Current total value of the counter.
-   */
+  /** Java API: Current total value of the counter. */
   def getValue: BigInteger = value.bigInteger
 
   /**

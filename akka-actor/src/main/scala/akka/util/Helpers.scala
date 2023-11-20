@@ -32,7 +32,7 @@ object Helpers {
      * that the ordering is actually consistent and you cannot have a
      * sequence which cyclically is monotone without end.
      */
-    val diff = ((System.identityHashCode(a) & 0XFFFFFFFFL) - (System.identityHashCode(b) & 0XFFFFFFFFL))
+    val diff = (System.identityHashCode(a) & 0xffffffffL) - (System.identityHashCode(b) & 0xffffffffL)
     if (diff > 0) 1 else if (diff < 0) -1 else 0
   }
 
@@ -149,9 +149,7 @@ object Helpers {
     }
   }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   private[akka] final implicit class ConfigOps(val config: Config) extends AnyVal {
     def getMillisDuration(path: String): FiniteDuration = getDuration(path, TimeUnit.MILLISECONDS)
 

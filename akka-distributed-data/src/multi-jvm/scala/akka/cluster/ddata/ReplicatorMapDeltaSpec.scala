@@ -167,12 +167,12 @@ object ReplicatorMapDeltaSpec extends MultiNodeConfig {
     }.toVector
   }
 
-  def addElementToORMap(om: ORMap[String, ORSet[String]], key: String, element: String)(
-      implicit node: SelfUniqueAddress) =
+  def addElementToORMap(om: ORMap[String, ORSet[String]], key: String, element: String)(implicit
+      node: SelfUniqueAddress) =
     om.updated(node, key, ORSet.empty[String])(_ :+ element)
 
-  def removeElementFromORMap(om: ORMap[String, ORSet[String]], key: String, element: String)(
-      implicit node: SelfUniqueAddress) =
+  def removeElementFromORMap(om: ORMap[String, ORSet[String]], key: String, element: String)(implicit
+      node: SelfUniqueAddress) =
     om.updated(node, key, ORSet.empty[String])(_.remove(element))
 }
 

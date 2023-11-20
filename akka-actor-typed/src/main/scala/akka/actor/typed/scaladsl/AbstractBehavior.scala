@@ -49,7 +49,6 @@ abstract class AbstractBehavior[T](protected val context: ActorContext[T]) exten
    * <li>returning `this` or `same` designates to reuse the current Behavior</li>
    * <li>returning `unhandled` keeps the same Behavior and signals that the message was not yet handled</li>
    * </ul>
-   *
    */
   @throws(classOf[Exception])
   def onMessage(msg: T): Behavior[T]
@@ -87,9 +86,11 @@ abstract class AbstractBehavior[T](protected val context: ActorContext[T]) exten
   @throws(classOf[Exception])
   override final def receiveSignal(ctx: TypedActorContext[T], msg: Signal): Behavior[T] = {
     checkRightContext(ctx)
-    onSignal.applyOrElse(msg, {
-      case MessageAdaptionFailure(ex) => throw ex
-      case _                          => Behaviors.unhandled
-    }: PartialFunction[Signal, Behavior[T]])
+    onSignal.applyOrElse(
+      msg,
+      {
+        case MessageAdaptionFailure(ex) => throw ex
+        case _                          => Behaviors.unhandled
+      }: PartialFunction[Signal, Behavior[T]])
   }
 }

@@ -36,9 +36,7 @@ import akka.cluster.sharding.ShardRegion.EntityId
 import akka.cluster.sharding.ShardRegion.ShardId
 import akka.util.PrettyDuration._
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] object DDataRememberEntitiesShardStore {
 
@@ -69,9 +67,7 @@ private[akka] object DDataRememberEntitiesShardStore {
 
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] final class DDataRememberEntitiesShardStore(
     shardId: ShardId,
@@ -95,7 +91,7 @@ private[akka] final class DDataRememberEntitiesShardStore(
   // Note that the timeout is actually updatingStateTimeout / 4 so that we fit 3 retries and a response in the timeout before the shard sees it as a failure
   private val writeConsistency = settings.tuningParameters.coordinatorStateWriteMajorityPlus match {
     case Int.MaxValue => WriteAll(settings.tuningParameters.updatingStateTimeout / 4)
-    case additional   => WriteMajorityPlus(settings.tuningParameters.updatingStateTimeout / 4, additional, majorityMinCap)
+    case additional => WriteMajorityPlus(settings.tuningParameters.updatingStateTimeout / 4, additional, majorityMinCap)
   }
   private val maxUpdateAttempts = 3
   // Note: total for all 5 keys
@@ -199,22 +195,24 @@ private[akka] final class DDataRememberEntitiesShardStore(
   }
 
   private def onUpdate(update: RememberEntitiesShardStore.Update): Unit = {
-    val allEvts: Set[Evt] = (update.started.map(Started(_): Evt).union(update.stopped.map(Stopped(_))))
+    val allEvts: Set[Evt] = update.started.map(Started(_): Evt).union(update.stopped.map(Stopped(_)))
     // map from set of evts (for same ddata key) to one update that applies each of them
     val ddataUpdates: Map[Set[Evt], (Update[ORSet[EntityId]], Int)] =
-      allEvts.groupBy(evt => key(evt.id)).map {
-        case (key, evts) =>
-          (evts, (Update(key, ORSet.empty[EntityId], writeConsistency, Some(evts)) { existing =>
-            evts.foldLeft(existing) {
-              case (acc, Started(id)) => acc :+ id
-              case (acc, Stopped(id)) => acc.remove(id)
-            }
-          }, maxUpdateAttempts))
+      allEvts.groupBy(evt => key(evt.id)).map { case (key, evts) =>
+        (
+          evts,
+          (
+            Update(key, ORSet.empty[EntityId], writeConsistency, Some(evts)) { existing =>
+              evts.foldLeft(existing) {
+                case (acc, Started(id)) => acc :+ id
+                case (acc, Stopped(id)) => acc.remove(id)
+              }
+            },
+            maxUpdateAttempts))
       }
 
-    ddataUpdates.foreach {
-      case (_, (update, _)) =>
-        replicator ! update
+    ddataUpdates.foreach { case (_, (update, _)) =>
+      replicator ! update
     }
 
     context.become(waitingForUpdates(sender(), update, ddataUpdates))

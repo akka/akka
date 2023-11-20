@@ -16,8 +16,7 @@ import akka.cluster.sharding.external.{ ExternalShardAllocation, ExternalShardAl
 import akka.serialization.jackson.CborSerializable
 import akka.testkit.{ ImplicitSender, TestProbe }
 
-object ExternalShardAllocationSpecConfig
-    extends MultiNodeClusterShardingConfig(additionalConfig = """
+object ExternalShardAllocationSpecConfig extends MultiNodeClusterShardingConfig(additionalConfig = """
       akka.cluster.sharding {
         retry-interval = 2000ms
         waiting-for-state-timeout = 2000ms
@@ -42,8 +41,8 @@ object ExternalShardAllocationSpec {
     case class Get(id: String) extends CborSerializable
     case class Home(address: Address) extends CborSerializable
 
-    val extractEntityId: ShardRegion.ExtractEntityId = {
-      case g @ Get(id) => (id, g)
+    val extractEntityId: ShardRegion.ExtractEntityId = { case g @ Get(id) =>
+      (id, g)
     }
 
     // shard == id to make testing easier
@@ -59,9 +58,8 @@ object ExternalShardAllocationSpec {
 
     log.info("Started on {}", selfAddress)
 
-    override def receive: Receive = {
-      case Get(_) =>
-        sender() ! Home(selfAddress)
+    override def receive: Receive = { case Get(_) =>
+      sender() ! Home(selfAddress)
     }
   }
 }
@@ -123,10 +121,12 @@ abstract class ExternalShardAllocationSpec
 
       runOn(second, third) {
         val probe = TestProbe()
-        awaitAssert({
-          shardRegion.tell(Get(shardToSpecifyLocation), probe.ref)
-          probe.expectMsg(Home(address(first)))
-        }, 10.seconds)
+        awaitAssert(
+          {
+            shardRegion.tell(Get(shardToSpecifyLocation), probe.ref)
+            probe.expectMsg(Home(address(first)))
+          },
+          10.seconds)
       }
       enterBarrier("shard-allocated-to-specific-node")
     }
@@ -144,10 +144,12 @@ abstract class ExternalShardAllocationSpec
       }
       enterBarrier("forth-node-joined")
       runOn(first, second, third) {
-        awaitAssert({
-          shardRegion ! Get(initiallyOnForth)
-          expectMsg(Home(address(forth)))
-        }, 10.seconds)
+        awaitAssert(
+          {
+            shardRegion ! Get(initiallyOnForth)
+            expectMsg(Home(address(forth)))
+          },
+          10.seconds)
       }
       enterBarrier("shard-allocated-to-forth")
     }
@@ -159,10 +161,12 @@ abstract class ExternalShardAllocationSpec
       }
       enterBarrier("shard-moved-from-forth-to-first")
       runOn(first, second, third, forth) {
-        awaitAssert({
-          shardRegion ! Get(initiallyOnForth)
-          expectMsg(Home(address(first)))
-        }, 10.seconds)
+        awaitAssert(
+          {
+            shardRegion ! Get(initiallyOnForth)
+            expectMsg(Home(address(first)))
+          },
+          10.seconds)
       }
       enterBarrier("finished")
     }

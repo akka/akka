@@ -9,9 +9,7 @@ import akka.actor.typed.{ ActorSystem, Extension, ExtensionId }
 import akka.annotation.InternalApi
 import akka.util.FlightRecorderLoader
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 object ActorFlightRecorder extends ExtensionId[ActorFlightRecorder] {
 
@@ -22,17 +20,13 @@ object ActorFlightRecorder extends ExtensionId[ActorFlightRecorder] {
       NoOpActorFlightRecorder)
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] trait ActorFlightRecorder extends Extension {
   val delivery: DeliveryFlightRecorder
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] trait DeliveryFlightRecorder {
 
   def producerCreated(producerId: String, path: ActorPath): Unit
@@ -70,9 +64,7 @@ private[akka] case object NoOpActorFlightRecorder extends ActorFlightRecorder {
   override val delivery: DeliveryFlightRecorder = NoOpDeliveryFlightRecorder
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object NoOpDeliveryFlightRecorder extends DeliveryFlightRecorder {
 
   override def producerCreated(producerId: String, path: ActorPath): Unit = ()

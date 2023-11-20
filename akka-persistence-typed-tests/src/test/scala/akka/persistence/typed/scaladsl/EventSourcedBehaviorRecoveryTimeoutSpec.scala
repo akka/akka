@@ -42,9 +42,8 @@ object EventSourcedBehaviorRecoveryTimeoutSpec {
         persistenceId,
         emptyState = "",
         commandHandler = (_, command) => Effect.persist(command).thenRun(_ => probe ! command),
-        eventHandler = (state, evt) => state + evt).receiveSignal {
-        case (_, RecoveryFailed(cause)) =>
-          probe ! cause
+        eventHandler = (state, evt) => state + evt).receiveSignal { case (_, RecoveryFailed(cause)) =>
+        probe ! cause
       }
     }
 

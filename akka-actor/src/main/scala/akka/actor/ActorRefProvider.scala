@@ -44,32 +44,22 @@ import akka.util.OptionVal
    */
   def rootGuardianAt(address: Address): ActorRef
 
-  /**
-   * Reference to the supervisor used for all top-level user actors.
-   */
+  /** Reference to the supervisor used for all top-level user actors. */
   def guardian: LocalActorRef
 
-  /**
-   * Reference to the supervisor used for all top-level system actors.
-   */
+  /** Reference to the supervisor used for all top-level system actors. */
   def systemGuardian: LocalActorRef
 
-  /**
-   * Dead letter destination for this provider.
-   */
+  /** Dead letter destination for this provider. */
   def deadLetters: ActorRef
 
   /** INTERNAL API */
   @InternalApi private[akka] def ignoreRef: ActorRef
 
-  /**
-   * The root path for all actors within this actor system, not including any remote address information.
-   */
+  /** The root path for all actors within this actor system, not including any remote address information. */
   def rootPath: ActorPath
 
-  /**
-   * The Settings associated with this ActorRefProvider
-   */
+  /** The Settings associated with this ActorRefProvider */
   def settings: ActorSystem.Settings
 
   /**
@@ -80,34 +70,22 @@ import akka.util.OptionVal
    */
   private[akka] def init(system: ActorSystemImpl): Unit
 
-  /**
-   * The Deployer associated with this ActorRefProvider
-   */
+  /** The Deployer associated with this ActorRefProvider */
   def deployer: Deployer
 
-  /**
-   * Generates and returns a unique actor path below “/temp”.
-   */
+  /** Generates and returns a unique actor path below “/temp”. */
   def tempPath(): ActorPath
 
-  /**
-   * Generates and returns a unique actor path starting with `prefix` below “/temp”.
-   */
+  /** Generates and returns a unique actor path starting with `prefix` below “/temp”. */
   def tempPath(prefix: String): ActorPath
 
-  /**
-   * Returns the actor reference representing the “/temp” path.
-   */
+  /** Returns the actor reference representing the “/temp” path. */
   def tempContainer: InternalActorRef
 
-  /**
-   * INTERNAL API: Registers an actorRef at a path returned by tempPath(); do NOT pass in any other path.
-   */
+  /** INTERNAL API: Registers an actorRef at a path returned by tempPath(); do NOT pass in any other path. */
   private[akka] def registerTempActor(actorRef: InternalActorRef, path: ActorPath): Unit
 
-  /**
-   * Unregister a temporary actor from the “/temp” path (i.e. obtained from tempPath()); do NOT pass in any other path.
-   */
+  /** Unregister a temporary actor from the “/temp” path (i.e. obtained from tempPath()); do NOT pass in any other path. */
   def unregisterTempActor(path: ActorPath): Unit
 
   /**
@@ -155,17 +133,13 @@ import akka.util.OptionVal
    */
   def getExternalAddressFor(addr: Address): Option[Address]
 
-  /**
-   * Obtain the external address of the default transport.
-   */
+  /** Obtain the external address of the default transport. */
   def getDefaultAddress: Address
 
   /** INTERNAL API */
   @InternalApi private[akka] def serializationInformation: Serialization.Information
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi
   private[akka] def addressString: String
 
@@ -181,19 +155,13 @@ import akka.util.OptionVal
   "implicit ActorRefFactory required: if outside of an Actor you need an implicit ActorSystem, inside of an actor this should be the implicit ActorContext")
 trait ActorRefFactory {
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   protected def systemImpl: ActorSystemImpl
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   protected def provider: ActorRefProvider
 
-  /**
-   * Returns the default MessageDispatcher associated with this ActorRefFactory
-   */
+  /** Returns the default MessageDispatcher associated with this ActorRefFactory */
   implicit def dispatcher: ExecutionContextExecutor
 
   /**
@@ -203,9 +171,7 @@ trait ActorRefFactory {
    */
   protected def guardian: InternalActorRef
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   protected def lookupRoot: InternalActorRef
 
   /**
@@ -277,14 +243,10 @@ trait ActorRefFactory {
   def stop(actor: ActorRef): Unit
 }
 
-/**
- * Internal Akka use only, used in implementation of system.stop(child).
- */
+/** Internal Akka use only, used in implementation of system.stop(child). */
 private[akka] final case class StopChild(child: ActorRef)
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[akka] object SystemGuardian {
 
   /**
@@ -318,9 +280,7 @@ private[akka] object LocalActorRefProvider {
     override def preRestart(cause: Throwable, msg: Option[Any]): Unit = {}
   }
 
-  /**
-   * System guardian
-   */
+  /** System guardian */
   private class SystemGuardian(override val supervisorStrategy: SupervisorStrategy, val guardian: ActorRef)
       extends Actor
       with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
@@ -449,13 +409,12 @@ private[akka] class LocalActorRefProvider private[akka] (
 
     override def stop(): Unit = {
       causeOfTermination.trySuccess(
-        Terminated(provider.rootGuardian)(existenceConfirmed = true, addressTerminated = true)) //Idempotent
+        Terminated(provider.rootGuardian)(existenceConfirmed = true, addressTerminated = true)
+      ) // Idempotent
       terminationPromise.completeWith(causeOfTermination.future) // Signal termination downstream, idempotent
     }
 
-    /**
-     * INTERNAL API
-     */
+    /** INTERNAL API */
     @InternalApi
     override private[akka] def isTerminated: Boolean = !isWalking
 
@@ -472,7 +431,10 @@ private[akka] class LocalActorRefProvider private[akka] (
           log.error(ex, s"guardian $child failed, shutting down!")
           causeOfTermination.tryFailure(ex)
           child.stop()
-        case Supervise(_, _)           => // TODO register child in some map to keep track of it and enable shutdown after all dead
+        case Supervise(
+              _,
+              _
+            ) => // TODO register child in some map to keep track of it and enable shutdown after all dead
         case _: DeathWatchNotification => stop()
         case _                         => log.error(s"$this received unexpected system message [$message]")
       }
@@ -505,23 +467,16 @@ private[akka] class LocalActorRefProvider private[akka] (
       .createInstanceFor[SupervisorStrategyConfigurator](settings.SupervisorStrategyClass, EmptyImmutableSeq)
       .get
 
-  /**
-   * Overridable supervision strategy to be used by the “/user” guardian.
-   */
-  protected def rootGuardianStrategy: SupervisorStrategy = OneForOneStrategy() {
-    case ex =>
-      log.error(ex, "guardian failed, shutting down system")
-      SupervisorStrategy.Stop
+  /** Overridable supervision strategy to be used by the “/user” guardian. */
+  protected def rootGuardianStrategy: SupervisorStrategy = OneForOneStrategy() { case ex =>
+    log.error(ex, "guardian failed, shutting down system")
+    SupervisorStrategy.Stop
   }
 
-  /**
-   * Overridable supervision strategy to be used by the “/user” guardian.
-   */
+  /** Overridable supervision strategy to be used by the “/user” guardian. */
   protected def guardianStrategy: SupervisorStrategy = guardianSupervisorStrategyConfigurator.create()
 
-  /**
-   * Overridable supervision strategy to be used by the “/user” guardian.
-   */
+  /** Overridable supervision strategy to be used by the “/user” guardian. */
   protected def systemGuardianStrategy: SupervisorStrategy = SupervisorStrategy.defaultStrategy
 
   private def internalDispatcher = system.dispatchers.internalDispatcher
@@ -630,9 +585,7 @@ private[akka] class LocalActorRefProvider private[akka] (
     }
   }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   private[akka] def resolveActorRef(ref: InternalActorRef, pathElements: Iterable[String]): InternalActorRef =
     if (pathElements.isEmpty) {
       logDeser.debug("Resolve (deserialization) of empty path doesn't match an active actor, using deadLetters.")
@@ -683,8 +636,8 @@ private[akka] class LocalActorRefProvider private[akka] (
                 case (Deploy.DispatcherSameAsParent, Deploy.NoMailboxGiven) => props.withDispatcher(parentDispatcher)
                 case (dsp, Deploy.NoMailboxGiven)                           => props.withDispatcher(dsp)
                 case (Deploy.NoDispatcherGiven, mbx)                        => props.withMailbox(mbx)
-                case (Deploy.DispatcherSameAsParent, mbx)                   => props.withDispatcher(parentDispatcher).withMailbox(mbx)
-                case (dsp, mbx)                                             => props.withDispatcher(dsp).withMailbox(mbx)
+                case (Deploy.DispatcherSameAsParent, mbx) => props.withDispatcher(parentDispatcher).withMailbox(mbx)
+                case (dsp, mbx)                           => props.withDispatcher(dsp).withMailbox(mbx)
               }
             case _ =>
               // no deployment config found

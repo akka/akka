@@ -32,7 +32,7 @@ class Index[K, V](val mapSize: Int, val valueComparator: Comparator[V]) {
    * @return true if the value didn't exist for the key previously, and false otherwise
    */
   def put(key: K, value: V): Boolean = {
-    //Tailrecursive spin-locking put
+    // Tailrecursive spin-locking put
     @tailrec
     def spinPut(k: K, v: V): Boolean = {
       var retry = false
@@ -41,8 +41,8 @@ class Index[K, V](val mapSize: Int, val valueComparator: Comparator[V]) {
 
       if (set ne null) {
         set.synchronized {
-          if (set.isEmpty) retry = true //IF the set is empty then it has been removed, so signal retry
-          else { //Else add the value to the set and signal that retry is not needed
+          if (set.isEmpty) retry = true // IF the set is empty then it has been removed, so signal retry
+          else { // Else add the value to the set and signal that retry is not needed
             added = set.add(v)
             retry = false
           }
@@ -55,8 +55,8 @@ class Index[K, V](val mapSize: Int, val valueComparator: Comparator[V]) {
         val oldSet = container.putIfAbsent(k, newSet)
         if (oldSet ne null) {
           oldSet.synchronized {
-            if (oldSet.isEmpty) retry = true //IF the set is empty then it has been removed, so signal retry
-            else { //Else try to add the value to the set and signal that retry is not needed
+            if (oldSet.isEmpty) retry = true // IF the set is empty then it has been removed, so signal retry
+            else { // Else try to add the value to the set and signal that retry is not needed
               added = oldSet.add(v)
               retry = false
             }
@@ -81,9 +81,7 @@ class Index[K, V](val mapSize: Int, val valueComparator: Comparator[V]) {
       case set  => set.iterator.asScala.find(f)
     }
 
-  /**
-   * Returns an Iterator of V containing the values for the supplied key, or an empty iterator if the key doesn't exist
-   */
+  /** Returns an Iterator of V containing the values for the supplied key, or an empty iterator if the key doesn't exist */
   def valueIterator(key: K): scala.Iterator[V] = {
     container.get(key) match {
       case null => Iterator.empty
@@ -91,17 +89,13 @@ class Index[K, V](val mapSize: Int, val valueComparator: Comparator[V]) {
     }
   }
 
-  /**
-   * Applies the supplied function to all keys and their values
-   */
+  /** Applies the supplied function to all keys and their values */
   def foreach(fun: (K, V) => Unit): Unit =
     container.entrySet.iterator.asScala.foreach { e =>
       e.getValue.iterator.asScala.foreach(fun(e.getKey, _))
     }
 
-  /**
-   * Returns the union of all value sets.
-   */
+  /** Returns the union of all value sets. */
   def values: Set[V] = {
     val builder = Set.newBuilder[V]
     for {
@@ -111,9 +105,7 @@ class Index[K, V](val mapSize: Int, val valueComparator: Comparator[V]) {
     builder.result()
   }
 
-  /**
-   * Returns the key set.
-   */
+  /** Returns the key set. */
   def keys: Iterable[K] = container.keySet.asScala
 
   /**
@@ -125,14 +117,14 @@ class Index[K, V](val mapSize: Int, val valueComparator: Comparator[V]) {
 
     if (set ne null) {
       set.synchronized {
-        if (set.remove(value)) { //If we can remove the value
-          if (set.isEmpty) //and the set becomes empty
-            container.remove(key, emptySet) //We try to remove the key if it's mapped to an empty set
+        if (set.remove(value)) { // If we can remove the value
+          if (set.isEmpty) // and the set becomes empty
+            container.remove(key, emptySet) // We try to remove the key if it's mapped to an empty set
 
-          true //Remove succeeded
-        } else false //Remove failed
+          true // Remove succeeded
+        } else false // Remove failed
       }
-    } else false //Remove failed
+    } else false // Remove failed
   }
 
   /**
@@ -146,16 +138,15 @@ class Index[K, V](val mapSize: Int, val valueComparator: Comparator[V]) {
       set.synchronized {
         container.remove(key, set)
         @nowarn("msg=deprecated")
-        val ret = collectionAsScalaIterableConverter(set.clone()).asScala // Make copy since we need to clear the original
+        val ret =
+          collectionAsScalaIterableConverter(set.clone()).asScala // Make copy since we need to clear the original
         set.clear() // Clear the original set to signal to any pending writers that there was a conflict
         Some(ret)
       }
-    } else None //Remove failed
+    } else None // Remove failed
   }
 
-  /**
-   * Removes the specified value from all keys
-   */
+  /** Removes the specified value from all keys */
   def removeValue(value: V): Unit = {
     val i = container.entrySet().iterator()
     while (i.hasNext) {
@@ -164,23 +155,19 @@ class Index[K, V](val mapSize: Int, val valueComparator: Comparator[V]) {
 
       if (set ne null) {
         set.synchronized {
-          if (set.remove(value)) { //If we can remove the value
-            if (set.isEmpty) //and the set becomes empty
-              container.remove(e.getKey, emptySet) //We try to remove the key if it's mapped to an empty set
+          if (set.remove(value)) { // If we can remove the value
+            if (set.isEmpty) // and the set becomes empty
+              container.remove(e.getKey, emptySet) // We try to remove the key if it's mapped to an empty set
           }
         }
       }
     }
   }
 
-  /**
-   * @return true if the underlying containers is empty, may report false negatives when the last remove is underway
-   */
+  /** @return true if the underlying containers is empty, may report false negatives when the last remove is underway */
   def isEmpty: Boolean = container.isEmpty
 
-  /**
-   *  Removes all keys and all values
-   */
+  /** Removes all keys and all values */
   def clear(): Unit = {
     val i = container.entrySet().iterator()
     while (i.hasNext) {

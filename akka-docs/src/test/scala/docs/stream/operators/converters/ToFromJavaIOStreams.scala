@@ -23,7 +23,7 @@ class ToFromJavaIOStreams extends AkkaSpec with Futures {
 
   "demonstrate conversion from java.io.streams" in {
 
-    //#tofromJavaIOStream
+    // #tofromJavaIOStream
     val bytes = "Some random input".getBytes
     val inputStream = new ByteArrayInputStream(bytes)
     val outputStream = new ByteArrayOutputStream()
@@ -36,7 +36,7 @@ class ToFromJavaIOStreams extends AkkaSpec with Futures {
 
     val eventualResult = source.via(toUpperCase).runWith(sink)
 
-    //#tofromJavaIOStream
+    // #tofromJavaIOStream
     whenReady(eventualResult) { _ =>
       outputStream.toByteArray.map(_.toChar).mkString should be("SOME RANDOM INPUT")
     }
@@ -44,26 +44,26 @@ class ToFromJavaIOStreams extends AkkaSpec with Futures {
   }
 
   "demonstrate usage as java.io.InputStream" in {
-    //#asJavaInputStream
+    // #asJavaInputStream
     val toUpperCase: Flow[ByteString, ByteString, NotUsed] = Flow[ByteString].map(_.map(_.toChar.toUpper.toByte))
     val source: Source[ByteString, NotUsed] = Source.single(ByteString("some random input"))
     val sink: Sink[ByteString, InputStream] = StreamConverters.asInputStream()
 
     val inputStream: InputStream = source.via(toUpperCase).runWith(sink)
-    //#asJavaInputStream
+    // #asJavaInputStream
     inputStream.read() should be('S')
     inputStream.close()
   }
 
   "demonstrate usage as java.io.OutputStream" in {
-    //#asJavaOutputStream
+    // #asJavaOutputStream
     val source: Source[ByteString, OutputStream] = StreamConverters.asOutputStream()
     val sink: Sink[ByteString, Future[ByteString]] = Sink.fold[ByteString, ByteString](ByteString.empty)(_ ++ _)
 
     val (outputStream, result): (OutputStream, Future[ByteString]) =
       source.toMat(sink)(Keep.both).run()
 
-    //#asJavaOutputStream
+    // #asJavaOutputStream
     val bytesArray = Array.fill[Byte](3)(Random.nextInt(1024).asInstanceOf[Byte])
     outputStream.write(bytesArray)
     outputStream.close()

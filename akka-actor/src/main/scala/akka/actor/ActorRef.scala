@@ -108,14 +108,10 @@ object ActorRef {
 abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable {
   scalaRef: InternalActorRef with ActorRefScope =>
 
-  /**
-   * Returns the path for this actor (from this actor up to the root actor).
-   */
+  /** Returns the path for this actor (from this actor up to the root actor). */
   def path: ActorPath
 
-  /**
-   * Comparison takes path and the unique id of the actor cell into account.
-   */
+  /** Comparison takes path and the unique id of the actor cell into account. */
   final def compareTo(other: ActorRef): Int = {
     val x = this.path.compareTo(other.path)
     if (x == 0) if (this.path.uid < other.path.uid) -1 else if (this.path.uid == other.path.uid) 0 else 1
@@ -167,9 +163,7 @@ abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable
     else path.uid
   }
 
-  /**
-   * Equals takes path and the unique id of the actor cell into account.
-   */
+  /** Equals takes path and the unique id of the actor cell into account. */
   final override def equals(that: Any): Boolean = that match {
     case other: ActorRef => path.uid == other.path.uid && path == other.path
     case _               => false
@@ -214,9 +208,7 @@ private[akka] trait ActorRefScope {
   def isLocal: Boolean
 }
 
-/**
- * Refs which are statically known to be local inherit from this Scope
- */
+/** Refs which are statically known to be local inherit from this Scope */
 private[akka] trait LocalRef extends ActorRefScope {
   final def isLocal = true
 }
@@ -232,9 +224,7 @@ private[akka] trait RepointableRef extends ActorRefScope {
   def isStarted: Boolean
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object InternalActorRef {
   def isTemporaryRef(ref: ActorRef): Boolean =
     ref match {
@@ -242,7 +232,9 @@ private[akka] trait RepointableRef extends ActorRefScope {
         (i.isLocal && i.isInstanceOf[PromiseActorRef]) ||
         (!i.isLocal && i.path.elements.head == "temp")
       case unexpected =>
-        throw new IllegalArgumentException(s"ActorRef is not internal: $unexpected") // will not happen, for exhaustiveness check
+        throw new IllegalArgumentException(
+          s"ActorRef is not internal: $unexpected"
+        ) // will not happen, for exhaustiveness check
     }
 
 }
@@ -265,14 +257,10 @@ private[akka] trait RepointableRef extends ActorRefScope {
   def stop(): Unit
   def sendSystemMessage(message: SystemMessage): Unit
 
-  /**
-   * Get a reference to the actor ref provider which created this ref.
-   */
+  /** Get a reference to the actor ref provider which created this ref. */
   def provider: ActorRefProvider
 
-  /**
-   * Obtain parent of this ref; used by getChild for ".." paths.
-   */
+  /** Obtain parent of this ref; used by getChild for ".." paths. */
   def getParent: InternalActorRef
 
   /**
@@ -311,9 +299,7 @@ private[akka] abstract class ActorRefWithCell extends InternalActorRef { this: A
   def getSingleChild(name: String): InternalActorRef
 }
 
-/**
- * This is an internal look-up failure token, not useful for anything else.
- */
+/** This is an internal look-up failure token, not useful for anything else. */
 private[akka] case object Nobody extends MinimalActorRef {
   override val path: RootActorPath = new RootActorPath(Address("akka", "all-systems"), "/Nobody")
   override def provider = throw new UnsupportedOperationException("Nobody does not provide")
@@ -324,9 +310,7 @@ private[akka] case object Nobody extends MinimalActorRef {
   override protected def writeReplace(): AnyRef = serialized
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @SerialVersionUID(1L) private[akka] class SerializedNobody extends Serializable {
   @throws(classOf[java.io.ObjectStreamException])
   private def readResolve(): AnyRef = Nobody
@@ -378,9 +362,7 @@ private[akka] class LocalActorRef private[akka] (
   @InternalApi
   override private[akka] def isTerminated: Boolean = actorCell.isTerminated
 
-  /**
-   * Starts the actor after initialization.
-   */
+  /** Starts the actor after initialization. */
   override def start(): Unit = actorCell.start()
 
   /**
@@ -392,14 +374,10 @@ private[akka] class LocalActorRef private[akka] (
    */
   override def suspend(): Unit = actorCell.suspend()
 
-  /**
-   * Resumes a suspended actor.
-   */
+  /** Resumes a suspended actor. */
   override def resume(causedByFailure: Throwable): Unit = actorCell.resume(causedByFailure)
 
-  /**
-   * Shuts down the actor and its message queue
-   */
+  /** Shuts down the actor and its message queue */
   override def stop(): Unit = actorCell.stop()
 
   override def getParent: InternalActorRef = actorCell.parent
@@ -476,9 +454,7 @@ private[akka] final case class SerializedActorRef private (path: String) {
   }
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[akka] object SerializedActorRef {
   def apply(actorRef: ActorRef): SerializedActorRef = {
     new SerializedActorRef(actorRef)
@@ -524,9 +500,7 @@ private[akka] trait MinimalActorRef extends InternalActorRef with LocalRef {
   override protected def writeReplace(): AnyRef = SerializedIgnore
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object IgnoreActorRef {
 
   private val fakeSystemName = "local"
@@ -536,23 +510,17 @@ private[akka] trait MinimalActorRef extends InternalActorRef with LocalRef {
 
   private val pathString = path.toString
 
-  /**
-   * Check if the passed `otherPath` is the same as IgnoreActorRef.path
-   */
+  /** Check if the passed `otherPath` is the same as IgnoreActorRef.path */
   def isIgnoreRefPath(otherPath: String): Boolean =
     pathString == otherPath
 
-  /**
-   * Check if the passed `otherPath` is the same as IgnoreActorRef.path
-   */
+  /** Check if the passed `otherPath` is the same as IgnoreActorRef.path */
   def isIgnoreRefPath(otherPath: ActorPath): Boolean =
     path == otherPath
 
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi @SerialVersionUID(1L) private[akka] object SerializedIgnore extends Serializable {
   @throws(classOf[java.io.ObjectStreamException])
   private def readResolve(): AnyRef = IgnoreActorRef
@@ -612,18 +580,14 @@ final case class Dropped(message: Any, reason: String, sender: ActorRef, recipie
 
 object Dropped {
 
-  /**
-   * Convenience for creating `Dropped` without a `sender`.
-   */
+  /** Convenience for creating `Dropped` without a `sender`. */
   def apply(message: Any, reason: String, recipient: ActorRef): Dropped =
     Dropped(message, reason, ActorRef.noSender, recipient)
 }
 
 object WrappedMessage {
 
-  /**
-   * Unwrap [[WrappedMessage]] recursively.
-   */
+  /** Unwrap [[WrappedMessage]] recursively. */
   @tailrec def unwrap(message: Any): Any = {
     message match {
       case w: WrappedMessage => unwrap(w.message)
@@ -643,7 +607,7 @@ trait WrappedMessage {
 
 private[akka] object DeadLetterActorRef {
   @SerialVersionUID(1L)
-  class SerializedDeadLetterActorRef extends Serializable { //TODO implement as Protobuf for performance?
+  class SerializedDeadLetterActorRef extends Serializable { // TODO implement as Protobuf for performance?
     @throws(classOf[java.io.ObjectStreamException])
     private def readResolve(): AnyRef = JavaSerializer.currentSystem.value.deadLetters
   }
@@ -807,9 +771,7 @@ private[akka] class VirtualPathContainer(
   def removeChild(name: String): Unit =
     if (children.remove(name) eq null) log.warning("{} trying to remove non-child {}", path, name)
 
-  /**
-   * Remove a named child if it matches the ref.
-   */
+  /** Remove a named child if it matches the ref. */
   protected def removeChild(name: String, ref: ActorRef): Unit = {
     val current = getChild(name)
     if (current eq null)
@@ -844,9 +806,7 @@ private[akka] class VirtualPathContainer(
   }
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object FunctionRef {
   def deadLetterMessageHandler(system: ActorSystem): (ActorRef, Any) => Unit = { (sender, msg) =>
     // avoid infinite loop (StackOverflow) if FunctionRef is used for subscribing to DeadLetter from eventStream
@@ -895,7 +855,7 @@ private[akka] class VirtualPathContainer(
       case u: Unwatch => remWatcher(u.watchee, u.watcher)
       case DeathWatchNotification(actorRef, _, _) =>
         this.!(Terminated(actorRef)(existenceConfirmed = true, addressTerminated = false))(actorRef)
-      case _ => //ignore all other messages
+      case _ => // ignore all other messages
     }
   }
 
@@ -906,13 +866,11 @@ private[akka] class VirtualPathContainer(
   private[this] var watching = ActorCell.emptyActorRefSet
   private[this] var _watchedBy: OptionVal[Set[ActorRef]] = OptionVal.Some(ActorCell.emptyActorRefSet)
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi
   override private[akka] def isTerminated: Boolean = _watchedBy.isEmpty
 
-  //noinspection EmptyCheck
+  // noinspection EmptyCheck
   protected def sendTerminated(): Unit = {
     def unwatchWatched(watched: ActorRef): Unit =
       watched.asInstanceOf[InternalActorRef].sendSystemMessage(Unwatch(watched, this))
@@ -1078,9 +1036,7 @@ private[akka] class VirtualPathContainer(
     actorRef.asInstanceOf[InternalActorRef].sendSystemMessage(Unwatch(actorRef.asInstanceOf[InternalActorRef], this))
   }
 
-  /**
-   * Query whether this FunctionRef is currently watching the given Actor.
-   */
+  /** Query whether this FunctionRef is currently watching the given Actor. */
   def isWatching(actorRef: ActorRef): Boolean = this.synchronized {
     watching.contains(actorRef)
   }

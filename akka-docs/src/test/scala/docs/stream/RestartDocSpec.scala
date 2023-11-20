@@ -33,7 +33,7 @@ class RestartDocSpec extends AkkaSpec with CompileOnlySpec {
 
     "demonstrate a restart with backoff source" in compileOnlySpec {
 
-      //#restart-with-backoff-source
+      // #restart-with-backoff-source
       val settings = RestartSettings(
         minBackoff = 3.seconds,
         maxBackoff = 30.seconds,
@@ -50,9 +50,9 @@ class RestartDocSpec extends AkkaSpec with CompileOnlySpec {
             .flatMap(Unmarshal(_).to[Source[ServerSentEvent, NotUsed]])
         }
       }
-      //#restart-with-backoff-source
+      // #restart-with-backoff-source
 
-      //#with-kill-switch
+      // #with-kill-switch
       val killSwitch = restartSource
         .viaMat(KillSwitches.single)(Keep.right)
         .toMat(Sink.foreach(event => println(s"Got event: $event")))(Keep.left)
@@ -61,7 +61,7 @@ class RestartDocSpec extends AkkaSpec with CompileOnlySpec {
       doSomethingElse()
 
       killSwitch.shutdown()
-      //#with-kill-switch
+      // #with-kill-switch
     }
 
   }

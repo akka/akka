@@ -98,9 +98,7 @@ object ConsistentHashingRouter {
     def hashKey(message: Any): Any
   }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   private[akka] def hashMappingAdapter(mapper: ConsistentHashMapper): ConsistentHashMapping = {
     case message if mapper.hashKey(message).asInstanceOf[AnyRef] ne null =>
       mapper.hashKey(message)
@@ -110,9 +108,7 @@ object ConsistentHashingRouter {
 
 object ConsistentHashingRoutingLogic {
 
-  /**
-   * Address to use for the selfAddress parameter
-   */
+  /** Address to use for the selfAddress parameter */
   def defaultAddress(system: ActorSystem): Address =
     system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
 }
@@ -143,7 +139,6 @@ object ConsistentHashingRoutingLogic {
  *   use for the consistent hash key
  *
  * @param system the actor system hosting this router
- *
  */
 @SerialVersionUID(1L)
 final case class ConsistentHashingRoutingLogic(
@@ -178,14 +173,10 @@ final case class ConsistentHashingRoutingLogic(
 
   private lazy val log = Logging(system, classOf[ConsistentHashingRoutingLogic])
 
-  /**
-   * Setting the number of virtual nodes per node, used in [[akka.routing.ConsistentHash]]
-   */
+  /** Setting the number of virtual nodes per node, used in [[akka.routing.ConsistentHash]] */
   def withVirtualNodesFactor(vnodes: Int): ConsistentHashingRoutingLogic = copy(virtualNodesFactor = vnodes)
 
-  /**
-   * Java API: Setting the mapping from message to the data to use for the consistent hash key.
-   */
+  /** Java API: Setting the mapping from message to the data to use for the consistent hash key. */
   def withHashMapper(mapper: ConsistentHashingRouter.ConsistentHashMapper): ConsistentHashingRoutingLogic =
     copy(hashMapping = ConsistentHashingRouter.hashMappingAdapter(mapper))
 
@@ -222,9 +213,11 @@ final case class ConsistentHashingRoutingLogic(
             hashData match {
               case bytes: Array[Byte] => currentConsistenHash.nodeFor(bytes).routee
               case str: String        => currentConsistenHash.nodeFor(str).routee
-              case x: AnyRef          => currentConsistenHash.nodeFor(SerializationExtension(system).serialize(x).get).routee
+              case x: AnyRef => currentConsistenHash.nodeFor(SerializationExtension(system).serialize(x).get).routee
               case unexpected =>
-                throw new IllegalArgumentException(s"Unexpected hashdata: $unexpected") // will not happen, for exhaustiveness check
+                throw new IllegalArgumentException(
+                  s"Unexpected hashdata: $unexpected"
+                ) // will not happen, for exhaustiveness check
             }
         } catch {
           case NonFatal(e) =>
@@ -312,14 +305,10 @@ final case class ConsistentHashingPool(
 
   override def nrOfInstances(sys: ActorSystem) = this.nrOfInstances
 
-  /**
-   * Setting the supervisor strategy to be used for the “head” Router actor.
-   */
+  /** Setting the supervisor strategy to be used for the “head” Router actor. */
   def withSupervisorStrategy(strategy: SupervisorStrategy): ConsistentHashingPool = copy(supervisorStrategy = strategy)
 
-  /**
-   * Setting the resizer to be used.
-   */
+  /** Setting the resizer to be used. */
   def withResizer(resizer: Resizer): ConsistentHashingPool = copy(resizer = Some(resizer))
 
   /**
@@ -328,14 +317,10 @@ final case class ConsistentHashingPool(
    */
   def withDispatcher(dispatcherId: String): ConsistentHashingPool = copy(routerDispatcher = dispatcherId)
 
-  /**
-   * Setting the number of virtual nodes per node, used in [[akka.routing.ConsistentHash]]
-   */
+  /** Setting the number of virtual nodes per node, used in [[akka.routing.ConsistentHash]] */
   def withVirtualNodesFactor(vnodes: Int): ConsistentHashingPool = copy(virtualNodesFactor = vnodes)
 
-  /**
-   * Java API: Setting the mapping from message to the data to use for the consistent hash key.
-   */
+  /** Java API: Setting the mapping from message to the data to use for the consistent hash key. */
   def withHashMapper(mapper: ConsistentHashingRouter.ConsistentHashMapper): ConsistentHashingPool =
     copy(hashMapping = ConsistentHashingRouter.hashMappingAdapter(mapper))
 
@@ -347,8 +332,8 @@ final case class ConsistentHashingPool(
    */
   override def withFallback(other: RouterConfig): RouterConfig = other match {
     case _: FromConfig | _: NoRouter        => this.overrideUnsetConfig(other)
-    case otherRouter: ConsistentHashingPool => (copy(hashMapping = otherRouter.hashMapping)).overrideUnsetConfig(other)
-    case _                                  => throw new IllegalArgumentException("Expected ConsistentHashingPool, got [%s]".format(other))
+    case otherRouter: ConsistentHashingPool => copy(hashMapping = otherRouter.hashMapping).overrideUnsetConfig(other)
+    case _ => throw new IllegalArgumentException("Expected ConsistentHashingPool, got [%s]".format(other))
   }
 
 }
@@ -401,24 +386,18 @@ final case class ConsistentHashingGroup(
    */
   def withDispatcher(dispatcherId: String): ConsistentHashingGroup = copy(routerDispatcher = dispatcherId)
 
-  /**
-   * Setting the number of virtual nodes per node, used in [[akka.routing.ConsistentHash]]
-   */
+  /** Setting the number of virtual nodes per node, used in [[akka.routing.ConsistentHash]] */
   def withVirtualNodesFactor(vnodes: Int): ConsistentHashingGroup = copy(virtualNodesFactor = vnodes)
 
-  /**
-   * Java API: Setting the mapping from message to the data to use for the consistent hash key.
-   */
+  /** Java API: Setting the mapping from message to the data to use for the consistent hash key. */
   def withHashMapper(mapper: ConsistentHashingRouter.ConsistentHashMapper): ConsistentHashingGroup =
     copy(hashMapping = ConsistentHashingRouter.hashMappingAdapter(mapper))
 
-  /**
-   * Uses the `hashMapping` defined in code, since that can't be defined in configuration.
-   */
+  /** Uses the `hashMapping` defined in code, since that can't be defined in configuration. */
   override def withFallback(other: RouterConfig): RouterConfig = other match {
     case _: FromConfig | _: NoRouter         => super.withFallback(other)
     case otherRouter: ConsistentHashingGroup => copy(hashMapping = otherRouter.hashMapping)
-    case _                                   => throw new IllegalArgumentException("Expected ConsistentHashingGroup, got [%s]".format(other))
+    case _ => throw new IllegalArgumentException("Expected ConsistentHashingGroup, got [%s]".format(other))
   }
 
 }

@@ -52,46 +52,46 @@ class AdaptationFailureSpec extends ScalaTestWithActorTestKit with AnyWordSpecLi
 
   "Failure in an adapter" must {
 
-    crashingBehaviors.foreach {
-      case (name, behavior) =>
-        s"default to crash the actor or $name" in {
-          val probe = createTestProbe()
-          val ref = spawn(Behaviors.setup[Any] { ctx =>
-            val adapter = ctx.messageAdapter[Any](classOf[Any], _ => throw TestException("boom"))
-            adapter ! "go boom"
+    crashingBehaviors.foreach { case (name, behavior) =>
+      s"default to crash the actor or $name" in {
+        val probe = createTestProbe()
+        val ref = spawn(Behaviors.setup[Any] { ctx =>
+          val adapter = ctx.messageAdapter[Any](classOf[Any], _ => throw TestException("boom"))
+          adapter ! "go boom"
 
-            behavior
-          })
-          probe.expectTerminated(ref)
-        }
+          behavior
+        })
+        probe.expectTerminated(ref)
+      }
     }
 
-    nonCrashingBehaviors.foreach {
-      case (name, behavior) =>
-        s"ignore the failure for $name" in {
-          val probe = createTestProbe[Any]()
-          val threw = Promise[Done]()
-          val ref = spawn(Behaviors.setup[Any] { ctx =>
-            val adapter = ctx.messageAdapter[Any](classOf[Any], { _ =>
+    nonCrashingBehaviors.foreach { case (name, behavior) =>
+      s"ignore the failure for $name" in {
+        val probe = createTestProbe[Any]()
+        val threw = Promise[Done]()
+        val ref = spawn(Behaviors.setup[Any] { ctx =>
+          val adapter = ctx.messageAdapter[Any](
+            classOf[Any],
+            { _ =>
               threw.success(Done)
               throw TestException("boom")
             })
-            adapter ! "go boom"
-            behavior
-          })
-          spawn(Behaviors.setup[Any] { ctx =>
-            ctx.watch(ref)
+          adapter ! "go boom"
+          behavior
+        })
+        spawn(Behaviors.setup[Any] { ctx =>
+          ctx.watch(ref)
 
-            Behaviors.receiveSignal {
-              case (_, Terminated(`ref`)) =>
-                probe.ref ! "actor-stopped"
-                Behaviors.same
-              case _ => Behaviors.unhandled
-            }
-          })
+          Behaviors.receiveSignal {
+            case (_, Terminated(`ref`)) =>
+              probe.ref ! "actor-stopped"
+              Behaviors.same
+            case _ => Behaviors.unhandled
+          }
+        })
 
-          probe.expectNoMessage()
-        }
+        probe.expectNoMessage()
+      }
     }
   }
 

@@ -62,15 +62,15 @@ class MemberOrderingSpec extends AnyWordSpec with Matchers {
       m1 should ===(m2)
       m1.hashCode should ===(m2.hashCode)
 
-      m3 should not be (m2)
-      m3 should not be (m1)
+      m3 should not be m2
+      m3 should not be m1
 
       m11 should ===(m22)
       m11.hashCode should ===(m22.hashCode)
 
       // different uid
-      m1 should not be (m11)
-      m2 should not be (m22)
+      m1 should not be m11
+      m2 should not be m22
     }
 
     "have consistent ordering and equals" in {

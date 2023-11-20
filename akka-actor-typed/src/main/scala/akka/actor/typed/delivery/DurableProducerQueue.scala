@@ -32,9 +32,7 @@ object DurableProducerQueue {
 
   trait Command[A]
 
-  /**
-   * Request that is used at startup to retrieve the unconfirmed messages and current sequence number.
-   */
+  /** Request that is used at startup to retrieve the unconfirmed messages and current sequence number. */
   final case class LoadState[A](replyTo: ActorRef[State[A]]) extends Command[A]
 
   /**
@@ -91,9 +89,7 @@ object DurableProducerQueue {
       copy(confirmedSeqNr = confirmedSeqNr -- confirmationQualifiers)
     }
 
-    /**
-     * If not all chunked messages were stored before crash those partial chunked messages should not be resent.
-     */
+    /** If not all chunked messages were stored before crash those partial chunked messages should not be resent. */
     def cleanupPartialChunkedMessages(): State[A] = {
       if (unconfirmed.isEmpty || unconfirmed.forall(u => u.isFirstChunk && u.isLastChunk)) {
         this
@@ -123,14 +119,10 @@ object DurableProducerQueue {
     }
   }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[akka] sealed trait Event extends DeliverySerializable
 
-  /**
-   * The fact (event) that a message has been sent.
-   */
+  /** The fact (event) that a message has been sent. */
   final class MessageSent[A](
       val seqNr: SeqNr,
       val message: MessageSent.MessageOrChunk,
@@ -178,9 +170,7 @@ object DurableProducerQueue {
 
   object MessageSent {
 
-    /**
-     * SequencedMessage.message can be `A` or `ChunkedMessage`.
-     */
+    /** SequencedMessage.message can be `A` or `ChunkedMessage`. */
     type MessageOrChunk = Any
 
     def apply[A](
@@ -191,9 +181,7 @@ object DurableProducerQueue {
         timestampMillis: TimestampMillis): MessageSent[A] =
       new MessageSent(seqNr, message, ack, confirmationQualifier, timestampMillis)
 
-    /**
-     * INTERNAL API
-     */
+    /** INTERNAL API */
     @InternalApi private[akka] def fromChunked[A](
         seqNr: SeqNr,
         chunkedMessage: ChunkedMessage,
@@ -202,9 +190,7 @@ object DurableProducerQueue {
         timestampMillis: TimestampMillis): MessageSent[A] =
       new MessageSent(seqNr, chunkedMessage, ack, confirmationQualifier, timestampMillis)
 
-    /**
-     * INTERNAL API
-     */
+    /** INTERNAL API */
     @InternalApi private[akka] def fromMessageOrChunked[A](
         seqNr: SeqNr,
         message: MessageOrChunk,
@@ -218,18 +204,14 @@ object DurableProducerQueue {
       Some((sent.seqNr, sent.message, sent.ack, sent.confirmationQualifier, sent.timestampMillis))
   }
 
-  /**
-   * INTERNAL API: The fact (event) that a message has been confirmed to be delivered and processed.
-   */
+  /** INTERNAL API: The fact (event) that a message has been confirmed to be delivered and processed. */
   @InternalApi private[akka] final case class Confirmed(
       seqNr: SeqNr,
       confirmationQualifier: ConfirmationQualifier,
       timestampMillis: TimestampMillis)
       extends Event
 
-  /**
-   * INTERNAL API: Remove entries related to the confirmationQualifiers that haven't been used for a while.
-   */
+  /** INTERNAL API: Remove entries related to the confirmationQualifiers that haven't been used for a while. */
   @InternalApi private[akka] final case class Cleanup(confirmationQualifiers: Set[String]) extends Event
 
 }

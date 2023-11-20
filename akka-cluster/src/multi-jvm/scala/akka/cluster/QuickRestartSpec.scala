@@ -68,10 +68,12 @@ abstract class QuickRestartSpec extends MultiNodeClusterSpec(QuickRestartMultiJv
             ActorSystem(
               system.name,
               // use the same port
-              ConfigFactory.parseString(s"""
+              ConfigFactory
+                .parseString(s"""
                        akka.cluster.roles = [round-$n]
                        akka.remote.artery.canonical.port = ${Cluster(restartingSystem).selfAddress.port.get}
-                     """).withFallback(system.settings.config))
+                     """)
+                .withFallback(system.settings.config))
           }
           log.info("Restarting node has address: {}", Cluster(restartingSystem).selfUniqueAddress)
           Cluster(restartingSystem).joinSeedNodes(seedNodes)

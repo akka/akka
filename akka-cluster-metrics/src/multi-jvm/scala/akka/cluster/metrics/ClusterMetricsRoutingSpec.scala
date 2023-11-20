@@ -33,26 +33,25 @@ import akka.util.unused
 object AdaptiveLoadBalancingRouterConfig extends MultiNodeConfig {
 
   class Echo extends Actor {
-    def receive = {
-      case _ => sender() ! Reply(Cluster(context.system).selfAddress)
+    def receive = { case _ =>
+      sender() ! Reply(Cluster(context.system).selfAddress)
     }
   }
 
   class Memory extends Actor with ActorLogging {
     var usedMemory: Array[Array[Int]] = _
-    def receive = {
-      case AllocateMemory =>
-        val heap = ManagementFactory.getMemoryMXBean.getHeapMemoryUsage
-        // getMax can be undefined (-1)
-        val max = math.max(heap.getMax, heap.getCommitted)
-        val used = heap.getUsed
-        log.info("used heap before: [{}] bytes, of max [{}]", used, heap.getMax)
-        // allocate 70% of free space
-        val allocateBytes = (0.7 * (max - used)).toInt
-        val numberOfArrays = allocateBytes / 1024
-        usedMemory = Array.ofDim(numberOfArrays, 248) // each 248 element Int array will use ~ 1 kB
-        log.info("used heap after: [{}] bytes", ManagementFactory.getMemoryMXBean.getHeapMemoryUsage.getUsed)
-        sender() ! "done"
+    def receive = { case AllocateMemory =>
+      val heap = ManagementFactory.getMemoryMXBean.getHeapMemoryUsage
+      // getMax can be undefined (-1)
+      val max = math.max(heap.getMax, heap.getCommitted)
+      val used = heap.getUsed
+      log.info("used heap before: [{}] bytes, of max [{}]", used, heap.getMax)
+      // allocate 70% of free space
+      val allocateBytes = (0.7 * (max - used)).toInt
+      val numberOfArrays = allocateBytes / 1024
+      usedMemory = Array.ofDim(numberOfArrays, 248) // each 248 element Int array will use ~ 1 kB
+      log.info("used heap after: [{}] bytes", ManagementFactory.getMemoryMXBean.getHeapMemoryUsage.getUsed)
+      sender() ! "done"
     }
   }
 
@@ -133,16 +132,14 @@ abstract class AdaptiveLoadBalancingRouterSpec
 
   def receiveReplies(expectedReplies: Int): Map[Address, Int] = {
     val zero = Map.empty[Address, Int] ++ roles.map(address(_) -> 0)
-    (receiveWhile(5 seconds, messages = expectedReplies) {
-      case Reply(address) => address
-    }).foldLeft(zero) {
-      case (replyMap, address) => replyMap + (address -> (replyMap(address) + 1))
+    receiveWhile(5 seconds, messages = expectedReplies) { case Reply(address) =>
+      address
+    }.foldLeft(zero) { case (replyMap, address) =>
+      replyMap + (address -> (replyMap(address) + 1))
     }
   }
 
-  /**
-   * Fills in self address for local ActorRef
-   */
+  /** Fills in self address for local ActorRef */
   def fullAddress(actorRef: ActorRef): Address = actorRef.path.address match {
     case Address(_, _, None, None) => cluster.selfAddress
     case a                         => a
@@ -188,9 +185,9 @@ abstract class AdaptiveLoadBalancingRouterSpec
 
         val replies = receiveReplies(iterationCount)
 
-        replies(node1) should be > (0)
-        replies(node2) should be > (0)
-        replies(node3) should be > (0)
+        replies(node1) should be > 0
+        replies(node2) should be > 0
+        replies(node3) should be > 0
         replies.values.sum should ===(iterationCount)
 
       }

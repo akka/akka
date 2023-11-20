@@ -29,9 +29,7 @@ import akka.stream.stage.GraphStageWithMaterializedValue
 import akka.stream.stage.InHandler
 import akka.util.PrettyDuration.PrettyPrintableDuration
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[remote] object AeronSink {
 
   final class GaveUpMessageException(msg: String) extends RuntimeException(msg) with NoStackTrace
@@ -72,7 +70,7 @@ private[remote] object AeronSink {
         onPublicationClosed.invoke(())
         true
       } else if (giveUpAfterNanos >= 0 && (n & TimerCheckMask) == 0 && (System
-                   .nanoTime() - startTime) > giveUpAfterNanos) {
+          .nanoTime() - startTime) > giveUpAfterNanos) {
         // the task is invoked by the spinning thread, only check nanoTime each 8192th invocation
         n = 0L
         onGiveUp.invoke(())

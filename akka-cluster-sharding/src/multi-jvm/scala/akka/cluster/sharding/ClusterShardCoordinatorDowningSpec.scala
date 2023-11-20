@@ -20,8 +20,8 @@ object ClusterShardCoordinatorDowningSpec {
   case class Ping(id: String) extends CborSerializable
 
   class Entity extends Actor {
-    def receive = {
-      case Ping(_) => sender() ! self
+    def receive = { case Ping(_) =>
+      sender() ! self
     }
   }
 
@@ -36,8 +36,8 @@ object ClusterShardCoordinatorDowningSpec {
     }
   }
 
-  val extractEntityId: ShardRegion.ExtractEntityId = {
-    case m @ Ping(id) => (id, m)
+  val extractEntityId: ShardRegion.ExtractEntityId = { case m @ Ping(id) =>
+    (id, m)
   }
 
   val extractShardId: ShardRegion.ExtractShardId = {
@@ -163,15 +163,14 @@ abstract class ClusterShardCoordinatorDowningSpec(multiNodeConfig: ClusterShardC
 
         awaitAssert {
           val probe = TestProbe()
-          (originalLocations ++ additionalLocations).foreach {
-            case (id, ref) =>
-              region.tell(Ping(id), probe.ref)
-              if (ref.path.address == firstAddress) {
-                val newRef = probe.expectMsgType[ActorRef](1.second)
-                newRef should not be (ref)
-                system.log.debug("Moved [{}] from [{}] to [{}]", id, ref, newRef)
-              } else
-                probe.expectMsg(1.second, ref) // should not move
+          (originalLocations ++ additionalLocations).foreach { case (id, ref) =>
+            region.tell(Ping(id), probe.ref)
+            if (ref.path.address == firstAddress) {
+              val newRef = probe.expectMsgType[ActorRef](1.second)
+              newRef should not be ref
+              system.log.debug("Moved [{}] from [{}] to [{}]", id, ref, newRef)
+            } else
+              probe.expectMsg(1.second, ref) // should not move
           }
         }
       }

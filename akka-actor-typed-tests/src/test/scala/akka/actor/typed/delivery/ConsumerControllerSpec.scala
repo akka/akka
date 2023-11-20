@@ -17,7 +17,9 @@ import akka.actor.typed.delivery.internal.ProducerControllerImpl
 import akka.serialization.SerializationExtension
 
 class ConsumerControllerSpec
-    extends ScalaTestWithActorTestKit(ConfigFactory.parseString("""
+    extends ScalaTestWithActorTestKit(
+      ConfigFactory
+        .parseString("""
   akka.reliable-delivery.consumer-controller {
     flow-control-window = 20
     resend-interval-min = 1s
@@ -563,15 +565,14 @@ class ConsumerControllerSpec
 
       // one chunk for each letter, "123" => 3 chunks
       val chunks1 = ProducerControllerImpl.createChunks(TestConsumer.Job(s"123"), chunkSize = 1, serialization)
-      val seqMessages1 = chunks1.zipWithIndex.map {
-        case (chunk, i) =>
-          ConsumerController.SequencedMessage.fromChunked(
-            producerId,
-            1 + i,
-            chunk,
-            first = i == 0,
-            ack = false,
-            producerControllerProbe.ref)
+      val seqMessages1 = chunks1.zipWithIndex.map { case (chunk, i) =>
+        ConsumerController.SequencedMessage.fromChunked(
+          producerId,
+          1 + i,
+          chunk,
+          first = i == 0,
+          ack = false,
+          producerControllerProbe.ref)
       }
 
       consumerController ! seqMessages1.head
@@ -584,15 +585,14 @@ class ConsumerControllerSpec
       producerControllerProbe.expectMessage(ProducerControllerImpl.Request(3, 22, true, false))
 
       val chunks2 = ProducerControllerImpl.createChunks(TestConsumer.Job(s"45"), chunkSize = 1, serialization)
-      val seqMessages2 = chunks2.zipWithIndex.map {
-        case (chunk, i) =>
-          ConsumerController.SequencedMessage.fromChunked(
-            producerId,
-            4 + i,
-            chunk,
-            first = false,
-            ack = true,
-            producerControllerProbe.ref)
+      val seqMessages2 = chunks2.zipWithIndex.map { case (chunk, i) =>
+        ConsumerController.SequencedMessage.fromChunked(
+          producerId,
+          4 + i,
+          chunk,
+          first = false,
+          ack = true,
+          producerControllerProbe.ref)
       }
 
       consumerController ! seqMessages2.head
@@ -620,15 +620,14 @@ class ConsumerControllerSpec
           TestConsumer.Job(s"1234567890123456789012345"),
           chunkSize = 1,
           serialization)
-      val seqMessages1 = chunks1.zipWithIndex.map {
-        case (chunk, i) =>
-          ConsumerController.SequencedMessage.fromChunked(
-            producerId,
-            1 + i,
-            chunk,
-            first = i == 0,
-            ack = false,
-            producerControllerProbe.ref)
+      val seqMessages1 = chunks1.zipWithIndex.map { case (chunk, i) =>
+        ConsumerController.SequencedMessage.fromChunked(
+          producerId,
+          1 + i,
+          chunk,
+          first = i == 0,
+          ack = false,
+          producerControllerProbe.ref)
       }
 
       consumerController ! seqMessages1.head

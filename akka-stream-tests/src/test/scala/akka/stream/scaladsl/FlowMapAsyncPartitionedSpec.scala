@@ -125,11 +125,10 @@ class FlowMapAsyncPartitionedSpec extends StreamSpec with WithLogCapturing {
     case class Elem(n: Int, promise: Promise[Done])
     val (sourceProbe, result) =
       TestSource[Int]()
-        .viaMat(Flow[Int].mapAsyncPartitioned(10, 1)(_ < 9) {
-          case (n, _) =>
-            val promise = Promise[Done]()
-            processingProbe.ref ! Elem(n, promise)
-            promise.future.map(_ => n)(ExecutionContexts.parasitic)
+        .viaMat(Flow[Int].mapAsyncPartitioned(10, 1)(_ < 9) { case (n, _) =>
+          val promise = Promise[Done]()
+          processingProbe.ref ! Elem(n, promise)
+          promise.future.map(_ => n)(ExecutionContexts.parasitic)
         })(Keep.left)
         .toMat(Sink.seq[Int])(Keep.both)
         .run()

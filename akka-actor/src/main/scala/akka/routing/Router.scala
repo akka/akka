@@ -35,24 +35,18 @@ trait RoutingLogic extends NoSerializationVerificationNeeded {
 
 }
 
-/**
- * Abstraction of a destination for messages routed via a [[Router]].
- */
+/** Abstraction of a destination for messages routed via a [[Router]]. */
 trait Routee {
   def send(message: Any, sender: ActorRef): Unit
 }
 
-/**
- * [[Routee]] that sends the messages to an [[akka.actor.ActorRef]].
- */
+/** [[Routee]] that sends the messages to an [[akka.actor.ActorRef]]. */
 final case class ActorRefRoutee(ref: ActorRef) extends Routee {
   override def send(message: Any, sender: ActorRef): Unit =
     ref.tell(message, sender)
 }
 
-/**
- * [[Routee]] that sends the messages to an [[akka.actor.ActorSelection]].
- */
+/** [[Routee]] that sends the messages to an [[akka.actor.ActorSelection]]. */
 final case class ActorSelectionRoutee(selection: ActorSelection) extends Routee {
   override def send(message: Any, sender: ActorRef): Unit =
     selection.tell(message, sender)
@@ -67,19 +61,13 @@ object NoRoutee extends Routee {
   override def send(message: Any, sender: ActorRef): Unit = ()
 }
 
-/**
- * [[Routee]] that sends each message to all `routees`.
- */
+/** [[Routee]] that sends each message to all `routees`. */
 final case class SeveralRoutees(routees: immutable.IndexedSeq[Routee]) extends Routee {
 
-  /**
-   * Java API
-   */
+  /** Java API */
   def this(rs: java.lang.Iterable[Routee]) = this(routees = immutableSeq(rs).toVector)
 
-  /**
-   * Java API
-   */
+  /** Java API */
   def getRoutees(): java.util.List[Routee] = {
     import akka.util.ccompat.JavaConverters._
     routees.asJava
@@ -99,14 +87,10 @@ final case class SeveralRoutees(routees: immutable.IndexedSeq[Routee]) extends R
  */
 final case class Router(logic: RoutingLogic, routees: immutable.IndexedSeq[Routee] = Vector.empty) {
 
-  /**
-   * Java API
-   */
+  /** Java API */
   def this(logic: RoutingLogic) = this(logic, Vector.empty)
 
-  /**
-   * Java API
-   */
+  /** Java API */
   def this(logic: RoutingLogic, routees: java.lang.Iterable[Routee]) = this(logic, immutableSeq(routees).toVector)
 
   /**
@@ -133,14 +117,10 @@ final case class Router(logic: RoutingLogic, routees: immutable.IndexedSeq[Route
     case _                   => msg
   }
 
-  /**
-   * Create a new instance with the specified routees and the same [[RoutingLogic]].
-   */
+  /** Create a new instance with the specified routees and the same [[RoutingLogic]]. */
   def withRoutees(rs: immutable.IndexedSeq[Routee]): Router = copy(routees = rs)
 
-  /**
-   * Create a new instance with one more routee and the same [[RoutingLogic]].
-   */
+  /** Create a new instance with one more routee and the same [[RoutingLogic]]. */
   def addRoutee(routee: Routee): Router = copy(routees = routees :+ routee)
 
   /**
@@ -155,9 +135,7 @@ final case class Router(logic: RoutingLogic, routees: immutable.IndexedSeq[Route
    */
   def addRoutee(sel: ActorSelection): Router = addRoutee(ActorSelectionRoutee(sel))
 
-  /**
-   * Create a new instance without the specified routee.
-   */
+  /** Create a new instance without the specified routee. */
   def removeRoutee(routee: Routee): Router = copy(routees = routees.filterNot(_ == routee))
 
   /**

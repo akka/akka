@@ -15,9 +15,7 @@ import akka.util.ByteString
 /** INTERNAL API */
 @InternalApi private[stream] object CompressionUtils {
 
-  /**
-   * Creates a flow from a compressor constructor.
-   */
+  /** Creates a flow from a compressor constructor. */
   def compressorFlow(newCompressor: () => Compressor): Flow[ByteString, ByteString, NotUsed] =
     Flow.fromGraph {
       new SimpleLinearGraphStage[ByteString] {

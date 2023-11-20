@@ -50,17 +50,13 @@ private[akka] class BalancingDispatcher(
       _executorServiceFactoryProvider,
       _shutdownTimeout) {
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   private[akka] val team =
     new ConcurrentSkipListSet[ActorCell](Helpers.identityHashComparator(new Comparator[ActorCell] {
       def compare(l: ActorCell, r: ActorCell) = l.self.path.compareTo(r.self.path)
     }))
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   private[akka] val messageQueue: MessageQueue = _mailboxType.create(None, None)
 
   private class SharingMailbox(val system: ActorSystemImpl, _messageQueue: MessageQueue)
@@ -68,7 +64,7 @@ private[akka] class BalancingDispatcher(
       with DefaultSystemMessageQueue {
     override def cleanUp(): Unit = {
       val dlq = mailboxes.deadLetterMailbox
-      //Don't call the original implementation of this since it scraps all messages, and we don't want to do that
+      // Don't call the original implementation of this since it scraps all messages, and we don't want to do that
       var messages = systemDrain(new LatestFirstSystemMessageList(NoMessage))
       while (messages.nonEmpty) {
         // message must be “virgin” before being able to systemEnqueue again
@@ -103,12 +99,12 @@ private[akka] class BalancingDispatcher(
     if (attemptTeamWork) {
       @tailrec def scheduleOne(i: Iterator[ActorCell] = team.iterator): Unit =
         if (messageQueue.hasMessages
-            && i.hasNext
-            && (executorService.executor match {
-              case lm: LoadMetrics => !lm.atFullThrottle()
-              case _               => true
-            })
-            && !registerForExecution(i.next.mailbox, false, false))
+          && i.hasNext
+          && (executorService.executor match {
+            case lm: LoadMetrics => !lm.atFullThrottle()
+            case _               => true
+          })
+          && !registerForExecution(i.next.mailbox, false, false))
           scheduleOne(i)
 
       scheduleOne()

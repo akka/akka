@@ -79,7 +79,7 @@ class PersistenceTestKitDurableStateStore[A](val system: ExtendedActorSystem)
         val updatedRecord = Record[A](globalOffset, persistenceId, revision, None, record.tag)
         store = store + (persistenceId -> updatedRecord)
         publisher ! updatedRecord
-      case None => //ignore
+      case None => // ignore
     }
 
     Future.successful(Done)
@@ -118,12 +118,14 @@ class PersistenceTestKitDurableStateStore[A](val system: ExtendedActorSystem)
   override def currentChanges(tag: String, offset: Offset): Source[DurableStateChange[A], akka.NotUsed] =
     this.synchronized {
       val currentGlobalOffset = lastGlobalOffset.get()
-      changes(tag, offset).takeWhile(_.offset match {
-        case Sequence(fromOffset) =>
-          fromOffset < currentGlobalOffset
-        case offset =>
-          throw new UnsupportedOperationException(s"$offset not supported in PersistenceTestKitDurableStateStore.")
-      }, inclusive = true)
+      changes(tag, offset).takeWhile(
+        _.offset match {
+          case Sequence(fromOffset) =>
+            fromOffset < currentGlobalOffset
+          case offset =>
+            throw new UnsupportedOperationException(s"$offset not supported in PersistenceTestKitDurableStateStore.")
+        },
+        inclusive = true)
     }
 
   override def currentChangesBySlices(
@@ -133,12 +135,14 @@ class PersistenceTestKitDurableStateStore[A](val system: ExtendedActorSystem)
       offset: Offset): Source[DurableStateChange[A], NotUsed] =
     this.synchronized {
       val currentGlobalOffset = lastGlobalOffset.get()
-      changesBySlices(entityType, minSlice, maxSlice, offset).takeWhile(_.offset match {
-        case Sequence(fromOffset) =>
-          fromOffset < currentGlobalOffset
-        case offset =>
-          throw new UnsupportedOperationException(s"$offset not supported in PersistenceTestKitDurableStateStore.")
-      }, inclusive = true)
+      changesBySlices(entityType, minSlice, maxSlice, offset).takeWhile(
+        _.offset match {
+          case Sequence(fromOffset) =>
+            fromOffset < currentGlobalOffset
+          case offset =>
+            throw new UnsupportedOperationException(s"$offset not supported in PersistenceTestKitDurableStateStore.")
+        },
+        inclusive = true)
     }
 
   override def changesBySlices(
@@ -155,7 +159,8 @@ class PersistenceTestKitDurableStateStore[A](val system: ExtendedActorSystem)
       }
       def bySliceFromOffset(rec: Record[A]) = {
         val slice = persistence.sliceForPersistenceId(rec.persistenceId)
-        PersistenceId.extractEntityType(rec.persistenceId) == entityType && slice >= minSlice && slice <= maxSlice && rec.globalOffset > fromOffset
+        PersistenceId.extractEntityType(
+          rec.persistenceId) == entityType && slice >= minSlice && slice <= maxSlice && rec.globalOffset > fromOffset
       }
       def bySliceFromOffsetNotDeleted(rec: Record[A]) =
         bySliceFromOffset(rec) && storeContains(rec.persistenceId)

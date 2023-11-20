@@ -76,10 +76,9 @@ class TransformMessagesSpec extends ScalaTestWithActorTestKit with AnyWordSpecLi
       val transformCount = new AtomicInteger(0)
 
       // sadly the only "same" we can know is if it is the same PF
-      val transformPF: PartialFunction[String, String] = {
-        case s =>
-          transformCount.incrementAndGet()
-          s
+      val transformPF: PartialFunction[String, String] = { case s =>
+        transformCount.incrementAndGet()
+        s
       }
       def transform(behavior: Behavior[String]): Behavior[String] =
         behavior.transformMessages(transformPF)
@@ -102,10 +101,9 @@ class TransformMessagesSpec extends ScalaTestWithActorTestKit with AnyWordSpecLi
       val transformCount = new AtomicInteger(0)
 
       // sadly the only "same" we can know is if it is the same PF
-      val transformPF: PartialFunction[String, String] = {
-        case s =>
-          transformCount.incrementAndGet()
-          s
+      val transformPF: PartialFunction[String, String] = { case s =>
+        transformCount.incrementAndGet()
+        s
       }
       def transform(behavior: Behavior[String]): Behavior[String] =
         behavior.transformMessages(transformPF)
@@ -132,8 +130,8 @@ class TransformMessagesSpec extends ScalaTestWithActorTestKit with AnyWordSpecLi
       val probe = TestProbe[String]()
 
       def transform(behavior: Behavior[String]): Behavior[String] =
-        behavior.transformMessages[String] {
-          case s => s.toLowerCase
+        behavior.transformMessages[String] { case s =>
+          s.toLowerCase
         }
 
       LoggingTestKit.error[ActorInitializationException].expect {
@@ -156,8 +154,8 @@ class TransformMessagesSpec extends ScalaTestWithActorTestKit with AnyWordSpecLi
             Behaviors.same
           }
         }
-        .transformMessages[String] {
-          case msg => msg.toUpperCase()
+        .transformMessages[String] { case msg =>
+          msg.toUpperCase()
         }
 
       val ref = spawn(behv)
@@ -177,8 +175,8 @@ class TransformMessagesSpec extends ScalaTestWithActorTestKit with AnyWordSpecLi
             probe.ref ! msg
             Behaviors.same
           }
-          .transformMessages[String] {
-            case msg => msg.toUpperCase()
+          .transformMessages[String] { case msg =>
+            msg.toUpperCase()
           }
       }
 

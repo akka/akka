@@ -47,9 +47,7 @@ object BackoffSupervisor {
    */
   final case class CurrentChild(ref: Option[ActorRef]) {
 
-    /**
-     * Java API: The `ActorRef` of the current child, if any
-     */
+    /** Java API: The `ActorRef` of the current child, if any */
     def getRef: Optional[ActorRef] = Optional.ofNullable(ref.orNull)
   }
 
@@ -79,15 +77,11 @@ object BackoffSupervisor {
 
   final case class RestartCount(count: Int)
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi
   private[akka] case object StartChild extends DeadLetterSuppression
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi
   private[akka] case class ResetRestartCount(current: Int) extends DeadLetterSuppression
 

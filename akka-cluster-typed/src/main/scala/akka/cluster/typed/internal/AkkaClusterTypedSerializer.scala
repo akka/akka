@@ -16,9 +16,7 @@ import akka.cluster.typed.internal.receptionist.ClusterReceptionist.Entry
 import akka.remote.serialization.WrappedPayloadSupport
 import akka.serialization.{ BaseSerializer, SerializerWithStringManifest }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] final class AkkaClusterTypedSerializer(override val system: ExtendedActorSystem)
     extends SerializerWithStringManifest

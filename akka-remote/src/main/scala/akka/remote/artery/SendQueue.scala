@@ -19,9 +19,7 @@ import akka.stream.stage.GraphStageLogic
 import akka.stream.stage.GraphStageWithMaterializedValue
 import akka.stream.stage.OutHandler
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[remote] object SendQueue {
   trait ProducerApi[T] {
     def offer(message: T): Boolean
@@ -38,9 +36,7 @@ private[remote] object SendQueue {
   }
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[remote] final class SendQueue[T](postStopAction: Vector[T] => Unit)
     extends GraphStageWithMaterializedValue[SourceShape[T], SendQueue.QueueValue[T]] {
   import SendQueue._

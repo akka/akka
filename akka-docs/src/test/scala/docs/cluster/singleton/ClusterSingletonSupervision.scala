@@ -9,8 +9,8 @@ import akka.actor.{ Actor, Props, SupervisorStrategy }
 class SupervisorActor(childProps: Props, override val supervisorStrategy: SupervisorStrategy) extends Actor {
   val child = context.actorOf(childProps, "supervised-child")
 
-  def receive = {
-    case msg => child.forward(msg)
+  def receive = { case msg =>
+    child.forward(msg)
   }
 }
 //#singleton-supervisor-actor
@@ -19,7 +19,7 @@ import akka.actor.Actor
 abstract class ClusterSingletonSupervision extends Actor {
   import akka.actor.{ ActorRef, Props, SupervisorStrategy }
   def createSingleton(name: String, props: Props, supervisorStrategy: SupervisorStrategy): ActorRef = {
-    //#singleton-supervisor-actor-usage
+    // #singleton-supervisor-actor-usage
     import akka.actor.{ PoisonPill, Props }
     import akka.cluster.singleton.{ ClusterSingletonManager, ClusterSingletonManagerSettings }
     context.system.actorOf(
@@ -28,6 +28,6 @@ abstract class ClusterSingletonSupervision extends Actor {
         terminationMessage = PoisonPill,
         settings = ClusterSingletonManagerSettings(context.system)),
       name = name)
-    //#singleton-supervisor-actor-usage
+    // #singleton-supervisor-actor-usage
   }
 }

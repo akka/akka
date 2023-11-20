@@ -20,19 +20,13 @@ sealed trait Direction {
 
 object Direction {
 
-  /**
-   * Java API: get the Direction.Send instance
-   */
+  /** Java API: get the Direction.Send instance */
   def sendDirection(): Direction = Direction.Send
 
-  /**
-   * Java API: get the Direction.Receive instance
-   */
+  /** Java API: get the Direction.Receive instance */
   def receiveDirection(): Direction = Direction.Receive
 
-  /**
-   * Java API: get the Direction.Both instance
-   */
+  /** Java API: get the Direction.Both instance */
   def bothDirection(): Direction = Direction.Both
 
   @SerialVersionUID(1L)
@@ -42,9 +36,7 @@ object Direction {
       case _    => false
     }
 
-    /**
-     * Java API: get the singleton instance
-     */
+    /** Java API: get the singleton instance */
     def getInstance: Direction = this
   }
 
@@ -55,9 +47,7 @@ object Direction {
       case _       => false
     }
 
-    /**
-     * Java API: get the singleton instance
-     */
+    /** Java API: get the singleton instance */
     def getInstance: Direction = this
   }
 
@@ -65,9 +55,7 @@ object Direction {
   case object Both extends Direction {
     override def includes(other: Direction): Boolean = true
 
-    /**
-     * Java API: get the singleton instance
-     */
+    /** Java API: get the singleton instance */
     def getInstance: Direction = this
   }
 }
@@ -78,22 +66,16 @@ final case class SetThrottle(address: Address, direction: Direction, mode: Throt
 @SerialVersionUID(1L)
 case object SetThrottleAck {
 
-  /**
-   * Java API: get the singleton instance
-   */
+  /** Java API: get the singleton instance */
   def getInstance = this
 }
 
 object ThrottleMode {
 
-  /**
-   * Java API: get the Blackhole instance
-   */
+  /** Java API: get the Blackhole instance */
   def blackholeThrottleMode(): ThrottleMode = Blackhole
 
-  /**
-   * Java API: get the Unthrottled instance
-   */
+  /** Java API: get the Unthrottled instance */
   def unthrottledThrottleMode(): ThrottleMode = Unthrottled
 }
 
@@ -107,9 +89,9 @@ final case class TokenBucket(capacity: Int, tokensPerSecond: Double, nanoTimeOfL
     extends ThrottleMode {
 
   private def isAvailable(nanoTimeOfSend: Long, tokens: Int): Boolean =
-    if ((tokens > capacity && availableTokens > 0)) {
+    if (tokens > capacity && availableTokens > 0) {
       true // Allow messages larger than capacity through, it will be recorded as negative tokens
-    } else min((availableTokens + tokensGenerated(nanoTimeOfSend)), capacity) >= tokens
+    } else min(availableTokens + tokensGenerated(nanoTimeOfSend), capacity) >= tokens
 
   override def tryConsumeTokens(nanoTimeOfSend: Long, tokens: Int): (ThrottleMode, Boolean) = {
     if (isAvailable(nanoTimeOfSend, tokens))
@@ -135,9 +117,7 @@ case object Unthrottled extends ThrottleMode {
   override def tryConsumeTokens(nanoTimeOfSend: Long, tokens: Int): (ThrottleMode, Boolean) = (this, true)
   override def timeToAvailable(currentNanoTime: Long, tokens: Int): FiniteDuration = Duration.Zero
 
-  /**
-   * Java API: get the singleton instance
-   */
+  /** Java API: get the singleton instance */
   def getInstance: ThrottleMode = this
 }
 
@@ -146,23 +126,17 @@ case object Blackhole extends ThrottleMode {
   override def tryConsumeTokens(nanoTimeOfSend: Long, tokens: Int): (ThrottleMode, Boolean) = (this, false)
   override def timeToAvailable(currentNanoTime: Long, tokens: Int): FiniteDuration = Duration.Zero
 
-  /**
-   * Java API: get the singleton instance
-   */
+  /** Java API: get the singleton instance */
   def getInstance: ThrottleMode = this
 }
 
-/**
- * Management Command to force disassociation of an address.
- */
+/** Management Command to force disassociation of an address. */
 @SerialVersionUID(1L)
 final case class ForceDisassociate(address: Address)
 
 @SerialVersionUID(1L)
 case object ForceDisassociateAck {
 
-  /**
-   * Java API: get the singleton instance
-   */
+  /** Java API: get the singleton instance */
   def getInstance = this
 }

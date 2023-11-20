@@ -13,7 +13,8 @@ import akka.persistence._
 import akka.testkit.{ AkkaSpec, TestProbe }
 
 object SharedLeveldbJournalSpec {
-  val config = ConfigFactory.parseString("""
+  val config = ConfigFactory
+    .parseString("""
       akka {
         actor {
           provider = remote
@@ -39,18 +40,18 @@ object SharedLeveldbJournalSpec {
         log-dead-letters-during-shutdown = off
         test.single-expect-default = 10s
       }
-    """).withFallback(SharedLeveldbJournal.configToEnableJavaSerializationForTest)
+    """)
+    .withFallback(SharedLeveldbJournal.configToEnableJavaSerializationForTest)
 
   class ExamplePersistentActor(probe: ActorRef, name: String) extends NamedPersistentActor(name) {
     override def receiveRecover = {
       case RecoveryCompleted => // ignore
       case payload           => probe ! payload
     }
-    override def receiveCommand = {
-      case payload =>
-        persist(payload) { _ =>
-          probe ! payload
-        }
+    override def receiveCommand = { case payload =>
+      persist(payload) { _ =>
+        probe ! payload
+      }
     }
   }
 
@@ -90,7 +91,8 @@ class SharedLeveldbJournalSpec extends AkkaSpec(SharedLeveldbJournalSpec.config)
       @nowarn
       val sharedLeveldbStoreCls = classOf[SharedLeveldbStore]
       system.actorOf(Props(sharedLeveldbStoreCls, storeConfig), "store")
-      val storePath = RootActorPath(system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress) / "user" / "store"
+      val storePath =
+        RootActorPath(system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress) / "user" / "store"
 
       val appA = systemA.actorOf(Props(classOf[ExampleApp], probeA.ref, storePath))
       val appB = systemB.actorOf(Props(classOf[ExampleApp], probeB.ref, storePath))

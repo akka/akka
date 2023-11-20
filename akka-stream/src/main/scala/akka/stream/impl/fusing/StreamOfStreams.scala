@@ -30,9 +30,7 @@ import akka.stream.stage._
 import akka.util.OptionVal
 import akka.util.ccompat.JavaConverters._
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] final class FlattenMerge[T, M](val breadth: Int)
     extends GraphStage[FlowShape[Graph[SourceShape[T], M], T]] {
   private val in = Inlet[Graph[SourceShape[T], M]]("flatten.in")
@@ -76,12 +74,14 @@ import akka.util.ccompat.JavaConverters._
       override def onUpstreamFinish(): Unit = if (activeSources == 0) completeStage()
       override def onPull(): Unit = {
         pull(in)
-        setHandler(out, new OutHandler {
-          override def onPull(): Unit = {
-            // could be unavailable due to async input having been executed before this notification
-            if (queue.nonEmpty && isAvailable(out)) pushOut()
-          }
-        })
+        setHandler(
+          out,
+          new OutHandler {
+            override def onPull(): Unit = {
+              // could be unavailable due to async input having been executed before this notification
+              if (queue.nonEmpty && isAvailable(out)) pushOut()
+            }
+          })
       }
 
       setHandlers(in, out, this)
@@ -137,9 +137,7 @@ import akka.util.ccompat.JavaConverters._
   override def toString: String = s"FlattenMerge($breadth)"
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] final class PrefixAndTail[T](val n: Int)
     extends GraphStage[FlowShape[T, (immutable.Seq[T], Source[T, NotUsed])]] {
   val in: Inlet[T] = Inlet("PrefixAndTail.in")
@@ -253,9 +251,7 @@ import akka.util.ccompat.JavaConverters._
   override def toString: String = s"PrefixAndTail($n)"
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] final class GroupBy[T, K](
     val maxSubstreams: Int,
     val keyFor: T => K,
@@ -269,7 +265,6 @@ import akka.util.ccompat.JavaConverters._
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new TimerGraphStageLogic(shape) with OutHandler with InHandler {
       parent =>
-
       lazy val decider = inheritedAttributes.mandatoryAttribute[SupervisionStrategy].decider
       private val activeSubstreamsMap = new java.util.HashMap[Any, SubstreamSource]()
       private val closedSubstreams =
@@ -447,9 +442,7 @@ import akka.util.ccompat.JavaConverters._
 
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object Split {
   sealed abstract class SplitDecision
 
@@ -470,9 +463,7 @@ import akka.util.ccompat.JavaConverters._
     new Split(Split.SplitAfter, p, substreamCancelStrategy)
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] final class Split[T](
     val decision: Split.SplitDecision,
     val p: T => Boolean,
@@ -507,7 +498,7 @@ import akka.util.ccompat.JavaConverters._
       new OutHandler {
         override def onPull(): Unit = {
           if (substreamSource eq null) {
-            //can be already pulled from substream in case split after
+            // can be already pulled from substream in case split after
             if (!hasBeenPulled(in)) pull(in)
           } else if (substreamWaitingToBePushed) pushSubstreamSource()
         }
@@ -646,9 +637,7 @@ import akka.util.ccompat.JavaConverters._
 
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[stream] object SubSink {
   sealed trait State
 
@@ -675,9 +664,7 @@ import akka.util.ccompat.JavaConverters._
   case class Cancel(cause: Throwable) extends Command
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[stream] final class SubSink[T](name: String, externalCallback: ActorSubscriberMessage => Unit)
     extends GraphStage[SinkShape[T]] {
   import SubSink._
@@ -764,9 +751,7 @@ import akka.util.ccompat.JavaConverters._
   override def toString: String = name
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] final class SubSource[T](
     name: String,
     private[fusing] val externalCallback: AsyncCallback[SubSink.Command])
@@ -791,7 +776,7 @@ import akka.util.ccompat.JavaConverters._
         status.get.asInstanceOf[AsyncCallback[Any]].invoke(ActorSubscriberMessage.OnComplete)
     case OnError(_)                        => // already failed out, keep the exception as that happened first
     case ActorSubscriberMessage.OnComplete => // it was already completed
-    case _                                 => throw new RuntimeException() // won't happen, compiler exhaustiveness check pleaser
+    case _ => throw new RuntimeException() // won't happen, compiler exhaustiveness check pleaser
   }
 
   def failSubstream(ex: Throwable): Unit = status.get match {
@@ -802,7 +787,7 @@ import akka.util.ccompat.JavaConverters._
         status.get.asInstanceOf[AsyncCallback[Any]].invoke(failure)
     case ActorSubscriberMessage.OnComplete => // it was already completed, ignore failure as completion happened first
     case OnError(_)                        => // already failed out, keep the exception as that happened first
-    case _                                 => throw new RuntimeException() // won't happen, compiler exhaustiveness check pleaser
+    case _ => throw new RuntimeException() // won't happen, compiler exhaustiveness check pleaser
   }
 
   def timeout(d: FiniteDuration): Boolean =

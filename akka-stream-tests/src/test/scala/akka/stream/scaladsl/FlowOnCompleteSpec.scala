@@ -14,9 +14,11 @@ import akka.stream.Materializer
 import akka.stream.testkit._
 import akka.testkit.TestProbe
 
-class FlowOnCompleteSpec extends StreamSpec("""
+class FlowOnCompleteSpec
+    extends StreamSpec("""
     akka.stream.materializer.initial-input-buffer-size = 2
-  """) with ScriptedTest {
+  """)
+    with ScriptedTest {
 
   "A Flow with onComplete" must {
 

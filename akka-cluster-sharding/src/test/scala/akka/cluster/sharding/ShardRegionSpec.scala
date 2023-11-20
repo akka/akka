@@ -57,8 +57,8 @@ object ShardRegionSpec {
   }
 
   class EntityActor extends Actor with ActorLogging {
-    override def receive: Receive = {
-      case msg => sender() ! msg
+    override def receive: Receive = { case msg =>
+      sender() ! msg
     }
   }
 }
@@ -139,18 +139,17 @@ class ShardRegionSpec extends AkkaSpec(ShardRegionSpec.config) with WithLogCaptu
       def statesFor(region: ActorRef, probe: TestProbe, expect: Int) = {
         region.tell(ShardRegion.GetShardRegionState, probe.ref)
         probe
-          .receiveWhile(messages = expect) {
-            case e: ShardRegion.CurrentShardRegionState =>
-              e.failed.isEmpty shouldEqual true
-              e.shards.map(_.shardId)
+          .receiveWhile(messages = expect) { case e: ShardRegion.CurrentShardRegionState =>
+            e.failed.isEmpty shouldEqual true
+            e.shards.map(_.shardId)
           }
           .flatten
       }
 
       def awaitRebalance(region: ActorRef, msg: Int, probe: TestProbe): Boolean = {
         region.tell(msg, probe.ref)
-        probe.expectMsgPF(2.seconds) {
-          case id => if (id == msg) true else awaitRebalance(region, msg, probe)
+        probe.expectMsgPF(2.seconds) { case id =>
+          if (id == msg) true else awaitRebalance(region, msg, probe)
         }
       }
 

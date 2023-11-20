@@ -23,15 +23,15 @@ object ClusterShardingRememberEntitiesNewExtractorSpec {
     log.info("Entity started: " + self.path)
     probe.foreach(_ ! Started(self))
 
-    def receive = {
-      case m => sender() ! m
+    def receive = { case m =>
+      sender() ! m
     }
   }
 
   val shardCount = 5
 
-  val extractEntityId: ShardRegion.ExtractEntityId = {
-    case id: Int => (id.toString, id)
+  val extractEntityId: ShardRegion.ExtractEntityId = { case id: Int =>
+    (id.toString, id)
   }
 
   val extractShardId1: ShardRegion.ExtractShardId = {
@@ -182,7 +182,8 @@ abstract class ClusterShardingRememberEntitiesNewExtractorSpec(
       enterBarrier("first-sharding-cluster-stopped")
     }
 
-    "start new nodes with different extractor, and have the entities running on the right shards" in within(30.seconds) {
+    "start new nodes with different extractor, and have the entities running on the right shards" in within(
+      30.seconds) {
 
       // start it with a new shard id extractor, which will put the entities
       // on different shards

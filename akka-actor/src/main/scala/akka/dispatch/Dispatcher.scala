@@ -54,27 +54,21 @@ class Dispatcher(
 
   protected final def executorService: ExecutorServiceDelegate = executorServiceDelegate
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   protected[akka] def dispatch(receiver: ActorCell, invocation: Envelope): Unit = {
     val mbox = receiver.mailbox
     mbox.enqueue(receiver.self, invocation)
     registerForExecution(mbox, true, false)
   }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   protected[akka] def systemDispatch(receiver: ActorCell, invocation: SystemMessage): Unit = {
     val mbox = receiver.mailbox
     mbox.systemEnqueue(receiver.self, invocation)
     registerForExecution(mbox, false, true)
   }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   protected[akka] def executeTask(invocation: TaskInvocation): Unit = {
     try {
       executorService.execute(invocation)
@@ -90,9 +84,7 @@ class Dispatcher(
     }
   }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   protected[akka] def createMailbox(actor: akka.actor.Cell, mailboxType: MailboxType): Mailbox = {
     new Mailbox(mailboxType.create(Some(actor.self), Some(actor.system))) with DefaultSystemMessageQueue
   }
@@ -102,9 +94,7 @@ class Dispatcher(
     classOf[LazyExecutorServiceDelegate],
     "executorServiceDelegate")
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   protected[akka] def shutdown(): Unit = {
     val newDelegate = executorServiceDelegate.copy() // Doesn't matter which one we copy
     val es = esUpdater.getAndSet(this, newDelegate)
@@ -120,7 +110,7 @@ class Dispatcher(
       mbox: Mailbox,
       hasMessageHint: Boolean,
       hasSystemMessageHint: Boolean): Boolean = {
-    if (mbox.canBeScheduledForExecution(hasMessageHint, hasSystemMessageHint)) { //This needs to be here to ensure thread safety and no races
+    if (mbox.canBeScheduledForExecution(hasMessageHint, hasSystemMessageHint)) { // This needs to be here to ensure thread safety and no races
       if (mbox.setAsScheduled()) {
         try {
           executorService.execute(mbox)
@@ -130,7 +120,7 @@ class Dispatcher(
             try {
               executorService.execute(mbox)
               true
-            } catch { //Retry once
+            } catch { // Retry once
               case e: RejectedExecutionException =>
                 mbox.setAsIdle()
                 eventStream.publish(Error(e, getClass.getName, getClass, "registerForExecution was rejected twice!"))
@@ -146,9 +136,7 @@ class Dispatcher(
 
 object PriorityGenerator {
 
-  /**
-   * Creates a PriorityGenerator that uses the supplied function as priority generator
-   */
+  /** Creates a PriorityGenerator that uses the supplied function as priority generator */
   def apply(priorityFunction: Any => Int): PriorityGenerator = new PriorityGenerator {
     def gen(message: Any): Int = priorityFunction(message)
   }

@@ -14,9 +14,11 @@ import akka.testkit.{ DefaultTimeout, ImplicitSender }
 object RemotingMultiNodeSpec {
 
   def commonConfig =
-    ConfigFactory.parseString("""
+    ConfigFactory
+      .parseString("""
         akka.actor.warn-about-java-serializer-usage = off
-      """).withFallback(ArterySpecSupport.tlsConfig) // TLS only used if transport=tls-tcp
+      """)
+      .withFallback(ArterySpecSupport.tlsConfig) // TLS only used if transport=tls-tcp
 
 }
 
@@ -25,6 +27,4 @@ abstract class RemotingMultiNodeSpec(config: MultiNodeConfig)
     with Suite
     with STMultiNodeSpec
     with ImplicitSender
-    with DefaultTimeout { self: MultiNodeSpec =>
-
-}
+    with DefaultTimeout { self: MultiNodeSpec => }

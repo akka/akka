@@ -32,9 +32,7 @@ class AskTimeoutException(message: String, cause: Throwable) extends TimeoutExce
   override def getCause(): Throwable = cause
 }
 
-/**
- * This object contains implementation details of the “ask” pattern.
- */
+/** This object contains implementation details of the “ask” pattern. */
 trait AskSupport {
 
   /**
@@ -81,7 +79,6 @@ trait AskSupport {
    *     EnrichedMessage(response)
    *   } pipeTo nextActor
    * }}}
-   *
    */
   def ask(actorRef: ActorRef, message: Any)(implicit timeout: Timeout): Future[Any] =
     actorRef.internalAsk(message, timeout, ActorRef.noSender)
@@ -148,7 +145,6 @@ trait AskSupport {
    *     EnrichedMessage(response)
    *   } pipeTo nextActor
    * }}}
-   *
    */
   def ask(actorSelection: ActorSelection, message: Any)(implicit timeout: Timeout): Future[Any] =
     actorSelection.internalAsk(message, timeout, ActorRef.noSender)
@@ -215,8 +211,8 @@ trait ExplicitAskSupport {
    */
   def ask(actorRef: ActorRef, messageFactory: ActorRef => Any)(implicit timeout: Timeout): Future[Any] =
     actorRef.internalAsk(messageFactory, timeout, ActorRef.noSender)
-  def ask(actorRef: ActorRef, messageFactory: ActorRef => Any, sender: ActorRef)(
-      implicit timeout: Timeout): Future[Any] =
+  def ask(actorRef: ActorRef, messageFactory: ActorRef => Any, sender: ActorRef)(implicit
+      timeout: Timeout): Future[Any] =
     actorRef.internalAsk(messageFactory, timeout, sender)
 
   /**
@@ -270,12 +266,11 @@ trait ExplicitAskSupport {
    *   EnrichedMessage(response)
    * } pipeTo nextActor
    * }}}
-   *
    */
   def ask(actorSelection: ActorSelection, messageFactory: ActorRef => Any)(implicit timeout: Timeout): Future[Any] =
     actorSelection.internalAsk(messageFactory, timeout, ActorRef.noSender)
-  def ask(actorSelection: ActorSelection, messageFactory: ActorRef => Any, sender: ActorRef)(
-      implicit timeout: Timeout): Future[Any] =
+  def ask(actorSelection: ActorSelection, messageFactory: ActorRef => Any, sender: ActorRef)(implicit
+      timeout: Timeout): Future[Any] =
     actorSelection.internalAsk(messageFactory, timeout, sender)
 }
 
@@ -287,9 +282,7 @@ object AskableActorRef {
     s"Message of type [${msg.getClass.getName}]$wasSentBy."
   }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[akka] def negativeTimeoutException(
       recipient: Any,
       message: Any,
@@ -299,9 +292,7 @@ object AskableActorRef {
       messagePartOfException(message, sender))
   }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[akka] def recipientTerminatedException(
       recipient: Any,
       message: Any,
@@ -311,9 +302,7 @@ object AskableActorRef {
       messagePartOfException(message, sender))
   }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[akka] def unsupportedRecipientType(
       recipient: Any,
       message: Any,
@@ -329,39 +318,31 @@ object AskableActorRef {
  */
 final class AskableActorRef(val actorRef: ActorRef) extends AnyVal {
 
-  /**
-   * INTERNAL API: for binary compatibility
-   */
+  /** INTERNAL API: for binary compatibility */
   protected def ask(message: Any, timeout: Timeout): Future[Any] =
     internalAsk(message, timeout, ActorRef.noSender)
 
-  //todo add scaladoc
+  // todo add scaladoc
   def ask(message: Any)(implicit timeout: Timeout, sender: ActorRef = Actor.noSender): Future[Any] =
     internalAsk(message, timeout, sender)
 
   def askWithStatus(message: Any)(implicit timeout: Timeout, sender: ActorRef = Actor.noSender): Future[Any] =
     internalAskWithStatus(message)
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi
   private[pattern] def internalAskWithStatus(
       message: Any)(implicit timeout: Timeout, sender: ActorRef = Actor.noSender): Future[Any] =
     StatusReply.flattenStatusFuture[Any](internalAsk(message, timeout, sender).mapTo[StatusReply[Any]])
 
-  /**
-   * INTERNAL API: for binary compatibility
-   */
+  /** INTERNAL API: for binary compatibility */
   protected def ?(message: Any)(implicit timeout: Timeout): Future[Any] =
     internalAsk(message, timeout, ActorRef.noSender)
 
   def ?(message: Any)(implicit timeout: Timeout, sender: ActorRef = Actor.noSender): Future[Any] =
     internalAsk(message, timeout, sender)
 
-  /**
-   * INTERNAL API: for binary compatibility
-   */
+  /** INTERNAL API: for binary compatibility */
   private[pattern] def internalAsk(message: Any, timeout: Timeout, sender: ActorRef) = actorRef match {
     case ref: InternalActorRef if ref.isTerminated =>
       actorRef ! message
@@ -389,9 +370,7 @@ final class ExplicitlyAskableActorRef(val actorRef: ActorRef) extends AnyVal {
   def ?(message: ActorRef => Any)(implicit timeout: Timeout, sender: ActorRef = Actor.noSender): Future[Any] =
     internalAsk(message, timeout, sender)
 
-  /**
-   * INTERNAL API: for binary compatibility
-   */
+  /** INTERNAL API: for binary compatibility */
   private[pattern] def internalAsk(messageFactory: ActorRef => Any, timeout: Timeout, sender: ActorRef): Future[Any] =
     actorRef match {
       case ref: InternalActorRef if ref.isTerminated =>
@@ -425,27 +404,21 @@ final class ExplicitlyAskableActorRef(val actorRef: ActorRef) extends AnyVal {
  */
 final class AskableActorSelection(val actorSel: ActorSelection) extends AnyVal {
 
-  /**
-   * INTERNAL API: for binary compatibility
-   */
+  /** INTERNAL API: for binary compatibility */
   protected def ask(message: Any, timeout: Timeout): Future[Any] =
     internalAsk(message, timeout, ActorRef.noSender)
 
   def ask(message: Any)(implicit timeout: Timeout, sender: ActorRef = Actor.noSender): Future[Any] =
     internalAsk(message, timeout, sender)
 
-  /**
-   * INTERNAL API: for binary compatibility
-   */
+  /** INTERNAL API: for binary compatibility */
   protected def ?(message: Any)(implicit timeout: Timeout): Future[Any] =
     internalAsk(message, timeout, ActorRef.noSender)
 
   def ?(message: Any)(implicit timeout: Timeout, sender: ActorRef = Actor.noSender): Future[Any] =
     internalAsk(message, timeout, sender)
 
-  /**
-   * INTERNAL API: for binary compatibility
-   */
+  /** INTERNAL API: for binary compatibility */
   private[pattern] def internalAsk(message: Any, timeout: Timeout, sender: ActorRef): Future[Any] =
     actorSel.anchor match {
       case ref: InternalActorRef =>
@@ -471,9 +444,7 @@ final class ExplicitlyAskableActorSelection(val actorSel: ActorSelection) extend
   def ?(message: ActorRef => Any)(implicit timeout: Timeout, sender: ActorRef = Actor.noSender): Future[Any] =
     internalAsk(message, timeout, sender)
 
-  /**
-   * INTERNAL API: for binary compatibility
-   */
+  /** INTERNAL API: for binary compatibility */
   private[pattern] def internalAsk(messageFactory: ActorRef => Any, timeout: Timeout, sender: ActorRef): Future[Any] =
     actorSel.anchor match {
       case ref: InternalActorRef =>
@@ -693,9 +664,7 @@ private[akka] final class PromiseActorRef(
   private[akka] def onTimeout(@unused timeout: Timeout): Unit = {}
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] object PromiseActorRef {
   private case object Registering

@@ -117,11 +117,13 @@ class SplitBrainResolverSpec
     new LeaseSettings("akka-sbr", "test", new TimeoutSettings(1.second, 2.minutes, 3.seconds), ConfigFactory.empty)
 
   def createReachability(unreachability: Seq[(Member, Member)]): Reachability = {
-    Reachability(unreachability.map {
-      case (from, to) => Reachability.Record(from.uniqueAddress, to.uniqueAddress, Reachability.Unreachable, 1)
-    }.toIndexedSeq, unreachability.map {
-      case (from, _) => from.uniqueAddress -> 1L
-    }.toMap)
+    Reachability(
+      unreachability.map { case (from, to) =>
+        Reachability.Record(from.uniqueAddress, to.uniqueAddress, Reachability.Unreachable, 1)
+      }.toIndexedSeq,
+      unreachability.map { case (from, _) =>
+        from.uniqueAddress -> 1L
+      }.toMap)
   }
 
   def extSystem: ExtendedActorSystem = system.asInstanceOf[ExtendedActorSystem]
@@ -475,8 +477,8 @@ class SplitBrainResolverSpec
       assertDowningSide(side1, Set(memberA, memberB, memberC))
     }
 
-    "down indirectly connected when combined with clean partition: {A, (B, C)} | {D, E} => {A}" in new Setup2(
-      role = None) {
+    "down indirectly connected when combined with clean partition: {A, (B, C)} | {D, E} => {A}" in new Setup2(role =
+      None) {
       side1 = Set(memberA, memberB, memberC)
       side2 = Set(memberD, memberE)
       indirectlyConnected = List(memberB -> memberC, memberC -> memberB)
@@ -1330,7 +1332,10 @@ class SplitBrainResolverSpec
       stop()
     }
 
-    "down minority partition" in new SetupKeepMajority(stableAfter = Duration.Zero, memberA.uniqueAddress, role = None) {
+    "down minority partition" in new SetupKeepMajority(
+      stableAfter = Duration.Zero,
+      memberA.uniqueAddress,
+      role = None) {
       memberUp(memberA, memberB, memberC, memberD, memberE)
       leader(memberA)
       reachabilityChanged(memberA -> memberB, memberC -> memberD)

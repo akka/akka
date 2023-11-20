@@ -34,15 +34,15 @@ object PerformanceSpec {
 
     def stopMeasure(): Double = {
       stopTime = System.nanoTime
-      (NanoToSecond * numberOfMessages / (stopTime - startTime))
+      NanoToSecond * numberOfMessages / (stopTime - startTime)
     }
   }
 
   abstract class PerformanceTestPersistentActor(name: String) extends NamedPersistentActor(name) {
     var failAt: Long = -1
 
-    override val receiveRecover: Receive = {
-      case _ => if (lastSequenceNr % 1000 == 0) print("r")
+    override val receiveRecover: Receive = { case _ =>
+      if (lastSequenceNr % 1000 == 0) print("r")
     }
 
     val controlBehavior: Receive = {
@@ -54,29 +54,25 @@ object PerformanceSpec {
 
   class CommandsourcedTestPersistentActor(name: String) extends PerformanceTestPersistentActor(name) {
 
-    override val receiveCommand: Receive = controlBehavior.orElse {
-      case cmd =>
-        persistAsync(cmd) { _ =>
-          if (lastSequenceNr % 1000 == 0) print(".")
-          if (lastSequenceNr == failAt) throw new TestException("boom")
-        }
+    override val receiveCommand: Receive = controlBehavior.orElse { case cmd =>
+      persistAsync(cmd) { _ =>
+        if (lastSequenceNr % 1000 == 0) print(".")
+        if (lastSequenceNr == failAt) throw new TestException("boom")
+      }
     }
   }
 
   class EventsourcedTestPersistentActor(name: String) extends PerformanceTestPersistentActor(name) {
 
-    override val receiveCommand: Receive = controlBehavior.orElse {
-      case cmd =>
-        persist(cmd) { _ =>
-          if (lastSequenceNr % 1000 == 0) print(".")
-          if (lastSequenceNr == failAt) throw new TestException("boom")
-        }
+    override val receiveCommand: Receive = controlBehavior.orElse { case cmd =>
+      persist(cmd) { _ =>
+        if (lastSequenceNr % 1000 == 0) print(".")
+        if (lastSequenceNr == failAt) throw new TestException("boom")
+      }
     }
   }
 
-  /**
-   * `persist` every 10th message, otherwise `persistAsync`
-   */
+  /** `persist` every 10th message, otherwise `persistAsync` */
   class MixedTestPersistentActor(name: String) extends PerformanceTestPersistentActor(name) {
     var counter = 0
 
@@ -85,18 +81,17 @@ object PerformanceSpec {
       if (lastSequenceNr == failAt) throw new TestException("boom")
     }
 
-    val receiveCommand: Receive = controlBehavior.orElse {
-      case cmd =>
-        counter += 1
-        if (counter % 10 == 0) persist(cmd)(handler)
-        else persistAsync(cmd)(handler)
+    val receiveCommand: Receive = controlBehavior.orElse { case cmd =>
+      counter += 1
+      if (counter % 10 == 0) persist(cmd)(handler)
+      else persistAsync(cmd)(handler)
     }
   }
 
   class StashingEventsourcedTestPersistentActor(name: String) extends PerformanceTestPersistentActor(name) {
 
-    val printProgress: PartialFunction[Any, Any] = {
-      case m => if (lastSequenceNr % 1000 == 0) print("."); m
+    val printProgress: PartialFunction[Any, Any] = { case m =>
+      if (lastSequenceNr % 1000 == 0) print("."); m
     }
 
     val receiveCommand: Receive = printProgress.andThen(controlBehavior.orElse {

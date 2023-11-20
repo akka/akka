@@ -165,12 +165,11 @@ class ReplicatorPruningSpec extends MultiNodeSpec(ReplicatorPruningSpec) with ST
           var values = Set.empty[Int]
           awaitAssert {
             replicator ! Get(KeyA, ReadLocal)
-            expectMsgPF() {
-              case g @ GetSuccess(KeyA, _) =>
-                val value = g.get(KeyA).value.toInt
-                values += value
-                value should be(9)
-                g.get(KeyA).needPruningFrom(thirdUniqueAddress) should be(false)
+            expectMsgPF() { case g @ GetSuccess(KeyA, _) =>
+              val value = g.get(KeyA).value.toInt
+              values += value
+              value should be(9)
+              g.get(KeyA).needPruningFrom(thirdUniqueAddress) should be(false)
             }
           }
           values should ===(Set(9))
@@ -178,39 +177,35 @@ class ReplicatorPruningSpec extends MultiNodeSpec(ReplicatorPruningSpec) with ST
         within(5.seconds) {
           awaitAssert {
             replicator ! Get(KeyB, ReadLocal)
-            expectMsgPF() {
-              case g @ GetSuccess(KeyB, _) =>
-                g.get(KeyB).elements should be(Set("a", "b", "c"))
-                g.get(KeyB).needPruningFrom(thirdUniqueAddress) should be(false)
+            expectMsgPF() { case g @ GetSuccess(KeyB, _) =>
+              g.get(KeyB).elements should be(Set("a", "b", "c"))
+              g.get(KeyB).needPruningFrom(thirdUniqueAddress) should be(false)
             }
           }
         }
         within(5.seconds) {
           awaitAssert {
             replicator ! Get(KeyC, ReadLocal)
-            expectMsgPF() {
-              case g @ GetSuccess(KeyC, _) =>
-                g.get(KeyC).entries should be(Map("x" -> 3L, "y" -> 3L))
-                g.get(KeyC).needPruningFrom(thirdUniqueAddress) should be(false)
+            expectMsgPF() { case g @ GetSuccess(KeyC, _) =>
+              g.get(KeyC).entries should be(Map("x" -> 3L, "y" -> 3L))
+              g.get(KeyC).needPruningFrom(thirdUniqueAddress) should be(false)
             }
           }
         }
         within(5.seconds) {
           awaitAssert {
             replicator ! Get(KeyD, ReadLocal)
-            expectMsgPF() {
-              case g @ GetSuccess(KeyD, _) =>
-                g.get(KeyD).entries("a") should be(Set("A"))
-                g.get(KeyD).needPruningFrom(thirdUniqueAddress) should be(false)
+            expectMsgPF() { case g @ GetSuccess(KeyD, _) =>
+              g.get(KeyD).entries("a") should be(Set("A"))
+              g.get(KeyD).needPruningFrom(thirdUniqueAddress) should be(false)
             }
           }
         }
         within(5.seconds) {
           awaitAssert {
             replicator ! Get(KeyE, ReadLocal)
-            expectMsgPF() {
-              case g @ GetSuccess(KeyE, _) =>
-                g.get(KeyE).needPruningFrom(thirdUniqueAddress) should be(false)
+            expectMsgPF() { case g @ GetSuccess(KeyE, _) =>
+              g.get(KeyE).needPruningFrom(thirdUniqueAddress) should be(false)
             }
           }
         }
@@ -223,19 +218,17 @@ class ReplicatorPruningSpec extends MultiNodeSpec(ReplicatorPruningSpec) with ST
           // inject data from removed node to simulate bad data
           existing.merge(oldCounter) :+ 1
         }
-        expectMsgPF() {
-          case UpdateSuccess(KeyA, _) =>
-            replicator ! Get(KeyA, ReadLocal)
-            val retrieved = expectMsgType[GetSuccess[GCounter]].dataValue
-            retrieved.value should be(expectedValue)
+        expectMsgPF() { case UpdateSuccess(KeyA, _) =>
+          replicator ! Get(KeyA, ReadLocal)
+          val retrieved = expectMsgType[GetSuccess[GCounter]].dataValue
+          retrieved.value should be(expectedValue)
         }
       }
       def checkValuePropagated(expectedValue: Int): Unit =
         awaitAssert {
           replicator ! Get(KeyA, ReadLocal)
-          expectMsgPF() {
-            case g @ GetSuccess(KeyA, _) =>
-              g.get(KeyA).value.toInt should be(expectedValue)
+          expectMsgPF() { case g @ GetSuccess(KeyA, _) =>
+            g.get(KeyA).value.toInt should be(expectedValue)
           }
         }
 

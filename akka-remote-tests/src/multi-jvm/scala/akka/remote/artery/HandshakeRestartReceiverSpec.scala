@@ -23,9 +23,7 @@ object HandshakeRestartReceiverSpec extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
 
-  commonConfig(
-    debugConfig(on = false)
-      .withFallback(ConfigFactory.parseString("""
+  commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString("""
        akka {
          loglevel = INFO
          actor.provider = remote
@@ -120,9 +118,11 @@ abstract class HandshakeRestartReceiverSpec
 
         val freshSystem = ActorSystem(
           system.name,
-          ConfigFactory.parseString(s"""
+          ConfigFactory
+            .parseString(s"""
               akka.remote.artery.canonical.port = ${address.port.get}
-              """).withFallback(system.settings.config))
+              """)
+            .withFallback(system.settings.config))
         freshSystem.actorOf(Props[Subject](), "subject2")
 
         Await.result(freshSystem.whenTerminated, 45.seconds)

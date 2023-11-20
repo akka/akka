@@ -26,9 +26,7 @@ import akka.stream.stage._
  */
 @InternalApi private[akka] object GraphInterpreter {
 
-  /**
-   * Compile time constant, enable it for debug logging to the console.
-   */
+  /** Compile time constant, enable it for debug logging to the console. */
   final val Debug = false
 
   final val NoEvent = null
@@ -44,8 +42,8 @@ import akka.stream.stage._
 
   final val PullStartFlip = 3 // 0011
   final val PullEndFlip = 10 // 1010
-  final val PushStartFlip = 12 //1100
-  final val PushEndFlip = 5 //0101
+  final val PushStartFlip = 12 // 1100
+  final val PushEndFlip = 5 // 0101
 
   final val KeepGoingFlag = 0x4000000
   final val KeepGoingMask = 0x3ffffff
@@ -113,16 +111,12 @@ import akka.stream.stage._
     override def initialValue: Array[AnyRef] = new Array(1)
   }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   private[akka] def currentInterpreter: GraphInterpreter =
     _currentInterpreter.get()(0).asInstanceOf[GraphInterpreter].nonNull
   // nonNull is just a debug helper to find nulls more timely
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   private[akka] def currentInterpreterOrNull: GraphInterpreter =
     _currentInterpreter.get()(0).asInstanceOf[GraphInterpreter]
 
@@ -217,9 +211,7 @@ import akka.stream.stage._
 
   private[this] val ChaseLimit = if (fuzzingMode) 0 else 16
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[stream] var activeStage: GraphStageLogic = _
 
   // The number of currently running stages. Once this counter reaches zero, the interpreter is considered to be
@@ -261,35 +253,25 @@ import akka.stream.stage._
       _Name
     } else _Name
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[stream] def nonNull: GraphInterpreter = this
 
-  /**
-   * Dynamic handler changes are communicated from a GraphStageLogic by this method.
-   */
+  /** Dynamic handler changes are communicated from a GraphStageLogic by this method. */
   def setHandler(connection: Connection, handler: InHandler): Unit = {
     if (Debug) println(s"$Name SETHANDLER ${inOwnerName(connection)} (in) $handler")
     connection.inHandler = handler
   }
 
-  /**
-   * Dynamic handler changes are communicated from a GraphStageLogic by this method.
-   */
+  /** Dynamic handler changes are communicated from a GraphStageLogic by this method. */
   def setHandler(connection: Connection, handler: OutHandler): Unit = {
     if (Debug) println(s"$Name SETHANDLER ${outOwnerName(connection)} (out) $handler")
     connection.outHandler = handler
   }
 
-  /**
-   * Returns true if there are pending unprocessed events in the event queue.
-   */
+  /** Returns true if there are pending unprocessed events in the event queue. */
   def isSuspended: Boolean = queueHead != queueTail
 
-  /**
-   * Returns true if there are no more running operators and pending events.
-   */
+  /** Returns true if there are no more running operators and pending events. */
   def isCompleted: Boolean = runningStages == 0 && !isSuspended
 
   /**
@@ -318,9 +300,7 @@ import akka.stream.stage._
     }
   }
 
-  /**
-   * Finalizes the state of all operators by calling postStop() (if necessary).
-   */
+  /** Finalizes the state of all operators by calling postStop() (if necessary). */
   def finish(): Unit = {
     var i = 0
     while (i < logics.length) {
@@ -518,8 +498,8 @@ import akka.stream.stage._
     } else if ((code & (OutClosed | InClosed)) == InClosed) {
       activeStage = connection.outOwner
       if (Debug)
-        println(
-          s"$Name CANCEL ${inOwnerName(connection)} -> ${outOwnerName(connection)} (${connection.outHandler}) [${outLogicName(connection)}]")
+        println(s"$Name CANCEL ${inOwnerName(connection)} -> ${outOwnerName(
+            connection)} (${connection.outHandler}) [${outLogicName(connection)}]")
       connection.portState |= OutClosed
       completeConnection(connection.outOwner.stageId)
       val cause = connection.slot.asInstanceOf[Cancelled].cause
@@ -531,8 +511,8 @@ import akka.stream.stage._
       if ((code & Pushing) == 0) {
         // Normal completion (no push pending)
         if (Debug)
-          println(
-            s"$Name COMPLETE ${outOwnerName(connection)} -> ${inOwnerName(connection)} (${connection.inHandler}) [${inLogicName(connection)}]")
+          println(s"$Name COMPLETE ${outOwnerName(connection)} -> ${inOwnerName(
+              connection)} (${connection.inHandler}) [${inLogicName(connection)}]")
         connection.portState |= InClosed
         activeStage = connection.inOwner
         completeConnection(connection.inOwner.stageId)
@@ -550,8 +530,8 @@ import akka.stream.stage._
   @InternalStableApi
   private def processPush(connection: Connection): Unit = {
     if (Debug)
-      println(
-        s"$Name PUSH ${outOwnerName(connection)} -> ${inOwnerName(connection)}, ${connection.slot} (${connection.inHandler}) [${inLogicName(connection)}]")
+      println(s"$Name PUSH ${outOwnerName(connection)} -> ${inOwnerName(
+          connection)}, ${connection.slot} (${connection.inHandler}) [${inLogicName(connection)}]")
     activeStage = connection.inOwner
     connection.portState ^= PushEndFlip
     connection.inHandler.onPush()
@@ -560,8 +540,8 @@ import akka.stream.stage._
   @InternalStableApi
   private def processPull(connection: Connection): Unit = {
     if (Debug)
-      println(
-        s"$Name PULL ${inOwnerName(connection)} -> ${outOwnerName(connection)} (${connection.outHandler}) [${outLogicName(connection)}]")
+      println(s"$Name PULL ${inOwnerName(connection)} -> ${outOwnerName(
+          connection)} (${connection.outHandler}) [${outLogicName(connection)}]")
     activeStage = connection.outOwner
     connection.portState ^= PullEndFlip
     connection.outHandler.onPull()
@@ -697,9 +677,8 @@ import akka.stream.stage._
    */
   def toSnapshot: RunningInterpreter = {
 
-    val logicSnapshots = logics.zipWithIndex.map {
-      case (logic, idx) =>
-        LogicSnapshotImpl(idx, logic.toString, logic.attributes)
+    val logicSnapshots = logics.zipWithIndex.map { case (logic, idx) =>
+      LogicSnapshotImpl(idx, logic.toString, logic.attributes)
     }
     val logicIndexes = logics.zipWithIndex.map { case (stage, idx) => stage -> idx }.toMap
     val connectionSnapshots = connections.filter(_ != null).map { connection =>

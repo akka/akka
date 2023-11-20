@@ -16,9 +16,7 @@ import akka.util.FastFrequencySketch
 import akka.util.FrequencySketch
 import akka.util.OptionVal
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] object EntityPassivationStrategy {
   type PassivateEntities = immutable.Seq[EntityId]
@@ -71,9 +69,7 @@ private[akka] object EntityPassivationStrategy {
   }
 }
 
-/**
- * INTERNAL API: An entity passivation strategy, which is instantiated per active shard.
- */
+/** INTERNAL API: An entity passivation strategy, which is instantiated per active shard. */
 @InternalApi
 private[akka] sealed abstract class EntityPassivationStrategy {
   import EntityPassivationStrategy.PassivateEntities
@@ -118,9 +114,7 @@ private[akka] sealed abstract class EntityPassivationStrategy {
   def intervalPassed(): PassivateEntities
 }
 
-/**
- * INTERNAL API: No-op passivation strategy for when automatic passivation is disabled.
- */
+/** INTERNAL API: No-op passivation strategy for when automatic passivation is disabled. */
 @InternalApi
 private[akka] object DisabledEntityPassivationStrategy extends EntityPassivationStrategy {
   import EntityPassivationStrategy.PassivateEntities
@@ -133,9 +127,7 @@ private[akka] object DisabledEntityPassivationStrategy extends EntityPassivation
   override def intervalPassed(): PassivateEntities = PassivateEntities.none
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] final class IdleCheck(val timeout: FiniteDuration, val interval: FiniteDuration)
 
@@ -332,9 +324,7 @@ private[akka] final class LeastFrequentlyUsedEntityPassivationStrategy(
   }
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] object ActiveEntities {
   def apply(
@@ -749,9 +739,7 @@ private[akka] final class CompositeEntityPassivationStrategy(
   }
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] object AdmissionOptimizer {
   def apply(
@@ -759,10 +747,10 @@ private[akka] object AdmissionOptimizer {
       optimizer: ClusterShardingSettings.CompositePassivationStrategy.AdmissionOptimizer): AdmissionOptimizer =
     optimizer match {
       case ClusterShardingSettings.CompositePassivationStrategy.HillClimbingAdmissionOptimizer(
-          adjustMultiplier,
-          initialStep,
-          restartThreshold,
-          stepDecay) =>
+            adjustMultiplier,
+            initialStep,
+            restartThreshold,
+            stepDecay) =>
         new HillClimbingAdmissionOptimizer(initialLimit, adjustMultiplier, initialStep, restartThreshold, stepDecay)
       case _ => NoAdmissionOptimizer
     }
@@ -776,14 +764,10 @@ private[akka] object AdmissionOptimizer {
 @InternalApi
 private[akka] abstract class AdmissionOptimizer {
 
-  /**
-   * An entity was accessed that is already active.
-   */
+  /** An entity was accessed that is already active. */
   def recordActive(): Unit
 
-  /**
-   * An entity was accessed that was passive (needed to be activated).
-   */
+  /** An entity was accessed that was passive (needed to be activated). */
   def recordPassive(): Unit
 
   /**
@@ -859,16 +843,17 @@ private[akka] final class HillClimbingAdmissionOptimizer(
   }
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] object AdmissionFilter {
   def apply(
       initialCapacity: Int,
       filter: ClusterShardingSettings.CompositePassivationStrategy.AdmissionFilter): AdmissionFilter = filter match {
-    case ClusterShardingSettings.CompositePassivationStrategy
-          .FrequencySketchAdmissionFilter(widthMultiplier, resetMultiplier, depth, counterBits) =>
+    case ClusterShardingSettings.CompositePassivationStrategy.FrequencySketchAdmissionFilter(
+          widthMultiplier,
+          resetMultiplier,
+          depth,
+          counterBits) =>
       FrequencySketchAdmissionFilter(initialCapacity, widthMultiplier, resetMultiplier, depth, counterBits)
     case _ => AlwaysAdmissionFilter
   }

@@ -17,7 +17,7 @@ object DeviceManager {
   def apply(): Behavior[Command] =
     Behaviors.setup(context => new DeviceManager(context))
 
-  //#device-manager-msgs
+  // #device-manager-msgs
 
   sealed trait Command
 
@@ -34,9 +34,9 @@ object DeviceManager {
   final case class ReplyDeviceList(requestId: Long, ids: Set[String])
 
   private final case class DeviceGroupTerminated(groupId: String) extends DeviceManager.Command
-  //#device-manager-msgs
+  // #device-manager-msgs
 
-  //#query-protocol
+  // #query-protocol
 
   final case class RequestAllTemperatures(requestId: Long, groupId: String, replyTo: ActorRef[RespondAllTemperatures])
       extends DeviceGroupQuery.Command
@@ -50,7 +50,7 @@ object DeviceManager {
   case object TemperatureNotAvailable extends TemperatureReading
   case object DeviceNotAvailable extends TemperatureReading
   case object DeviceTimedOut extends TemperatureReading
-  //#query-protocol
+  // #query-protocol
 }
 
 class DeviceManager(context: ActorContext[DeviceManager.Command])
@@ -100,10 +100,9 @@ class DeviceManager(context: ActorContext[DeviceManager.Command])
         this
     }
 
-  override def onSignal: PartialFunction[Signal, Behavior[Command]] = {
-    case PostStop =>
-      context.log.info("DeviceManager stopped")
-      this
+  override def onSignal: PartialFunction[Signal, Behavior[Command]] = { case PostStop =>
+    context.log.info("DeviceManager stopped")
+    this
   }
 
 }

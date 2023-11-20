@@ -14,7 +14,7 @@ class DeviceGroupSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike {
 
   "DeviceGroup actor" must {
 
-    //#device-group-test-registration
+    // #device-group-test-registration
     "be able to register a device actor" in {
       val probe = createTestProbe[DeviceRegistered]()
       val groupActor = spawn(DeviceGroup("group"))
@@ -44,9 +44,9 @@ class DeviceGroupSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike {
       groupActor ! RequestTrackDevice("wrongGroup", "device1", probe.ref)
       probe.expectNoMessage(500.milliseconds)
     }
-    //#device-group-test-registration
+    // #device-group-test-registration
 
-    //#device-group-test3
+    // #device-group-test3
     "return same actor for same deviceId" in {
       val probe = createTestProbe[DeviceRegistered]()
       val groupActor = spawn(DeviceGroup("group"))
@@ -60,9 +60,9 @@ class DeviceGroupSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike {
 
       registered1.device should ===(registered2.device)
     }
-    //#device-group-test3
+    // #device-group-test3
 
-    //#device-group-list-terminate-test
+    // #device-group-list-terminate-test
     "be able to list active devices" in {
       val registeredProbe = createTestProbe[DeviceRegistered]()
       val groupActor = spawn(DeviceGroup("group"))
@@ -103,9 +103,9 @@ class DeviceGroupSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike {
         deviceListProbe.expectMessage(ReplyDeviceList(requestId = 1, Set("device2")))
       }
     }
-    //#device-group-list-terminate-test
+    // #device-group-list-terminate-test
 
-    //#group-query-integration-test
+    // #group-query-integration-test
     "be able to collect temperatures from all active devices" in {
       val registeredProbe = createTestProbe[DeviceRegistered]()
       val groupActor = spawn(DeviceGroup("group"))
@@ -135,7 +135,7 @@ class DeviceGroupSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike {
           temperatures =
             Map("device1" -> Temperature(1.0), "device2" -> Temperature(2.0), "device3" -> TemperatureNotAvailable)))
     }
-    //#group-query-integration-test
+    // #group-query-integration-test
 
   }
 

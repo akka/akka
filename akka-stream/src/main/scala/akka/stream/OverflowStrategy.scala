@@ -37,57 +37,43 @@ sealed abstract class OverflowStrategy extends DelayOverflowStrategy {
 
 private[akka] object OverflowStrategies {
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   private[akka] case class DropHead(logLevel: LogLevel) extends OverflowStrategy {
     override def withLogLevel(logLevel: LogLevel): DropHead = DropHead(logLevel)
     private[akka] override def isBackpressure: Boolean = false
   }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   private[akka] case class DropTail(logLevel: LogLevel) extends OverflowStrategy {
     override def withLogLevel(logLevel: LogLevel): DropTail = DropTail(logLevel)
     private[akka] override def isBackpressure: Boolean = false
   }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   private[akka] case class DropBuffer(logLevel: LogLevel) extends OverflowStrategy {
     override def withLogLevel(logLevel: LogLevel): DropBuffer = DropBuffer(logLevel)
     private[akka] override def isBackpressure: Boolean = false
   }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   private[akka] case class DropNew(logLevel: LogLevel) extends OverflowStrategy {
     override def withLogLevel(logLevel: LogLevel): DropNew = DropNew(logLevel)
     private[akka] override def isBackpressure: Boolean = false
   }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   private[akka] case class Backpressure(logLevel: LogLevel) extends OverflowStrategy {
     override def withLogLevel(logLevel: LogLevel): Backpressure = Backpressure(logLevel)
     private[akka] override def isBackpressure: Boolean = true
   }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   private[akka] case class Fail(logLevel: LogLevel) extends OverflowStrategy {
     override def withLogLevel(logLevel: LogLevel): Fail = Fail(logLevel)
     private[akka] override def isBackpressure: Boolean = false
   }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   private[akka] case object EmitEarly extends DelayOverflowStrategy {
     private[akka] override def isBackpressure: Boolean = true
   }
@@ -107,9 +93,7 @@ object OverflowStrategy {
    */
   def dropTail: OverflowStrategy = DropTail(Logging.DebugLevel)
 
-  /**
-   * If the buffer is full when a new element arrives, drops all the buffered elements to make space for the new element.
-   */
+  /** If the buffer is full when a new element arrives, drops all the buffered elements to make space for the new element. */
   def dropBuffer: OverflowStrategy = DropBuffer(Logging.DebugLevel)
 
   /**
@@ -127,9 +111,7 @@ object OverflowStrategy {
    */
   def backpressure: OverflowStrategy = Backpressure(Logging.DebugLevel)
 
-  /**
-   * If the buffer is full when a new element is available this strategy completes the stream with failure.
-   */
+  /** If the buffer is full when a new element is available this strategy completes the stream with failure. */
   def fail: OverflowStrategy = Fail(Logging.ErrorLevel)
 }
 
@@ -153,14 +135,10 @@ object DelayOverflowStrategy {
    */
   def dropTail: DelayOverflowStrategy = DropTail(Logging.DebugLevel)
 
-  /**
-   * If the buffer is full when a new element arrives, drops all the buffered elements to make space for the new element.
-   */
+  /** If the buffer is full when a new element arrives, drops all the buffered elements to make space for the new element. */
   def dropBuffer: DelayOverflowStrategy = DropBuffer(Logging.DebugLevel)
 
-  /**
-   * If the buffer is full when a new element arrives, drops the new element.
-   */
+  /** If the buffer is full when a new element arrives, drops the new element. */
   def dropNew: DelayOverflowStrategy = DropNew(Logging.DebugLevel)
 
   /**
@@ -169,8 +147,6 @@ object DelayOverflowStrategy {
    */
   def backpressure: DelayOverflowStrategy = Backpressure(Logging.DebugLevel)
 
-  /**
-   * If the buffer is full when a new element is available this strategy completes the stream with failure.
-   */
+  /** If the buffer is full when a new element is available this strategy completes the stream with failure. */
   def fail: DelayOverflowStrategy = Fail(Logging.ErrorLevel)
 }

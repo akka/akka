@@ -25,17 +25,17 @@ import akka.serialization.jackson.CborSerializable
  */
 object AccountExampleWithEventHandlersInState {
 
-  //#account-entity
+  // #account-entity
   object AccountEntity {
     // Command
-    //#reply-command
+    // #reply-command
     sealed trait Command extends CborSerializable
-    //#reply-command
+    // #reply-command
     final case class CreateAccount(replyTo: ActorRef[StatusReply[Done]]) extends Command
     final case class Deposit(amount: BigDecimal, replyTo: ActorRef[StatusReply[Done]]) extends Command
-    //#reply-command
+    // #reply-command
     final case class Withdraw(amount: BigDecimal, replyTo: ActorRef[StatusReply[Done]]) extends Command
-    //#reply-command
+    // #reply-command
     final case class GetBalance(replyTo: ActorRef[CurrentBalance]) extends Command
     final case class CloseAccount(replyTo: ActorRef[StatusReply[Done]]) extends Command
 
@@ -69,7 +69,7 @@ object AccountExampleWithEventHandlersInState {
           case Deposited(amount) => copy(balance = balance + amount)
           case Withdrawn(amount) => copy(balance = balance - amount)
           case AccountClosed     => ClosedAccount
-          case AccountCreated    => throw new IllegalStateException(s"unexpected event [$event] in state [OpenedAccount]")
+          case AccountCreated => throw new IllegalStateException(s"unexpected event [$event] in state [OpenedAccount]")
         }
 
       def canWithdraw(amount: BigDecimal): Boolean = {
@@ -90,11 +90,11 @@ object AccountExampleWithEventHandlersInState {
     // When filling in the parameters of EventSourcedBehavior.apply you can use IntelliJ alt+Enter > createValue
     // to generate the stub with types for the command and event handlers.
 
-    //#withEnforcedReplies
+    // #withEnforcedReplies
     def apply(accountNumber: String, persistenceId: PersistenceId): Behavior[Command] = {
       EventSourcedBehavior.withEnforcedReplies(persistenceId, EmptyAccount, commandHandler(accountNumber), eventHandler)
     }
-    //#withEnforcedReplies
+    // #withEnforcedReplies
 
     private def commandHandler(accountNumber: String): (Account, Command) => ReplyEffect[Event, Account] = {
       (state, cmd) =>
@@ -102,7 +102,7 @@ object AccountExampleWithEventHandlersInState {
           case EmptyAccount =>
             cmd match {
               case c: CreateAccount => createAccount(c)
-              case _                => Effect.unhandled.thenNoReply() // CreateAccount before handling any other commands
+              case _ => Effect.unhandled.thenNoReply() // CreateAccount before handling any other commands
             }
 
           case acc @ OpenedAccount(_) =>
@@ -149,7 +149,7 @@ object AccountExampleWithEventHandlersInState {
       Effect.persist(Deposited(cmd.amount)).thenReply(cmd.replyTo)(_ => StatusReply.Ack)
     }
 
-    //#reply
+    // #reply
     private def withdraw(acc: OpenedAccount, cmd: Withdraw): ReplyEffect[Event, Account] = {
       if (acc.canWithdraw(cmd.amount))
         Effect.persist(Withdrawn(cmd.amount)).thenReply(cmd.replyTo)(_ => StatusReply.Ack)
@@ -157,7 +157,7 @@ object AccountExampleWithEventHandlersInState {
         Effect.reply(cmd.replyTo)(
           StatusReply.Error(s"Insufficient balance ${acc.balance} to be able to withdraw ${cmd.amount}"))
     }
-    //#reply
+    // #reply
 
     private def getBalance(acc: OpenedAccount, cmd: GetBalance): ReplyEffect[Event, Account] = {
       Effect.reply(cmd.replyTo)(CurrentBalance(acc.balance))
@@ -171,6 +171,6 @@ object AccountExampleWithEventHandlersInState {
     }
 
   }
-  //#account-entity
+  // #account-entity
 
 }

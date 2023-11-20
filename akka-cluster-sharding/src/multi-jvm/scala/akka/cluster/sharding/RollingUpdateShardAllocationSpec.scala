@@ -17,9 +17,7 @@ import akka.cluster.MemberStatus.Up
 import akka.serialization.jackson.CborSerializable
 import akka.testkit.ImplicitSender
 
-object RollingUpdateShardAllocationSpecConfig
-    extends MultiNodeClusterShardingConfig(
-      additionalConfig = """
+object RollingUpdateShardAllocationSpecConfig extends MultiNodeClusterShardingConfig(additionalConfig = """
       akka.cluster.sharding {
         # speed up forming and handovers a bit
         retry-interval = 500ms
@@ -52,8 +50,8 @@ object RollingUpdateShardAllocationSpec {
     case class Get(id: String) extends CborSerializable
     case class Home(address: Address) extends CborSerializable
 
-    val extractEntityId: ShardRegion.ExtractEntityId = {
-      case g @ Get(id) => (id, g)
+    val extractEntityId: ShardRegion.ExtractEntityId = { case g @ Get(id) =>
+      (id, g)
     }
 
     // shard == id to make testing easier
@@ -70,9 +68,8 @@ object RollingUpdateShardAllocationSpec {
 
     log.info("Started on {}", selfAddress)
 
-    override def receive: Receive = {
-      case Get(_) =>
-        sender() ! Home(selfAddress)
+    override def receive: Receive = { case Get(_) =>
+      sender() ! Home(selfAddress)
     }
   }
 }
@@ -113,7 +110,7 @@ abstract class RollingUpdateShardAllocationSpec
         // so the folloing allocations end up as one on each node
         awaitAssert {
           shardRegion ! ShardRegion.GetCurrentRegions
-          expectMsgType[ShardRegion.CurrentRegions].regions should have size (2)
+          expectMsgType[ShardRegion.CurrentRegions].regions should have size 2
         }
 
         shardRegion ! GiveMeYourHome.Get("id1")
@@ -125,7 +122,7 @@ abstract class RollingUpdateShardAllocationSpec
         val address2 = expectMsgType[GiveMeYourHome.Home].address
 
         // one on each node
-        Set(address1, address2) should have size (2)
+        Set(address1, address2) should have size 2
       }
       enterBarrier("first-version-started")
     }
@@ -142,7 +139,7 @@ abstract class RollingUpdateShardAllocationSpec
         // if we didn't the strategy will default it back to the old nodes
         awaitAssert {
           shardRegion ! ShardRegion.GetCurrentRegions
-          expectMsgType[ShardRegion.CurrentRegions].regions should have size (3)
+          expectMsgType[ShardRegion.CurrentRegions].regions should have size 3
         }
       }
       enterBarrier("third-region-registered")
@@ -174,10 +171,12 @@ abstract class RollingUpdateShardAllocationSpec
       enterBarrier("first-left")
 
       runOn(second, third, fourth) {
-        awaitAssert({
-          shardRegion ! ShardRegion.GetCurrentRegions
-          expectMsgType[ShardRegion.CurrentRegions].regions should have size (3)
-        }, 30.seconds)
+        awaitAssert(
+          {
+            shardRegion ! ShardRegion.GetCurrentRegions
+            expectMsgType[ShardRegion.CurrentRegions].regions should have size 3
+          },
+          30.seconds)
       }
       enterBarrier("sharding-handed-off")
 
@@ -199,10 +198,12 @@ abstract class RollingUpdateShardAllocationSpec
       }
       runOn(third, fourth) {
         // make sure coordinator has noticed there are only two regions
-        awaitAssert({
-          shardRegion ! ShardRegion.GetCurrentRegions
-          expectMsgType[ShardRegion.CurrentRegions].regions should have size (2)
-        }, 30.seconds)
+        awaitAssert(
+          {
+            shardRegion ! ShardRegion.GetCurrentRegions
+            expectMsgType[ShardRegion.CurrentRegions].regions should have size 2
+          },
+          30.seconds)
       }
       enterBarrier("second-left")
 

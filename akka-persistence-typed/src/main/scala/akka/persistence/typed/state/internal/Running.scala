@@ -97,7 +97,8 @@ private[akka] object Running {
 
     def onCommand(state: RunningState[S], cmd: C): Behavior[InternalProtocol] = {
       val effect = setup.commandHandler(state.state, cmd)
-      val (next, doUnstash) = applyEffects(cmd, state, effect.asInstanceOf[EffectImpl[S]]) // TODO can we avoid the cast?
+      val (next, doUnstash) =
+        applyEffects(cmd, state, effect.asInstanceOf[EffectImpl[S]]) // TODO can we avoid the cast?
       if (doUnstash) tryUnstashOne(next)
       else {
         recursiveUnstashOne = 0

@@ -14,13 +14,13 @@ import akka.stream.Attributes
 object LogWithMarker {
   def logWithMarkerExample(): Unit = {
     Flow[String]
-    //#logWithMarker
+      // #logWithMarker
       .logWithMarker(name = "myStream", e => LogMarker(name = "myMarker", properties = Map("element" -> e)))
       .addAttributes(
         Attributes.logLevels(
           onElement = Attributes.LogLevels.Off,
           onFinish = Attributes.LogLevels.Info,
           onFailure = Attributes.LogLevels.Error))
-    //#logWithMarker
+    // #logWithMarker
   }
 }

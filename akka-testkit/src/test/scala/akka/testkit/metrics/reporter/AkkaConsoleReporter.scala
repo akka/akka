@@ -12,9 +12,7 @@ import com.codahale.metrics._
 
 import akka.testkit.metrics._
 
-/**
- * Used to report `akka.testkit.metric.Metric` types that the original `com.codahale.metrics.ConsoleReporter` is unaware of (cannot re-use directly because of private constructor).
- */
+/** Used to report `akka.testkit.metric.Metric` types that the original `com.codahale.metrics.ConsoleReporter` is unaware of (cannot re-use directly because of private constructor). */
 class AkkaConsoleReporter(registry: AkkaMetricRegistry, verbose: Boolean, output: PrintStream = System.out)
     extends ScheduledReporter(
       registry.asInstanceOf[MetricRegistry],

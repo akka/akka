@@ -10,9 +10,7 @@ import akka.annotation.InternalApi
 import akka.cluster.sharding.ClusterShardingSettings
 import akka.cluster.sharding.ShardRegion.ShardId
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] final class DDataRememberEntitiesProvider(
     typeName: String,

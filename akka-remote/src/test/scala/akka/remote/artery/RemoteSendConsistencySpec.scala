@@ -23,14 +23,18 @@ import akka.actor.RootActorPath
 import akka.testkit.{ ImplicitSender, TestActors, TestProbe }
 
 class ArteryUpdSendConsistencyWithOneLaneSpec
-    extends AbstractRemoteSendConsistencySpec(ConfigFactory.parseString("""
+    extends AbstractRemoteSendConsistencySpec(
+      ConfigFactory
+        .parseString("""
       akka.remote.artery.transport = aeron-udp
       akka.remote.artery.advanced.outbound-lanes = 1
       akka.remote.artery.advanced.inbound-lanes = 1
     """).withFallback(ArterySpecSupport.defaultConfig))
 
 class ArteryUpdSendConsistencyWithThreeLanesSpec
-    extends AbstractRemoteSendConsistencySpec(ConfigFactory.parseString("""
+    extends AbstractRemoteSendConsistencySpec(
+      ConfigFactory
+        .parseString("""
       akka.loglevel = DEBUG
       akka.remote.artery.transport = aeron-udp
       akka.remote.artery.advanced.outbound-lanes = 3
@@ -38,28 +42,36 @@ class ArteryUpdSendConsistencyWithThreeLanesSpec
     """).withFallback(ArterySpecSupport.defaultConfig))
 
 class ArteryTcpSendConsistencyWithOneLaneSpec
-    extends AbstractRemoteSendConsistencySpec(ConfigFactory.parseString("""
+    extends AbstractRemoteSendConsistencySpec(
+      ConfigFactory
+        .parseString("""
       akka.remote.artery.transport = tcp
       akka.remote.artery.advanced.outbound-lanes = 1
       akka.remote.artery.advanced.inbound-lanes = 1
     """).withFallback(ArterySpecSupport.defaultConfig))
 
 class ArteryTcpSendConsistencyWithThreeLanesSpec
-    extends AbstractRemoteSendConsistencySpec(ConfigFactory.parseString("""
+    extends AbstractRemoteSendConsistencySpec(
+      ConfigFactory
+        .parseString("""
       akka.remote.artery.transport = tcp
       akka.remote.artery.advanced.outbound-lanes = 3
       akka.remote.artery.advanced.inbound-lanes = 3
     """).withFallback(ArterySpecSupport.defaultConfig))
 
 class ArteryTlsTcpSendConsistencyWithOneLaneSpec
-    extends AbstractRemoteSendConsistencySpec(ConfigFactory.parseString("""
+    extends AbstractRemoteSendConsistencySpec(
+      ConfigFactory
+        .parseString("""
       akka.remote.artery.transport = tls-tcp
       akka.remote.artery.advanced.outbound-lanes = 1
       akka.remote.artery.advanced.inbound-lanes = 1
     """).withFallback(ArterySpecSupport.defaultConfig))
 
 class ArteryTlsTcpSendConsistencyWithThreeLanesSpec
-    extends AbstractRemoteSendConsistencySpec(ConfigFactory.parseString("""
+    extends AbstractRemoteSendConsistencySpec(
+      ConfigFactory
+        .parseString("""
       akka.remote.artery.transport = tls-tcp
       akka.remote.artery.advanced.outbound-lanes = 1
       akka.remote.artery.advanced.inbound-lanes = 1
@@ -87,11 +99,13 @@ abstract class AbstractRemoteSendConsistencySpec(config: Config)
   "Artery" must {
 
     "be able to identify a remote actor and ping it" in {
-      systemB.actorOf(Props(new Actor {
-        def receive = {
-          case "ping" => sender() ! "pong"
-        }
-      }), "echo")
+      systemB.actorOf(
+        Props(new Actor {
+          def receive = { case "ping" =>
+            sender() ! "pong"
+          }
+        }),
+        "echo")
 
       val actorPath = rootB / "user" / "echo"
       val echoSel = system.actorSelection(actorPath)
@@ -148,16 +162,15 @@ abstract class AbstractRemoteSendConsistencySpec(config: Config)
           var counter = 1000
           remoteRef ! counter
 
-          override def receive: Receive = {
-            case i: Int =>
-              if (i != counter) testActor ! s"Failed, expected $counter got $i"
-              else if (counter == 0) {
-                testActor ! "success"
-                context.stop(self)
-              } else {
-                counter -= 1
-                remoteRef ! counter
-              }
+          override def receive: Receive = { case i: Int =>
+            if (i != counter) testActor ! s"Failed, expected $counter got $i"
+            else if (counter == 0) {
+              testActor ! "success"
+              context.stop(self)
+            } else {
+              counter -= 1
+              remoteRef ! counter
+            }
           }
         }).withDeploy(Deploy.local)
 
@@ -188,16 +201,15 @@ abstract class AbstractRemoteSendConsistencySpec(config: Config)
           var counter = 1000
           sel ! counter
 
-          override def receive: Receive = {
-            case i: Int =>
-              if (i != counter) testActor ! s"Failed, expected $counter got $i"
-              else if (counter == 0) {
-                testActor ! "success2"
-                context.stop(self)
-              } else {
-                counter -= 1
-                sel ! counter
-              }
+          override def receive: Receive = { case i: Int =>
+            if (i != counter) testActor ! s"Failed, expected $counter got $i"
+            else if (counter == 0) {
+              testActor ! "success2"
+              context.stop(self)
+            } else {
+              counter -= 1
+              sel ! counter
+            }
           }
         }).withDeploy(Deploy.local)
 

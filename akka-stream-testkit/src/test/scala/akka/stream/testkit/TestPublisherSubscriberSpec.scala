@@ -31,7 +31,7 @@ class TestPublisherSubscriberSpec extends AkkaSpec("""
       upstreamSubscription.sendNext(1)
       downstreamSubscription.request(1)
       upstream.expectEventPF { case RequestMore(_, e) => e } should ===(1L)
-      downstream.expectEventPF { case OnNext(e)       => e } should ===(1)
+      downstream.expectEventPF { case OnNext(e) => e } should ===(1)
 
       upstreamSubscription.sendNext(1)
       downstreamSubscription.request(1)
@@ -53,7 +53,7 @@ class TestPublisherSubscriberSpec extends AkkaSpec("""
 
       upstreamSubscription.sendNext(1)
       downstreamSubscription.request(1)
-      an[AssertionError] should be thrownBy upstream.expectEventPF { case Subscribe(e)       => e }
+      an[AssertionError] should be thrownBy upstream.expectEventPF { case Subscribe(e) => e }
       an[AssertionError] should be thrownBy downstream.expectNextPF[String] { case e: String => e }
 
       upstreamSubscription.sendComplete()

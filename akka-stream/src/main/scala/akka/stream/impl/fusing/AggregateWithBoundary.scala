@@ -10,9 +10,7 @@ import akka.annotation.InternalApi
 import akka.stream.{ Attributes, FlowShape, Inlet, Outlet }
 import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler, TimerGraphStageLogic }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] final case class AggregateWithBoundary[In, Agg, Out](
     allocate: () => Agg,
@@ -21,8 +19,8 @@ private[akka] final case class AggregateWithBoundary[In, Agg, Out](
     emitOnTimer: Option[(Agg => Boolean, FiniteDuration)])
     extends GraphStage[FlowShape[In, Out]] {
 
-  emitOnTimer.foreach {
-    case (_, interval) => require(interval.gteq(1.milli), s"timer(${interval.toCoarsest}) must not be smaller than 1ms")
+  emitOnTimer.foreach { case (_, interval) =>
+    require(interval.gteq(1.milli), s"timer(${interval.toCoarsest}) must not be smaller than 1ms")
   }
 
   val in: Inlet[In] = Inlet[In](s"${this.getClass.getName}.in")
@@ -35,14 +33,14 @@ private[akka] final case class AggregateWithBoundary[In, Agg, Out](
       private[this] var aggregated: Agg = null.asInstanceOf[Agg]
 
       override def preStart(): Unit = {
-        emitOnTimer.foreach {
-          case (_, interval) => scheduleWithFixedDelay(s"${this.getClass.getSimpleName}Timer", interval, interval)
+        emitOnTimer.foreach { case (_, interval) =>
+          scheduleWithFixedDelay(s"${this.getClass.getSimpleName}Timer", interval, interval)
         }
       }
 
       override protected def onTimer(timerKey: Any): Unit = {
-        emitOnTimer.foreach {
-          case (isReadyOnTimer, _) => if (aggregated != null && isReadyOnTimer(aggregated)) harvestAndEmit()
+        emitOnTimer.foreach { case (isReadyOnTimer, _) =>
+          if (aggregated != null && isReadyOnTimer(aggregated)) harvestAndEmit()
         }
       }
 

@@ -59,9 +59,7 @@ final case class TailChoppingRoutingLogic(
   }
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @SerialVersionUID(1L)
 private[akka] final case class TailChoppingRoutees(
     scheduler: Scheduler,
@@ -95,10 +93,9 @@ private[akka] final case class TailChoppingRoutees(
       promise.tryFailure(new AskTimeoutException(s"Ask timed out on [$sender] after [$within.toMillis} ms]")))
 
     val f = promise.future
-    f.onComplete {
-      case _ =>
-        tryWithNext.cancel()
-        sendTimeout.cancel()
+    f.onComplete { case _ =>
+      tryWithNext.cancel()
+      sendTimeout.cancel()
     }
     f.pipeTo(sender)
   }
@@ -195,14 +192,10 @@ final case class TailChoppingPool(
 
   override def nrOfInstances(sys: ActorSystem) = this.nrOfInstances
 
-  /**
-   * Setting the supervisor strategy to be used for the “head” Router actor.
-   */
+  /** Setting the supervisor strategy to be used for the “head” Router actor. */
   def withSupervisorStrategy(strategy: SupervisorStrategy): TailChoppingPool = copy(supervisorStrategy = strategy)
 
-  /**
-   * Setting the resizer to be used.
-   */
+  /** Setting the resizer to be used. */
   def withResizer(resizer: Resizer): TailChoppingPool = copy(resizer = Some(resizer))
 
   /**

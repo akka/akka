@@ -6,9 +6,7 @@ package akka.persistence
 
 import akka.annotation.InternalApi
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[persistence] object TraitOrder {
   val canBeChecked = true

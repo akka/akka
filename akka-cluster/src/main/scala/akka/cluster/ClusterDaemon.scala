@@ -29,9 +29,7 @@ import akka.remote.artery.QuarantinedEvent
 import akka.util.Timeout
 import akka.util.Version
 
-/**
- * Base trait for all cluster messages. All ClusterMessage's are serializable.
- */
+/** Base trait for all cluster messages. All ClusterMessage's are serializable. */
 trait ClusterMessage extends Serializable
 
 /**
@@ -50,21 +48,15 @@ private[cluster] object ClusterUserAction {
   @SerialVersionUID(1L)
   final case class JoinTo(address: Address)
 
-  /**
-   * Command to leave the cluster.
-   */
+  /** Command to leave the cluster. */
   @SerialVersionUID(1L)
   final case class Leave(address: Address) extends ClusterMessage
 
-  /**
-   * Command to mark node as temporary down.
-   */
+  /** Command to mark node as temporary down. */
   @SerialVersionUID(1L)
   final case class Down(address: Address) extends ClusterMessage
 
-  /**
-   * Command to mark all nodes as shutting down
-   */
+  /** Command to mark all nodes as shutting down */
   @SerialVersionUID(1L)
   case object PrepareForShutdown extends ClusterMessage
 
@@ -76,15 +68,11 @@ private[cluster] object ClusterUserAction {
    */
   case object SetAppVersionLater
 
-  /**
-   * Command to set the `appVersion` after system startup but before joining.
-   */
+  /** Command to set the `appVersion` after system startup but before joining. */
   final case class SetAppVersion(appVersion: Version)
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[cluster] object InternalClusterAction {
 
@@ -133,31 +121,23 @@ private[cluster] object InternalClusterAction {
 
   final case class CompatibleConfig(clusterConfig: Config) extends ConfigCheck
 
-  /**
-   * see JoinSeedNode
-   */
+  /** see JoinSeedNode */
   @SerialVersionUID(1L)
   case class InitJoin(configOfJoiningNode: Config) extends ClusterMessage with DeadLetterSuppression
 
-  /**
-   * see JoinSeedNode
-   */
+  /** see JoinSeedNode */
   @SerialVersionUID(1L)
   final case class InitJoinAck(address: Address, configCheck: ConfigCheck)
       extends ClusterMessage
       with DeadLetterSuppression
 
-  /**
-   * see JoinSeedNode
-   */
+  /** see JoinSeedNode */
   @SerialVersionUID(1L)
   final case class InitJoinNack(address: Address) extends ClusterMessage with DeadLetterSuppression
 
   final case class ExitingConfirmed(node: UniqueAddress) extends ClusterMessage with DeadLetterSuppression
 
-  /**
-   * Marker interface for periodic tick messages
-   */
+  /** Marker interface for periodic tick messages */
   sealed trait Tick
 
   case object GossipTick extends Tick
@@ -189,9 +169,7 @@ private[cluster] object InternalClusterAction {
       extends SubscriptionMessage
       with DeadLetterSuppression
 
-  /**
-   * @param receiver [[akka.cluster.ClusterEvent.CurrentClusterState]] will be sent to the `receiver`
-   */
+  /** @param receiver [[akka.cluster.ClusterEvent.CurrentClusterState]] will be sent to the `receiver` */
   final case class SendCurrentClusterState(receiver: ActorRef) extends SubscriptionMessage
 
   sealed trait PublishMessage
@@ -297,26 +275,22 @@ private[cluster] final class ClusterCoreSupervisor(joinConfigCompatChecker: Join
   }
 
   override val supervisorStrategy =
-    OneForOneStrategy() {
-      case NonFatal(e) =>
-        Cluster(context.system).ClusterLogger.logError(e, "crashed, [{}] - shutting down...", e.getMessage)
-        self ! PoisonPill
-        Stop
+    OneForOneStrategy() { case NonFatal(e) =>
+      Cluster(context.system).ClusterLogger.logError(e, "crashed, [{}] - shutting down...", e.getMessage)
+      self ! PoisonPill
+      Stop
     }
 
   override def postStop(): Unit = Cluster(context.system).shutdown()
 
-  def receive = {
-    case InternalClusterAction.GetClusterCoreRef =>
-      if (coreDaemon.isEmpty)
-        createChildren()
-      coreDaemon.foreach(sender() ! _)
+  def receive = { case InternalClusterAction.GetClusterCoreRef =>
+    if (coreDaemon.isEmpty)
+      createChildren()
+    coreDaemon.foreach(sender() ! _)
   }
 }
 
-/**
- * INTERNAL API.
- */
+/** INTERNAL API. */
 @InternalApi
 private[cluster] object ClusterCoreDaemon {
   val NumberOfGossipsBeforeShutdownWhenLeaderExits = 5
@@ -325,9 +299,7 @@ private[cluster] object ClusterCoreDaemon {
 
 }
 
-/**
- * INTERNAL API.
- */
+/** INTERNAL API. */
 @InternalApi
 private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatChecker: JoinConfigCompatChecker)
     extends Actor
@@ -400,9 +372,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
 
   var laterAppVersion: Option[Promise[Version]] = None
 
-  /**
-   * Looks up and returns the remote cluster command connection for the specific address.
-   */
+  /** Looks up and returns the remote cluster command connection for the specific address. */
   private def clusterCore(address: Address): ActorSelection =
     context.actorSelection(RootActorPath(address) / "system" / "cluster" / "core" / "daemon")
 
@@ -614,10 +584,9 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
       case ExitingConfirmed(address) => receiveExitingConfirmed(address)
     }: Actor.Receive).orElse(receiveExitingCompleted)
 
-  def receiveExitingCompleted: Actor.Receive = {
-    case ExitingCompleted =>
-      exitingCompleted()
-      sender() ! Done // reply to ask
+  def receiveExitingCompleted: Actor.Receive = { case ExitingCompleted =>
+    exitingCompleted()
+    sender() ! Done // reply to ask
   }
 
   def receive = uninitialized
@@ -765,8 +734,8 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
                 address)
               import akka.pattern.pipe
               // easiest to just try again via JoinTo when the promise has been completed
-              val pipeMessage = promise.future.map(_ => ClusterUserAction.JoinTo(address)).recover {
-                case _ => ClusterUserAction.JoinTo(address)
+              val pipeMessage = promise.future.map(_ => ClusterUserAction.JoinTo(address)).recover { case _ =>
+                ClusterUserAction.JoinTo(address)
               }
               pipe(pipeMessage).to(self)
               None
@@ -879,9 +848,9 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
                 promise.future.value.get.get
             }
             val newMembers = localMembers + Member(joiningNode, roles, appVersion) + Member(
-                selfUniqueAddress,
-                cluster.selfRoles,
-                selfAppVersion)
+              selfUniqueAddress,
+              cluster.selfRoles,
+              selfAppVersion)
             val newGossip = latestGossip.copy(members = newMembers)
 
             updateLatestGossip(newGossip)
@@ -913,9 +882,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
     }
   }
 
-  /**
-   * Accept reply from Join request.
-   */
+  /** Accept reply from Join request. */
   def welcome(joinWith: Address, from: UniqueAddress, gossip: Gossip): Unit = {
     require(latestGossip.members.isEmpty, "Join can only be done from empty state")
     if (joinWith != from.address)
@@ -1029,9 +996,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
       exitingConfirmed = exitingConfirmed.filter(n => latestGossip.members.exists(_.uniqueAddress == n))
   }
 
-  /**
-   * This method is called when a member sees itself as Exiting or Down.
-   */
+  /** This method is called when a member sees itself as Exiting or Down. */
   def shutdown(): Unit = cluster.shutdown()
 
   /**
@@ -1121,9 +1086,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
     }
   }
 
-  /**
-   * The types of gossip actions that receive gossip has performed.
-   */
+  /** The types of gossip actions that receive gossip has performed. */
   sealed trait ReceiveGossipType
   case object Ignored extends ReceiveGossipType
   case object Older extends ReceiveGossipType
@@ -1131,19 +1094,18 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
   case object Same extends ReceiveGossipType
   case object Merge extends ReceiveGossipType
 
-  /**
-   * Receive new gossip.
-   */
+  /** Receive new gossip. */
   def receiveGossip(envelope: GossipEnvelope): ReceiveGossipType = {
     val from = envelope.from
-    val remoteGossip = try {
-      envelope.gossip
-    } catch {
-      case NonFatal(t) =>
-        gossipLogger.logWarning("Invalid Gossip. This should only happen during a rolling upgrade. {}", t.getMessage)
-        Gossip.empty
+    val remoteGossip =
+      try {
+        envelope.gossip
+      } catch {
+        case NonFatal(t) =>
+          gossipLogger.logWarning("Invalid Gossip. This should only happen during a rolling upgrade. {}", t.getMessage)
+          Gossip.empty
 
-    }
+      }
     val localGossip = latestGossip
 
     if (remoteGossip eq Gossip.empty) {
@@ -1206,10 +1168,9 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
       // Don't mark gossip state as seen while exiting is in progress, e.g.
       // shutting down singleton actors. This delays removal of the member until
       // the exiting tasks have been completed.
-      membershipState = membershipState.copy(
-        latestGossip =
-          if (exitingTasksInProgress) winningGossip
-          else winningGossip.seen(selfUniqueAddress))
+      membershipState = membershipState.copy(latestGossip =
+        if (exitingTasksInProgress) winningGossip
+        else winningGossip.seen(selfUniqueAddress))
       assertLatestGossip()
 
       // for all new nodes we remove them from the failure detector
@@ -1289,18 +1250,14 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
     }
   }
 
-  /**
-   * Sends full gossip to `n` other random members.
-   */
+  /** Sends full gossip to `n` other random members. */
   def gossipRandomN(n: Int): Unit = {
     if (!isSingletonCluster && n > 0) {
       gossipTargetSelector.randomNodesForFullGossip(membershipState, n).foreach(gossipTo)
     }
   }
 
-  /**
-   * Initiates a new round of gossip.
-   */
+  /** Initiates a new round of gossip. */
   def gossip(): Unit =
     if (!isSingletonCluster) {
       gossipTargetSelector.gossipTarget(membershipState) match {
@@ -1317,9 +1274,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
       }
     }
 
-  /**
-   * Runs periodic leader actions, such as member status transitions, assigning partitions etc.
-   */
+  /** Runs periodic leader actions, such as member status transitions, assigning partitions etc. */
   def leaderActions(): Unit = {
     if (membershipState.isLeader(selfUniqueAddress)) {
       // only run the leader actions if we are the LEADER of the data center
@@ -1362,8 +1317,9 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
   }
 
   def checkForPrepareForShutdown(): Unit = {
-    if (MembershipState.allowedToPrepareToShutdown(latestGossip.member(selfUniqueAddress).status) && latestGossip.members
-          .exists(m => MembershipState.prepareForShutdownStates(m.status))) {
+    if (MembershipState.allowedToPrepareToShutdown(
+        latestGossip.member(selfUniqueAddress).status) && latestGossip.members.exists(m =>
+        MembershipState.prepareForShutdownStates(m.status))) {
       logDebug("Detected full cluster shutdown")
       self ! ClusterUserAction.PrepareForShutdown
     }
@@ -1375,8 +1331,8 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
       // status Down. The down commands should spread before we shutdown.
       val unreachable = membershipState.dcReachability.allUnreachableOrTerminated
       val downed = membershipState.dcMembers.collect { case m if m.status == Down => m.uniqueAddress }
-      if (selfDownCounter >= MaxTicksBeforeShuttingDownMyself || downed.forall(
-            node => unreachable(node) || latestGossip.seenByNode(node))) {
+      if (selfDownCounter >= MaxTicksBeforeShuttingDownMyself || downed.forall(node =>
+          unreachable(node) || latestGossip.seenByNode(node))) {
         // the reason for not shutting down immediately is to give the gossip a chance to spread
         // the downing information to other downed nodes, so that they can shutdown themselves
         logInfo("Node has been marked as DOWN. Shutting down myself")
@@ -1391,8 +1347,8 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
   }
 
   def isMinNrOfMembersFulfilled: Boolean = {
-    latestGossip.members.size >= MinNrOfMembers && MinNrOfMembersOfRole.forall {
-      case (role, threshold) => latestGossip.members.count(_.hasRole(role)) >= threshold
+    latestGossip.members.size >= MinNrOfMembers && MinNrOfMembersOfRole.forall { case (role, threshold) =>
+      latestGossip.members.count(_.hasRole(role)) >= threshold
     }
   }
 
@@ -1465,7 +1421,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
 
     val updatedGossip: Gossip =
       if (removedUnreachable.nonEmpty || removedExitingConfirmed.nonEmpty || changedMembers.nonEmpty ||
-          removedOtherDc.nonEmpty) {
+        removedOtherDc.nonEmpty) {
 
         // replace changed members
         val removed = removedUnreachable
@@ -1530,9 +1486,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
     }
   }
 
-  /**
-   * Gossip the Exiting change to the two oldest nodes for quick dissemination to potential Singleton nodes
-   */
+  /** Gossip the Exiting change to the two oldest nodes for quick dissemination to potential Singleton nodes */
   private def gossipExitingMembersToOldest(exitingMembers: Set[Member]): Unit = {
     val targets = membershipState.gossipTargetsForExitingMembers(exitingMembers)
     if (targets.nonEmpty) {
@@ -1579,9 +1533,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
 
   }
 
-  /**
-   * Reaps the unreachable members according to the failure detector's verdict.
-   */
+  /** Reaps the unreachable members according to the failure detector's verdict. */
   def reapUnreachableMembers(): Unit = {
     if (!isSingletonCluster) {
       // only scrutinize if we are a non-singleton cluster
@@ -1645,15 +1597,12 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
 
   // needed for tests
   def sendGossipTo(address: Address): Unit = {
-    latestGossip.members.foreach(
-      m =>
-        if (m.address == address)
-          gossipTo(m.uniqueAddress))
+    latestGossip.members.foreach(m =>
+      if (m.address == address)
+        gossipTo(m.uniqueAddress))
   }
 
-  /**
-   * Gossips latest gossip to a node.
-   */
+  /** Gossips latest gossip to a node. */
   def gossipTo(node: UniqueAddress): Unit =
     if (membershipState.validNodeForGossip(node))
       clusterCore(node.address) ! GossipEnvelope(selfUniqueAddress, node, latestGossip)
@@ -1764,9 +1713,7 @@ private[cluster] class OnMemberStatusChangedListener(callback: Runnable, status:
 
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 @SerialVersionUID(1L)
 private[cluster] final case class GossipStats(
@@ -1808,9 +1755,7 @@ private[cluster] final case class GossipStats(
 
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 @SerialVersionUID(1L)
 private[cluster] final case class VectorClockStats(versionSize: Int = 0, seenLatest: Int = 0)

@@ -44,19 +44,19 @@ class AccrualFailureDetectorSpec extends AkkaSpec("akka.loglevel = INFO") {
 
     "use good enough cumulative distribution function" in {
       val fd = createFailureDetector()
-      cdf(fd.phi(0, 0, 10)) should ===(0.5 +- (0.001))
-      cdf(fd.phi(6L, 0, 10)) should ===(0.7257 +- (0.001))
-      cdf(fd.phi(15L, 0, 10)) should ===(0.9332 +- (0.001))
-      cdf(fd.phi(20L, 0, 10)) should ===(0.97725 +- (0.001))
-      cdf(fd.phi(25L, 0, 10)) should ===(0.99379 +- (0.001))
-      cdf(fd.phi(35L, 0, 10)) should ===(0.99977 +- (0.001))
-      cdf(fd.phi(40L, 0, 10)) should ===(0.99997 +- (0.0001))
+      cdf(fd.phi(0, 0, 10)) should ===(0.5 +- 0.001)
+      cdf(fd.phi(6L, 0, 10)) should ===(0.7257 +- 0.001)
+      cdf(fd.phi(15L, 0, 10)) should ===(0.9332 +- 0.001)
+      cdf(fd.phi(20L, 0, 10)) should ===(0.97725 +- 0.001)
+      cdf(fd.phi(25L, 0, 10)) should ===(0.99379 +- 0.001)
+      cdf(fd.phi(35L, 0, 10)) should ===(0.99977 +- 0.001)
+      cdf(fd.phi(40L, 0, 10)) should ===(0.99997 +- 0.0001)
 
       for (Seq(x, y) <- (0 to 40).toList.sliding(2)) {
         fd.phi(x, 0, 10) should be < (fd.phi(y, 0, 10))
       }
 
-      cdf(fd.phi(22, 20.0, 3)) should ===(0.7475 +- (0.001))
+      cdf(fd.phi(22, 20.0, 3)) should ===(0.7475 +- 0.001)
     }
 
     "handle outliers without losing precision or hitting exceptions" in {
@@ -69,12 +69,14 @@ class AccrualFailureDetectorSpec extends AkkaSpec("akka.loglevel = INFO") {
       val fd = createFailureDetector()
       val test = TreeMap(0 -> 0.0, 500 -> 0.1, 1000 -> 0.3, 1200 -> 1.6, 1400 -> 4.7, 1600 -> 10.8, 1700 -> 15.3)
       for ((timeDiff, expectedPhi) <- test) {
-        fd.phi(timeDiff = timeDiff, mean = 1000.0, stdDeviation = 100.0) should ===(expectedPhi +- (0.1))
+        fd.phi(timeDiff = timeDiff, mean = 1000.0, stdDeviation = 100.0) should ===(expectedPhi +- 0.1)
       }
 
       // larger stdDeviation results => lower phi
-      fd.phi(timeDiff = 1100, mean = 1000.0, stdDeviation = 500.0) should be < (fd
-        .phi(timeDiff = 1100, mean = 1000.0, stdDeviation = 100.0))
+      fd.phi(timeDiff = 1100, mean = 1000.0, stdDeviation = 500.0) should be < (fd.phi(
+        timeDiff = 1100,
+        mean = 1000.0,
+        stdDeviation = 100.0))
     }
 
     "return phi value of 0.0 on startup for each address, when no heartbeats" in {
@@ -90,7 +92,7 @@ class AccrualFailureDetectorSpec extends AkkaSpec("akka.loglevel = INFO") {
       fd.heartbeat()
       fd.phi should ===(0.3 +- 0.2)
       fd.phi should ===(4.5 +- 0.3)
-      fd.phi should be > (15.0)
+      fd.phi should be > 15.0
     }
 
     "return phi value using first interval after second heartbeat" in {
@@ -98,9 +100,9 @@ class AccrualFailureDetectorSpec extends AkkaSpec("akka.loglevel = INFO") {
       val fd = createFailureDetector(clock = fakeTimeGenerator(timeInterval))
 
       fd.heartbeat()
-      fd.phi should be > (0.0)
+      fd.phi should be > 0.0
       fd.heartbeat()
-      fd.phi should be > (0.0)
+      fd.phi should be > 0.0
     }
 
     "mark node as monitored after a series of successful heartbeats" in {
@@ -120,18 +122,19 @@ class AccrualFailureDetectorSpec extends AkkaSpec("akka.loglevel = INFO") {
       val timeInterval = List[Long](0, 1000, 100, 100, 7000)
       val fd = createFailureDetector(threshold = 3, clock = fakeTimeGenerator(timeInterval))
 
-      fd.heartbeat() //0
-      fd.heartbeat() //1000
-      fd.heartbeat() //1100
+      fd.heartbeat() // 0
+      fd.heartbeat() // 1000
+      fd.heartbeat() // 1100
 
-      fd.isAvailable should ===(true) //1200
-      fd.isAvailable should ===(false) //8200
+      fd.isAvailable should ===(true) // 1200
+      fd.isAvailable should ===(false) // 8200
     }
 
     "mark node as available if it starts heartbeat again after being marked dead due to detection of failure" in {
       // 1000 regular intervals, 5 minute pause, and then a short pause again that should trigger unreachable again
       val regularIntervals = 0L +: Vector.fill(999)(1000L)
-      val timeIntervals = regularIntervals :+ (5 * 60 * 1000L) :+ 100L :+ 900L :+ 100L :+ 7000L :+ 100L :+ 900L :+ 100L :+ 900L
+      val timeIntervals =
+        regularIntervals :+ (5 * 60 * 1000L) :+ 100L :+ 900L :+ 100L :+ 7000L :+ 100L :+ 900L :+ 100L :+ 900L
       val fd = createFailureDetector(
         threshold = 8,
         acceptableLostDuration = 3.seconds,
@@ -182,18 +185,18 @@ class AccrualFailureDetectorSpec extends AkkaSpec("akka.loglevel = INFO") {
       val fd = createFailureDetector(maxSampleSize = 3, clock = fakeTimeGenerator(timeInterval))
 
       // 100 ms interval
-      fd.heartbeat() //0
-      fd.heartbeat() //100
-      fd.heartbeat() //200
-      fd.heartbeat() //300
-      val phi1 = fd.phi //400
+      fd.heartbeat() // 0
+      fd.heartbeat() // 100
+      fd.heartbeat() // 200
+      fd.heartbeat() // 300
+      val phi1 = fd.phi // 400
       // 500 ms interval, should become same phi when 100 ms intervals have been dropped
-      fd.heartbeat() //1000
-      fd.heartbeat() //1500
-      fd.heartbeat() //2000
-      fd.heartbeat() //2500
-      val phi2 = fd.phi //3000
-      phi2 should ===(phi1 +- (0.001))
+      fd.heartbeat() // 1000
+      fd.heartbeat() // 1500
+      fd.heartbeat() // 2000
+      fd.heartbeat() // 2500
+      val phi2 = fd.phi // 3000
+      phi2 should ===(phi1 +- 0.001)
     }
 
   }

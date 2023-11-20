@@ -104,10 +104,10 @@ trait CommonTestKitTests extends JavaDslUtils {
         override def tryProcess(persistenceId: String, processingUnit: JournalOperation): ProcessingResult = {
           processingUnit match {
             case WriteEvents(msgs) =>
-              val ex = msgs.exists({
+              val ex = msgs.exists {
                 case B(666) => true
                 case _      => false
-              })
+              }
               if (ex) {
                 ProcessingSuccess
               } else {
@@ -145,7 +145,7 @@ trait CommonTestKitTests extends JavaDslUtils {
 
       val a = system.actorOf(Props(classOf[A], pid, None))
 
-      //consecutive calls should stack
+      // consecutive calls should stack
       rejectNextPersisted()
       rejectNextPersisted()
 
@@ -193,7 +193,7 @@ trait CommonTestKitTests extends JavaDslUtils {
 
       val a = system.actorOf(Props(classOf[A], pid, None))
 
-      //consecutive calls should stack
+      // consecutive calls should stack
       failNextPersisted()
       failNextPersisted()
 

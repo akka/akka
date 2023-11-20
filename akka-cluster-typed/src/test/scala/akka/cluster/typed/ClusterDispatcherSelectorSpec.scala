@@ -9,7 +9,9 @@ import com.typesafe.config.ConfigFactory
 import akka.actor.typed.scaladsl.DispatcherSelectorSpec
 
 class ClusterDispatcherSelectorSpec
-    extends DispatcherSelectorSpec(ConfigFactory.parseString("""
+    extends DispatcherSelectorSpec(
+      ConfigFactory
+        .parseString("""
     akka.actor.provider = cluster
     """).withFallback(DispatcherSelectorSpec.config)) {
 

@@ -21,9 +21,7 @@ import akka.persistence.PluginProvider
 import akka.persistence.state.scaladsl.DurableStateStore
 import akka.util.unused
 
-/**
- * Persistence extension for queries.
- */
+/** Persistence extension for queries. */
 object DurableStateStoreRegistry extends ExtensionId[DurableStateStoreRegistry] with ExtensionIdProvider {
 
   override def get(system: ActorSystem): DurableStateStoreRegistry = super.get(system)

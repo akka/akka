@@ -88,12 +88,11 @@ object Consumer {
         context.messageAdapter[ConsumerController.Delivery[Command]](WrappedDelivery(_))
       consumerController ! ConsumerController.Start(deliveryAdapter)
 
-      Behaviors.receiveMessagePartial {
-        case WrappedDelivery(d @ ConsumerController.Delivery(_, confirmTo)) =>
-          if (traceEnabled)
-            context.log.trace("Processed {}", d.seqNr)
-          confirmTo ! ConsumerController.Confirmed
-          Behaviors.same
+      Behaviors.receiveMessagePartial { case WrappedDelivery(d @ ConsumerController.Delivery(_, confirmTo)) =>
+        if (traceEnabled)
+          context.log.trace("Processed {}", d.seqNr)
+        confirmTo ! ConsumerController.Confirmed
+        Behaviors.same
       }
     }
   }
@@ -112,7 +111,7 @@ object WorkPullingProducer {
       val requestNextAdapter =
         context.messageAdapter[WorkPullingProducerController.RequestNext[Consumer.Command]](WrappedRequestNext(_))
       var remaining = numberOfMessages + context.system.settings.config
-          .getInt("akka.reliable-delivery.consumer-controller.flow-control-window")
+        .getInt("akka.reliable-delivery.consumer-controller.flow-control-window")
 
       Behaviors.receiveMessagePartial {
         case WrappedRequestNext(next) =>

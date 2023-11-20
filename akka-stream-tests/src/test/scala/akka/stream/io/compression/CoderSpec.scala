@@ -90,8 +90,8 @@ abstract class CoderSpec(codecName: String) extends AnyWordSpec with CodecSpecSu
       val chunks = largeTextBytes.grouped(512).toVector
       val comp = newCompressor()
       val compressedChunks = chunks.map { chunk =>
-          comp.compressAndFlush(chunk)
-        } :+ comp.finish()
+        comp.compressAndFlush(chunk)
+      } :+ comp.finish()
       val uncompressed = decodeFromIterator(() => compressedChunks.iterator)
 
       uncompressed should readAs(largeText)

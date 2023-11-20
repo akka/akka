@@ -120,8 +120,8 @@ trait ScriptedTest extends Matchers {
 
     def debug: String =
       s"Script(pending=($pendingIns in, $pendingOuts out), remainingIns=${providedInputs
-        .drop(inputCursor)
-        .mkString("/")}, remainingOuts=${expectedOutputs.drop(outputCursor).mkString("/")})"
+          .drop(inputCursor)
+          .mkString("/")}, remainingOuts=${expectedOutputs.drop(outputCursor).mkString("/")})"
   }
 
   class ScriptRunner[In, Out, M](
@@ -236,8 +236,8 @@ trait ScriptedTest extends Matchers {
   }
 
   @nowarn("msg=deprecated")
-  def runScript[In, Out, M](script: Script[In, Out])(op: Flow[In, In, NotUsed] => Flow[In, Out, M])(
-      implicit system: ActorSystem): Unit =
+  def runScript[In, Out, M](script: Script[In, Out])(op: Flow[In, In, NotUsed] => Flow[In, Out, M])(implicit
+      system: ActorSystem): Unit =
     runScript(script, SystemMaterializer(system).materializer.settings)(op)(system)
 
   def runScript[In, Out, M](

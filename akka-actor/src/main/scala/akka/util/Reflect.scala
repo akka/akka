@@ -97,10 +97,9 @@ private[akka] object Reflect {
           clazz.getDeclaredConstructors.asInstanceOf[Array[Constructor[T]]].iterator.filter { c =>
             val parameterTypes = c.getParameterTypes
             parameterTypes.length == length &&
-            (parameterTypes.iterator.zip(args.iterator).forall {
-              case (found, required) =>
-                found.isInstance(required) || BoxedType(found).isInstance(required) ||
-                (required == null && !found.isPrimitive)
+            (parameterTypes.iterator.zip(args.iterator).forall { case (found, required) =>
+              found.isInstance(required) || BoxedType(found).isInstance(required) ||
+              (required == null && !found.isPrimitive)
             })
           }
         if (candidates.hasNext) {
@@ -132,8 +131,8 @@ private[akka] object Reflect {
           case c: Class[_] if marker.isAssignableFrom(c)                                            => c
           case t: ParameterizedType if marker.isAssignableFrom(t.getRawType.asInstanceOf[Class[_]]) => t
         } match {
-          case None                       => throw new IllegalArgumentException(s"cannot find [$marker] in ancestors of [$root]")
-          case Some(c: Class[_])          => if (c == marker) c else rec(c)
+          case None              => throw new IllegalArgumentException(s"cannot find [$marker] in ancestors of [$root]")
+          case Some(c: Class[_]) => if (c == marker) c else rec(c)
           case Some(t: ParameterizedType) => if (t.getRawType == marker) t else rec(t.getRawType.asInstanceOf[Class[_]])
           case _                          => ??? // cannot happen due to collectFirst
         }
@@ -141,9 +140,7 @@ private[akka] object Reflect {
     rec(root)
   }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   private[akka] def findClassLoader(): ClassLoader = {
     def findCaller(get: Int => Class[_]): ClassLoader =
       Iterator

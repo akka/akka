@@ -23,7 +23,6 @@ import akka.stream.stage._
  *    to that materialized Flow itself.
  *
  * Creates a [[SharedKillSwitch]] that can be used to externally control the completion of various streams.
- *
  */
 object KillSwitches {
 
@@ -60,8 +59,8 @@ object KillSwitches {
         case Some(status) => onSwitch(status)
         case _            =>
           // callback.invoke is a simple actor send, so it is fine to run on the invoking thread
-          terminationSignal.onComplete(getAsyncCallback[Try[Done]](onSwitch).invoke)(
-            akka.dispatch.ExecutionContexts.parasitic)
+          terminationSignal
+            .onComplete(getAsyncCallback[Try[Done]](onSwitch).invoke)(akka.dispatch.ExecutionContexts.parasitic)
       }
     }
 
@@ -108,21 +107,27 @@ object KillSwitches {
 
       val logic = new KillableGraphStageLogic(promise.future, shape) {
 
-        setHandlers(shape.in1, shape.out1, new InHandler with OutHandler {
-          override def onPush(): Unit = push(shape.out1, grab(shape.in1))
-          override def onUpstreamFinish(): Unit = complete(shape.out1)
-          override def onUpstreamFailure(ex: Throwable): Unit = fail(shape.out1, ex)
-          override def onPull(): Unit = pull(shape.in1)
-          override def onDownstreamFinish(cause: Throwable): Unit = cancel(shape.in1, cause)
-        })
+        setHandlers(
+          shape.in1,
+          shape.out1,
+          new InHandler with OutHandler {
+            override def onPush(): Unit = push(shape.out1, grab(shape.in1))
+            override def onUpstreamFinish(): Unit = complete(shape.out1)
+            override def onUpstreamFailure(ex: Throwable): Unit = fail(shape.out1, ex)
+            override def onPull(): Unit = pull(shape.in1)
+            override def onDownstreamFinish(cause: Throwable): Unit = cancel(shape.in1, cause)
+          })
 
-        setHandlers(shape.in2, shape.out2, new InHandler with OutHandler {
-          override def onPush(): Unit = push(shape.out2, grab(shape.in2))
-          override def onUpstreamFinish(): Unit = complete(shape.out2)
-          override def onUpstreamFailure(ex: Throwable): Unit = fail(shape.out2, ex)
-          override def onPull(): Unit = pull(shape.in2)
-          override def onDownstreamFinish(cause: Throwable): Unit = cancel(shape.in2, cause)
-        })
+        setHandlers(
+          shape.in2,
+          shape.out2,
+          new InHandler with OutHandler {
+            override def onPush(): Unit = push(shape.out2, grab(shape.in2))
+            override def onUpstreamFinish(): Unit = complete(shape.out2)
+            override def onUpstreamFailure(ex: Throwable): Unit = fail(shape.out2, ex)
+            override def onPull(): Unit = pull(shape.in2)
+            override def onDownstreamFinish(cause: Throwable): Unit = cancel(shape.in2, cause)
+          })
 
       }
 
@@ -141,14 +146,10 @@ object KillSwitches {
 //#kill-switch
 trait KillSwitch {
 
-  /**
-   * After calling [[KillSwitch#shutdown]] the linked [[Graph]]s of [[FlowShape]] are completed normally.
-   */
+  /** After calling [[KillSwitch#shutdown]] the linked [[Graph]]s of [[FlowShape]] are completed normally. */
   def shutdown(): Unit
 
-  /**
-   * After calling [[KillSwitch#abort]] the linked [[Graph]]s of [[FlowShape]] are failed.
-   */
+  /** After calling [[KillSwitch#abort]] the linked [[Graph]]s of [[FlowShape]] are failed. */
   def abort(ex: Throwable): Unit
 }
 //#kill-switch

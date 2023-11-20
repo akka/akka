@@ -64,7 +64,7 @@ final class AutoDowning(system: ActorSystem) extends DowningProvider {
     if (clusterSettings.config.hasPath(key)) {
       toRootLowerCase(clusterSettings.config.getString(key)) match {
         case "off" => Duration.Undefined
-        case _     => clusterSettings.config.getMillisDuration(key).requiring(_ >= Duration.Zero, key + " >= 0s, or off")
+        case _ => clusterSettings.config.getMillisDuration(key).requiring(_ >= Duration.Zero, key + " >= 0s, or off")
       }
     } else
       Duration.Undefined
@@ -79,9 +79,7 @@ final class AutoDowning(system: ActorSystem) extends DowningProvider {
     }
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[cluster] object AutoDown {
 
   def props(autoDownUnreachableAfter: FiniteDuration): Props =
@@ -182,7 +180,6 @@ private[cluster] abstract class AutoDownBase(autoDownUnreachableAfter: FiniteDur
       }
 
     case _: ClusterDomainEvent => // not interested in other events
-
   }
 
   def unreachableMember(m: Member): Unit =

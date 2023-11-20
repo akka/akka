@@ -27,8 +27,8 @@ import akka.testkit._
 object ClusterConsistentHashingRouterMultiJvmSpec extends MultiNodeConfig {
 
   class Echo extends Actor {
-    def receive = {
-      case _ => sender() ! self
+    def receive = { case _ =>
+      sender() ! self
     }
   }
 
@@ -36,7 +36,9 @@ object ClusterConsistentHashingRouterMultiJvmSpec extends MultiNodeConfig {
   val second = role("second")
   val third = role("third")
 
-  commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString(s"""
+  commonConfig(
+    debugConfig(on = false)
+      .withFallback(ConfigFactory.parseString(s"""
       common-router-settings = {
         router = consistent-hashing-pool
         cluster {
@@ -51,7 +53,8 @@ object ClusterConsistentHashingRouterMultiJvmSpec extends MultiNodeConfig {
         /router3 = $${common-router-settings}
         /router4 = $${common-router-settings}
       }
-      """)).withFallback(MultiNodeClusterSpec.clusterConfig))
+      """))
+      .withFallback(MultiNodeClusterSpec.clusterConfig))
 
 }
 
@@ -70,9 +73,7 @@ abstract class ClusterConsistentHashingRouterSpec
   def currentRoutees(router: ActorRef) =
     Await.result(router ? GetRoutees, timeout.duration).asInstanceOf[Routees].routees
 
-  /**
-   * Fills in self address for local ActorRef
-   */
+  /** Fills in self address for local ActorRef */
   private def fullAddress(actorRef: ActorRef): Address = actorRef.path.address match {
     case Address(_, _, None, None) => cluster.selfAddress
     case a                         => a
@@ -124,7 +125,8 @@ abstract class ClusterConsistentHashingRouterSpec
         val router2 = system.actorOf(
           ClusterRouterPool(
             local = ConsistentHashingPool(nrOfInstances = 0),
-            settings = ClusterRouterPoolSettings(totalInstances = 10, maxInstancesPerNode = 2, allowLocalRoutees = true))
+            settings =
+              ClusterRouterPoolSettings(totalInstances = 10, maxInstancesPerNode = 2, allowLocalRoutees = true))
             .props(Props[Echo]()),
           "router2")
         // it may take some time until router receives cluster member events
@@ -138,8 +140,8 @@ abstract class ClusterConsistentHashingRouterSpec
 
     "handle combination of configured router and programatically defined hashMapping" in {
       runOn(first) {
-        def hashMapping: ConsistentHashMapping = {
-          case s: String => s
+        def hashMapping: ConsistentHashMapping = { case s: String =>
+          s
         }
 
         val router3 =
@@ -155,8 +157,8 @@ abstract class ClusterConsistentHashingRouterSpec
 
     "handle combination of configured router and programatically defined hashMapping and ClusterRouterConfig" in {
       runOn(first) {
-        def hashMapping: ConsistentHashMapping = {
-          case s: String => s
+        def hashMapping: ConsistentHashMapping = { case s: String =>
+          s
         }
 
         val router4 =

@@ -16,39 +16,29 @@ import akka.actor.Address
 import akka.actor.AddressFromURIString
 import akka.annotation.InternalApi
 
-/**
- * INTERNAL API: Adds support for serializing and deserializing [[Address]].
- */
+/** INTERNAL API: Adds support for serializing and deserializing [[Address]]. */
 @InternalApi private[akka] trait AddressModule extends JacksonModule {
   addSerializer(classOf[Address], () => AddressSerializer.instance, () => AddressDeserializer.instance)
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object AddressSerializer {
   val instance: AddressSerializer = new AddressSerializer
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] class AddressSerializer extends StdScalarSerializer[Address](classOf[Address]) {
   override def serialize(value: Address, jgen: JsonGenerator, provider: SerializerProvider): Unit = {
     jgen.writeString(value.toString)
   }
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object AddressDeserializer {
   val instance: AddressDeserializer = new AddressDeserializer
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] class AddressDeserializer extends StdScalarDeserializer[Address](classOf[Address]) {
 
   def deserialize(jp: JsonParser, ctxt: DeserializationContext): Address = {

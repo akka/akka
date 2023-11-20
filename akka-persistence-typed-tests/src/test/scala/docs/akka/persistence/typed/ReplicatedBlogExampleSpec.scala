@@ -65,7 +65,7 @@ object ReplicatedBlogExampleSpec {
       }
     }
 
-    //#command-handler
+    // #command-handler
     private def commandHandler(
         ctx: ActorContext[Command],
         replicationContext: ReplicationContext,
@@ -100,9 +100,9 @@ object ReplicatedBlogExampleSpec {
           Effect.none
       }
     }
-    //#command-handler
+    // #command-handler
 
-    //#event-handler
+    // #event-handler
     private def eventHandler(
         ctx: ActorContext[Command],
         replicationContext: ReplicationContext,
@@ -127,7 +127,7 @@ object ReplicatedBlogExampleSpec {
           state.copy(published = true)
       }
     }
-    //#event-handler
+    // #event-handler
   }
 }
 

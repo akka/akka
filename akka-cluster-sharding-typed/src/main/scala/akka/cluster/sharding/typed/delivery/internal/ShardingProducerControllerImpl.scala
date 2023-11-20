@@ -29,9 +29,7 @@ import akka.cluster.sharding.typed.ShardingEnvelope
 import akka.cluster.sharding.typed.delivery.ShardingProducerController
 import akka.util.Timeout
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object ShardingProducerControllerImpl {
 
   import ShardingProducerController.Command
@@ -356,8 +354,8 @@ private class ShardingProducerControllerImpl[A: ClassTag](
     }
 
     def onAck(outState: OutState[A], confirmedSeqNr: OutSeqNr): Vector[Unconfirmed[A]] = {
-      val (confirmed, newUnconfirmed) = outState.unconfirmed.partition {
-        case Unconfirmed(_, seqNr, _) => seqNr <= confirmedSeqNr
+      val (confirmed, newUnconfirmed) = outState.unconfirmed.partition { case Unconfirmed(_, seqNr, _) =>
+        seqNr <= confirmedSeqNr
       }
 
       if (confirmed.nonEmpty) {
@@ -473,17 +471,16 @@ private class ShardingProducerControllerImpl[A: ClassTag](
 
     def receiveResendFirstUnconfirmed(): Behavior[InternalCommand] = {
       val now = System.nanoTime()
-      s.out.foreach {
-        case (outKey: OutKey, outState) =>
-          val idleDurationMillis = (now - outState.usedNanoTime) / 1000 / 1000
-          if (outState.unconfirmed.nonEmpty && idleDurationMillis >= settings.resendFirstUnconfirmedIdleTimeout.toMillis) {
-            context.log.debug(
-              "Resend first unconfirmed for [{}], because it was idle for [{} ms]",
-              outKey,
-              idleDurationMillis)
-            outState.producerController
-              .unsafeUpcast[ProducerControllerImpl.InternalCommand] ! ProducerControllerImpl.ResendFirstUnconfirmed
-          }
+      s.out.foreach { case (outKey: OutKey, outState) =>
+        val idleDurationMillis = (now - outState.usedNanoTime) / 1000 / 1000
+        if (outState.unconfirmed.nonEmpty && idleDurationMillis >= settings.resendFirstUnconfirmedIdleTimeout.toMillis) {
+          context.log.debug(
+            "Resend first unconfirmed for [{}], because it was idle for [{} ms]",
+            outKey,
+            idleDurationMillis)
+          outState.producerController
+            .unsafeUpcast[ProducerControllerImpl.InternalCommand] ! ProducerControllerImpl.ResendFirstUnconfirmed
+        }
       }
       Behaviors.same
     }
@@ -491,15 +488,14 @@ private class ShardingProducerControllerImpl[A: ClassTag](
     def receiveCleanupUnused(): Behavior[InternalCommand] = {
       val now = System.nanoTime()
       val removeOutKeys =
-        s.out.flatMap {
-          case (outKey: OutKey, outState) =>
-            val idleDurationMillis = (now - outState.usedNanoTime) / 1000 / 1000
-            if (outState.unconfirmed.isEmpty && outState.buffered.isEmpty && idleDurationMillis >= settings.cleanupUnusedAfter.toMillis) {
-              context.log.debug("Cleanup unused [{}], because it was idle for [{} ms]", outKey, idleDurationMillis)
-              context.stop(outState.producerController)
-              Some(outKey)
-            } else
-              None
+        s.out.flatMap { case (outKey: OutKey, outState) =>
+          val idleDurationMillis = (now - outState.usedNanoTime) / 1000 / 1000
+          if (outState.unconfirmed.isEmpty && outState.buffered.isEmpty && idleDurationMillis >= settings.cleanupUnusedAfter.toMillis) {
+            context.log.debug("Cleanup unused [{}], because it was idle for [{} ms]", outKey, idleDurationMillis)
+            context.stop(outState.producerController)
+            Some(outKey)
+          } else
+            None
         }
       if (removeOutKeys.isEmpty)
         Behaviors.same

@@ -29,10 +29,9 @@ object UseRoleIgnoredMultiJvmSpec extends MultiNodeConfig {
 
     def this() = this(PoolRoutee)
 
-    def receive = {
-      case msg =>
-        log.info("msg = {}", msg)
-        sender() ! Reply(routeeType, self)
+    def receive = { case msg =>
+      log.info("msg = {}", msg)
+      sender() ! Reply(routeeType, self)
     }
   }
 
@@ -65,16 +64,14 @@ abstract class UseRoleIgnoredSpec
 
   def receiveReplies(routeeType: RouteeType, expectedReplies: Int): Map[Address, Int] = {
     val zero = Map.empty[Address, Int] ++ roles.map(address(_) -> 0)
-    (receiveWhile(5 seconds, messages = expectedReplies) {
-      case Reply(`routeeType`, ref) => fullAddress(ref)
-    }).foldLeft(zero) {
-      case (replyMap, address) => replyMap + (address -> (replyMap(address) + 1))
+    receiveWhile(5 seconds, messages = expectedReplies) { case Reply(`routeeType`, ref) =>
+      fullAddress(ref)
+    }.foldLeft(zero) { case (replyMap, address) =>
+      replyMap + (address -> (replyMap(address) + 1))
     }
   }
 
-  /**
-   * Fills in self address for local ActorRef
-   */
+  /** Fills in self address for local ActorRef */
   private def fullAddress(actorRef: ActorRef): Address = actorRef.path.address match {
     case Address(_, _, None, None) => cluster.selfAddress
     case a                         => a

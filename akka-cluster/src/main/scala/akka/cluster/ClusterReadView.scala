@@ -20,9 +20,7 @@ import akka.cluster.ClusterEvent._
 import akka.dispatch.RequiresMessageQueue
 import akka.dispatch.UnboundedMessageQueueSemantics
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object ClusterReadView {
   final case class State(
       clusterState: CurrentClusterState,
@@ -42,23 +40,21 @@ import akka.dispatch.UnboundedMessageQueueSemantics
   import ClusterReadView.State
   import cluster.ClusterLogger._
 
-  /**
-   * State for synchronous read access via [[Cluster]] extension. Only updated from the `eventBusListener` actor.
-   */
+  /** State for synchronous read access via [[Cluster]] extension. Only updated from the `eventBusListener` actor. */
   private val _state: AtomicReference[State] = new AtomicReference[State](
     State(
       clusterState = CurrentClusterState(),
       reachability = Reachability.empty,
-      selfMember = Member(cluster.selfUniqueAddress, cluster.selfRoles, cluster.settings.AppVersion)
-        .copy(status = MemberStatus.Removed),
+      selfMember = Member(cluster.selfUniqueAddress, cluster.selfRoles, cluster.settings.AppVersion).copy(status =
+        MemberStatus.Removed),
       latestStats = CurrentInternalStats(GossipStats(), VectorClockStats())))
 
   val selfAddress: Address = cluster.selfAddress
 
   // create actor that subscribes to the cluster eventBus to update current read view state
   private val eventBusListener: ActorRef = {
-    cluster.system
-      .systemActorOf(Props(new Actor with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
+    cluster.system.systemActorOf(
+      Props(new Actor with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
         override def preStart(): Unit = cluster.subscribe(this.self, classOf[ClusterDomainEvent])
 
         // make sure that final state has member status Removed
@@ -89,19 +85,18 @@ import akka.dispatch.UnboundedMessageQueueSemantics
                 selfRemoved()
               case MemberRemoved(member, _) =>
                 _state.set(
-                  oldState.copy(
-                    clusterState = oldClusterState.copy(
-                      members = oldClusterState.members - member,
-                      unreachable = oldClusterState.unreachable - member)))
+                  oldState.copy(clusterState = oldClusterState.copy(
+                    members = oldClusterState.members - member,
+                    unreachable = oldClusterState.unreachable - member)))
               case UnreachableMember(member) =>
                 // replace current member with new member (might have different status, only address is used in equals)
                 _state.set(
-                  oldState.copy(
-                    clusterState = oldClusterState.copy(unreachable = oldClusterState.unreachable - member + member)))
+                  oldState.copy(clusterState =
+                    oldClusterState.copy(unreachable = oldClusterState.unreachable - member + member)))
               case ReachableMember(member) =>
                 _state.set(
-                  oldState.copy(
-                    clusterState = oldClusterState.copy(unreachable = oldClusterState.unreachable - member)))
+                  oldState.copy(clusterState =
+                    oldClusterState.copy(unreachable = oldClusterState.unreachable - member)))
               case event: MemberEvent =>
                 val member = event.member
                 // replace current member with new member (might have different status, only address is used in equals)
@@ -134,7 +129,9 @@ import akka.dispatch.UnboundedMessageQueueSemantics
               case MemberTombstonesChanged(tombstones) =>
                 _state.set(oldState.copy(clusterState = oldClusterState.withMemberTombstones(tombstones)))
               case unexpected =>
-                throw new IllegalArgumentException(s"Unexpected cluster event type ${unexpected.getClass}") // compiler exhaustiveness check pleaser
+                throw new IllegalArgumentException(
+                  s"Unexpected cluster event type ${unexpected.getClass}"
+                ) // compiler exhaustiveness check pleaser
             }
 
             // once captured, optional verbose logging of event
@@ -146,26 +143,21 @@ import akka.dispatch.UnboundedMessageQueueSemantics
               s.members.find(_.uniqueAddress == cluster.selfUniqueAddress).getOrElse(oldState.selfMember)
             _state.set(oldState.copy(clusterState = s, selfMember = newSelfMember))
         }
-      }).withDispatcher(cluster.settings.UseDispatcher).withDeploy(Deploy.local), name = "clusterEventBusListener")
+      }).withDispatcher(cluster.settings.UseDispatcher).withDeploy(Deploy.local),
+      name = "clusterEventBusListener")
   }
 
   def state: CurrentClusterState = _state.get().clusterState
 
   def self: Member = _state.get().selfMember
 
-  /**
-   * Returns true if this cluster instance has be shutdown.
-   */
+  /** Returns true if this cluster instance has be shutdown. */
   def isTerminated: Boolean = cluster.isTerminated
 
-  /**
-   * Current cluster members, sorted by address.
-   */
+  /** Current cluster members, sorted by address. */
   def members: immutable.SortedSet[Member] = _state.get().clusterState.members
 
-  /**
-   * Members that has been detected as unreachable.
-   */
+  /** Members that has been detected as unreachable. */
   def unreachableMembers: Set[Member] = _state.get().clusterState.unreachable
 
   /**
@@ -177,19 +169,13 @@ import akka.dispatch.UnboundedMessageQueueSemantics
    */
   def status: MemberStatus = self.status
 
-  /**
-   * Is this node the current data center leader
-   */
+  /** Is this node the current data center leader */
   def isLeader: Boolean = leader.contains(selfAddress)
 
-  /**
-   * Get the address of the current data center leader
-   */
+  /** Get the address of the current data center leader */
   def leader: Option[Address] = _state.get().clusterState.leader
 
-  /**
-   * Does the cluster consist of only one member?
-   */
+  /** Does the cluster consist of only one member? */
   def isSingletonCluster: Boolean = members.size == 1
 
   /**
@@ -211,9 +197,7 @@ import akka.dispatch.UnboundedMessageQueueSemantics
    */
   private[cluster] def seenBy: Set[Address] = _state.get().clusterState.seenBy
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   private[cluster] def latestStats: CurrentInternalStats = _state.get().latestStats
 
   private def logInfoVerbose(event: ClusterDomainEvent): Unit = {
@@ -240,9 +224,7 @@ import akka.dispatch.UnboundedMessageQueueSemantics
     }
   }
 
-  /**
-   * Unsubscribe to cluster events.
-   */
+  /** Unsubscribe to cluster events. */
   def close(): Unit = {
     if (!eventBusListener.isTerminated)
       eventBusListener ! PoisonPill

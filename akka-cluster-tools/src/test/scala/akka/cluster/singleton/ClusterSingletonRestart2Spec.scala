@@ -22,14 +22,13 @@ object ClusterSingletonRestart2Spec {
   def singletonActorProps: Props = Props(new Singleton)
 
   class Singleton extends Actor {
-    def receive = {
-      case _ => sender() ! Cluster(context.system).selfUniqueAddress
+    def receive = { case _ =>
+      sender() ! Cluster(context.system).selfUniqueAddress
     }
   }
 }
 
-class ClusterSingletonRestart2Spec
-    extends AkkaSpec("""
+class ClusterSingletonRestart2Spec extends AkkaSpec("""
   akka.loglevel = INFO
   akka.cluster.roles = [singleton]
   akka.actor.provider = akka.cluster.ClusterActorRefProvider
@@ -104,9 +103,11 @@ class ClusterSingletonRestart2Spec
         val sys2port = Cluster(sys2).selfAddress.port.get
 
         val sys4Config =
-          ConfigFactory.parseString(s"""
+          ConfigFactory
+            .parseString(s"""
             akka.remote.artery.canonical.port=$sys2port
-            """).withFallback(system.settings.config)
+            """)
+            .withFallback(system.settings.config)
 
         ActorSystem(system.name, sys4Config)
       }

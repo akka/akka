@@ -18,9 +18,7 @@ import akka.pattern.ask
 import akka.util.JavaDurationConverters._
 import akka.util.Timeout
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object ReplicatorBehavior {
   import akka.cluster.ddata.typed.javadsl.{ Replicator => JReplicator }
   import akka.cluster.ddata.typed.scaladsl.{ Replicator => SReplicator }
@@ -86,8 +84,8 @@ import akka.util.Timeout
                       case rsp: dd.Replicator.GetFailure[d]     => JReplicator.GetFailure(rsp.key)
                       case rsp: dd.Replicator.GetDataDeleted[d] => JReplicator.GetDataDeleted(rsp.key)
                     }
-                    .recover {
-                      case _ => JReplicator.GetFailure(cmd.key)
+                    .recover { case _ =>
+                      JReplicator.GetFailure(cmd.key)
                     }
                 reply.foreach { cmd.replyTo ! _ }
                 Behaviors.same
@@ -115,8 +113,8 @@ import akka.util.Timeout
                       case rsp: dd.Replicator.StoreFailure[d]      => JReplicator.StoreFailure(rsp.key)
                       case rsp: dd.Replicator.UpdateDataDeleted[d] => JReplicator.UpdateDataDeleted(rsp.key)
                     }
-                    .recover {
-                      case _ => JReplicator.UpdateTimeout(cmd.key)
+                    .recover { case _ =>
+                      JReplicator.UpdateTimeout(cmd.key)
                     }
                 reply.foreach { cmd.replyTo ! _ }
                 Behaviors.same
@@ -182,8 +180,8 @@ import akka.util.Timeout
                       case rsp: dd.Replicator.DataDeleted[d]  => JReplicator.DataDeleted(rsp.key)
                       case rsp: dd.Replicator.StoreFailure[d] => JReplicator.StoreFailure(rsp.key)
                     }
-                    .recover {
-                      case _ => JReplicator.DeleteFailure(cmd.key)
+                    .recover { case _ =>
+                      JReplicator.DeleteFailure(cmd.key)
                     }
                 reply.foreach { cmd.replyTo ! _ }
                 Behaviors.same
@@ -207,7 +205,9 @@ import akka.util.Timeout
                 Behaviors.same
 
               case unexpected =>
-                throw new RuntimeException(s"Unexpected message: ${unexpected.getClass}") // compiler exhaustiveness check pleaser
+                throw new RuntimeException(
+                  s"Unexpected message: ${unexpected.getClass}"
+                ) // compiler exhaustiveness check pleaser
             }
           }
           .receiveSignal {

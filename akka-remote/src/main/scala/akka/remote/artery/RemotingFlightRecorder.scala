@@ -15,9 +15,7 @@ import akka.annotation.InternalApi
 import akka.remote.UniqueAddress
 import akka.util.FlightRecorderLoader
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 object RemotingFlightRecorder extends ExtensionId[RemotingFlightRecorder] with ExtensionIdProvider {
 
@@ -30,9 +28,7 @@ object RemotingFlightRecorder extends ExtensionId[RemotingFlightRecorder] with E
   override def lookup: ExtensionId[_ <: Extension] = this
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] trait RemotingFlightRecorder extends Extension {
 

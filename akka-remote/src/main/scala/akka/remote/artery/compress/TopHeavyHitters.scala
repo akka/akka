@@ -336,9 +336,7 @@ private[remote] final class TopHeavyHitters[T >: Null](val max: Int)(implicit cl
     fixHeap(0)
   }
 
-  /**
-   * Remove value from hash-table based on position.
-   */
+  /** Remove value from hash-table based on position. */
   private def removeHash(index: Int): Unit = {
     if (index >= 0) {
       items(index) = null
@@ -399,9 +397,7 @@ private[remote] final class TopHeavyHitters[T >: Null](val max: Int)(implicit cl
     s"${getClass.getSimpleName}(max:$max)"
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[remote] object TopHeavyHitters {
 
   /** Value class to avoid mixing up count and hashCode in APIs. */

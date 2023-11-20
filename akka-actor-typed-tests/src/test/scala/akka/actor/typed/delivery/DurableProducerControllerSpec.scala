@@ -21,7 +21,8 @@ import akka.util.ByteString
 
 class DurableProducerControllerSpec
     extends ScalaTestWithActorTestKit(
-      ConfigFactory.parseString("""
+      ConfigFactory
+        .parseString("""
   akka.reliable-delivery.consumer-controller.flow-control-window = 20
   akka.reliable-delivery.consumer-controller.resend-interval-min = 1s
   """).withFallback(TestSerializer.config))

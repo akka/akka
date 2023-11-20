@@ -127,14 +127,10 @@ object ConsumerController {
 
   object SequencedMessage {
 
-    /**
-     * SequencedMessage.message can be `A` or `ChunkedMessage`.
-     */
+    /** SequencedMessage.message can be `A` or `ChunkedMessage`. */
     type MessageOrChunk = Any
 
-    /**
-     * INTERNAL API
-     */
+    /** INTERNAL API */
     @InternalApi private[akka] def fromChunked[A](
         producerId: String,
         seqNr: SeqNr,
@@ -232,42 +228,30 @@ object ConsumerController {
     def withFlowControlWindow(newFlowControlWindow: Int): Settings =
       copy(flowControlWindow = newFlowControlWindow)
 
-    /**
-     * Scala API
-     */
+    /** Scala API */
     def withResendIntervalMin(newResendIntervalMin: FiniteDuration): Settings =
       copy(resendIntervalMin = newResendIntervalMin)
 
-    /**
-     * Scala API
-     */
+    /** Scala API */
     def withResendIntervalMax(newResendIntervalMax: FiniteDuration): Settings =
       copy(resendIntervalMax = newResendIntervalMax)
 
-    /**
-     * Java API
-     */
+    /** Java API */
     def withResendIntervalMin(newResendIntervalMin: JavaDuration): Settings =
       copy(resendIntervalMin = newResendIntervalMin.asScala)
 
-    /**
-     * Java API
-     */
+    /** Java API */
     def withResendIntervalMax(newResendIntervalMax: JavaDuration): Settings =
       copy(resendIntervalMax = newResendIntervalMax.asScala)
 
-    /**
-     * Java API
-     */
+    /** Java API */
     def getResendIntervalMax(): JavaDuration =
       resendIntervalMax.asJava
 
     def withOnlyFlowControl(newOnlyFlowControl: Boolean): Settings =
       copy(onlyFlowControl = newOnlyFlowControl)
 
-    /**
-     * Private copy method for internal use only.
-     */
+    /** Private copy method for internal use only. */
     private def copy(
         flowControlWindow: Int = flowControlWindow,
         resendIntervalMin: FiniteDuration = resendIntervalMin,
@@ -300,24 +284,18 @@ object ConsumerController {
   def apply[A](serviceKey: ServiceKey[Command[A]], settings: Settings): Behavior[Command[A]] =
     apply(Some(serviceKey), settings)
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[akka] def apply[A](
       serviceKey: Option[ServiceKey[Command[A]]],
       settings: Settings): Behavior[Command[A]] = {
     ConsumerControllerImpl(serviceKey, settings)
   }
 
-  /**
-   * Java API
-   */
+  /** Java API */
   def create[A](): Behavior[Command[A]] =
     apply()
 
-  /**
-   * Java API
-   */
+  /** Java API */
   def create[A](settings: Settings): Behavior[Command[A]] =
     apply(settings)
 
@@ -329,9 +307,7 @@ object ConsumerController {
   def create[A](serviceKey: ServiceKey[Command[A]]): Behavior[Command[A]] =
     apply(serviceKey)
 
-  /**
-   * Java API
-   */
+  /** Java API */
   def create[A](serviceKey: ServiceKey[Command[A]], settings: Settings): Behavior[Command[A]] =
     apply(Some(serviceKey), settings)
 

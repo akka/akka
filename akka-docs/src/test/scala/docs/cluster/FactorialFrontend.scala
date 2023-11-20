@@ -56,18 +56,18 @@ object FactorialFrontend {
 
     val system = ActorSystem("ClusterSystem", config)
     system.log.info("Factorials will start when 2 backend members in the cluster.")
-    //#registerOnUp
+    // #registerOnUp
     Cluster(system).registerOnMemberUp {
       system.actorOf(Props(classOf[FactorialFrontend], upToN, true), name = "factorialFrontend")
     }
-    //#registerOnUp
+    // #registerOnUp
 
   }
 }
 
 // not used, only for documentation
 abstract class FactorialFrontend2 extends Actor {
-  //#router-lookup-in-code
+  // #router-lookup-in-code
   import akka.cluster.routing.ClusterRouterGroup
   import akka.cluster.routing.ClusterRouterGroupSettings
   import akka.cluster.metrics.AdaptiveLoadBalancingGroup
@@ -83,12 +83,12 @@ abstract class FactorialFrontend2 extends Actor {
         useRoles = Set("backend"))).props(),
     name = "factorialBackendRouter2")
 
-  //#router-lookup-in-code
+  // #router-lookup-in-code
 }
 
 // not used, only for documentation
 abstract class FactorialFrontend3 extends Actor {
-  //#router-deploy-in-code
+  // #router-deploy-in-code
   import akka.cluster.routing.ClusterRouterPool
   import akka.cluster.routing.ClusterRouterPoolSettings
   import akka.cluster.metrics.AdaptiveLoadBalancingPool
@@ -103,5 +103,5 @@ abstract class FactorialFrontend3 extends Actor {
         allowLocalRoutees = false,
         useRoles = Set("backend"))).props(Props[FactorialBackend]()),
     name = "factorialBackendRouter3")
-  //#router-deploy-in-code
+  // #router-deploy-in-code
 }

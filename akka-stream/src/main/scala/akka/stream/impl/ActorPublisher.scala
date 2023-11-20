@@ -16,9 +16,7 @@ import org.reactivestreams.Subscription
 import akka.actor.{ Actor, ActorRef, Terminated }
 import akka.annotation.InternalApi
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object ActorPublisher {
   val NormalShutdownReasonMessage = "Cannot subscribe to shut-down Publisher"
   class NormalShutdownException extends IllegalStateException(NormalShutdownReasonMessage) with NoStackTrace
@@ -85,23 +83,23 @@ import akka.annotation.InternalApi
   @volatile private var shutdownReason: Option[Throwable] = None
 
   private def reportSubscribeFailure(subscriber: Subscriber[_ >: T]): Unit =
-    try shutdownReason match {
-      case Some(_: SpecViolation) => // ok, not allowed to call onError
-      case Some(e) =>
-        tryOnSubscribe(subscriber, CancelledSubscription)
-        tryOnError(subscriber, e)
-      case None =>
-        tryOnSubscribe(subscriber, CancelledSubscription)
-        tryOnComplete(subscriber)
-    } catch {
+    try
+      shutdownReason match {
+        case Some(_: SpecViolation) => // ok, not allowed to call onError
+        case Some(e) =>
+          tryOnSubscribe(subscriber, CancelledSubscription)
+          tryOnError(subscriber, e)
+        case None =>
+          tryOnSubscribe(subscriber, CancelledSubscription)
+          tryOnComplete(subscriber)
+      }
+    catch {
       case _: SpecViolation => // nothing to do
     }
 
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] class ActorSubscription[T](
     final val impl: ActorRef,
     final val subscriber: Subscriber[_ >: T])
@@ -110,16 +108,12 @@ import akka.annotation.InternalApi
   override def cancel(): Unit = impl ! Cancel(this)
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] class ActorSubscriptionWithCursor[T](_impl: ActorRef, _subscriber: Subscriber[_ >: T])
     extends ActorSubscription[T](_impl, _subscriber)
     with SubscriptionWithCursor[T]
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] trait SoftShutdown { this: Actor =>
   def softShutdown(): Unit = {
     val children = context.children

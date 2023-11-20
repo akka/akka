@@ -89,7 +89,7 @@ class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference(ActorSystem.fin
       {
         val c = config.getConfig("akka.actor.default-dispatcher")
 
-        //General dispatcher config
+        // General dispatcher config
 
         {
           c.getString("type") should ===("Dispatcher")
@@ -100,13 +100,13 @@ class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference(ActorSystem.fin
           c.getBoolean("attempt-teamwork") should ===(true)
         }
 
-        //Default executor config
+        // Default executor config
         {
           val pool = c.getConfig("default-executor")
           pool.getString("fallback") should ===("fork-join-executor")
         }
 
-        //Fork join executor config
+        // Fork join executor config
 
         {
           val pool = c.getConfig("fork-join-executor")
@@ -116,7 +116,7 @@ class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference(ActorSystem.fin
           pool.getString("task-peeking-mode") should be("FIFO")
         }
 
-        //Thread pool executor config
+        // Thread pool executor config
 
         {
           val pool = c.getConfig("thread-pool-executor")

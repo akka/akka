@@ -126,8 +126,9 @@ class TimeoutsSpec extends StreamSpec {
   "BackpressureTimeout" must {
 
     "pass through elements unmodified" in {
-      Await.result(Source(1 to 100).backpressureTimeout(1.second).grouped(200).runWith(Sink.head), 3.seconds) should ===(
-        1 to 100)
+      Await.result(
+        Source(1 to 100).backpressureTimeout(1.second).grouped(200).runWith(Sink.head),
+        3.seconds) should ===(1 to 100)
     }
 
     "succeed if subscriber demand arrives" in {

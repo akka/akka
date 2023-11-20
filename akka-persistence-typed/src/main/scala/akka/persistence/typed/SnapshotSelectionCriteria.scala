@@ -10,9 +10,7 @@ import akka.util.HashCode
 
 object SnapshotSelectionCriteria {
 
-  /**
-   * The latest saved snapshot.
-   */
+  /** The latest saved snapshot. */
   val latest: SnapshotSelectionCriteria =
     new SnapshotSelectionCriteria(
       maxSequenceNr = Long.MaxValue,
@@ -20,32 +18,24 @@ object SnapshotSelectionCriteria {
       minSequenceNr = 0L,
       minTimestamp = 0L)
 
-  /**
-   * No saved snapshot matches.
-   */
+  /** No saved snapshot matches. */
   val none: SnapshotSelectionCriteria =
     new SnapshotSelectionCriteria(maxSequenceNr = 0L, maxTimestamp = 0L, minSequenceNr = 0L, minTimestamp = 0L)
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[akka] def fromClassic(c: ClassicSnapshotSelectionCriteria): SnapshotSelectionCriteria =
     new SnapshotSelectionCriteria(c.maxSequenceNr, c.maxTimestamp, c.minSequenceNr, c.minTimestamp)
 
 }
 
-/**
- * Selection criteria for loading and deleting snapshots.
- */
+/** Selection criteria for loading and deleting snapshots. */
 final class SnapshotSelectionCriteria @InternalApi private[akka] (
     val maxSequenceNr: Long,
     val maxTimestamp: Long,
     val minSequenceNr: Long,
     val minTimestamp: Long) {
 
-  /**
-   * upper bound for a selected snapshot's sequence number
-   */
+  /** upper bound for a selected snapshot's sequence number */
   def withMaxSequenceNr(newMaxSequenceNr: Long): SnapshotSelectionCriteria =
     copy(maxSequenceNr = newMaxSequenceNr)
 
@@ -56,9 +46,7 @@ final class SnapshotSelectionCriteria @InternalApi private[akka] (
   def withMaxTimestamp(newMaxTimestamp: Long): SnapshotSelectionCriteria =
     copy(maxTimestamp = newMaxTimestamp)
 
-  /**
-   * lower bound for a selected snapshot's sequence number
-   */
+  /** lower bound for a selected snapshot's sequence number */
   def withMinSequenceNr(newMinSequenceNr: Long): SnapshotSelectionCriteria =
     copy(minSequenceNr = newMinSequenceNr)
 
@@ -79,9 +67,7 @@ final class SnapshotSelectionCriteria @InternalApi private[akka] (
   override def toString: String =
     s"SnapshotSelectionCriteria($maxSequenceNr,$maxTimestamp,$minSequenceNr,$minTimestamp)"
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[akka] def toClassic: akka.persistence.SnapshotSelectionCriteria =
     akka.persistence.SnapshotSelectionCriteria(maxSequenceNr, maxTimestamp, minSequenceNr, minTimestamp)
 

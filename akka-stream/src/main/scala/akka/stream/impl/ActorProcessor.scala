@@ -14,9 +14,7 @@ import akka.stream.ActorAttributes
 import akka.stream.impl.ActorSubscriberMessage.{ OnComplete, OnError, OnNext, OnSubscribe }
 import akka.util.unused
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object ActorProcessor {
 
   def apply[I, O](impl: ActorRef): ActorProcessor[I, O] = {
@@ -27,9 +25,7 @@ import akka.util.unused
   }
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] class ActorProcessor[I, O](impl: ActorRef)
     extends ActorPublisher[O](impl)
     with Processor[I, O] {
@@ -48,9 +44,7 @@ import akka.util.unused
   }
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] abstract class BatchingInputBuffer(val size: Int, val pump: Pump)
     extends DefaultInputTransferStates {
   if (size < 1) throw new IllegalArgumentException(s"buffer size must be positive (was: $size)")
@@ -151,8 +145,8 @@ import akka.util.unused
     case OnSubscribe(subscription) => subscription.cancel() // spec rule 2.5
   }
 
-  protected def completed: Actor.Receive = {
-    case OnSubscribe(_) => throw new IllegalStateException("onSubscribe called after onError or onComplete")
+  protected def completed: Actor.Receive = { case OnSubscribe(_) =>
+    throw new IllegalStateException("onSubscribe called after onError or onComplete")
   }
 
   protected def inputOnError(@unused e: Throwable): Unit = {
@@ -161,9 +155,7 @@ import akka.util.unused
 
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] class SimpleOutputs(val actor: ActorRef, val pump: Pump)
     extends DefaultOutputTransferStates {
   import ReactiveStreamsCompliance._
@@ -255,9 +247,7 @@ private[akka] object ActorProcessorImpl {
   case object SubscriptionTimeout
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] abstract class ActorProcessorImpl(attributes: Attributes)
     extends Actor
     with ActorLogging
@@ -275,9 +265,7 @@ private[akka] object ActorProcessorImpl {
   protected val primaryOutputs: Outputs = new SimpleOutputs(self, this)
   def subTimeoutHandling: Receive
 
-  /**
-   * Subclass may override [[#activeReceive]]
-   */
+  /** Subclass may override [[#activeReceive]] */
   final override def receive = new ExposedPublisherReceive(activeReceive, unhandled) {
     override def receiveExposedPublisher(ep: ExposedPublisher): Unit = {
       primaryOutputs.subreceive(ep)

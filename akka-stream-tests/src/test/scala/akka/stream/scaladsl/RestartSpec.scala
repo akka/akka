@@ -330,7 +330,9 @@ class RestartSpec
       probe.requestNext("a")
       probe.requestNext("a")
 
-      Thread.sleep((shortMinBackoff + (shortMinBackoff * 2) + shortMinBackoff).toMillis) // if using shortMinBackoff as deadline cause reset
+      Thread.sleep(
+        (shortMinBackoff + (shortMinBackoff * 2) + shortMinBackoff).toMillis
+      ) // if using shortMinBackoff as deadline cause reset
 
       probe.requestNext("a")
 
@@ -593,7 +595,9 @@ class RestartSpec
       sinkProbe.requestNext("cancel")
       // The probe should now be backing off for 2 * shortMinBackoff
 
-      Thread.sleep((shortMinBackoff + (shortMinBackoff * 2) + minBackoff).toMillis) // if using shortMinBackoff as deadline cause reset
+      Thread.sleep(
+        (shortMinBackoff + (shortMinBackoff * 2) + minBackoff).toMillis
+      ) // if using shortMinBackoff as deadline cause reset
 
       probe.sendNext("cancel")
       sinkProbe.requestNext("cancel")

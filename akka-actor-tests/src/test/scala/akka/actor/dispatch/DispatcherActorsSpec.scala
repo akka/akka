@@ -9,9 +9,7 @@ import java.util.concurrent.CountDownLatch
 import akka.actor._
 import akka.testkit.AkkaSpec
 
-/**
- * Tests the behavior of the executor based event driven dispatcher when multiple actors are being dispatched on it.
- */
+/** Tests the behavior of the executor based event driven dispatcher when multiple actors are being dispatched on it. */
 class DispatcherActorsSpec extends AkkaSpec {
   class SlowActor(finishedCounter: CountDownLatch) extends Actor {
 

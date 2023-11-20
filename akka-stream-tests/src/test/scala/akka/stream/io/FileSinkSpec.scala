@@ -55,13 +55,15 @@ class FileSinkSpec extends StreamSpec(UnboundedMailboxConfig) with ScalaFutures 
     }
 
     "create new file if not exists" in {
-      targetFile({ f =>
-        val completion = Source(TestByteStrings).runWith(FileIO.toPath(f))
+      targetFile(
+        { f =>
+          val completion = Source(TestByteStrings).runWith(FileIO.toPath(f))
 
-        val result = Await.result(completion, 3.seconds)
-        result.count should equal(6006)
-        checkFileContents(f, TestLines.mkString(""))
-      }, create = false)
+          val result = Await.result(completion, 3.seconds)
+          result.count should equal(6006)
+          checkFileContents(f, TestLines.mkString(""))
+        },
+        create = false)
     }
 
     "write into existing file without wiping existing data" in {
@@ -195,7 +197,7 @@ class FileSinkSpec extends StreamSpec(UnboundedMailboxConfig) with ScalaFutures 
     }
 
     "write single line to a file from lazy sink" in {
-      //LazySink must wait for result of initialization even if got upstreamComplete
+      // LazySink must wait for result of initialization even if got upstreamComplete
       targetFile { f =>
         val completion = Source(List(TestByteStrings.head)).runWith(
           Sink

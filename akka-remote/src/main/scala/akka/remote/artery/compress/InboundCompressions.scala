@@ -43,9 +43,7 @@ private[remote] trait InboundCompressions {
 
   def currentOriginUids: Set[Long]
 
-  /**
-   * Remove compression and cancel advertisement scheduling for a specific origin
-   */
+  /** Remove compression and cancel advertisement scheduling for a specific origin */
   def close(originUid: Long): Unit
 
 }
@@ -216,9 +214,7 @@ private[remote] final class InboundActorRefCompression(
   }
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[remote] final class InboundManifestCompression(
     log: LoggingAdapter,
     settings: ArterySettings.Compression,
@@ -245,9 +241,7 @@ private[remote] final class InboundManifestCompression(
     decompressInternal(incomingTableVersion, idx, 0)
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[remote] object InboundCompression {
 
   final val KeepOldTablesNumber = 3 // TODO could be configurable
@@ -298,8 +292,8 @@ private[remote] object InboundCompression {
               println(
                 s"[compress] Found table [version: ${version}], was [OLD][${t}], old tables: [${oldTables.map(_.version)}]")
             case OptionVal.None =>
-              println(s"[compress] Did not find table [version: ${version}], old tables: [${oldTables
-                .map(_.version)}], activeTable: ${activeTable}, nextTable: ${nextTable}")
+              println(s"[compress] Did not find table [version: ${version}], old tables: [${oldTables.map(
+                  _.version)}], activeTable: ${activeTable}, nextTable: ${nextTable}")
           }
         }
         found
@@ -531,9 +525,7 @@ private[remote] abstract class InboundCompression[T >: Null](
 
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[akka] final class UnknownCompressedIdException(id: Long)
     extends RuntimeException(
       s"Attempted de-compress unknown id [$id]! " +

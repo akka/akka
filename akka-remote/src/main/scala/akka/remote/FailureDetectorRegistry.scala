@@ -37,14 +37,10 @@ trait FailureDetectorRegistry[A] {
    */
   def heartbeat(resource: A): Unit
 
-  /**
-   * Removes the heartbeat management for a resource.
-   */
+  /** Removes the heartbeat management for a resource. */
   def remove(resource: A): Unit
 
-  /**
-   * Removes all resources and any associated failure detector state.
-   */
+  /** Removes all resources and any associated failure detector state. */
   def reset(): Unit
 }
 
@@ -72,10 +68,9 @@ private[akka] object FailureDetectorLoader {
       .createInstanceFor[FailureDetector](
         fqcn,
         List(classOf[Config] -> config, classOf[EventStream] -> system.eventStream))
-      .recover({
-        case e =>
-          throw new ConfigurationException(s"Could not create custom failure detector [$fqcn] due to: ${e.toString}", e)
-      })
+      .recover { case e =>
+        throw new ConfigurationException(s"Could not create custom failure detector [$fqcn] due to: ${e.toString}", e)
+      }
       .get
   }
 

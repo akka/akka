@@ -11,9 +11,7 @@ import scala.concurrent.duration._
 
 import akka.remote.testconductor.RoleName
 
-/**
- * INTERNAL API: Support trait allowing trivially recording perf metrics from [[MultiNodeSpec]]s
- */
+/** INTERNAL API: Support trait allowing trivially recording perf metrics from [[MultiNodeSpec]]s */
 private[akka] trait PerfFlamesSupport { self: MultiNodeSpec =>
 
   /**

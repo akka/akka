@@ -33,9 +33,7 @@ final class Discovery(implicit system: ExtendedActorSystem) extends Extension {
 
   private lazy val defaultImpl = loadServiceDiscovery(_defaultImplMethod)
 
-  /**
-   * Default [[ServiceDiscovery]] as configured in `akka.discovery.method`.
-   */
+  /** Default [[ServiceDiscovery]] as configured in `akka.discovery.method`. */
   @throws[IllegalArgumentException]
   def discovery: ServiceDiscovery = defaultImpl
 
@@ -51,9 +49,7 @@ final class Discovery(implicit system: ExtendedActorSystem) extends Extension {
     implementations.computeIfAbsent(method, factory)
   }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi
   private def createServiceDiscovery(method: String): ServiceDiscovery = {
     val config = system.settings.config
@@ -68,13 +64,11 @@ final class Discovery(implicit system: ExtendedActorSystem) extends Extension {
     def create(clazzName: String): Try[ServiceDiscovery] = {
       dynamic
         .createInstanceFor[ServiceDiscovery](clazzName, (classOf[ExtendedActorSystem] -> system) :: Nil)
-        .recoverWith {
-          case _: ClassNotFoundException | _: NoSuchMethodException =>
-            dynamic.createInstanceFor[ServiceDiscovery](clazzName, (classOf[ActorSystem] -> system) :: Nil)
+        .recoverWith { case _: ClassNotFoundException | _: NoSuchMethodException =>
+          dynamic.createInstanceFor[ServiceDiscovery](clazzName, (classOf[ActorSystem] -> system) :: Nil)
         }
-        .recoverWith {
-          case _: ClassNotFoundException | _: NoSuchMethodException =>
-            dynamic.createInstanceFor[ServiceDiscovery](clazzName, Nil)
+        .recoverWith { case _: ClassNotFoundException | _: NoSuchMethodException =>
+          dynamic.createInstanceFor[ServiceDiscovery](clazzName, Nil)
         }
     }
 
@@ -107,9 +101,7 @@ object Discovery extends ExtensionId[Discovery] with ExtensionIdProvider {
 
   override def createExtension(system: ExtendedActorSystem): Discovery = new Discovery()(system)
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi
   private[akka] def checkClassPathForOldDiscovery(system: ExtendedActorSystem): Unit = {
     try {

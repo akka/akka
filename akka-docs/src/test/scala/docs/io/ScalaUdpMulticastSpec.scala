@@ -28,11 +28,10 @@ class ScalaUdpMulticastSpec
   "listener" should {
     "send message back to sink" in {
       val ipv6ifaces =
-        NetworkInterface.getNetworkInterfaces.asScala.toSeq.filter(
-          iface =>
-            iface.supportsMulticast &&
-            iface.isUp &&
-            iface.getInetAddresses.asScala.exists(_.isInstanceOf[Inet6Address]))
+        NetworkInterface.getNetworkInterfaces.asScala.toSeq.filter(iface =>
+          iface.supportsMulticast &&
+          iface.isUp &&
+          iface.getInetAddresses.asScala.exists(_.isInstanceOf[Inet6Address]))
 
       if (ipv6ifaces.isEmpty) {
         // IPv6 not supported for any interface on this platform

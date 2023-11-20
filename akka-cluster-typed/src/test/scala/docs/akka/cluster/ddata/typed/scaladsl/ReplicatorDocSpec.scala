@@ -45,16 +45,16 @@ object ReplicatorDocSpec {
 
     def apply(key: GCounterKey): Behavior[Command] =
       Behaviors.setup[Command] { context =>
-        //#selfUniqueAddress
+        // #selfUniqueAddress
         implicit val node: SelfUniqueAddress = DistributedData(context.system).selfUniqueAddress
-        //#selfUniqueAddress
+        // #selfUniqueAddress
 
         // adapter that turns the response messages from the replicator into our own protocol
         DistributedData.withReplicatorMessageAdapter[Command, GCounter] { replicatorAdapter =>
-          //#subscribe
+          // #subscribe
           // Subscribe to changes of the given `key`.
           replicatorAdapter.subscribe(key, InternalSubscribeResponse.apply)
-          //#subscribe
+          // #subscribe
 
           def updated(cachedValue: Int): Behavior[Command] = {
             Behaviors.receiveMessage[Command] {

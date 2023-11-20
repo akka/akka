@@ -10,9 +10,7 @@ import scala.concurrent.ExecutionContextExecutor
 
 import akka.annotation.InternalApi
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] final class ControlledExecutor extends ExecutionContextExecutor {
   private val tasks = new LinkedList[Runnable]

@@ -108,8 +108,8 @@ object InmemJournal {
       recoveryCallback: PersistentRepr => Unit): Future[Unit] = {
     val highest = highestSequenceNr(persistenceId)
     if (highest != 0L && max != 0L)
-      read(persistenceId, fromSequenceNr, math.min(toSequenceNr, highest), max).foreach {
-        case (pr, _) => recoveryCallback(pr)
+      read(persistenceId, fromSequenceNr, math.min(toSequenceNr, highest), max).foreach { case (pr, _) =>
+        recoveryCallback(pr)
       }
     Future.successful(())
   }
@@ -130,8 +130,8 @@ object InmemJournal {
       log.debug("ReplayWithMeta {} {} {} {}", fromSequenceNr, toSequenceNr, max, persistenceId)
       val highest = highestSequenceNr(persistenceId)
       if (highest != 0L && max != 0L) {
-        read(persistenceId, fromSequenceNr, math.min(toSequenceNr, highest), max).foreach {
-          case (pr, meta) => replyTo ! MessageWithMeta(pr, meta)
+        read(persistenceId, fromSequenceNr, math.min(toSequenceNr, highest), max).foreach { case (pr, meta) =>
+          replyTo ! MessageWithMeta(pr, meta)
         }
       }
       replyTo ! RecoverySuccess(highest)
@@ -149,9 +149,7 @@ object InmemJournal {
   }
 }
 
-/**
- * INTERNAL API.
- */
+/** INTERNAL API. */
 @InternalApi private[persistence] trait InmemMessages {
   // persistenceId -> persistent message
   var messages = Map.empty[String, Vector[(PersistentRepr, OptionVal[Any])]]
@@ -165,9 +163,9 @@ object InmemJournal {
     }
 
     messages = messages + (messages.get(p.persistenceId) match {
-        case Some(ms) => p.persistenceId -> (ms :+ pr)
-        case None     => p.persistenceId -> Vector(pr)
-      })
+      case Some(ms) => p.persistenceId -> (ms :+ pr)
+      case None     => p.persistenceId -> Vector(pr)
+    })
     highestSequenceNumbers =
       highestSequenceNumbers.updated(p.persistenceId, math.max(highestSequenceNr(p.persistenceId), p.sequenceNr))
   }

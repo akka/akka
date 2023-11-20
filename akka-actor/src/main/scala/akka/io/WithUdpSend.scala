@@ -14,9 +14,7 @@ import akka.io.SelectionHandler._
 import akka.io.Udp.{ CommandFailed, Send }
 import akka.io.dns.DnsProtocol
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[io] trait WithUdpSend {
   me: Actor with ActorLogging =>
 

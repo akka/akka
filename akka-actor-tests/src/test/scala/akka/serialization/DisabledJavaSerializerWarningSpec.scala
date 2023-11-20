@@ -15,7 +15,8 @@ object DisabledJavaSerializerWarningSpec {
   final case class Msg(s: String)
 }
 
-class DisabledJavaSerializerWarningSpec extends AkkaSpec("""
+class DisabledJavaSerializerWarningSpec
+    extends AkkaSpec("""
   akka.actor {
     allow-java-serialization = off
     serialize-messages = on
@@ -23,7 +24,8 @@ class DisabledJavaSerializerWarningSpec extends AkkaSpec("""
     # this is by default on, but tests are running with off
     warn-about-java-serializer-usage = on
   }
-  """) with ImplicitSender {
+  """)
+    with ImplicitSender {
 
   import DisabledJavaSerializerWarningSpec._
 

@@ -121,9 +121,7 @@ private[dns] final class DnsSettings(system: ExtendedActorSystem, c: Config) {
 
   val RandomStrategyName: String = c.getString("id-strategy")
 
-  /**
-   * A thunk to generate the next request ID.  Not thread-safe, requires some other coordination.
-   */
+  /** A thunk to generate the next request ID.  Not thread-safe, requires some other coordination. */
   def idGenerator: Function0[Short] =
     if (RandomStrategyName == "NOT-IN-ANY-WAY-RANDOM-test-sequential") {
       new Function0[Short] {
@@ -173,15 +171,15 @@ object DnsSettings {
   private final val DnsFallbackPort = 53
   private val inetSocketAddress = """(.*?)(?::(\d+))?""".r
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[akka] def parseNameserverAddress(str: String): InetSocketAddress =
     str match {
       case inetSocketAddress(host, port) =>
         new InetSocketAddress(host, Option(port).fold(DnsFallbackPort)(_.toInt))
       case unexpected =>
-        throw new IllegalArgumentException(s"Unparseable address string: $unexpected") // will not happen, for exhaustiveness check
+        throw new IllegalArgumentException(
+          s"Unparseable address string: $unexpected"
+        ) // will not happen, for exhaustiveness check
     }
 
   /**

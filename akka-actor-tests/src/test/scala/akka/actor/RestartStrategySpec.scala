@@ -86,8 +86,8 @@ class RestartStrategySpec extends AkkaSpec with DefaultTimeout {
 
       val employeeProps = Props(new Actor {
 
-        def receive = {
-          case Crash => throw new Exception("Crashing...")
+        def receive = { case Crash =>
+          throw new Exception("Crashing...")
         }
 
         override def postRestart(reason: Throwable) = {

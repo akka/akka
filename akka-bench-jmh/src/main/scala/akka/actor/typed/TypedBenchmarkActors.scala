@@ -95,17 +95,16 @@ object TypedBenchmarkActors {
         val startNanoTime = System.nanoTime()
         pairs.foreach(_ ! Message)
         var interactionsLeft = numPairs
-        Behaviors.receiveMessagePartial {
-          case Done =>
-            interactionsLeft -= 1
-            if (interactionsLeft == 0) {
-              val totalNumMessages = numPairs * messagesPerPair
-              printProgress(totalNumMessages, numActors, startNanoTime)
-              respondTo ! Completed(startNanoTime)
-              Behaviors.stopped
-            } else {
-              Behaviors.same
-            }
+        Behaviors.receiveMessagePartial { case Done =>
+          interactionsLeft -= 1
+          if (interactionsLeft == 0) {
+            val totalNumMessages = numPairs * messagesPerPair
+            printProgress(totalNumMessages, numActors, startNanoTime)
+            respondTo ! Completed(startNanoTime)
+            Behaviors.stopped
+          } else {
+            Behaviors.same
+          }
 
         }
       }
@@ -174,16 +173,15 @@ object TypedBenchmarkActors {
     Behaviors.setup { ctx =>
       var left = messagesPerPair / 2
       val pong = Message(ctx.self) // we re-use a single pong to avoid alloc on each msg
-      Behaviors.receiveMessage[Message] {
-        case Message(replyTo) =>
-          replyTo ! pong
-          if (left == 0) {
-            latch.countDown()
-            Behaviors.stopped // note that this will likely lead to dead letters
-          } else {
-            left -= 1
-            Behaviors.same
-          }
+      Behaviors.receiveMessage[Message] { case Message(replyTo) =>
+        replyTo ! pong
+        if (left == 0) {
+          latch.countDown()
+          Behaviors.stopped // note that this will likely lead to dead letters
+        } else {
+          left -= 1
+          Behaviors.same
+        }
       }
     }
 

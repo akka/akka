@@ -41,8 +41,8 @@ class AttemptSysMsgRedeliveryMultiJvmNode3 extends AttemptSysMsgRedeliverySpec
 
 object AttemptSysMsgRedeliverySpec {
   class Echo extends Actor {
-    def receive = {
-      case m => sender() ! m
+    def receive = { case m =>
+      sender() ! m
     }
   }
 }

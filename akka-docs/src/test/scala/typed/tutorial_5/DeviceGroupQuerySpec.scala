@@ -19,7 +19,7 @@ class DeviceGroupQuerySpec extends ScalaTestWithActorTestKit with AnyWordSpecLik
 
   "DeviceGroupQuery" must {
 
-    //#query-test-normal
+    // #query-test-normal
     "return temperature value for working devices" in {
       val requester = createTestProbe[RespondAllTemperatures]()
 
@@ -42,9 +42,9 @@ class DeviceGroupQuerySpec extends ScalaTestWithActorTestKit with AnyWordSpecLik
           requestId = 1,
           temperatures = Map("device1" -> Temperature(1.0), "device2" -> Temperature(2.0))))
     }
-    //#query-test-normal
+    // #query-test-normal
 
-    //#query-test-no-reading
+    // #query-test-no-reading
     "return TemperatureNotAvailable for devices with no readings" in {
       val requester = createTestProbe[RespondAllTemperatures]()
 
@@ -67,9 +67,9 @@ class DeviceGroupQuerySpec extends ScalaTestWithActorTestKit with AnyWordSpecLik
           requestId = 1,
           temperatures = Map("device1" -> TemperatureNotAvailable, "device2" -> Temperature(2.0))))
     }
-    //#query-test-no-reading
+    // #query-test-no-reading
 
-    //#query-test-stopped
+    // #query-test-stopped
     "return DeviceNotAvailable if device stops before answering" in {
       val requester = createTestProbe[RespondAllTemperatures]()
 
@@ -93,9 +93,9 @@ class DeviceGroupQuerySpec extends ScalaTestWithActorTestKit with AnyWordSpecLik
           requestId = 1,
           temperatures = Map("device1" -> Temperature(2.0), "device2" -> DeviceNotAvailable)))
     }
-    //#query-test-stopped
+    // #query-test-stopped
 
-    //#query-test-stopped-later
+    // #query-test-stopped-later
     "return temperature reading even if device stops after answering" in {
       val requester = createTestProbe[RespondAllTemperatures]()
 
@@ -120,9 +120,9 @@ class DeviceGroupQuerySpec extends ScalaTestWithActorTestKit with AnyWordSpecLik
           requestId = 1,
           temperatures = Map("device1" -> Temperature(1.0), "device2" -> Temperature(2.0))))
     }
-    //#query-test-stopped-later
+    // #query-test-stopped-later
 
-    //#query-test-timeout
+    // #query-test-timeout
     "return DeviceTimedOut if device does not answer in time" in {
       val requester = createTestProbe[RespondAllTemperatures]()
 
@@ -146,7 +146,7 @@ class DeviceGroupQuerySpec extends ScalaTestWithActorTestKit with AnyWordSpecLik
           requestId = 1,
           temperatures = Map("device1" -> Temperature(1.0), "device2" -> DeviceTimedOut)))
     }
-    //#query-test-timeout
+    // #query-test-timeout
 
   }
 

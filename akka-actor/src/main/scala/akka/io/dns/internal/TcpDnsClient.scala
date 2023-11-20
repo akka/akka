@@ -13,9 +13,7 @@ import akka.io.Tcp
 import akka.io.dns.internal.DnsClient.Answer
 import akka.util.ByteString
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] class TcpDnsClient(tcp: ActorRef, ns: InetSocketAddress, answerRecipient: ActorRef)
     extends Actor
     with ActorLogging
@@ -24,12 +22,11 @@ import akka.util.ByteString
 
   override def receive: Receive = idle
 
-  val idle: Receive = {
-    case _: Message =>
-      stash()
-      log.debug("Connecting to [{}]", ns)
-      tcp ! Tcp.Connect(ns)
-      context.become(connecting)
+  val idle: Receive = { case _: Message =>
+    stash()
+    log.debug("Connecting to [{}]", ns)
+    tcp ! Tcp.Connect(ns)
+    context.become(connecting)
   }
 
   val connecting: Receive = {

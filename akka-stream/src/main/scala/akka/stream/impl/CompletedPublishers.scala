@@ -8,9 +8,7 @@ import org.reactivestreams.{ Publisher, Subscriber, Subscription }
 
 import akka.annotation.InternalApi
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] case object EmptyPublisher extends Publisher[Nothing] {
   import ReactiveStreamsCompliance._
   override def subscribe(subscriber: Subscriber[_ >: Nothing]): Unit =
@@ -25,9 +23,7 @@ import akka.annotation.InternalApi
   override def toString: String = "already-completed-publisher"
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] final case class ErrorPublisher(t: Throwable, name: String) extends Publisher[Nothing] {
   ReactiveStreamsCompliance.requireNonNullElement(t)
 
@@ -54,9 +50,7 @@ import akka.annotation.InternalApi
   override def cancel(): Unit = ()
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] final class CancellingSubscriber[T] extends Subscriber[T] {
   override def onError(t: Throwable): Unit = ()
   override def onSubscribe(s: Subscription): Unit = s.cancel()
@@ -64,9 +58,7 @@ import akka.annotation.InternalApi
   override def onNext(t: T): Unit = ()
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] case object RejectAdditionalSubscribers extends Publisher[Nothing] {
   import ReactiveStreamsCompliance._
   override def subscribe(subscriber: Subscriber[_ >: Nothing]): Unit =

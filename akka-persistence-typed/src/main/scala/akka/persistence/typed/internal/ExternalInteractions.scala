@@ -65,9 +65,9 @@ private[akka] trait JournalInteractions[C, E, S] {
     onWriteInitiated(ctx, cmd, repr)
 
     val write = AtomicWrite(metadata match {
-        case OptionVal.Some(meta) => repr.withMetadata(meta)
-        case _                    => repr
-      }) :: Nil
+      case OptionVal.Some(meta) => repr.withMetadata(meta)
+      case _                    => repr
+    }) :: Nil
 
     setup.journal
       .tell(JournalProtocol.WriteMessages(write, setup.selfClassic, setup.writerIdentity.instanceId), setup.selfClassic)
@@ -89,20 +89,19 @@ private[akka] trait JournalInteractions[C, E, S] {
     if (events.nonEmpty) {
       var newState = state
 
-      val writes = events.map {
-        case EventToPersist(event, eventAdapterManifest, metadata) =>
-          newState = newState.nextSequenceNr()
-          val repr = PersistentRepr(
-            event,
-            persistenceId = setup.persistenceId.id,
-            sequenceNr = newState.seqNr,
-            manifest = eventAdapterManifest,
-            writerUuid = setup.writerIdentity.writerUuid,
-            sender = ActorRef.noSender)
-          metadata match {
-            case Some(metadata) => repr.withMetadata(metadata)
-            case None           => repr
-          }
+      val writes = events.map { case EventToPersist(event, eventAdapterManifest, metadata) =>
+        newState = newState.nextSequenceNr()
+        val repr = PersistentRepr(
+          event,
+          persistenceId = setup.persistenceId.id,
+          sequenceNr = newState.seqNr,
+          manifest = eventAdapterManifest,
+          writerUuid = setup.writerIdentity.writerUuid,
+          sender = ActorRef.noSender)
+        metadata match {
+          case Some(metadata) => repr.withMetadata(metadata)
+          case None           => repr
+        }
       }
 
       onWritesInitiated(ctx, cmd, writes)

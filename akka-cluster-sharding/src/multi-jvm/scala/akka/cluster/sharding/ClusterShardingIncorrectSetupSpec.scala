@@ -7,7 +7,8 @@ package akka.cluster.sharding
 import akka.testkit._
 
 object ClusterShardingIncorrectSetupSpecConfig
-    extends MultiNodeClusterShardingConfig(additionalConfig = "akka.cluster.sharding.waiting-for-state-timeout = 100ms") {
+    extends MultiNodeClusterShardingConfig(additionalConfig =
+      "akka.cluster.sharding.waiting-for-state-timeout = 100ms") {
 
   val first = role("first")
   val second = role("second")

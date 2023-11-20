@@ -40,9 +40,7 @@ trait Listeners { self: Actor =>
       while (i.hasNext) f(i.next)
   }
 
-  /**
-   * Sends the supplied message to all current listeners using the provided sender() as sender.
-   */
+  /** Sends the supplied message to all current listeners using the provided sender() as sender. */
   protected def gossip(msg: Any)(implicit sender: ActorRef = Actor.noSender): Unit = {
     val i = listeners.iterator
     while (i.hasNext) i.next ! msg

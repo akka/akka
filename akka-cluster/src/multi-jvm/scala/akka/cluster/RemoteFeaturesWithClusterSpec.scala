@@ -27,10 +27,12 @@ object ClusterRemoteFeaturesConfig extends MultiNodeConfig {
   val third = role("third")
 
   private val baseConfig = {
-    ConfigFactory.parseString(s"""
+    ConfigFactory
+      .parseString(s"""
       akka.remote.artery.canonical.port = ${MultiNodeSpec.selfPort}
       akka.log-dead-letters-during-shutdown = off
-      """).withFallback(MultiNodeClusterSpec.clusterConfig)
+      """)
+      .withFallback(MultiNodeClusterSpec.clusterConfig)
   }
 
   commonConfig(debugConfig(on = false).withFallback(baseConfig))
@@ -43,8 +45,8 @@ object ClusterRemoteFeaturesConfig extends MultiNodeConfig {
 
 object ClusterRemoteFeatures {
   class AddressPing extends Actor {
-    def receive: Receive = {
-      case "ping" => sender() ! self
+    def receive: Receive = { case "ping" =>
+      sender() ! self
     }
   }
 }

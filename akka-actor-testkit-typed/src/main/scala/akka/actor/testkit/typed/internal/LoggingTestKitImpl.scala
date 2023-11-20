@@ -20,17 +20,13 @@ import akka.actor.typed.ActorSystem
 import akka.annotation.InternalApi
 import akka.testkit.TestKit
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object LoggingTestKitImpl {
   def empty: LoggingTestKitImpl =
     new LoggingTestKitImpl(1, None, None, None, None, None, None, Map.empty, checkExcess = true, None)
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] final case class LoggingTestKitImpl(
     occurrences: Int,
     logLevel: Option[Level],

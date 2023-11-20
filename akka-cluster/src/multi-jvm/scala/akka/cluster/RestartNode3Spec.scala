@@ -61,9 +61,11 @@ abstract class RestartNode3Spec extends MultiNodeClusterSpec(RestartNode3MultiJv
 
   lazy val restartedSecondSystem = ActorSystem(
     system.name,
-    ConfigFactory.parseString(s"""
+    ConfigFactory
+      .parseString(s"""
         akka.remote.artery.canonical.port = ${secondUniqueAddress.address.port.get}
-        """).withFallback(system.settings.config))
+        """)
+      .withFallback(system.settings.config))
 
   override def afterAll(): Unit = {
     runOn(second) {
@@ -82,13 +84,14 @@ abstract class RestartNode3Spec extends MultiNodeClusterSpec(RestartNode3MultiJv
       // secondSystem is a separate ActorSystem, to be able to simulate restart
       // we must transfer its address to first
       runOn(first, third) {
-        system.actorOf(Props(new Actor {
-          def receive = {
-            case a: UniqueAddress =>
+        system.actorOf(
+          Props(new Actor {
+            def receive = { case a: UniqueAddress =>
               secondUniqueAddress = a
               sender() ! "ok"
-          }
-        }).withDeploy(Deploy.local), name = "address-receiver")
+            }
+          }).withDeploy(Deploy.local),
+          name = "address-receiver")
         enterBarrier("second-address-receiver-ready")
       }
 

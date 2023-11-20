@@ -11,25 +11,17 @@ sealed trait CompletionStrategy
 
 case object CompletionStrategy {
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi
   private[akka] case object Immediately extends CompletionStrategy
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi
   private[akka] case object Draining extends CompletionStrategy
 
-  /**
-   * The completion will be signaled immediately even if elements are still buffered.
-   */
+  /** The completion will be signaled immediately even if elements are still buffered. */
   def immediately: CompletionStrategy = Immediately
 
-  /**
-   * Already buffered elements will be signaled before signaling completion.
-   */
+  /** Already buffered elements will be signaled before signaling completion. */
   def draining: CompletionStrategy = Draining
 }

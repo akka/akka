@@ -47,8 +47,8 @@ object PersistentShardingMigrationSpec {
        akka.persistence.journal.plugin = "akka.persistence.journal.leveldb"
        akka.persistence.snapshot-store.plugin = "akka.persistence.snapshot-store.local"
        akka.persistence.snapshot-store.local.dir = "target/PersistentShardingMigrationSpec-${UUID
-    .randomUUID()
-    .toString}"
+      .randomUUID()
+      .toString}"
        akka.persistence.journal.leveldb {
          native = off
           dir = "target/journal-PersistentShardingMigrationSpec-${UUID.randomUUID()}"
@@ -80,17 +80,15 @@ object PersistentShardingMigrationSpec {
 
   class PA extends PersistentActor {
     override def persistenceId: String = "pa-" + self.path.name
-    override def receiveRecover: Receive = {
-      case _ =>
+    override def receiveRecover: Receive = { case _ =>
     }
-    override def receiveCommand: Receive = {
-      case _ =>
-        sender() ! "ack"
+    override def receiveCommand: Receive = { case _ =>
+      sender() ! "ack"
     }
   }
 
-  val extractEntityId: ShardRegion.ExtractEntityId = {
-    case msg @ Message(id) => (id.toString, msg)
+  val extractEntityId: ShardRegion.ExtractEntityId = { case msg @ Message(id) =>
+    (id.toString, msg)
   }
 
   def extractShardId(probe: ActorRef): ShardRegion.ExtractShardId = {
@@ -180,7 +178,7 @@ class PersistentShardingMigrationSpec extends AkkaSpec(PersistentShardingMigrati
     def assertRegionRegistrationComplete(region: ActorRef): Unit = {
       awaitAssert {
         region ! ShardRegion.GetCurrentRegions
-        expectMsgType[CurrentRegions].regions should have size (1)
+        expectMsgType[CurrentRegions].regions should have size 1
       }
     }
   }

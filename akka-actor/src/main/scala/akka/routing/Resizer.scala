@@ -74,9 +74,7 @@ class ResizerInitializationException(message: String, cause: Throwable) extends 
 
 case object DefaultResizer {
 
-  /**
-   * Creates a new DefaultResizer from the given configuration
-   */
+  /** Creates a new DefaultResizer from the given configuration */
   def apply(resizerConfig: Config): DefaultResizer =
     DefaultResizer(
       lowerBound = resizerConfig.getInt("lower-bound"),
@@ -136,9 +134,7 @@ case class DefaultResizer(
     messagesPerResize: Int = 10)
     extends Resizer {
 
-  /**
-   * Java API constructor for default values except bounds.
-   */
+  /** Java API constructor for default values except bounds. */
   def this(lower: Int, upper: Int) = this(lowerBound = lower, upperBound = upper)
 
   if (lowerBound < 0) throw new IllegalArgumentException("lowerBound must be >= 0, was: [%s]".format(lowerBound))
@@ -153,7 +149,7 @@ case class DefaultResizer(
   if (messagesPerResize <= 0)
     throw new IllegalArgumentException("messagesPerResize must be > 0, was [%s]".format(messagesPerResize))
 
-  def isTimeForResize(messageCounter: Long): Boolean = (messageCounter % messagesPerResize == 0)
+  def isTimeForResize(messageCounter: Long): Boolean = messageCounter % messagesPerResize == 0
 
   override def resize(currentRoutees: immutable.IndexedSeq[Routee]): Int =
     capacity(currentRoutees)
@@ -248,9 +244,7 @@ case class DefaultResizer(
     else 0
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[akka] final class ResizablePoolCell(
     _system: ActorSystemImpl,
     _ref: InternalActorRef,
@@ -275,7 +269,7 @@ private[akka] final class ResizablePoolCell(
 
   override def sendMessage(envelope: Envelope): Unit = {
     if (!routerConfig.isManagementMessage(envelope.message) &&
-        resizer.isTimeForResize(resizeCounter.getAndIncrement()) && resizeInProgress.compareAndSet(false, true)) {
+      resizer.isTimeForResize(resizeCounter.getAndIncrement()) && resizeInProgress.compareAndSet(false, true)) {
       super.sendMessage(Envelope(ResizablePoolActor.Resize, self, system))
     }
 
@@ -297,28 +291,22 @@ private[akka] final class ResizablePoolCell(
     } finally resizeInProgress.set(false)
   }
 
-  /**
-   * This approach is chosen for binary compatibility
-   */
+  /** This approach is chosen for binary compatibility */
   private def tryReportMessageCount(): Unit = {
     resizer match {
       case r: OptimalSizeExploringResizer => r.reportMessageCount(router.routees, resizeCounter.get())
-      case _                              => //ignore
+      case _                              => // ignore
     }
   }
 
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[akka] object ResizablePoolActor {
   case object Resize extends RouterManagementMesssage
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[akka] class ResizablePoolActor(supervisorStrategy: SupervisorStrategy)
     extends RouterPoolActor(supervisorStrategy) {
   import ResizablePoolActor._
@@ -331,9 +319,8 @@ private[akka] class ResizablePoolActor(supervisorStrategy: SupervisorStrategy)
   }
 
   override def receive =
-    ({
-      case Resize =>
-        resizerCell.resize(initial = false)
+    ({ case Resize =>
+      resizerCell.resize(initial = false)
     }: Actor.Receive).orElse(super.receive)
 
 }

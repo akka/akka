@@ -159,15 +159,11 @@ final class BidiFlow[-I1, +O1, -I2, +O2, +Mat](
     new Flow(LinearTraversalBuilder.fromBuilder(resultBuilder, newShape, Keep.right), newShape)
   }
 
-  /**
-   * Turn this BidiFlow around by 180 degrees, logically flipping it upside down in a protocol stack.
-   */
+  /** Turn this BidiFlow around by 180 degrees, logically flipping it upside down in a protocol stack. */
   def reversed: BidiFlow[I2, O2, I1, O1, Mat] =
     new BidiFlow(traversalBuilder, BidiShape(shape.in2, shape.out2, shape.in1, shape.out1))
 
-  /**
-   * Transform only the materialized value of this BidiFlow, leaving all other properties as they were.
-   */
+  /** Transform only the materialized value of this BidiFlow, leaving all other properties as they were. */
   def mapMaterializedValue[Mat2](f: Mat => Mat2): BidiFlow[I1, O1, I2, O2, Mat2] =
     new BidiFlow(traversalBuilder.transformMat(f.asInstanceOf[Any => Any]), shape)
 
@@ -190,15 +186,11 @@ final class BidiFlow[-I1, +O1, -I2, +O2, +Mat](
   override def addAttributes(attr: Attributes): BidiFlow[I1, O1, I2, O2, Mat] =
     withAttributes(traversalBuilder.attributes and attr)
 
-  /**
-   * Add a ``name`` attribute to this Flow.
-   */
+  /** Add a ``name`` attribute to this Flow. */
   override def named(name: String): BidiFlow[I1, O1, I2, O2, Mat] =
     addAttributes(Attributes.name(name))
 
-  /**
-   * Put an asynchronous boundary around this `BidiFlow`
-   */
+  /** Put an asynchronous boundary around this `BidiFlow` */
   override def async: BidiFlow[I1, O1, I2, O2, Mat] =
     super.async.asInstanceOf[BidiFlow[I1, O1, I2, O2, Mat]]
 
@@ -258,7 +250,6 @@ object BidiFlow {
    *     |  +----------------------+  |
    *     +----------------------------+
    * }}}
-   *
    */
   def fromFlowsMat[I1, O1, I2, O2, M1, M2, M](flow1: Graph[FlowShape[I1, O1], M1], flow2: Graph[FlowShape[I2, O2], M2])(
       combine: (M1, M2) => M): BidiFlow[I1, O1, I2, O2, M] = {
@@ -289,7 +280,6 @@ object BidiFlow {
    *     |  +----------------------+  |
    *     +----------------------------+
    * }}}
-   *
    */
   def fromFlows[I1, O1, I2, O2, M1, M2](
       flow1: Graph[FlowShape[I1, O1], M1],

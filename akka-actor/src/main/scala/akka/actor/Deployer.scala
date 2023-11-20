@@ -20,9 +20,7 @@ object Deploy {
   final val NoMailboxGiven = ""
   val local = Deploy(scope = LocalScope)
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[akka] final val DispatcherSameAsParent = ".."
 
   def apply(
@@ -76,19 +74,13 @@ final class Deploy(
       dispatcher: String,
       mailbox: String) = this(path, config, routerConfig, scope, dispatcher, mailbox, Set.empty)
 
-  /**
-   * Java API to create a Deploy with the given RouterConfig
-   */
+  /** Java API to create a Deploy with the given RouterConfig */
   def this(routing: RouterConfig) = this("", ConfigFactory.empty, routing)
 
-  /**
-   * Java API to create a Deploy with the given RouterConfig with Scope
-   */
+  /** Java API to create a Deploy with the given RouterConfig with Scope */
   def this(routing: RouterConfig, scope: Scope) = this("", ConfigFactory.empty, routing, scope)
 
-  /**
-   * Java API to create a Deploy with the given Scope
-   */
+  /** Java API to create a Deploy with the given Scope */
   def this(scope: Scope) = this("", ConfigFactory.empty, NoRouter, scope)
 
   /**
@@ -185,17 +177,13 @@ abstract class LocalScope extends Scope
 @SerialVersionUID(1L)
 case object LocalScope extends LocalScope {
 
-  /**
-   * Java API: get the singleton instance
-   */
+  /** Java API: get the singleton instance */
   def getInstance = this
 
   def withFallback(other: Scope): Scope = this
 }
 
-/**
- * This is the default value and as such allows overrides.
- */
+/** This is the default value and as such allows overrides. */
 @nowarn("msg=@SerialVersionUID has no effect")
 @SerialVersionUID(1L)
 abstract class NoScopeGiven extends Scope
@@ -203,15 +191,11 @@ abstract class NoScopeGiven extends Scope
 case object NoScopeGiven extends NoScopeGiven {
   def withFallback(other: Scope): Scope = other
 
-  /**
-   * Java API: get the singleton instance
-   */
+  /** Java API: get the singleton instance */
   def getInstance = this
 }
 
-/**
- * Deployer maps actor paths to actor deployments.
- */
+/** Deployer maps actor paths to actor deployments. */
 private[akka] class Deployer(val settings: ActorSystem.Settings, val dynamicAccess: DynamicAccess) {
 
   import akka.util.ccompat.JavaConverters._
@@ -226,8 +210,8 @@ private[akka] class Deployer(val settings: ActorSystem.Settings, val dynamicAcce
       .root
       .unwrapped
       .asScala
-      .collect {
-        case (key, value: String) => (key -> value)
+      .collect { case (key, value: String) =>
+        key -> value
       }
       .toMap
 

@@ -30,13 +30,17 @@ class LoggerSourceSpec
 
   def behavior: Behavior[String] = Behaviors.setup { ctx =>
     ctx.log.info("setting-up-behavior")
-    EventSourcedBehavior[String, String, String](nextPid(), emptyState = "", commandHandler = (_, _) => {
-      ctx.log.info("command-received")
-      Effect.persist("evt")
-    }, eventHandler = (state, _) => {
-      ctx.log.info("event-received")
-      state
-    }).receiveSignal {
+    EventSourcedBehavior[String, String, String](
+      nextPid(),
+      emptyState = "",
+      commandHandler = (_, _) => {
+        ctx.log.info("command-received")
+        Effect.persist("evt")
+      },
+      eventHandler = (state, _) => {
+        ctx.log.info("event-received")
+        state
+      }).receiveSignal {
       case (_, RecoveryCompleted)    => ctx.log.info("recovery-completed")
       case (_, SnapshotCompleted(_)) =>
       case (_, SnapshotFailed(_, _)) =>
@@ -93,10 +97,14 @@ class LoggerSourceSpec
 
       val behavior: Behavior[String] = Behaviors.setup[String] { ctx =>
         ctx.setLoggerName("my-custom-name")
-        EventSourcedBehavior[String, String, String](nextPid(), emptyState = "", commandHandler = (_, _) => {
-          ctx.log.info("command-received")
-          Effect.persist("evt")
-        }, eventHandler = (state, _) => state)
+        EventSourcedBehavior[String, String, String](
+          nextPid(),
+          emptyState = "",
+          commandHandler = (_, _) => {
+            ctx.log.info("command-received")
+            Effect.persist("evt")
+          },
+          eventHandler = (state, _) => state)
       }
 
       val actor = spawn(behavior)

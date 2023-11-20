@@ -12,8 +12,8 @@ import akka.stream.scaladsl._
 
 object Map {
 
-  //#map
+  // #map
   val source: Source[Int, NotUsed] = Source(1 to 10)
   val mapped: Source[String, NotUsed] = source.map(elem => elem.toString)
-  //#map
+  // #map
 }

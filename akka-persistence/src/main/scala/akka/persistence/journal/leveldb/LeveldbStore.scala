@@ -30,9 +30,7 @@ private[persistence] object LeveldbStore {
   }
 }
 
-/**
- * INTERNAL API.
- */
+/** INTERNAL API. */
 private[persistence] trait LeveldbStore
     extends Actor
     with WriteJournalBase
@@ -79,26 +77,25 @@ private[persistence] trait LeveldbStore
 
     val result = Future.fromTry(Try {
       withBatch(batch =>
-        messages.map {
-          a =>
-            Try {
-              a.payload.foreach { p =>
-                val (p2, tags) = p.payload match {
-                  case Tagged(payload, tags) =>
-                    (p.withPayload(payload), tags)
-                  case _ => (p, Set.empty[String])
-                }
-                if (tags.nonEmpty && hasTagSubscribers)
-                  allTags = allTags.union(tags)
-
-                require(
-                  !p2.persistenceId.startsWith(tagPersistenceIdPrefix),
-                  s"persistenceId [${p.persistenceId}] must not start with $tagPersistenceIdPrefix")
-                addToMessageBatch(p2, tags, batch)
+        messages.map { a =>
+          Try {
+            a.payload.foreach { p =>
+              val (p2, tags) = p.payload match {
+                case Tagged(payload, tags) =>
+                  (p.withPayload(payload), tags)
+                case _ => (p, Set.empty[String])
               }
-              if (hasPersistenceIdSubscribers)
-                persistenceIds += a.persistenceId
+              if (tags.nonEmpty && hasTagSubscribers)
+                allTags = allTags.union(tags)
+
+              require(
+                !p2.persistenceId.startsWith(tagPersistenceIdPrefix),
+                s"persistenceId [${p.persistenceId}] must not start with $tagPersistenceIdPrefix")
+              addToMessageBatch(p2, tags, batch)
             }
+            if (hasPersistenceIdSubscribers)
+              persistenceIds += a.persistenceId
+          }
         })
     })
 
@@ -113,29 +110,31 @@ private[persistence] trait LeveldbStore
   }
 
   def asyncDeleteMessagesTo(persistenceId: String, toSequenceNr: Long): Future[Unit] =
-    try Future.successful {
-      withBatch { batch =>
-        val nid = numericId(persistenceId)
+    try
+      Future.successful {
+        withBatch { batch =>
+          val nid = numericId(persistenceId)
 
-        // seek to first existing message
-        val fromSequenceNr = withIterator { iter =>
-          val startKey = Key(nid, 1L, 0)
-          iter.seek(keyToBytes(startKey))
-          if (iter.hasNext) keyFromBytes(iter.peekNext().getKey).sequenceNr else Long.MaxValue
-        }
-
-        if (fromSequenceNr != Long.MaxValue) {
-          val toSeqNr = math.min(toSequenceNr, readHighestSequenceNr(nid))
-          var sequenceNr = fromSequenceNr
-          while (sequenceNr <= toSeqNr) {
-            batch.delete(keyToBytes(Key(nid, sequenceNr, 0)))
-            sequenceNr += 1
+          // seek to first existing message
+          val fromSequenceNr = withIterator { iter =>
+            val startKey = Key(nid, 1L, 0)
+            iter.seek(keyToBytes(startKey))
+            if (iter.hasNext) keyFromBytes(iter.peekNext().getKey).sequenceNr else Long.MaxValue
           }
 
-          self ! LeveldbCompaction.TryCompactLeveldb(persistenceId, toSeqNr)
+          if (fromSequenceNr != Long.MaxValue) {
+            val toSeqNr = math.min(toSequenceNr, readHighestSequenceNr(nid))
+            var sequenceNr = fromSequenceNr
+            while (sequenceNr <= toSeqNr) {
+              batch.delete(keyToBytes(Key(nid, sequenceNr, 0)))
+              sequenceNr += 1
+            }
+
+            self ! LeveldbCompaction.TryCompactLeveldb(persistenceId, toSeqNr)
+          }
         }
       }
-    } catch {
+    catch {
       case NonFatal(e) => Future.failed(e)
     }
 

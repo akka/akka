@@ -108,9 +108,7 @@ object ReplicatorSettings {
       expiryKeys = parseExpiry(config))
   }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[akka] def roleOption(role: String): Option[String] =
     if (role == "") None else Option(role)
 
@@ -123,9 +121,7 @@ object ReplicatorSettings {
     modifier.map(s => s + name.take(1).toUpperCase + name.drop(1)).getOrElse(name)
   }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[akka] def parseExpiry(config: Config): Map[KeyId, FiniteDuration] = {
     import akka.util.ccompat.JavaConverters._
     val expiryConfig = config.getConfig("expire-keys-after-inactivity")
@@ -413,9 +409,7 @@ final class ReplicatorSettings(
   @varargs
   def withRoles(roles: String*): ReplicatorSettings = copy(roles = roles.toSet)
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[akka] def withRoles(roles: Set[String]): ReplicatorSettings = copy(roles = roles)
 
   // for backwards compatibility
@@ -451,15 +445,11 @@ final class ReplicatorSettings(
   def withDurableStoreProps(durableStoreProps: Props): ReplicatorSettings =
     copy(durableStoreProps = Right(durableStoreProps))
 
-  /**
-   * Scala API
-   */
+  /** Scala API */
   def withDurableKeys(durableKeys: Set[KeyId]): ReplicatorSettings =
     copy(durableKeys = durableKeys)
 
-  /**
-   * Java API
-   */
+  /** Java API */
   def withDurableKeys(durableKeys: java.util.Set[String]): ReplicatorSettings = {
     import akka.util.ccompat.JavaConverters._
     withDurableKeys(durableKeys.asScala.toSet)
@@ -477,15 +467,11 @@ final class ReplicatorSettings(
   def withLogDataSizeExceeding(logDataSizeExceeding: Int): ReplicatorSettings =
     copy(logDataSizeExceeding = Some(logDataSizeExceeding))
 
-  /**
-   * Scala API
-   */
+  /** Scala API */
   def withExpiryKeys(expiryKeys: Map[KeyId, FiniteDuration]): ReplicatorSettings =
     copy(expiryKeys = expiryKeys)
 
-  /**
-   * Java API
-   */
+  /** Java API */
   def withExpiryKeys(expiryKeys: java.util.Map[String, java.time.Duration]): ReplicatorSettings = {
     import akka.util.ccompat.JavaConverters._
     withExpiryKeys(expiryKeys.asScala.iterator.map { case (key, value) => key -> value.asScala }.toMap)
@@ -530,9 +516,7 @@ final class ReplicatorSettings(
 object Replicator {
   private type Timestamp = Long
 
-  /**
-   * Factory method for the [[akka.actor.Props]] of the [[Replicator]] actor.
-   */
+  /** Factory method for the [[akka.actor.Props]] of the [[Replicator]] actor. */
   def props(settings: ReplicatorSettings): Props = {
     require(
       settings.durableKeys.isEmpty || (settings.durableStoreProps != Right(Props.empty)),
@@ -551,17 +535,13 @@ object Replicator {
   final case class ReadFrom(n: Int, timeout: FiniteDuration) extends ReadConsistency {
     require(n >= 2, "ReadFrom n must be >= 2, use ReadLocal for n=1")
 
-    /**
-     * Java API
-     */
+    /** Java API */
     def this(n: Int, timeout: java.time.Duration) = this(n, timeout.asScala)
   }
   final case class ReadMajority(timeout: FiniteDuration, minCap: Int = DefaultMajorityMinCap) extends ReadConsistency {
     def this(timeout: FiniteDuration) = this(timeout, DefaultMajorityMinCap)
 
-    /**
-     * Java API
-     */
+    /** Java API */
     def this(timeout: java.time.Duration) = this(timeout.asScala, DefaultMajorityMinCap)
   }
 
@@ -573,16 +553,12 @@ object Replicator {
   final case class ReadMajorityPlus(timeout: FiniteDuration, additional: Int, minCap: Int = DefaultMajorityMinCap)
       extends ReadConsistency {
 
-    /**
-     * Java API
-     */
+    /** Java API */
     def this(timeout: java.time.Duration, additional: Int) = this(timeout.asScala, additional, DefaultMajorityMinCap)
   }
   final case class ReadAll(timeout: FiniteDuration) extends ReadConsistency {
 
-    /**
-     * Java API
-     */
+    /** Java API */
     def this(timeout: java.time.Duration) = this(timeout.asScala)
   }
 
@@ -595,18 +571,14 @@ object Replicator {
   final case class WriteTo(n: Int, timeout: FiniteDuration) extends WriteConsistency {
     require(n >= 2, "WriteTo n must be >= 2, use WriteLocal for n=1")
 
-    /**
-     * Java API
-     */
+    /** Java API */
     def this(n: Int, timeout: java.time.Duration) = this(n, timeout.asScala)
   }
   final case class WriteMajority(timeout: FiniteDuration, minCap: Int = DefaultMajorityMinCap)
       extends WriteConsistency {
     def this(timeout: FiniteDuration) = this(timeout, DefaultMajorityMinCap)
 
-    /**
-     * Java API
-     */
+    /** Java API */
     def this(timeout: java.time.Duration) = this(timeout.asScala, DefaultMajorityMinCap)
   }
 
@@ -618,42 +590,28 @@ object Replicator {
   final case class WriteMajorityPlus(timeout: FiniteDuration, additional: Int, minCap: Int = DefaultMajorityMinCap)
       extends WriteConsistency {
 
-    /**
-     * Java API
-     */
+    /** Java API */
     def this(timeout: java.time.Duration, additional: Int) = this(timeout.asScala, additional, DefaultMajorityMinCap)
   }
   final case class WriteAll(timeout: FiniteDuration) extends WriteConsistency {
 
-    /**
-     * Java API
-     */
+    /** Java API */
     def this(timeout: java.time.Duration) = this(timeout.asScala)
   }
 
-  /**
-   * Java API: The `ReadLocal` instance
-   */
+  /** Java API: The `ReadLocal` instance */
   def readLocal = ReadLocal
 
-  /**
-   * Java API: The `WriteLocal` instance
-   */
+  /** Java API: The `WriteLocal` instance */
   def writeLocal = WriteLocal
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[akka] case object GetKeyIds
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[akka] final case class GetKeyIdsResult(keyIds: Set[KeyId]) {
 
-    /**
-     * Java API
-     */
+    /** Java API */
     def getKeyIds: java.util.Set[String] = {
       import akka.util.ccompat.JavaConverters._
       keyIds.asJava
@@ -676,14 +634,10 @@ object Replicator {
       extends Command[A]
       with ReplicatorMessage {
 
-    /**
-     * Java API: `Get` value from local `Replicator`, i.e. `ReadLocal` consistency.
-     */
+    /** Java API: `Get` value from local `Replicator`, i.e. `ReadLocal` consistency. */
     def this(key: Key[A], consistency: ReadConsistency) = this(key, consistency, None)
 
-    /**
-     * Java API: `Get` value from local `Replicator`, i.e. `ReadLocal` consistency.
-     */
+    /** Java API: `Get` value from local `Replicator`, i.e. `ReadLocal` consistency. */
     def this(key: Key[A], consistency: ReadConsistency, request: Optional[Any]) =
       this(key, consistency, Option(request.orElse(null)))
 
@@ -696,9 +650,7 @@ object Replicator {
     def getRequest: Optional[Any] = Optional.ofNullable(request.orNull)
   }
 
-  /**
-   * Reply from `Get`. The data value is retrieved with [[#get]] using the typed key.
-   */
+  /** Reply from `Get`. The data value is retrieved with [[#get]] using the typed key. */
   final case class GetSuccess[A <: ReplicatedData](key: Key[A], request: Option[Any])(data: A)
       extends GetResponse[A]
       with ReplicatorMessage {
@@ -712,9 +664,7 @@ object Replicator {
       data.asInstanceOf[T]
     }
 
-    /**
-     * The data value. Use [[#get]] to get the fully typed value.
-     */
+    /** The data value. Use [[#get]] to get the fully typed value. */
     def dataValue: A = data
   }
   final case class NotFound[A <: ReplicatedData](key: Key[A], request: Option[Any])
@@ -729,9 +679,7 @@ object Replicator {
       extends GetResponse[A]
       with ReplicatorMessage
 
-  /**
-   * The [[Get]] request couldn't be performed because the entry has been deleted.
-   */
+  /** The [[Get]] request couldn't be performed because the entry has been deleted. */
   final case class GetDataDeleted[A <: ReplicatedData](key: Key[A], request: Option[Any]) extends GetResponse[A]
 
   /**
@@ -764,9 +712,7 @@ object Replicator {
    */
   final case class Unsubscribe[A <: ReplicatedData](key: Key[A], subscriber: ActorRef) extends ReplicatorMessage
 
-  /**
-   * @see [[Replicator.Subscribe]]
-   */
+  /** @see [[Replicator.Subscribe]] */
   sealed trait SubscribeResponse[A <: ReplicatedData] extends NoSerializationVerificationNeeded {
     def key: Key[A]
   }
@@ -789,20 +735,14 @@ object Replicator {
       data.asInstanceOf[T]
     }
 
-    /**
-     * The data value. Use [[#get]] to get the fully typed value.
-     */
+    /** The data value. Use [[#get]] to get the fully typed value. */
     def dataValue: A = data
   }
 
-  /**
-   * @see [[Replicator.Subscribe]]
-   */
+  /** @see [[Replicator.Subscribe]] */
   final case class Deleted[A <: ReplicatedData](key: Key[A]) extends SubscribeResponse[A]
 
-  /**
-   * @see [[Replicator.Subscribe]]
-   */
+  /** @see [[Replicator.Subscribe]] */
   final case class Expired[A <: ReplicatedData](key: Key[A]) extends SubscribeResponse[A]
 
   object Update {
@@ -907,9 +847,7 @@ object Replicator {
    */
   final case class UpdateTimeout[A <: ReplicatedData](key: Key[A], request: Option[Any]) extends UpdateFailure[A]
 
-  /**
-   * The [[Update]] couldn't be performed because the entry has been deleted.
-   */
+  /** The [[Update]] couldn't be performed because the entry has been deleted. */
   final case class UpdateDataDeleted[A <: ReplicatedData](key: Key[A], request: Option[Any]) extends UpdateResponse[A]
 
   /**
@@ -965,7 +903,7 @@ object Replicator {
     def key: Key[A]
     def request: Option[Any]
 
-    /** Java API*/
+    /** Java API */
     def getRequest: Optional[Any] = Optional.ofNullable(request.orNull)
   }
   final case class DeleteSuccess[A <: ReplicatedData](key: Key[A], request: Option[Any]) extends DeleteResponse[A]
@@ -984,14 +922,10 @@ object Replicator {
    */
   case object GetReplicaCount
 
-  /**
-   * Java API: The `GetReplicaCount` instance
-   */
+  /** Java API: The `GetReplicaCount` instance */
   def getReplicaCount = GetReplicaCount
 
-  /**
-   * Current number of replicas. Reply to `GetReplicaCount`.
-   */
+  /** Current number of replicas. Reply to `GetReplicaCount`. */
   final case class ReplicaCount(n: Int)
 
   /**
@@ -1000,9 +934,7 @@ object Replicator {
    */
   case object FlushChanges
 
-  /**
-   * Java API: The `FlushChanges` instance
-   */
+  /** Java API: The `FlushChanges` instance */
   def flushChanges = FlushChanges
 
   /**
@@ -1011,9 +943,7 @@ object Replicator {
    */
   trait ReplicatorMessage extends Serializable
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[akka] object Internal {
 
     case object GossipTick
@@ -1047,9 +977,7 @@ object Replicator {
     val LazyDigest: Digest = ByteString(0)
     val NotFoundDigest: Digest = ByteString(-1)
 
-    /**
-     * The `DataEnvelope` wraps a data entry and carries state of the pruning process for the entry.
-     */
+    /** The `DataEnvelope` wraps a data entry and carries state of the pruning process for the entry. */
     final case class DataEnvelope(
         data: ReplicatedData,
         pruning: Map[UniqueAddress, PruningState] = Map.empty,
@@ -1104,14 +1032,13 @@ object Replicator {
         if (other.data == DeletedData) DeletedEnvelope
         else {
           val mergedPruning =
-            pruning.foldLeft(other.pruning) {
-              case (acc, (key, thisValue)) =>
-                acc.get(key) match {
-                  case None =>
-                    acc.updated(key, thisValue)
-                  case Some(thatValue) =>
-                    acc.updated(key, thisValue.merge(thatValue))
-                }
+            pruning.foldLeft(other.pruning) { case (acc, (key, thisValue)) =>
+              acc.get(key) match {
+                case None =>
+                  acc.updated(key, thisValue)
+                case Some(thatValue) =>
+                  acc.updated(key, thisValue.merge(thatValue))
+              }
             }
           val filteredMergedPruning = {
             if (mergedPruning.isEmpty) mergedPruning
@@ -1168,11 +1095,10 @@ object Replicator {
 
       def addSeen(node: Address): DataEnvelope = {
         var changed = false
-        val newRemovedNodePruning = pruning.map {
-          case (removed, pruningState) =>
-            val newPruningState = pruningState.addSeen(node)
-            changed = (newPruningState ne pruningState) || changed
-            (removed, newPruningState)
+        val newRemovedNodePruning = pruning.map { case (removed, pruningState) =>
+          val newPruningState = pruningState.addSeen(node)
+          changed = (newPruningState ne pruningState) || changed
+          (removed, newPruningState)
         }
         if (changed) copy(pruning = newRemovedNodePruning)
         else this
@@ -1199,10 +1125,10 @@ object Replicator {
         extends ReplicatorMessage
         with DestinationSystemUid {
       override def toString: String =
-        (digests
-          .map {
-            case (key, (bytes, _)) => key + " -> " + bytes.map(byte => f"$byte%02x").mkString("")
-          })
+        digests
+          .map { case (key, (bytes, _)) =>
+            key + " -> " + bytes.map(byte => f"$byte%02x").mkString("")
+          }
           .mkString("Status(", ", ", ")")
     }
     final case class Gossip(
@@ -1455,8 +1381,8 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
   require(!cluster.isTerminated, "Cluster node must not be terminated")
   require(
     roles.subsetOf(cluster.selfRoles),
-    s"This cluster member [$selfAddress] with roles [${cluster.selfRoles
-      .mkString(", ")}] doesn't have all the roles [${roles.mkString(", ")}]")
+    s"This cluster member [$selfAddress] with roles [${cluster.selfRoles.mkString(
+        ", ")}] doesn't have all the roles [${roles.mkString(", ")}]")
 
   private val payloadSizeAggregator = {
     val sizeExceeding = settings.logDataSizeExceeding.getOrElse(Int.MaxValue)
@@ -1466,7 +1392,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
     new PayloadSizeAggregator(log, sizeExceeding, maxFrameSize)
   }
 
-  //Start periodic gossip to random nodes in cluster
+  // Start periodic gossip to random nodes in cluster
   import context.dispatcher
   val gossipTask = context.system.scheduler.scheduleWithFixedDelay(gossipInterval, gossipInterval, self, GossipTick)
   val notifyTask =
@@ -1668,10 +1594,9 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
 
     def unstashAll(): Unit = {
       val originalReplyTo = replyTo
-      stash.foreach {
-        case (msg, snd) =>
-          replyTo = snd
-          normalReceive.applyOrElse(msg, unhandled)
+      stash.foreach { case (msg, snd) =>
+        replyTo = snd
+        normalReceive.applyOrElse(msg, unhandled)
       }
       stash = Vector.empty
       replyTo = originalReplyTo
@@ -1680,14 +1605,13 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
     {
       case LoadData(data) =>
         count += data.size
-        data.foreach {
-          case (key, d) =>
-            write(key, d.dataEnvelope) match {
-              case Some(newEnvelope) =>
-                if (newEnvelope ne d.dataEnvelope)
-                  durableStore ! Store(key, new DurableDataEnvelope(newEnvelope), None)
-              case None =>
-            }
+        data.foreach { case (key, d) =>
+          write(key, d.dataEnvelope) match {
+            case Some(newEnvelope) =>
+              if (newEnvelope ne d.dataEnvelope)
+                durableStore ! Store(key, new DurableDataEnvelope(newEnvelope), None)
+            case None =>
+          }
         }
       case LoadAllCompleted =>
         log.debug(
@@ -2094,9 +2018,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
     }
   }
 
-  /**
-   * @return SHA-1 digest of the serialized data, and the size of the serialized data
-   */
+  /** @return SHA-1 digest of the serialized data, and the size of the serialized data */
   def digest(envelope: DataEnvelope): (Digest, Int) =
     if (envelope.data == DeletedData) (DeletedDigest, 0)
     else {
@@ -2150,10 +2072,9 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
 
   def updateUsedTimestamp(key: KeyId, timestamp: Timestamp): Unit = {
     if (expiryEnabled && timestamp != 0) {
-      dataEntries.get(key).foreach {
-        case (existingEnvelope, existingDigest, existingTimestamp) =>
-          if (timestamp > existingTimestamp)
-            dataEntries = dataEntries.updated(key, (existingEnvelope, existingDigest, timestamp))
+      dataEntries.get(key).foreach { case (existingEnvelope, existingDigest, existingTimestamp) =>
+        if (timestamp > existingTimestamp)
+          dataEntries = dataEntries.updated(key, (existingEnvelope, existingDigest, timestamp))
       }
     }
   }
@@ -2183,7 +2104,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
               case (k, r) if isWildcard(k) && keyId.startsWith(dropWildcard(k)) => r.withId(keyId)
             }
             .getOrElse(throw new IllegalStateException(s"Subscription notification of [$keyId], but no matching " +
-            s"subscription key in [${subscriptionKeys.keysIterator.mkString(", ")}]"))
+              s"subscription key in [${subscriptionKeys.keysIterator.mkString(", ")}]"))
       }
       getData(keyId) match {
         case Some(envelope) =>
@@ -2231,11 +2152,10 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
   }
 
   def receiveDeltaPropagationTick(): Unit = {
-    deltaPropagationSelector.collectPropagations().foreach {
-      case (node, deltaPropagation) =>
-        // TODO split it to several DeltaPropagation if too many entries
-        if (deltaPropagation.deltas.nonEmpty)
-          replica(node) ! deltaPropagation
+    deltaPropagationSelector.collectPropagations().foreach { case (node, deltaPropagation) =>
+      // TODO split it to several DeltaPropagation if too many entries
+      if (deltaPropagation.deltas.nonEmpty)
+        replica(node) ! deltaPropagation
     }
 
     if (deltaPropagationSelector.propagationCount % deltaPropagationSelector.gossipIntervalDivisor == 0)
@@ -2316,9 +2236,14 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
     val to = replica(address)
     val toSystemUid = Some(address.longUid)
     if (dataEntries.size <= maxDeltaElements) {
-      val status = Status(dataEntries.map {
-        case (key, (_, _, usedTimestamp)) => (key, (getDigest(key), usedTimestamp))
-      }, chunk = 0, totChunks = 1, toSystemUid, selfFromSystemUid)
+      val status = Status(
+        dataEntries.map { case (key, (_, _, usedTimestamp)) =>
+          (key, (getDigest(key), usedTimestamp))
+        },
+        chunk = 0,
+        totChunks = 1,
+        toSystemUid,
+        selfFromSystemUid)
       to ! status
     } else {
       val totChunks = dataEntries.size / maxDeltaElements
@@ -2330,10 +2255,15 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
           statusTotChunks = totChunks
         }
         val chunk = (statusCount % totChunks).toInt
-        val status = Status(dataEntries.collect {
-          case (key, (_, _, usedTimestamp)) if math.abs(key.hashCode % totChunks) == chunk =>
-            (key, (getDigest(key), usedTimestamp))
-        }, chunk, totChunks, toSystemUid, selfFromSystemUid)
+        val status = Status(
+          dataEntries.collect {
+            case (key, (_, _, usedTimestamp)) if math.abs(key.hashCode % totChunks) == chunk =>
+              (key, (getDigest(key), usedTimestamp))
+          },
+          chunk,
+          totChunks,
+          toSystemUid,
+          selfFromSystemUid)
         to ! status
       }
     }
@@ -2354,16 +2284,15 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
       log.debug(
         "Received gossip status from [{}], chunk [{}] of [{}] containing [{}].",
         replyTo.path.address,
-        (chunk + 1),
+        chunk + 1,
         totChunks,
         otherDigests.keys.mkString(", "))
 
     // update the usedTimestamp when needed
     if (expiryEnabled) {
-      otherDigests.foreach {
-        case (key, (_, usedTimestamp)) =>
-          updateUsedTimestamp(key, usedTimestamp)
-        // if we don't have the key it will be updated with the full Gossip
+      otherDigests.foreach { case (key, (_, usedTimestamp)) =>
+        updateUsedTimestamp(key, usedTimestamp)
+      // if we don't have the key it will be updated with the full Gossip
       }
     }
 
@@ -2466,20 +2395,19 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
     if (log.isDebugEnabled)
       log.debug("Received gossip from [{}], containing [{}].", replyTo.path.address, updatedData.keys.mkString(", "))
     var replyKeys = Set.empty[KeyId]
-    updatedData.foreach {
-      case (key, (envelope, usedTimestamp)) =>
-        if (!isExpired(key, usedTimestamp)) {
-          val hadData = dataEntries.contains(key)
-          writeAndStore(key, envelope, reply = false)
-          updateUsedTimestamp(key, usedTimestamp)
+    updatedData.foreach { case (key, (envelope, usedTimestamp)) =>
+      if (!isExpired(key, usedTimestamp)) {
+        val hadData = dataEntries.contains(key)
+        writeAndStore(key, envelope, reply = false)
+        updateUsedTimestamp(key, usedTimestamp)
 
-          if (sendBack) getData(key) match {
-            case Some(d) =>
-              if (hadData || d.pruning.nonEmpty)
-                replyKeys += key
-            case None =>
-          }
+        if (sendBack) getData(key) match {
+          case Some(d) =>
+            if (hadData || d.pruning.nonEmpty)
+              replyKeys += key
+          case None =>
         }
+      }
     }
     if (sendBack && replyKeys.nonEmpty) {
       createGossipMessages(replyKeys, sendBack = false, fromSystemUid).foreach { g =>
@@ -2508,13 +2436,13 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
   }
 
   def hasSubscriber(subscriber: ActorRef): Boolean =
-    subscribers.exists { case (_, s)         => s.contains(subscriber) } ||
+    subscribers.exists { case (_, s) => s.contains(subscriber) } ||
     wildcardSubscribers.exists { case (_, s) => s.contains(subscriber) } ||
-    newSubscribers.exists { case (_, s)      => s.contains(subscriber) }
+    newSubscribers.exists { case (_, s) => s.contains(subscriber) }
 
   private def hasSubscriber(keyId: KeyId): Boolean =
-    subscribers.contains(keyId) || (wildcardSubscribers.nonEmpty && wildcardSubscribers.exists {
-      case (k, _) => keyId.startsWith(k)
+    subscribers.contains(keyId) || (wildcardSubscribers.nonEmpty && wildcardSubscribers.exists { case (k, _) =>
+      keyId.startsWith(k)
     })
 
   private def getSubscribersIterator(keyId: KeyId): Iterator[ActorRef] = {
@@ -2768,9 +2696,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
 
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object ReadWriteAggregator {
   case object SendToSecondary
   val MaxSecondaryNodes = 10
@@ -2781,9 +2707,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
   }
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] abstract class ReadWriteAggregator extends Actor {
   import ReadWriteAggregator._
 
@@ -2830,9 +2754,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
 
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object WriteAggregator {
   def props(
       key: KeyR,
@@ -2861,9 +2783,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
         durable)).withDeploy(Deploy.local)
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] class WriteAggregator(
     key: KeyR,
     envelope: Replicator.Internal.DataEnvelope,
@@ -2988,9 +2908,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
   }
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object ReadAggregator {
   def props(
       key: KeyR,
@@ -3008,9 +2926,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
 
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] class ReadAggregator(
     key: KeyR,
     consistency: Replicator.ReadConsistency,
@@ -3101,7 +3017,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
       replyTo.tell(replyMsg, context.parent)
       context.stop(self)
     case _: ReadResult =>
-      //collect late replies
+      // collect late replies
       remaining -= sender().path.address
     case SendToSecondary =>
     case ReceiveTimeout  =>

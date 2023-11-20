@@ -21,9 +21,12 @@ object PubSubSpecConfig extends MultiNodeConfig {
   val second = role("second")
   val third = role("third")
 
-  commonConfig(ConfigFactory.parseString("""
+  commonConfig(
+    ConfigFactory
+      .parseString("""
         akka.loglevel = INFO
-      """).withFallback(MultiNodeClusterSpec.clusterConfig))
+      """)
+      .withFallback(MultiNodeClusterSpec.clusterConfig))
 
   nodeConfig(first)(ConfigFactory.parseString("""
       akka.cluster.multi-data-center.self-data-center = "dc1"
@@ -66,10 +69,10 @@ abstract class PubSubSpec extends MultiNodeSpec(PubSubSpecConfig) with MultiNode
 
     "see nodes with subscribers registered" in {
       val statsProbe = TestProbe[Topic.TopicStats]()
-      statsProbe.awaitAssert({
+      statsProbe.awaitAssert {
         topic ! Topic.GetTopicStats[Message](statsProbe.ref)
         statsProbe.receiveMessage().topicInstanceCount should ===(3)
-      })
+      }
       enterBarrier("topic instances with subscribers seen")
     }
 
@@ -91,10 +94,10 @@ abstract class PubSubSpec extends MultiNodeSpec(PubSubSpecConfig) with MultiNode
         topic ! Topic.Unsubscribe(topicProbe.ref)
         // unsubscribe does not need to be gossiped before it is effective
         val statsProbe = TestProbe[Topic.TopicStats]()
-        statsProbe.awaitAssert({
+        statsProbe.awaitAssert {
           topic ! Topic.GetTopicStats[Message](statsProbe.ref)
           statsProbe.receiveMessage().topicInstanceCount should ===(2)
-        })
+        }
       }
       enterBarrier("unsubscribed")
       Thread.sleep(200) // but it needs to reach the topic

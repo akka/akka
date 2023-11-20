@@ -8,20 +8,17 @@ import akka.persistence.{ PersistenceSpec, PluginCleanup }
 import akka.persistence.journal.JournalSpec
 
 class LeveldbJournalNoAtomicPersistMultipleEventsSpec
-    extends JournalSpec(
-      config = PersistenceSpec.config(
-        "leveldb",
-        "LeveldbJournalNoAtomicPersistMultipleEventsSpec",
-        extraConfig = Some("""
+    extends JournalSpec(config = PersistenceSpec.config(
+      "leveldb",
+      "LeveldbJournalNoAtomicPersistMultipleEventsSpec",
+      extraConfig = Some("""
         akka.persistence.journal.leveldb.native = off
         akka.actor.allow-java-serialization = off
         akka.actor.warn-about-java-serializer-usage = on
         """)))
     with PluginCleanup {
 
-  /**
-   * Setting to false to test the single message atomic write behavior of JournalSpec
-   */
+  /** Setting to false to test the single message atomic write behavior of JournalSpec */
   override def supportsAtomicPersistAllOfSeveralEvents = false
 
   override def supportsRejectingNonSerializableObjects = true

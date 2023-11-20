@@ -136,9 +136,7 @@ object ActorTestKit {
     shutdown(system, settings.DefaultActorSystemShutdownTimeout.asJava, settings.ThrowOnShutdownTimeout)
   }
 
-  /**
-   * Config loaded from `application-test.conf`, which is used if no specific config is given.
-   */
+  /** Config loaded from `application-test.conf`, which is used if no specific config is given. */
   def applicationTestConfig: Config = scaladsl.ActorTestKit.ApplicationTestConfig
 
 }
@@ -159,9 +157,7 @@ object ActorTestKit {
  */
 final class ActorTestKit private[akka] (delegate: akka.actor.testkit.typed.scaladsl.ActorTestKit) {
 
-  /**
-   * The default timeout as specified with the config/[[akka.actor.testkit.typed.TestKitSettings]]
-   */
+  /** The default timeout as specified with the config/[[akka.actor.testkit.typed.TestKitSettings]] */
   def timeout: Timeout = delegate.timeout
 
   /**
@@ -172,14 +168,10 @@ final class ActorTestKit private[akka] (delegate: akka.actor.testkit.typed.scala
 
   def testKitSettings: TestKitSettings = delegate.testKitSettings
 
-  /**
-   * The scheduler of the testkit actor system
-   */
+  /** The scheduler of the testkit actor system */
   def scheduler: Scheduler = delegate.scheduler
 
-  /**
-   * Spawn a new auto-named actor under the testkit user guardian and return the ActorRef for the spawned actor
-   */
+  /** Spawn a new auto-named actor under the testkit user guardian and return the ActorRef for the spawned actor */
   def spawn[T](behavior: Behavior[T]): ActorRef[T] = delegate.spawn(behavior)
 
   /**
@@ -259,14 +251,10 @@ final class ActorTestKit private[akka] (delegate: akka.actor.testkit.typed.scala
 
   // Note that if more methods are added here they should also be added to TestKitJunitResource
 
-  /**
-   * Terminate the actor system and the testkit
-   */
+  /** Terminate the actor system and the testkit */
   def shutdownTestKit(): Unit = delegate.shutdownTestKit()
 
-  /**
-   * Additional testing utilities for serialization.
-   */
+  /** Additional testing utilities for serialization. */
   val serializationTestKit: SerializationTestKit = new SerializationTestKit(delegate.internalSystem)
 
 }

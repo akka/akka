@@ -21,7 +21,7 @@ import org.openjdk.jmh.annotations.Warmup
 class FrequencySketchBenchmark {
   private[this] val Capacity = 10000
   private[this] val GeneratedSize = 1 << 16
-  private final val IndexMask = 0xFFFF
+  private final val IndexMask = 0xffff
 
   private[this] var sketch: FrequencySketch[String] = _
   private[this] var generated: Array[String] = _

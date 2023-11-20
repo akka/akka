@@ -18,14 +18,10 @@ import akka.util.ByteString
  */
 object TLSRole {
 
-  /**
-   * Java API: obtain the [[Client]] singleton value.
-   */
+  /** Java API: obtain the [[Client]] singleton value. */
   def client: TLSRole = Client
 
-  /**
-   * Java API: obtain the [[Server]] singleton value.
-   */
+  /** Java API: obtain the [[Server]] singleton value. */
   def server: TLSRole = Server
 }
 sealed abstract class TLSRole
@@ -82,57 +78,41 @@ sealed abstract class TLSClosing {
 }
 object TLSClosing {
 
-  /**
-   * Java API: obtain the [[EagerClose]] singleton value.
-   */
+  /** Java API: obtain the [[EagerClose]] singleton value. */
   def eagerClose: TLSClosing = EagerClose
 
-  /**
-   * Java API: obtain the [[IgnoreCancel]] singleton value.
-   */
+  /** Java API: obtain the [[IgnoreCancel]] singleton value. */
   def ignoreCancel: TLSClosing = IgnoreCancel
 
-  /**
-   * Java API: obtain the [[IgnoreComplete]] singleton value.
-   */
+  /** Java API: obtain the [[IgnoreComplete]] singleton value. */
   def ignoreComplete: TLSClosing = IgnoreComplete
 
-  /**
-   * Java API: obtain the [[IgnoreBoth]] singleton value.
-   */
+  /** Java API: obtain the [[IgnoreBoth]] singleton value. */
   def ignoreBoth: TLSClosing = IgnoreBoth
 }
 
-/**
- * see [[TLSClosing]]
- */
+/** see [[TLSClosing]] */
 sealed abstract class EagerClose extends TLSClosing {
   override def ignoreCancel = false
   override def ignoreComplete = false
 }
 case object EagerClose extends EagerClose
 
-/**
- * see [[TLSClosing]]
- */
+/** see [[TLSClosing]] */
 sealed abstract class IgnoreCancel extends TLSClosing {
   override def ignoreCancel = true
   override def ignoreComplete = false
 }
 case object IgnoreCancel extends IgnoreCancel
 
-/**
- * see [[TLSClosing]]
- */
+/** see [[TLSClosing]] */
 sealed abstract class IgnoreComplete extends TLSClosing {
   override def ignoreCancel = false
   override def ignoreComplete = true
 }
 case object IgnoreComplete extends IgnoreComplete
 
-/**
- * see [[TLSClosing]]
- */
+/** see [[TLSClosing]] */
 sealed abstract class IgnoreBoth extends TLSClosing {
   override def ignoreCancel = true
   override def ignoreComplete = true
@@ -204,26 +184,18 @@ object TLSProtocol {
       sslParameters: Option[SSLParameters])
       extends SslTlsOutbound {
 
-    /**
-     * Java API: Make a copy of this message with the given `enabledCipherSuites`.
-     */
+    /** Java API: Make a copy of this message with the given `enabledCipherSuites`. */
     @varargs
     def withCipherSuites(s: String*): NegotiateNewSession = copy(enabledCipherSuites = Some(s.toList))
 
-    /**
-     * Java API: Make a copy of this message with the given `enabledProtocols`.
-     */
+    /** Java API: Make a copy of this message with the given `enabledProtocols`. */
     @varargs
     def withProtocols(p: String*): NegotiateNewSession = copy(enabledProtocols = Some(p.toList))
 
-    /**
-     * Java API: Make a copy of this message with the given [[TLSClientAuth]] setting.
-     */
+    /** Java API: Make a copy of this message with the given [[TLSClientAuth]] setting. */
     def withClientAuth(ca: TLSClientAuth): NegotiateNewSession = copy(clientAuth = Some(ca))
 
-    /**
-     * Java API: Make a copy of this message with the given [[SSLParameters]].
-     */
+    /** Java API: Make a copy of this message with the given [[SSLParameters]]. */
     def withParameters(p: SSLParameters): NegotiateNewSession = copy(sslParameters = Some(p))
   }
 

@@ -175,35 +175,37 @@ private[akka] object Running {
                   meta.version)
               ReplicatedEventEnvelope(re, replyTo)
             }
-            .recoverWithRetries(1, {
-              // not a failure, the replica is stopping, complete the stream
-              case _: WatchedActorTerminatedException =>
-                Source.empty
-            }))
+            .recoverWithRetries(
+              1,
+              {
+                // not a failure, the replica is stopping, complete the stream
+                case _: WatchedActorTerminatedException =>
+                  Source.empty
+              }))
 
         source.runWith(Sink.ignore)(SystemMaterializer(system).materializer)
 
         // TODO support from journal to fast forward https://github.com/akka/akka/issues/29311
-        state.copy(
-          replicationControl =
-            state.replicationControl.updated(replicaId, new ReplicationStreamControl {
-              override def fastForward(sequenceNumber: Long): Unit = {
-                // (logging is safe here since invoked on message receive
-                OptionVal(controlRef.get) match {
-                  case OptionVal.Some(control) =>
-                    if (setup.internalLogger.isDebugEnabled)
-                      setup.internalLogger.debug("Fast forward replica [{}] to [{}]", replicaId, sequenceNumber)
-                    control.fastForward(sequenceNumber)
-                  case _ =>
-                    // stream not started yet, ok, fast forward is an optimization
-                    if (setup.internalLogger.isDebugEnabled)
-                      setup.internalLogger.debug(
-                        "Ignoring fast forward replica [{}] to [{}], stream not started yet",
-                        replicaId,
-                        sequenceNumber)
-                }
+        state.copy(replicationControl = state.replicationControl.updated(
+          replicaId,
+          new ReplicationStreamControl {
+            override def fastForward(sequenceNumber: Long): Unit = {
+              // (logging is safe here since invoked on message receive
+              OptionVal(controlRef.get) match {
+                case OptionVal.Some(control) =>
+                  if (setup.internalLogger.isDebugEnabled)
+                    setup.internalLogger.debug("Fast forward replica [{}] to [{}]", replicaId, sequenceNumber)
+                  control.fastForward(sequenceNumber)
+                case _ =>
+                  // stream not started yet, ok, fast forward is an optimization
+                  if (setup.internalLogger.isDebugEnabled)
+                    setup.internalLogger.debug(
+                      "Ignoring fast forward replica [{}] to [{}], stream not started yet",
+                      replicaId,
+                      sequenceNumber)
               }
-            }))
+            }
+          }))
       } else {
         state
       }
@@ -267,7 +269,8 @@ private[akka] object Running {
 
     def onCommand(state: RunningState[S], cmd: C): Behavior[InternalProtocol] = {
       val effect = setup.commandHandler(state.state, cmd)
-      val (next, doUnstash) = applyEffects(cmd, state, effect.asInstanceOf[EffectImpl[E, S]]) // TODO can we avoid the cast?
+      val (next, doUnstash) =
+        applyEffects(cmd, state, effect.asInstanceOf[EffectImpl[E, S]]) // TODO can we avoid the cast?
       if (doUnstash) tryUnstashOne(next)
       else next
     }
@@ -531,8 +534,14 @@ private[akka] object Running {
 
           val metadataTemplate: Option[ReplicatedEventMetadata] = setup.replication match {
             case Some(replication) =>
-              replication.setContext(recoveryRunning = false, replication.replicaId, concurrent = false) // local events are never concurrent
-              Some(ReplicatedEventMetadata(replication.replicaId, 0L, state.version, concurrent = false)) // we replace it with actual seqnr later
+              replication.setContext(
+                recoveryRunning = false,
+                replication.replicaId,
+                concurrent = false
+              ) // local events are never concurrent
+              Some(
+                ReplicatedEventMetadata(replication.replicaId, 0L, state.version, concurrent = false)
+              ) // we replace it with actual seqnr later
             case None => None
           }
 

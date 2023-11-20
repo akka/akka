@@ -98,8 +98,7 @@ abstract class RemoteRestartedQuarantinedSpec extends RemotingMultiNodeSpec(Remo
         enterBarrier("before-quarantined")
         enterBarrier("quarantined")
 
-        expectMsgPF(10 seconds) {
-          case ThisActorSystemQuarantinedEvent(_, _) =>
+        expectMsgPF(10 seconds) { case ThisActorSystemQuarantinedEvent(_, _) =>
         }
 
         // check that we quarantine back
@@ -115,16 +114,18 @@ abstract class RemoteRestartedQuarantinedSpec extends RemotingMultiNodeSpec(Remo
 
         val freshSystem = ActorSystem(
           system.name,
-          ConfigFactory.parseString(s"""
+          ConfigFactory
+            .parseString(s"""
               akka.remote.artery.canonical.port = ${address.port.get}
-              """).withFallback(system.settings.config))
+              """)
+            .withFallback(system.settings.config))
 
         val probe = TestProbe()(freshSystem)
 
         freshSystem
           .actorSelection(RootActorPath(firstAddress) / "user" / "subject")
           .tell(Identify("subject"), probe.ref)
-        probe.expectMsgType[ActorIdentity](5.seconds).ref should not be (None)
+        probe.expectMsgType[ActorIdentity](5.seconds).ref should not be None
 
         // Now the other system will be able to pass, too
         freshSystem.actorOf(Props[Subject](), "subject")

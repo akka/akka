@@ -80,9 +80,7 @@ trait Predicate[-T] extends java.io.Serializable {
 @FunctionalInterface
 trait Creator[+T] extends Serializable {
 
-  /**
-   * This method must return a different instance upon every call.
-   */
+  /** This method must return a different instance upon every call. */
   @throws(classOf[Exception])
   def create(): T
 }

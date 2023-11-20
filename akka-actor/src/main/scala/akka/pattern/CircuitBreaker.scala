@@ -26,9 +26,7 @@ import akka.pattern.internal.{ CircuitBreakerNoopTelemetry, CircuitBreakerTeleme
 import akka.util.JavaDurationConverters._
 import akka.util.Unsafe
 
-/**
- * Companion object providing factory methods for Circuit Breaker which runs callbacks in caller's thread
- */
+/** Companion object providing factory methods for Circuit Breaker which runs callbacks in caller's thread */
 object CircuitBreaker {
 
   /**
@@ -172,8 +170,7 @@ class CircuitBreaker(
   }
 
   // add the old constructor to make it binary compatible
-  def this(scheduler: Scheduler, maxFailures: Int, callTimeout: FiniteDuration, resetTimeout: FiniteDuration)(
-      implicit
+  def this(scheduler: Scheduler, maxFailures: Int, callTimeout: FiniteDuration, resetTimeout: FiniteDuration)(implicit
       executor: ExecutionContext) = {
     this(
       scheduler,
@@ -192,9 +189,7 @@ class CircuitBreaker(
       callTimeout: FiniteDuration,
       resetTimeout: FiniteDuration,
       maxResetTimeout: FiniteDuration,
-      exponentialBackoffFactor: Double)(
-      implicit
-      executor: ExecutionContext) = {
+      exponentialBackoffFactor: Double)(implicit executor: ExecutionContext) = {
     this(scheduler, maxFailures, callTimeout, resetTimeout, maxResetTimeout, exponentialBackoffFactor, 0.0)(executor)
   }
 
@@ -246,16 +241,12 @@ class CircuitBreaker(
       telemetry)(executor)
   }
 
-  /**
-   * Holds reference to current state of CircuitBreaker - *access only via helper methods*
-   */
+  /** Holds reference to current state of CircuitBreaker - *access only via helper methods* */
   @volatile
   @nowarn("msg=never updated")
   private[this] var _currentStateDoNotCallMeDirectly: State = Closed
 
-  /**
-   * Holds reference to current resetTimeout of CircuitBreaker - *access only via helper methods*
-   */
+  /** Holds reference to current resetTimeout of CircuitBreaker - *access only via helper methods* */
   @volatile
   @nowarn("msg=never updated")
   private[this] var _currentResetTimeoutDoNotCallMeDirectly: FiniteDuration = resetTimeout
@@ -285,9 +276,7 @@ class CircuitBreaker(
   private[this] def currentState: State =
     Unsafe.instance.getObjectVolatile(this, AbstractCircuitBreaker.stateOffset).asInstanceOf[State]
 
-  /**
-   * Helper method for updating the underlying resetTimeout via Unsafe
-   */
+  /** Helper method for updating the underlying resetTimeout via Unsafe */
   @inline
   private[this] def swapResetTimeout(oldResetTimeout: FiniteDuration, newResetTimeout: FiniteDuration): Boolean =
     Unsafe.instance.compareAndSwapObject(
@@ -296,9 +285,7 @@ class CircuitBreaker(
       oldResetTimeout,
       newResetTimeout)
 
-  /**
-   * Helper method for accessing to the underlying resetTimeout via Unsafe
-   */
+  /** Helper method for accessing to the underlying resetTimeout via Unsafe */
   @inline
   private[this] def currentResetTimeout: FiniteDuration =
     Unsafe.instance.getObjectVolatile(this, AbstractCircuitBreaker.resetTimeoutOffset).asInstanceOf[FiniteDuration]
@@ -320,7 +307,6 @@ class CircuitBreaker(
    * @param body Call needing protected
    * @return [[scala.concurrent.Future]] containing the call result or a
    *   `scala.concurrent.TimeoutException` if the call timed out
-   *
    */
   def withCircuitBreaker[T](body: => Future[T]): Future[T] =
     currentState.invoke(body, failureFn)
@@ -374,9 +360,12 @@ class CircuitBreaker(
   def callWithCircuitBreakerCS[T](
       body: Callable[CompletionStage[T]],
       defineFailureFn: BiFunction[Optional[T], Optional[Throwable], java.lang.Boolean]): CompletionStage[T] =
-    FutureConverters.toJava[T](callWithCircuitBreaker(new Callable[Future[T]] {
-      override def call(): Future[T] = FutureConverters.toScala(body.call())
-    }, defineFailureFn))
+    FutureConverters.toJava[T](
+      callWithCircuitBreaker(
+        new Callable[Future[T]] {
+          override def call(): Future[T] = FutureConverters.toScala(body.call())
+        },
+        defineFailureFn))
 
   /**
    * Wraps invocations of synchronous calls that need to be protected.
@@ -667,9 +656,7 @@ class CircuitBreaker(
    */
   private def tripBreaker(fromState: State): Unit = transition(fromState, Open)
 
-  /**
-   * Resets breaker to a closed state.  This is valid from an Half-Open state only.
-   */
+  /** Resets breaker to a closed state.  This is valid from an Half-Open state only. */
   private def resetBreaker(): Unit = transition(HalfOpen, Closed)
 
   /**
@@ -720,9 +707,7 @@ class CircuitBreaker(
     }
   }
 
-  /**
-   * Invokes all onCallBreakerOpen callback handlers.
-   */
+  /** Invokes all onCallBreakerOpen callback handlers. */
   private def notifyCallBreakerOpenListeners(): Unit = if (!callBreakerOpenListeners.isEmpty) {
     val iterator = callBreakerOpenListeners.iterator()
     while (iterator.hasNext) {
@@ -731,9 +716,7 @@ class CircuitBreaker(
     }
   }
 
-  /**
-   * Attempts to reset breaker by transitioning to a half-open state.  This is valid from an Open state only.
-   */
+  /** Attempts to reset breaker by transitioning to a half-open state.  This is valid from an Open state only. */
   private def attemptReset(): Unit = transition(Open, HalfOpen)
 
   private val timeoutEx = new TimeoutException("Circuit Breaker Timed out.") with NoStackTrace
@@ -768,9 +751,7 @@ class CircuitBreaker(
     case _                                   => true
   }
 
-  /**
-   * Internal state abstraction
-   */
+  /** Internal state abstraction */
   private sealed trait State {
     private val listeners = new CopyOnWriteArrayList[Runnable]
 
@@ -890,38 +871,26 @@ class CircuitBreaker(
      */
     def invoke[T](body: => Future[T]): Future[T] = invoke(body, failureFn)
 
-    /**
-     * Invoked when call succeeds
-     *
-     */
+    /** Invoked when call succeeds */
     def callSucceeds(): Unit
 
-    /**
-     * Invoked when call fails
-     *
-     */
+    /** Invoked when call fails */
     def callFails(): Unit
 
     /**
      * Invoked on the transitioned-to state during transition.  Notifies listeners after invoking subclass template
      * method _enter
-     *
      */
     final def enter(): Unit = {
       _enter()
       notifyTransitionListeners()
     }
 
-    /**
-     * Template method for concrete traits
-     *
-     */
+    /** Template method for concrete traits */
     def _enter(): Unit
   }
 
-  /**
-   * Concrete implementation of Closed state
-   */
+  /** Concrete implementation of Closed state */
   private object Closed extends AtomicInteger with State {
 
     /**
@@ -966,9 +935,7 @@ class CircuitBreaker(
     override def toString: String = "Closed with failure count = " + get()
   }
 
-  /**
-   * Concrete implementation of half-open state
-   */
+  /** Concrete implementation of half-open state */
   private object HalfOpen extends AtomicBoolean(true) with State {
 
     /**
@@ -1015,9 +982,7 @@ class CircuitBreaker(
     override def toString: String = "Half-Open currently testing call for success = " + get()
   }
 
-  /**
-   * Concrete implementation of Open state
-   */
+  /** Concrete implementation of Open state */
   private object Open extends AtomicLong with State {
 
     /**

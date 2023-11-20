@@ -76,12 +76,14 @@ class KeepGoingStageSpec extends StreamSpec {
             } finally listener.foreach(_ ! EndOfEventHandler)
         }
 
-        setHandler(shape.in, new InHandler {
-          override def onPush(): Unit = pull(shape.in)
+        setHandler(
+          shape.in,
+          new InHandler {
+            override def onPush(): Unit = pull(shape.in)
 
-          // Ignore finish
-          override def onUpstreamFinish(): Unit = listener.foreach(_ ! UpstreamCompleted)
-        })
+            // Ignore finish
+            override def onUpstreamFinish(): Unit = listener.foreach(_ ! UpstreamCompleted)
+          })
 
         override def postStop(): Unit = listener.foreach(_ ! PostStop)
       }

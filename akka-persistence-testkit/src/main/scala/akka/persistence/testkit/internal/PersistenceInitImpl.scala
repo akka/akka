@@ -12,9 +12,7 @@ import akka.annotation.InternalApi
 import akka.persistence.PersistentActor
 import akka.persistence.RecoveryCompleted
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object PersistenceInitImpl {
 
   def props(journalPluginId: String, snapshotPluginId: String, persistenceId: String): Props = {
@@ -47,10 +45,9 @@ import akka.persistence.RecoveryCompleted
     case _ =>
   }
 
-  def receiveCommand: Receive = {
-    case msg =>
-      // recovery has completed
-      sender() ! msg
-      context.stop(self)
+  def receiveCommand: Receive = { case msg =>
+    // recovery has completed
+    sender() ! msg
+    context.stop(self)
   }
 }

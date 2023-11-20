@@ -11,9 +11,7 @@ import akka.annotation.InternalApi
 import akka.remote.UniqueAddress
 import akka.remote.artery.RemotingFlightRecorder
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] final class JFRRemotingFlightRecorder() extends RemotingFlightRecorder {
   override def transportMediaDriverStarted(directoryName: String): Unit =

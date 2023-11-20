@@ -7,9 +7,11 @@ package akka.stream.scaladsl
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.TestSink
 
-class FlowMergeAllSpec extends StreamSpec("""
+class FlowMergeAllSpec
+    extends StreamSpec("""
     akka.stream.materializer.initial-input-buffer-size = 2
-  """) with ScriptedTest {
+  """)
+    with ScriptedTest {
 
   "Flow mergeAll" must {
     "merge all upstream elements to its downstream" in {

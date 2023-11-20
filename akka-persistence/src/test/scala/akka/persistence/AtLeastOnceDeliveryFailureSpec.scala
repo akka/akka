@@ -15,8 +15,7 @@ import akka.actor._
 import akka.testkit._
 
 object AtLeastOnceDeliveryFailureSpec {
-  val config = ConfigFactory.parseString(
-    """
+  val config = ConfigFactory.parseString("""
       akka.persistence.sender.chaos.live-processing-failure-rate = 0.3
       akka.persistence.sender.chaos.replay-processing-failure-rate = 0.1
       akka.persistence.destination.chaos.confirm-failure-rate = 0.3
@@ -97,13 +96,12 @@ object AtLeastOnceDeliveryFailureSpec {
       case Confirm(deliveryId, i) => persist(MsgConfirmed(deliveryId, i))(updateState)
     }
 
-    def receiveRecover: Receive = {
-      case evt: Evt =>
-        updateState(evt)
-        if (shouldFail(replayProcessingFailureRate))
-          throw new TestException(debugMessage(s"replay failed at event $evt"))
-        else
-          log.debug(debugMessage(s"replayed event $evt"))
+    def receiveRecover: Receive = { case evt: Evt =>
+      updateState(evt)
+      if (shouldFail(replayProcessingFailureRate))
+        throw new TestException(debugMessage(s"replay failed at event $evt"))
+      else
+        log.debug(debugMessage(s"replayed event $evt"))
     }
 
     def updateState(evt: Evt): Unit = evt match {
@@ -131,18 +129,17 @@ object AtLeastOnceDeliveryFailureSpec {
     val config = context.system.settings.config.getConfig("akka.persistence.destination.chaos")
     val confirmFailureRate = config.getDouble("confirm-failure-rate")
 
-    def receive = {
-      case m @ Msg(deliveryId, i) =>
-        if (shouldFail(confirmFailureRate)) {
-          log.debug(debugMessage("confirm message failed", m))
-        } else if (contains(i)) {
-          log.debug(debugMessage("ignored duplicate", m))
-          sender() ! Confirm(deliveryId, i)
-        } else {
-          add(i)
-          sender() ! Confirm(deliveryId, i)
-          log.debug(debugMessage("received and confirmed message", m))
-        }
+    def receive = { case m @ Msg(deliveryId, i) =>
+      if (shouldFail(confirmFailureRate)) {
+        log.debug(debugMessage("confirm message failed", m))
+      } else if (contains(i)) {
+        log.debug(debugMessage("ignored duplicate", m))
+        sender() ! Confirm(deliveryId, i)
+      } else {
+        add(i)
+        sender() ! Confirm(deliveryId, i)
+        log.debug(debugMessage("received and confirmed message", m))
+      }
     }
 
     private def debugMessage(msg: String, m: Msg): String =
@@ -183,7 +180,10 @@ class AtLeastOnceDeliveryFailureSpec
       expectDone() // by sender
       expectDone() // by destination
 
-      system.actorOf(Props(classOf[ChaosApp], testActor), "chaosApp2") // recovery of new instance should have same outcome
+      system.actorOf(
+        Props(classOf[ChaosApp], testActor),
+        "chaosApp2"
+      ) // recovery of new instance should have same outcome
       expectDone() // by sender
       // destination doesn't receive messages again because all have been confirmed already
     }

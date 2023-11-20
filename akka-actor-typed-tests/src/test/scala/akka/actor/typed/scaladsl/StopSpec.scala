@@ -32,11 +32,10 @@ class StopSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCa
 
     "execute the post stop" in {
       val probe = TestProbe[Done]()
-      val ref = spawn(Behaviors.receiveMessagePartial[String] {
-        case "stop" =>
-          Behaviors.stopped { () =>
-            probe.ref ! Done
-          }
+      val ref = spawn(Behaviors.receiveMessagePartial[String] { case "stop" =>
+        Behaviors.stopped { () =>
+          probe.ref ! Done
+        }
       })
       ref ! "stop"
       probe.expectMessage(Done)
@@ -46,16 +45,14 @@ class StopSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCa
       val probe = TestProbe[String]()
       val ref = spawn(
         Behaviors
-          .receiveMessagePartial[String] {
-            case "stop" =>
-              Behaviors.stopped { () =>
-                probe.ref ! "callback"
-              }
+          .receiveMessagePartial[String] { case "stop" =>
+            Behaviors.stopped { () =>
+              probe.ref ! "callback"
+            }
           }
-          .receiveSignal {
-            case (_, PostStop) =>
-              probe.ref ! "signal"
-              Behaviors.same
+          .receiveSignal { case (_, PostStop) =>
+            probe.ref ! "signal"
+            Behaviors.same
           })
       ref ! "stop"
       probe.expectMessage("signal")

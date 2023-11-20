@@ -25,9 +25,7 @@ import akka.stream.stage.GraphStageWithMaterializedValue
 import akka.stream.stage.OutHandler
 import akka.stream.stage.StageLogging
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[remote] object AeronSource {
 
   private def pollTask(
@@ -50,8 +48,8 @@ private[remote] object AeronSource {
   class MessageHandler(pool: EnvelopeBufferPool) {
     def reset(): Unit = messageReceived = null
 
-    private[remote] var messageReceived
-        : EnvelopeBuffer = null // private to avoid scalac warning about exposing EnvelopeBuffer
+    private[remote] var messageReceived: EnvelopeBuffer =
+      null // private to avoid scalac warning about exposing EnvelopeBuffer
 
     val fragmentsHandler = new Fragments(data => messageReceived = data, pool)
   }

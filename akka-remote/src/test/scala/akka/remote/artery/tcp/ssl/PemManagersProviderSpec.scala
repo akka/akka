@@ -12,7 +12,6 @@ import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
 /**
- *
  */
 class PemManagersProviderSpec extends AnyWordSpec with Matchers {
 

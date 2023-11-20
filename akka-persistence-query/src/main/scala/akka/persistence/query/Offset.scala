@@ -60,9 +60,7 @@ object TimestampOffset {
   def apply(timestamp: Instant, readTimestamp: Instant, seen: Map[String, Long]): TimestampOffset =
     new TimestampOffset(timestamp, readTimestamp, seen)
 
-  /**
-   * Try to convert the Offset to a TimestampOffset. Epoch timestamp is used for `NoOffset`.
-   */
+  /** Try to convert the Offset to a TimestampOffset. Epoch timestamp is used for `NoOffset`. */
   def toTimestampOffset(offset: Offset): TimestampOffset = {
     offset match {
       case t: TimestampOffset => t
@@ -114,13 +112,9 @@ final class TimestampOffset private (val timestamp: Instant, val readTimestamp: 
     }
 }
 
-/**
- * Used when retrieving all events.
- */
+/** Used when retrieving all events. */
 case object NoOffset extends Offset {
 
-  /**
-   * Java API:
-   */
+  /** Java API: */
   def getInstance: Offset = this
 }

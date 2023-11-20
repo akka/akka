@@ -35,9 +35,7 @@ object ClusterSingletonManagerPreparingForShutdownSpec extends MultiNodeConfig {
 
   case object EchoStarted
 
-  /**
-   * The singleton actor
-   */
+  /** The singleton actor */
   class Echo(testActor: ActorRef) extends Actor with ActorLogging {
     override def preStart(): Unit = {
       log.info("Singleton starting on {}", Cluster(context.system).selfUniqueAddress)
@@ -110,11 +108,13 @@ class ClusterSingletonManagerPreparingForShutdownSpec
       runOn(first) {
         Cluster(system).prepareForFullClusterShutdown()
       }
-      awaitAssert({
-        withClue("members: " + Cluster(system).readView.members) {
-          Cluster(system).selfMember.status shouldEqual MemberStatus.ReadyForShutdown
-        }
-      }, 10.seconds)
+      awaitAssert(
+        {
+          withClue("members: " + Cluster(system).readView.members) {
+            Cluster(system).selfMember.status shouldEqual MemberStatus.ReadyForShutdown
+          }
+        },
+        10.seconds)
       enterBarrier("preparation-complete")
 
       runOn(first) {
@@ -133,7 +133,8 @@ class ClusterSingletonManagerPreparingForShutdownSpec
             }
           }
         },
-        8.seconds) // this timeout must be lower than coordinated shutdown timeout otherwise it could pass due to the timeout continuing with the cluster exit
+        8.seconds
+      ) // this timeout must be lower than coordinated shutdown timeout otherwise it could pass due to the timeout continuing with the cluster exit
       // where as this is testing that shutdown happens right away when a cluster is in preparing to shutdown mode
       enterBarrier("initial-singleton-removed")
 
@@ -152,11 +153,13 @@ class ClusterSingletonManagerPreparingForShutdownSpec
         Cluster(system).leave(address(third))
         Cluster(system).leave(address(second))
       }
-      awaitAssert({
-        withClue("self member: " + Cluster(system).selfMember) {
-          Cluster(system).selfMember.status shouldEqual Removed
-        }
-      }, 10.seconds)
+      awaitAssert(
+        {
+          withClue("self member: " + Cluster(system).selfMember) {
+            Cluster(system).selfMember.status shouldEqual Removed
+          }
+        },
+        10.seconds)
       enterBarrier("done")
     }
 

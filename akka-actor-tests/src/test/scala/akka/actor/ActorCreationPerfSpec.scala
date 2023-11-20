@@ -41,14 +41,14 @@ object ActorCreationPerfSpec {
   case object Waited
 
   class EmptyActor extends Actor {
-    def receive = {
-      case IsAlive => sender() ! Alive
+    def receive = { case IsAlive =>
+      sender() ! Alive
     }
   }
 
   class EmptyArgsActor(val foo: Int, val bar: Int) extends Actor {
-    def receive = {
-      case IsAlive => sender() ! Alive
+    def receive = { case IsAlive =>
+      sender() ! Alive
     }
   }
 
@@ -75,13 +75,12 @@ object ActorCreationPerfSpec {
     def waiting(number: Int, replyTo: ActorRef): Receive = {
       var current = number
 
-      {
-        case Alive =>
-          current -= 1
-          if (current == 0) {
-            replyTo ! Waited
-            context.unbecome()
-          }
+      { case Alive =>
+        current -= 1
+        if (current == 0) {
+          replyTo ! Waited
+          context.unbecome()
+        }
       }
     }
   }
@@ -104,13 +103,12 @@ object ActorCreationPerfSpec {
     def waiting(number: Int, replyTo: ActorRef): Receive = {
       var current = number
 
-      {
-        case Alive =>
-          current -= 1
-          if (current == 0) {
-            replyTo ! Waited
-            context.unbecome()
-          }
+      { case Alive =>
+        current -= 1
+        if (current == 0) {
+          replyTo ! Waited
+          context.unbecome()
+        }
       }
     }
   }

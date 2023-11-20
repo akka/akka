@@ -18,9 +18,7 @@ import akka.persistence.testkit.internal.TestKitStorage
 import akka.stream.scaladsl.Source
 import akka.util.ccompat.JavaConverters._
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[testkit] trait EventStorage extends TestKitStorage[JournalOperation, PersistentRepr] {
   import EventStorage._
@@ -33,7 +31,7 @@ private[testkit] trait EventStorage extends TestKitStorage[JournalOperation, Per
     // and therefore must be done at the same time with the update, not before
     updateOrSetNew(key, v => v ++ mapAny(key, elems).toVector)
 
-  override def reprToSeqNum(repr: (PersistentRepr)): Long = repr.sequenceNr
+  override def reprToSeqNum(repr: PersistentRepr): Long = repr.sequenceNr
 
   def add(elems: immutable.Seq[PersistentRepr]): Unit =
     elems.groupBy(_.persistenceId).foreach { gr =>
@@ -42,15 +40,14 @@ private[testkit] trait EventStorage extends TestKitStorage[JournalOperation, Per
 
   override protected val DefaultPolicy = JournalPolicies.PassAll
 
-  /**
-   * @throws Exception from StorageFailure in the current writing policy
-   */
+  /** @throws Exception from StorageFailure in the current writing policy */
   def tryAdd(elems: immutable.Seq[PersistentRepr]): Try[Unit] = {
     val grouped = elems.groupBy(_.persistenceId)
 
-    val processed = grouped.map {
-      case (pid, els) =>
-        currentPolicy.tryProcess(pid, WriteEvents(els.map(_.payload match {
+    val processed = grouped.map { case (pid, els) =>
+      currentPolicy.tryProcess(
+        pid,
+        WriteEvents(els.map(_.payload match {
           case Tagged(payload, _) => payload
           case nonTagged          => nonTagged
         })))
@@ -155,9 +152,7 @@ private[testkit] trait EventStorage extends TestKitStorage[JournalOperation, Per
 object EventStorage {
   object JournalPolicies extends DefaultPolicies[JournalOperation]
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[akka] implicit val persistentReprOrdering: Ordering[PersistentRepr] =
     Ordering.fromLessThan[PersistentRepr] { (a, b) =>
       if (a eq b) false
@@ -176,39 +171,29 @@ object EventStorage {
 @InternalApi
 sealed trait JournalOperation
 
-/**
- * Read from journal operation with events that were read.
- */
+/** Read from journal operation with events that were read. */
 final case class ReadEvents(batch: immutable.Seq[Any]) extends JournalOperation {
 
   def getBatch(): JList[Any] = batch.asJava
 
 }
 
-/**
- * Write in journal operation with events to be written.
- */
+/** Write in journal operation with events to be written. */
 final case class WriteEvents(batch: immutable.Seq[Any]) extends JournalOperation {
 
   def getBatch(): JList[Any] = batch.asJava
 
 }
 
-/**
- * Read persistent actor's sequence number operation.
- */
+/** Read persistent actor's sequence number operation. */
 case object ReadSeqNum extends JournalOperation {
 
-  /**
-   * Java API: the singleton instance.
-   */
+  /** Java API: the singleton instance. */
   def getInstance() = this
 
 }
 
-/**
- * Delete events in the journal up to `toSeqNumber` operation.
- */
+/** Delete events in the journal up to `toSeqNumber` operation. */
 final case class DeleteEvents(toSeqNumber: Long) extends JournalOperation {
 
   def getToSeqNumber() = toSeqNumber

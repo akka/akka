@@ -18,9 +18,7 @@ import akka.cluster.Reachability
 import akka.cluster.UniqueAddress
 import akka.coordination.lease.scaladsl.Lease
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object DowningStrategy {
   sealed trait Decision {
     def isIndirectlyConnected: Boolean
@@ -54,9 +52,7 @@ import akka.coordination.lease.scaladsl.Lease
   }
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] abstract class DowningStrategy(val selfDc: DataCenter, selfUniqueAddress: UniqueAddress) {
   import DowningStrategy._
 
@@ -87,9 +83,7 @@ import akka.coordination.lease.scaladsl.Lease
   @InternalStableApi
   def allMembersInDC: immutable.SortedSet[Member] = _allMembers
 
-  /**
-   * All members in self DC, but doesn't contain Joining, WeaklyUp, Down and Exiting.
-   */
+  /** All members in self DC, but doesn't contain Joining, WeaklyUp, Down and Exiting. */
   @InternalStableApi
   def members: immutable.SortedSet[Member] =
     members(includingPossiblyUp = false, excludingPossiblyExiting = false)
@@ -104,13 +98,12 @@ import akka.coordination.lease.scaladsl.Lease
    * changed to Exiting on the other side of the partition.
    */
   def members(includingPossiblyUp: Boolean, excludingPossiblyExiting: Boolean): immutable.SortedSet[Member] =
-    _allMembers.filterNot(
-      m =>
-        (!includingPossiblyUp && m.status == MemberStatus.Joining) ||
-        (!includingPossiblyUp && m.status == MemberStatus.WeaklyUp) ||
-        (excludingPossiblyExiting && m.status == MemberStatus.Leaving) ||
-        m.status == MemberStatus.Down ||
-        m.status == MemberStatus.Exiting)
+    _allMembers.filterNot(m =>
+      (!includingPossiblyUp && m.status == MemberStatus.Joining) ||
+      (!includingPossiblyUp && m.status == MemberStatus.WeaklyUp) ||
+      (excludingPossiblyExiting && m.status == MemberStatus.Leaving) ||
+      m.status == MemberStatus.Down ||
+      m.status == MemberStatus.Exiting)
 
   def membersWithRole: immutable.SortedSet[Member] =
     membersWithRole(includingPossiblyUp = false, excludingPossiblyExiting = false)
@@ -210,10 +203,9 @@ import akka.coordination.lease.scaladsl.Lease
 
   private[sbr] def setReachability(r: Reachability): Unit = {
     // skip records with Reachability.Reachable, and skip records related to other DC
-    _reachability = r.filterRecords(
-      record =>
-        (record.status == Reachability.Unreachable || record.status == Reachability.Terminated) &&
-        isInSelfDc(record.observer) && isInSelfDc(record.subject))
+    _reachability = r.filterRecords(record =>
+      (record.status == Reachability.Unreachable || record.status == Reachability.Terminated) &&
+      isInSelfDc(record.observer) && isInSelfDc(record.subject))
   }
 
   def seenBy: Set[Address] =

@@ -24,16 +24,16 @@ object ShardingCompileOnlySpec {
 
   object Basics {
 
-    //#sharding-extension
+    // #sharding-extension
     import akka.cluster.sharding.typed.ShardingEnvelope
     import akka.cluster.sharding.typed.scaladsl.ClusterSharding
     import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
     import akka.cluster.sharding.typed.scaladsl.EntityRef
 
     val sharding = ClusterSharding(system)
-    //#sharding-extension
+    // #sharding-extension
 
-    //#counter
+    // #counter
     object Counter {
       sealed trait Command
       case object Increment extends Command
@@ -54,36 +54,36 @@ object ShardingCompileOnlySpec {
 
       }
     }
-    //#counter
+    // #counter
 
-    //#init
+    // #init
     val TypeKey = EntityTypeKey[Counter.Command]("Counter")
 
     val shardRegion: ActorRef[ShardingEnvelope[Counter.Command]] =
       sharding.init(Entity(TypeKey)(createBehavior = entityContext => Counter(entityContext.entityId)))
-    //#init
+    // #init
 
-    //#send
+    // #send
     // With an EntityRef
     val counterOne: EntityRef[Counter.Command] = sharding.entityRefFor(TypeKey, "counter-1")
     counterOne ! Counter.Increment
 
     // Entity id is specified via an `ShardingEnvelope`
     shardRegion ! ShardingEnvelope("counter-1", Counter.Increment)
-    //#send
+    // #send
 
-    //#persistence
+    // #persistence
     val BlogTypeKey = EntityTypeKey[Command]("BlogPost")
 
     ClusterSharding(system).init(Entity(BlogTypeKey) { entityContext =>
       BlogPostEntity(entityContext.entityId, PersistenceId(entityContext.entityTypeKey.name, entityContext.entityId))
     })
-    //#persistence
+    // #persistence
 
-    //#roles
+    // #roles
     sharding.init(
       Entity(TypeKey)(createBehavior = entityContext => Counter(entityContext.entityId)).withRole("backend"))
-    //#roles
+    // #roles
 
   }
 
@@ -91,7 +91,7 @@ object ShardingCompileOnlySpec {
     import akka.cluster.sharding.typed.scaladsl.ClusterSharding
     import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
 
-    //#counter-passivate
+    // #counter-passivate
     object Counter {
       sealed trait Command
       case object Increment extends Command
@@ -122,14 +122,14 @@ object ShardingCompileOnlySpec {
         }
       }
     }
-    //#counter-passivate
+    // #counter-passivate
 
-    //#counter-passivate-init
+    // #counter-passivate-init
     val TypeKey = EntityTypeKey[Counter.Command]("Counter")
 
     ClusterSharding(system).init(Entity(TypeKey)(createBehavior = entityContext =>
       Counter(entityContext.shard, entityContext.entityId)).withStopMessage(Counter.GoodByeCounter))
-    //#counter-passivate-init
+    // #counter-passivate-init
 
   }
 
@@ -138,7 +138,7 @@ object ShardingCompileOnlySpec {
     import akka.cluster.sharding.typed.scaladsl.ClusterSharding
     import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
 
-    //#sharded-response
+    // #sharded-response
     // a sharded actor that needs counter updates
     object CounterConsumer {
       sealed trait Command
@@ -169,7 +169,7 @@ object ShardingCompileOnlySpec {
         }
 
     }
-    //#sharded-response
+    // #sharded-response
   }
 
   object ShardRegionStateQuery {
@@ -180,14 +180,14 @@ object ShardingCompileOnlySpec {
 
     val replyMessageAdapter: ActorRef[akka.cluster.sharding.ShardRegion.CurrentShardRegionState] = ???
 
-    //#get-shard-region-state
+    // #get-shard-region-state
     import akka.cluster.sharding.typed.GetShardRegionState
     import akka.cluster.sharding.ShardRegion.CurrentShardRegionState
 
     val replyTo: ActorRef[CurrentShardRegionState] = replyMessageAdapter
 
     ClusterSharding(system).shardState ! GetShardRegionState(Counter.TypeKey, replyTo)
-    //#get-shard-region-state
+    // #get-shard-region-state
   }
 
   object ClusterShardingStatsQuery {
@@ -198,7 +198,7 @@ object ShardingCompileOnlySpec {
 
     val replyMessageAdapter: ActorRef[akka.cluster.sharding.ShardRegion.ClusterShardingStats] = ???
 
-    //#get-cluster-sharding-stats
+    // #get-cluster-sharding-stats
     import akka.cluster.sharding.typed.GetClusterShardingStats
     import akka.cluster.sharding.ShardRegion.ClusterShardingStats
     import scala.concurrent.duration._
@@ -207,7 +207,7 @@ object ShardingCompileOnlySpec {
     val timeout: FiniteDuration = 5.seconds
 
     ClusterSharding(system).shardState ! GetClusterShardingStats(Counter.TypeKey, timeout, replyTo)
-    //#get-cluster-sharding-stats
+    // #get-cluster-sharding-stats
   }
 
 }

@@ -67,12 +67,11 @@ trait SigarProvider {
     TryNative {
       verifiedSigarInstance
     }.orElse(TryNative {
-        provisionSigarLibrary()
-        verifiedSigarInstance
-      })
-      .recover {
-        case e: Throwable => throw new RuntimeException("Failed to load sigar:", e)
-      } get
+      provisionSigarLibrary()
+      verifiedSigarInstance
+    }).recover { case e: Throwable =>
+      throw new RuntimeException("Failed to load sigar:", e)
+    } get
   }
 
 }
@@ -89,16 +88,12 @@ object SigarProvider {
   }
 }
 
-/**
- * Provide sigar instance as `SigarProxy` with configured location via [[ClusterMetricsSettings]].
- */
+/** Provide sigar instance as `SigarProxy` with configured location via [[ClusterMetricsSettings]]. */
 case class DefaultSigarProvider(settings: ClusterMetricsSettings) extends SigarProvider {
   def extractFolder = settings.NativeLibraryExtractFolder
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[metrics] object TryNative {
   def apply[T](r: => T): Try[T] =
     try Success(r)

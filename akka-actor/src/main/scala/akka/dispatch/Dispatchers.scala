@@ -18,9 +18,7 @@ import akka.event.{ EventStream, LoggingAdapter }
 import akka.event.Logging.Warning
 import akka.util.Helpers.ConfigOps
 
-/**
- * DispatcherPrerequisites represents useful contextual pieces when constructing a MessageDispatcher
- */
+/** DispatcherPrerequisites represents useful contextual pieces when constructing a MessageDispatcher */
 trait DispatcherPrerequisites {
   def threadFactory: ThreadFactory
   def eventStream: EventStream
@@ -31,9 +29,7 @@ trait DispatcherPrerequisites {
   def defaultExecutionContext: Option[ExecutionContext]
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] final case class DefaultDispatcherPrerequisites(
     threadFactory: ThreadFactory,
@@ -60,9 +56,7 @@ object Dispatchers {
    */
   final val DefaultBlockingDispatcherId: String = "akka.actor.default-blocking-io-dispatcher"
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi
   private[akka] final val InternalDispatcherId = "akka.actor.internal-dispatcher"
 
@@ -80,7 +74,7 @@ object Dispatchers {
       config.getValue(id).valueType match {
         case ConfigValueType.STRING => getConfig(config, config.getString(id), depth + 1)
         case ConfigValueType.OBJECT => config.getConfig(id)
-        case unexpected             => ConfigFactory.empty(s"Expected either config or alias at [$id] but found [$unexpected]")
+        case unexpected => ConfigFactory.empty(s"Expected either config or alias at [$id] but found [$unexpected]")
       }
     } else ConfigFactory.empty(s"Dispatcher [$id] not configured")
   }
@@ -112,16 +106,12 @@ class Dispatchers @InternalApi private[akka] (
   val defaultDispatcherConfig: Config =
     idConfig(DefaultDispatcherId).withFallback(settings.config.getConfig(DefaultDispatcherId))
 
-  /**
-   * The one and only default dispatcher.
-   */
+  /** The one and only default dispatcher. */
   def defaultGlobalDispatcher: MessageDispatcher = lookup(DefaultDispatcherId)
 
   private val dispatcherConfigurators = new ConcurrentHashMap[String, MessageDispatcherConfigurator]
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   private[akka] val internalDispatcher = lookup(Dispatchers.InternalDispatcherId)
 
   /**
@@ -201,16 +191,12 @@ class Dispatchers @InternalApi private[akka] (
   def registerConfigurator(id: String, configurator: MessageDispatcherConfigurator): Boolean =
     dispatcherConfigurators.putIfAbsent(id, configurator) == null
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   private[akka] def config(id: String): Config = {
     config(id, settings.config.getConfig(id))
   }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   private[akka] def config(id: String, appConfig: Config): Config = {
     import akka.util.ccompat.JavaConverters._
     def simpleName = id.substring(id.lastIndexOf('.') + 1)
@@ -266,13 +252,12 @@ class Dispatchers @InternalApi private[akka] (
         val args = List(classOf[Config] -> cfg, classOf[DispatcherPrerequisites] -> prerequisites)
         prerequisites.dynamicAccess
           .createInstanceFor[MessageDispatcherConfigurator](fqn, args)
-          .recover {
-            case exception =>
-              throw new ConfigurationException(
-                ("Cannot instantiate MessageDispatcherConfigurator type [%s], defined in [%s], " +
-                "make sure it has constructor with [com.typesafe.config.Config] and " +
-                "[akka.dispatch.DispatcherPrerequisites] parameters").format(fqn, cfg.getString("id")),
-                exception)
+          .recover { case exception =>
+            throw new ConfigurationException(
+              ("Cannot instantiate MessageDispatcherConfigurator type [%s], defined in [%s], " +
+              "make sure it has constructor with [com.typesafe.config.Config] and " +
+              "[akka.dispatch.DispatcherPrerequisites] parameters").format(fqn, cfg.getString("id")),
+              exception)
           }
           .get
     }
@@ -295,15 +280,11 @@ class DispatcherConfigurator(config: Config, prerequisites: DispatcherPrerequisi
     configureExecutor(),
     config.getMillisDuration("shutdown-timeout"))
 
-  /**
-   * Returns the same dispatcher instance for each invocation
-   */
+  /** Returns the same dispatcher instance for each invocation */
   override def dispatcher(): MessageDispatcher = instance
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[akka] object BalancingDispatcherConfigurator {
   private val defaultRequirement =
     ConfigFactory.parseString("mailbox-requirement = akka.dispatch.MultipleConsumerSemantics")
@@ -357,9 +338,7 @@ class BalancingDispatcherConfigurator(_config: Config, _prerequisites: Dispatche
       config.getMillisDuration("shutdown-timeout"),
       config.getBoolean("attempt-teamwork"))
 
-  /**
-   * Returns the same dispatcher instance for each invocation
-   */
+  /** Returns the same dispatcher instance for each invocation */
   override def dispatcher(): MessageDispatcher = instance
 }
 
@@ -383,9 +362,7 @@ class PinnedDispatcherConfigurator(config: Config, prerequisites: DispatcherPrer
       ThreadPoolConfig()
   }
 
-  /**
-   * Creates new dispatcher for each invocation.
-   */
+  /** Creates new dispatcher for each invocation. */
   override def dispatcher(): MessageDispatcher =
     new PinnedDispatcher(
       this,

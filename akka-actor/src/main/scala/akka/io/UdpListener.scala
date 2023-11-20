@@ -18,9 +18,7 @@ import akka.io.SelectionHandler._
 import akka.io.Udp._
 import akka.util.ByteString
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[io] class UdpListener(val udp: UdpExt, channelRegistry: ChannelRegistry, bindCommander: ActorRef, bind: Bind)
     extends Actor
     with ActorLogging
@@ -35,8 +33,8 @@ private[io] class UdpListener(val udp: UdpExt, channelRegistry: ChannelRegistry,
   context.watch(bind.handler) // sign death pact
 
   val channel = bind.options
-    .collectFirst {
-      case creator: DatagramChannelCreator => creator
+    .collectFirst { case creator: DatagramChannelCreator =>
+      creator
     }
     .getOrElse(DatagramChannelCreator())
     .create()
@@ -65,10 +63,9 @@ private[io] class UdpListener(val udp: UdpExt, channelRegistry: ChannelRegistry,
         context.stop(self)
     }
 
-  def receive: Receive = {
-    case registration: ChannelRegistration =>
-      bindCommander ! Bound(channel.socket.getLocalSocketAddress.asInstanceOf[InetSocketAddress])
-      context.become(readHandlers(registration).orElse(sendHandlers(registration)), discardOld = true)
+  def receive: Receive = { case registration: ChannelRegistration =>
+    bindCommander ! Bound(channel.socket.getLocalSocketAddress.asInstanceOf[InetSocketAddress])
+    context.become(readHandlers(registration).orElse(sendHandlers(registration)), discardOld = true)
   }
 
   def readHandlers(registration: ChannelRegistration): Receive = {
@@ -82,11 +79,10 @@ private[io] class UdpListener(val udp: UdpExt, channelRegistry: ChannelRegistry,
       context.become(unregistering(sender()))
   }
 
-  def unregistering(requester: ActorRef): Receive = {
-    case Unbound =>
-      log.debug("Unbound endpoint [{}], stopping listener", bind.localAddress)
-      requester ! Unbound
-      context.stop(self)
+  def unregistering(requester: ActorRef): Receive = { case Unbound =>
+    log.debug("Unbound endpoint [{}], stopping listener", bind.localAddress)
+    requester ! Unbound
+    context.stop(self)
   }
 
   def doReceive(registration: ChannelRegistration, handler: ActorRef): Unit = {
@@ -101,7 +97,9 @@ private[io] class UdpListener(val udp: UdpExt, channelRegistry: ChannelRegistry,
           if (readsLeft > 0) innerReceive(readsLeft - 1, buffer)
         case null => // null means no data was available
         case unexpected =>
-          throw new RuntimeException(s"Unexpected address in buffer: $unexpected") // will not happen, for exhaustiveness check
+          throw new RuntimeException(
+            s"Unexpected address in buffer: $unexpected"
+          ) // will not happen, for exhaustiveness check
       }
     }
 

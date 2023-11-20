@@ -175,13 +175,13 @@ abstract class ClusterShardingFailureSpec(multiNodeConfig: ClusterShardingFailur
         val entity21 = lastSender
         val shard2 = system.actorSelection(entity21.path.parent)
 
-        //Test the ShardCoordinator allocating shards after a journal/network failure
+        // Test the ShardCoordinator allocating shards after a journal/network failure
         region ! Add("30", 3)
 
-        //Test the Shard starting entities and persisting after a journal/network failure
+        // Test the Shard starting entities and persisting after a journal/network failure
         region ! Add("11", 1)
 
-        //Test the Shard passivate works after a journal failure
+        // Test the Shard passivate works after a journal failure
         shard2.tell(Passivate(PoisonPill), entity21)
 
         awaitAssert {

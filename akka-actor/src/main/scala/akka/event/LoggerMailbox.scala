@@ -17,9 +17,7 @@ import akka.util.unused
 
 trait LoggerMessageQueueSemantics
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[akka] class LoggerMailboxType(@unused settings: ActorSystem.Settings, @unused config: Config)
     extends MailboxType
     with ProducesMessageQueue[LoggerMailbox] {
@@ -30,9 +28,7 @@ private[akka] class LoggerMailboxType(@unused settings: ActorSystem.Settings, @u
   }
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[akka] class LoggerMailbox(@unused owner: ActorRef, system: ActorSystem)
     extends UnboundedMailbox.MessageQueue
     with LoggerMessageQueueSemantics {

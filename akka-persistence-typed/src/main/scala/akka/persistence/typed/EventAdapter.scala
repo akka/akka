@@ -107,17 +107,13 @@ object EventSeq {
   override def size: Int = events.size
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object NoOpEventAdapter {
   private val i = new NoOpEventAdapter[Nothing]
   def instance[E]: NoOpEventAdapter[E] = i.asInstanceOf[NoOpEventAdapter[E]]
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] class NoOpEventAdapter[E] extends EventAdapter[E, Any] {
   override def toJournal(e: E): Any = e
   override def fromJournal(p: Any, manifest: String): EventSeq[E] = EventSeq.single(p.asInstanceOf[E])

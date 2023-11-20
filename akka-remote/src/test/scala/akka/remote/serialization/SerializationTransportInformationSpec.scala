@@ -72,8 +72,7 @@ object SerializationTransportInformationSpec {
 }
 
 class SerializationTransportInformationSpec
-    extends AkkaSpec(
-      ConfigFactory.parseString("""
+    extends AkkaSpec(ConfigFactory.parseString("""
     akka {
       loglevel = info
       actor {

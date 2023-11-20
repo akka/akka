@@ -15,14 +15,10 @@ import akka.annotation.InternalApi
 import akka.stream.StreamSubscriptionTimeoutSettings
 import akka.stream.StreamSubscriptionTimeoutTerminationMode.{ CancelTermination, NoopTermination, WarnTermination }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object StreamSubscriptionTimeoutSupport {
 
-  /**
-   * A subscriber who calls `cancel` directly from `onSubscribe` and ignores all other callbacks.
-   */
+  /** A subscriber who calls `cancel` directly from `onSubscribe` and ignores all other callbacks. */
   case object CancelingSubscriber extends Subscriber[Any] {
     override def onSubscribe(s: Subscription): Unit = {
       ReactiveStreamsCompliance.requireNonNullSubscription(s)
@@ -64,9 +60,7 @@ import akka.stream.StreamSubscriptionTimeoutTerminationMode.{ CancelTermination,
 
   import StreamSubscriptionTimeoutSupport._
 
-  /**
-   * Default settings for subscription timeouts.
-   */
+  /** Default settings for subscription timeouts. */
   protected def subscriptionTimeoutSettings: StreamSubscriptionTimeoutSettings
 
   /**
@@ -111,9 +105,7 @@ import akka.stream.StreamSubscriptionTimeoutTerminationMode.{ CancelTermination,
       target.getClass.getCanonicalName)
   }
 
-  /**
-   * Called by the actor when a subscription has timed out. Expects the actual `Publisher` or `Processor` target.
-   */
+  /** Called by the actor when a subscription has timed out. Expects the actual `Publisher` or `Processor` target. */
   @nowarn("msg=deprecated")
   protected def subscriptionTimedOut(target: Publisher[_]): Unit = subscriptionTimeoutSettings.mode match {
     case NoopTermination   => // ignore...
@@ -121,13 +113,9 @@ import akka.stream.StreamSubscriptionTimeoutTerminationMode.{ CancelTermination,
     case CancelTermination => cancel(target, subscriptionTimeoutSettings.timeout)
   }
 
-  /**
-   * Callback that should ensure that the target is canceled with the given cause.
-   */
+  /** Callback that should ensure that the target is canceled with the given cause. */
   protected def handleSubscriptionTimeout(target: Publisher[_], cause: Exception): Unit
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] class SubscriptionTimeoutException(msg: String) extends RuntimeException(msg)

@@ -157,7 +157,7 @@ abstract class AbstractFlowConcatSpec extends BaseTwoStreamsSetup {
       m1.isInstanceOf[NotUsed] should be(true)
       m2.isInstanceOf[NotUsed] should be(true)
 
-      runnable.mapMaterializedValue((_) => "boo").run() should be("boo")
+      runnable.mapMaterializedValue(_ => "boo").run() should be("boo")
     }
 
     "work with Flow DSL" in {
@@ -174,7 +174,7 @@ abstract class AbstractFlowConcatSpec extends BaseTwoStreamsSetup {
       m2.isInstanceOf[NotUsed] should be(true)
       m3.isInstanceOf[NotUsed] should be(true)
 
-      runnable.mapMaterializedValue((_) => "boo").run() should be("boo")
+      runnable.mapMaterializedValue(_ => "boo").run() should be("boo")
     }
 
     "work with Flow DSL2" in {
@@ -244,14 +244,14 @@ class FlowConcatSpec extends AbstractFlowConcatSpec with ScalaFutures {
 
   "concat" must {
     "work in example" in {
-      //#concat
+      // #concat
 
       val sourceA = Source(List(1, 2, 3, 4))
       val sourceB = Source(List(10, 20, 30, 40))
 
       sourceA.concat(sourceB).runWith(Sink.foreach(println))
-      //prints 1, 2, 3, 4, 10, 20, 30, 40
-      //#concat
+      // prints 1, 2, 3, 4, 10, 20, 30, 40
+      // #concat
     }
   }
 }
@@ -282,12 +282,12 @@ class FlowConcatLazySpec extends AbstractFlowConcatSpec {
     }
 
     "work in example" in {
-      //#concatLazy
+      // #concatLazy
       val sourceA = Source(List(1, 2, 3, 4))
       val sourceB = Source(List(10, 20, 30, 40))
 
       sourceA.concatLazy(sourceB).runWith(Sink.foreach(println))
-      //#concatLazy
+      // #concatLazy
     }
   }
 

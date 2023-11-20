@@ -43,7 +43,7 @@ private[io] class TcpOutgoingConnection(
   options.foreach(_.beforeConnect(channel.socket))
   localAddress.foreach(channel.socket.bind)
   channelRegistry.register(channel, 0)
-  timeout.foreach(context.setReceiveTimeout) //Initiate connection timeout if supplied
+  timeout.foreach(context.setReceiveTimeout) // Initiate connection timeout if supplied
 
   private def stop(cause: Throwable): Unit =
     stopWith(CloseInformation(Set(commander), CommandFailed(connect).withCause(cause)), shouldAbort = true)

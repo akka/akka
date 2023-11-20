@@ -23,8 +23,8 @@ class PiercingShouldKeepQuarantineSpecMultiJvmNode2 extends PiercingShouldKeepQu
 
 object PiercingShouldKeepQuarantineSpec {
   class Subject extends Actor {
-    def receive = {
-      case "getuid" => sender() ! context.system.asInstanceOf[ExtendedActorSystem].uid
+    def receive = { case "getuid" =>
+      sender() ! context.system.asInstanceOf[ExtendedActorSystem].uid
     }
   }
 }

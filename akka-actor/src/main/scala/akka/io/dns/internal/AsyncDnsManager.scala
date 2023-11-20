@@ -23,9 +23,7 @@ import akka.io.dns.internal.AsyncDnsManager.CacheCleanup
 import akka.routing.FromConfig
 import akka.util.Timeout
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] object AsyncDnsManager {
   private case object CacheCleanup
@@ -33,9 +31,7 @@ private[akka] object AsyncDnsManager {
   case object GetCache
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 @nowarn("msg=deprecated")
 private[io] final class AsyncDnsManager(
@@ -52,9 +48,7 @@ private[io] final class AsyncDnsManager(
   import akka.pattern.ask
   import akka.pattern.pipe
 
-  /**
-   * Ctr expected by the DnsExt for all DnsMangers
-   */
+  /** Ctr expected by the DnsExt for all DnsMangers */
   def this(ext: DnsExt) =
     this(
       ext.Settings.Resolver,
@@ -71,9 +65,13 @@ private[io] final class AsyncDnsManager(
 
   private val resolver = {
     val props: Props = FromConfig.props(
-      Props(provider.actorClass, settings, cache, (factory: ActorRefFactory, dns: List[InetSocketAddress]) => {
-        dns.map(ns => factory.actorOf(Props(new DnsClient(ns))))
-      }).withDeploy(Deploy.local).withDispatcher(dispatcher))
+      Props(
+        provider.actorClass,
+        settings,
+        cache,
+        (factory: ActorRefFactory, dns: List[InetSocketAddress]) => {
+          dns.map(ns => factory.actorOf(Props(new DnsClient(ns))))
+        }).withDeploy(Deploy.local).withDispatcher(dispatcher))
     context.actorOf(props, name)
   }
 

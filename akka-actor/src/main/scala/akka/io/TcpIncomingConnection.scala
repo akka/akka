@@ -32,7 +32,7 @@ private[io] class TcpIncomingConnection(
 
   registry.register(channel, initialOps = 0)
 
-  def receive = {
-    case registration: ChannelRegistration => completeConnect(registration, bindHandler, options)
+  def receive = { case registration: ChannelRegistration =>
+    completeConnect(registration, bindHandler, options)
   }
 }

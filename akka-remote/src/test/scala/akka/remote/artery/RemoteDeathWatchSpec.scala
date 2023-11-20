@@ -18,7 +18,8 @@ import akka.testkit.SocketUtil
 object RemoteDeathWatchSpec {
   val otherPort = ArteryMultiNodeSpec.freePort(ConfigFactory.load())
 
-  val config = ConfigFactory.parseString(s"""
+  val config = ConfigFactory
+    .parseString(s"""
     akka {
         actor {
             provider = remote
@@ -40,7 +41,8 @@ object RemoteDeathWatchSpec {
     # test is using Java serialization and not priority to rewrite
     akka.actor.allow-java-serialization = on
     akka.actor.warn-about-java-serializer-usage = off
-    """).withFallback(ArterySpecSupport.defaultConfig)
+    """)
+    .withFallback(ArterySpecSupport.defaultConfig)
 }
 
 class RemoteDeathWatchSpec
@@ -72,8 +74,8 @@ class RemoteDeathWatchSpec
         system.actorOf(Props(new Actor {
           context.watch(ref)
 
-          def receive = {
-            case Terminated(r) => testActor ! r
+          def receive = { case Terminated(r) =>
+            testActor ! r
           }
         }).withDeploy(Deploy.local))
 
@@ -85,15 +87,17 @@ class RemoteDeathWatchSpec
   "receive Terminated when watched node is unknown host" in {
     val path = RootActorPath(Address("akka", system.name, "unknownhost", 2552)) / "user" / "subject"
 
-    system.actorOf(Props(new Actor {
-      @nowarn
-      val watchee = RARP(context.system).provider.resolveActorRef(path)
-      context.watch(watchee)
+    system.actorOf(
+      Props(new Actor {
+        @nowarn
+        val watchee = RARP(context.system).provider.resolveActorRef(path)
+        context.watch(watchee)
 
-      def receive = {
-        case t: Terminated => testActor ! t.actor.path
-      }
-    }).withDeploy(Deploy.local), name = "observer2")
+        def receive = { case t: Terminated =>
+          testActor ! t.actor.path
+        }
+      }).withDeploy(Deploy.local),
+      name = "observer2")
 
     expectMsg(60.seconds, path)
   }

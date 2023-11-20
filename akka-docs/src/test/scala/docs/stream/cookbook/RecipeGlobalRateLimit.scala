@@ -18,7 +18,7 @@ class RecipeGlobalRateLimit extends RecipeSpec {
 
   "Global rate limiting recipe" must {
 
-    //#global-limiter-actor
+    // #global-limiter-actor
     object Limiter {
       case object WantToPass
       case object MayPass
@@ -75,11 +75,11 @@ class RecipeGlobalRateLimit extends RecipeSpec {
         waitQueue.foreach(_ ! Status.Failure(new IllegalStateException("limiter stopped")))
       }
     }
-    //#global-limiter-actor
+    // #global-limiter-actor
 
     "work" in {
 
-      //#global-limiter-flow
+      // #global-limiter-flow
       def limitGlobal[T](limiter: ActorRef, maxAllowedWait: FiniteDuration): Flow[T, T, NotUsed] = {
         import akka.pattern.ask
         import akka.util.Timeout
@@ -87,11 +87,11 @@ class RecipeGlobalRateLimit extends RecipeSpec {
           import system.dispatcher
           implicit val triggerTimeout = Timeout(maxAllowedWait)
           val limiterTriggerFuture = limiter ? Limiter.WantToPass
-          limiterTriggerFuture.map((_) => element)
+          limiterTriggerFuture.map(_ => element)
         })
 
       }
-      //#global-limiter-flow
+      // #global-limiter-flow
 
       // Use a large period and emulate the timer by hand instead
       val limiter = system.actorOf(Limiter.props(2, 100.days, 1), "limiter")

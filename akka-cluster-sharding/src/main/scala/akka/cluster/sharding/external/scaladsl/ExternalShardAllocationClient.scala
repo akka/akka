@@ -12,9 +12,7 @@ import akka.annotation.DoNotInherit
 import akka.cluster.sharding.ShardRegion.ShardId
 import akka.cluster.sharding.external.ShardLocations
 
-/**
- * Not for user extension
- */
+/** Not for user extension */
 @DoNotInherit
 trait ExternalShardAllocationClient {
 
@@ -41,8 +39,6 @@ trait ExternalShardAllocationClient {
    */
   def updateShardLocations(locations: Map[ShardId, Address]): Future[Done]
 
-  /**
-   * Get all the current shard locations that have been set via updateShardLocation
-   */
+  /** Get all the current shard locations that have been set via updateShardLocation */
   def shardLocations(): Future[ShardLocations]
 }

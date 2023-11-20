@@ -26,8 +26,7 @@ import akka.testkit.EventFilter
 import akka.testkit.TestKit
 import akka.testkit.TestProbe
 
-class CoordinatedShutdownSpec
-    extends AkkaSpec(ConfigFactory.parseString("""
+class CoordinatedShutdownSpec extends AkkaSpec(ConfigFactory.parseString("""
     akka.loglevel=INFO
     akka.loggers = ["akka.testkit.TestEventListener"]
   """)) {
@@ -40,18 +39,17 @@ class CoordinatedShutdownSpec
 
   private def checkTopologicalSort(phases: Map[String, Phase]): List[String] = {
     val result = CoordinatedShutdown.topologicalSort(phases)
-    result.zipWithIndex.foreach {
-      case (phase, i) =>
-        phases.get(phase) match {
-          case Some(Phase(dependsOn, _, _, _)) =>
-            dependsOn.foreach { depPhase =>
-              withClue(
-                s"phase [$phase] depends on [$depPhase] but was ordered before it in topological sort result $result") {
-                i should be > result.indexOf(depPhase)
-              }
+    result.zipWithIndex.foreach { case (phase, i) =>
+      phases.get(phase) match {
+        case Some(Phase(dependsOn, _, _, _)) =>
+          dependsOn.foreach { depPhase =>
+            withClue(
+              s"phase [$phase] depends on [$depPhase] but was ordered before it in topological sort result $result") {
+              i should be > result.indexOf(depPhase)
             }
-          case None => // ok
-        }
+          }
+        case None => // ok
+      }
     }
     result
   }
@@ -81,7 +79,8 @@ class CoordinatedShutdownSpec
       // a, b can be in any order
       result2.toSet should ===(Set("a", "b", "c"))
 
-      checkTopologicalSort(Map("b" -> phase("a"), "c" -> phase("b"), "d" -> phase("b", "c"), "e" -> phase("d"))) should ===(
+      checkTopologicalSort(
+        Map("b" -> phase("a"), "c" -> phase("b"), "d" -> phase("b", "c"), "e" -> phase("d"))) should ===(
         List("a", "b", "c", "d", "e"))
 
       val result3 =
@@ -333,9 +332,8 @@ class CoordinatedShutdownSpec
           c.cancel() shouldBe true
           Done
         }
-        cancelFutures.foldLeft(Future.successful(Done)) {
-          case (acc, fut) =>
-            acc.flatMap(_ => fut)
+        cancelFutures.foldLeft(Future.successful(Done)) { case (acc, fut) =>
+          acc.flatMap(_ => fut)
         }
       }
 
@@ -787,7 +785,7 @@ class CoordinatedShutdownSpec
     withSystemRunning(newSystem, cs)
 
     TestKit.shutdownActorSystem(newSystem)
-    shutdownHooks should have size (0)
+    shutdownHooks should have size 0
 
     protected def myHooksCount: Int = synchronized(shutdownHooks.size)
   }

@@ -14,9 +14,7 @@ import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.stage.{ GraphStageLogic, GraphStageWithMaterializedValue, OutHandler }
 import akka.util.OptionVal
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object MaybeSource
     extends GraphStageWithMaterializedValue[SourceShape[AnyRef], Promise[Option[AnyRef]]] {
   val out = Outlet[AnyRef]("MaybeSource.out")

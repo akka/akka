@@ -59,22 +59,21 @@ class DeviceGroupQuery(
 
   private val respondTemperatureAdapter = context.messageAdapter(WrappedRespondTemperature.apply)
 
-  //#query-outline
-  //#query-state
+  // #query-outline
+  // #query-state
   private var repliesSoFar = Map.empty[String, TemperatureReading]
   private var stillWaiting = deviceIdToActor.keySet
 
-  //#query-state
-  //#query-outline
+  // #query-state
+  // #query-outline
 
-  deviceIdToActor.foreach {
-    case (deviceId, device) =>
-      context.watchWith(device, DeviceTerminated(deviceId))
-      device ! Device.ReadTemperature(0, respondTemperatureAdapter)
+  deviceIdToActor.foreach { case (deviceId, device) =>
+    context.watchWith(device, DeviceTerminated(deviceId))
+    device ! Device.ReadTemperature(0, respondTemperatureAdapter)
   }
 
-  //#query-outline
-  //#query-state
+  // #query-outline
+  // #query-state
   override def onMessage(msg: Command): Behavior[Command] =
     msg match {
       case WrappedRespondTemperature(response) => onRespondTemperature(response)
@@ -108,9 +107,9 @@ class DeviceGroupQuery(
     stillWaiting = Set.empty
     respondWhenAllCollected()
   }
-  //#query-state
+  // #query-state
 
-  //#query-collect-reply
+  // #query-collect-reply
   private def respondWhenAllCollected(): Behavior[Command] = {
     if (stillWaiting.isEmpty) {
       requester ! RespondAllTemperatures(requestId, repliesSoFar)
@@ -119,8 +118,8 @@ class DeviceGroupQuery(
       this
     }
   }
-  //#query-collect-reply
-  //#query-outline
+  // #query-collect-reply
+  // #query-outline
 }
 //#query-outline
 //#query-full

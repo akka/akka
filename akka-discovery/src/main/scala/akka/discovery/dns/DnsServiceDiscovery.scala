@@ -30,9 +30,7 @@ import akka.pattern.ask
 import akka.util.OptionVal
 import akka.util.Timeout
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private object DnsServiceDiscovery {
   def srvRecordsToResolved(srvRequest: String, resolved: DnsProtocol.Resolved): Resolved = {
@@ -62,9 +60,7 @@ private object DnsServiceDiscovery {
 
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] class DnsServiceDiscovery(system: ExtendedActorSystem) extends ServiceDiscovery {
 

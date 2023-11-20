@@ -6,9 +6,7 @@ package akka.persistence.journal.leveldb
 
 import java.nio.ByteBuffer
 
-/**
- * LevelDB key.
- */
+/** LevelDB key. */
 private[leveldb] final case class Key(persistenceId: Int, sequenceNr: Long, mappingId: Int)
 
 private[leveldb] object Key {

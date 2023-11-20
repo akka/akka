@@ -13,9 +13,7 @@ import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
 import akka.io.Inet.{ DatagramChannelCreator, SocketOption }
 import akka.io.Udp._
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @nowarn("msg=deprecated")
 private[io] class UdpSender(
     val udp: UdpExt,
@@ -29,8 +27,8 @@ private[io] class UdpSender(
 
   val channel = {
     val datagramChannel = options
-      .collectFirst {
-        case creator: DatagramChannelCreator => creator
+      .collectFirst { case creator: DatagramChannelCreator =>
+        creator
       }
       .getOrElse(DatagramChannelCreator())
       .create()
@@ -42,14 +40,13 @@ private[io] class UdpSender(
   }
   channelRegistry.register(channel, initialOps = 0)
 
-  def receive: Receive = {
-    case registration: ChannelRegistration =>
-      options.foreach {
-        case v2: Inet.SocketOptionV2 => v2.afterConnect(channel.socket)
-        case _                       =>
-      }
-      commander ! SimpleSenderReady
-      context.become(sendHandlers(registration))
+  def receive: Receive = { case registration: ChannelRegistration =>
+    options.foreach {
+      case v2: Inet.SocketOptionV2 => v2.afterConnect(channel.socket)
+      case _                       =>
+    }
+    commander ! SimpleSenderReady
+    context.become(sendHandlers(registration))
   }
 
   override def postStop(): Unit = if (channel.isOpen) {

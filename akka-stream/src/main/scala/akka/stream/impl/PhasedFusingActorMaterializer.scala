@@ -45,9 +45,7 @@ import akka.stream.stage.InHandler
 import akka.stream.stage.OutHandler
 import akka.util.OptionVal
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object PhasedFusingActorMaterializer {
 
   val Debug = false
@@ -612,9 +610,7 @@ private final case class SavedIslandData(
   override def makeLogger(logSource: Class[Any]): LoggingAdapter =
     Logging(system, logSource)
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @nowarn("msg=deprecated")
   @InternalApi private[akka] override def actorOf(context: MaterializationContext, props: Props): ActorRef = {
     val effectiveProps = props.dispatcher match {
@@ -630,14 +626,10 @@ private final case class SavedIslandData(
 
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @DoNotInherit private[akka] trait IslandTag
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @DoNotInherit private[akka] trait Phase[M] {
   def apply(
       settings: ActorMaterializerSettings,
@@ -646,9 +638,7 @@ private final case class SavedIslandData(
       islandName: String): PhaseIsland[M]
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @DoNotInherit private[akka] trait PhaseIsland[M] {
 
   def name: String
@@ -672,14 +662,10 @@ private final case class SavedIslandData(
 
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object GraphStageTag extends IslandTag
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] final class GraphStageIsland(
     effectiveAttributes: Attributes,
     materializer: PhasedFusingActorMaterializer,
@@ -841,21 +827,18 @@ private final case class SavedIslandData(
         if (isIn) s"in port id [$missingHandlerIdx]"
         else s"out port id [$missingHandlerIdx]"
     }
-    throw new IllegalStateException(s"No handler defined in stage [${logic.toString}] for $portLabel." +
-    " All inlets and outlets must be assigned a handler with setHandler in the constructor of your graph stage logic.")
+    throw new IllegalStateException(
+      s"No handler defined in stage [${logic.toString}] for $portLabel." +
+      " All inlets and outlets must be assigned a handler with setHandler in the constructor of your graph stage logic.")
   }
 
   override def toString: String = "GraphStagePhase"
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object SourceModuleIslandTag extends IslandTag
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] final class SourceModulePhase(
     materializer: PhasedFusingActorMaterializer,
     islandName: String)
@@ -880,14 +863,10 @@ private final case class SavedIslandData(
   override def onIslandReady(): Unit = ()
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object SinkModuleIslandTag extends IslandTag
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] final class SinkModulePhase(materializer: PhasedFusingActorMaterializer, islandName: String)
     extends PhaseIsland[AnyRef] {
   override def name: String = s"SinkModule phase"
@@ -915,21 +894,17 @@ private final case class SavedIslandData(
     subscriberOrVirtualPublisher match {
       case v: VirtualPublisher[_]        => v.registerPublisher(publisher)
       case s: Subscriber[Any] @unchecked => publisher.subscribe(s)
-      case _                             => throw new IllegalStateException() // won't happen, compiler exhaustiveness check pleaser
+      case _ => throw new IllegalStateException() // won't happen, compiler exhaustiveness check pleaser
     }
   }
 
   override def onIslandReady(): Unit = ()
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object ProcessorModuleIslandTag extends IslandTag
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] final class ProcessorModulePhase() extends PhaseIsland[Processor[Any, Any]] {
   override def name: String = "ProcessorModulePhase"
   private[this] var processor: Processor[Any, Any] = _
@@ -950,14 +925,10 @@ private final case class SavedIslandData(
   override def onIslandReady(): Unit = ()
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object TlsModuleIslandTag extends IslandTag
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] final class TlsModulePhase(materializer: PhasedFusingActorMaterializer, islandName: String)
     extends PhaseIsland[NotUsed] {
   def name: String = "TlsModulePhase"

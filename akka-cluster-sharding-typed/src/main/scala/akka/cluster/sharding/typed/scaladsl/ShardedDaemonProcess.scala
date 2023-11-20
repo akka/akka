@@ -48,8 +48,8 @@ trait ShardedDaemonProcess extends Extension { javadslSelf: javadsl.ShardedDaemo
    *
    * @param behaviorFactory Given a unique id of `0` until `numberOfInstance` create the behavior for that actor.
    */
-  def init[T](name: String, numberOfInstances: Int, behaviorFactory: Int => Behavior[T])(
-      implicit classTag: ClassTag[T]): Unit
+  def init[T](name: String, numberOfInstances: Int, behaviorFactory: Int => Behavior[T])(implicit
+      classTag: ClassTag[T]): Unit
 
   /**
    * Start a specific number of actors that is then kept alive in the cluster.
@@ -59,8 +59,8 @@ trait ShardedDaemonProcess extends Extension { javadslSelf: javadsl.ShardedDaemo
    * @param stopMessage sent to the actors when they need to stop because of a rebalance across the nodes of the cluster
    *                    or cluster shutdown.
    */
-  def init[T](name: String, numberOfInstances: Int, behaviorFactory: Int => Behavior[T], stopMessage: T)(
-      implicit classTag: ClassTag[T]): Unit
+  def init[T](name: String, numberOfInstances: Int, behaviorFactory: Int => Behavior[T], stopMessage: T)(implicit
+      classTag: ClassTag[T]): Unit
 
   /**
    * Start a specific number of actors, each with a unique numeric id in the set, that is then kept alive in the cluster.
@@ -105,8 +105,8 @@ trait ShardedDaemonProcess extends Extension { javadslSelf: javadsl.ShardedDaemo
   def initWithContext[T](
       name: String,
       initialNumberOfInstances: Int,
-      behaviorFactory: ShardedDaemonProcessContext => Behavior[T])(
-      implicit classTag: ClassTag[T]): ActorRef[ShardedDaemonProcessCommand]
+      behaviorFactory: ShardedDaemonProcessContext => Behavior[T])(implicit
+      classTag: ClassTag[T]): ActorRef[ShardedDaemonProcessCommand]
 
   /**
    * Start a specific number of actors, each with a unique numeric id in the set, that is then kept alive in the cluster.
@@ -142,12 +142,10 @@ trait ShardedDaemonProcess extends Extension { javadslSelf: javadsl.ShardedDaemo
       behaviorFactory: ShardedDaemonProcessContext => Behavior[T],
       settings: ShardedDaemonProcessSettings,
       stopMessage: Option[T],
-      shardAllocationStrategy: Option[ShardAllocationStrategy])(
-      implicit classTag: ClassTag[T]): ActorRef[ShardedDaemonProcessCommand]
+      shardAllocationStrategy: Option[ShardAllocationStrategy])(implicit
+      classTag: ClassTag[T]): ActorRef[ShardedDaemonProcessCommand]
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[akka] def asJava: javadsl.ShardedDaemonProcess = javadslSelf
 
 }

@@ -8,11 +8,9 @@ import scala.concurrent.Future
 
 import akka.persistence.PersistentRepr
 
-/**
- * Asynchronous message replay and sequence number recovery interface.
- */
+/** Asynchronous message replay and sequence number recovery interface. */
 trait AsyncRecovery {
-  //#journal-plugin-api
+  // #journal-plugin-api
   /**
    * Plugin API: asynchronously replays persistent messages. Implementations replay
    * a message by calling `replayCallback`. The returned future must be completed
@@ -68,5 +66,5 @@ trait AsyncRecovery {
    *                       snapshot or `0L` if no snapshot is used.
    */
   def asyncReadHighestSequenceNr(persistenceId: String, fromSequenceNr: Long): Future[Long]
-  //#journal-plugin-api
+  // #journal-plugin-api
 }

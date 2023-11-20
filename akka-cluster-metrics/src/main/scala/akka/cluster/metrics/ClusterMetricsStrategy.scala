@@ -19,16 +19,12 @@ class ClusterMetricsStrategy(config: Config)
       withinTimeRange = config.getMillisDuration("withinTimeRange"),
       loggingEnabled = config.getBoolean("loggingEnabled"))(ClusterMetricsStrategy.metricsDecider)
 
-/**
- * Provide custom metrics strategy resources.
- */
+/** Provide custom metrics strategy resources. */
 object ClusterMetricsStrategy {
   import akka.actor._
   import akka.actor.SupervisorStrategy._
 
-  /**
-   * [[akka.actor.SupervisorStrategy]] `Decider` which allows to survive intermittent Sigar native method calls failures.
-   */
+  /** [[akka.actor.SupervisorStrategy]] `Decider` which allows to survive intermittent Sigar native method calls failures. */
   val metricsDecider: SupervisorStrategy.Decider = {
     case _: ActorInitializationException => Stop
     case _: ActorKilledException         => Stop

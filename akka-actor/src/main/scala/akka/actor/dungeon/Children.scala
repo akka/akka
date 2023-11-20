@@ -123,9 +123,9 @@ private[akka] trait Children { this: ActorCell =>
       }
 
       if (actor match {
-            case r: RepointableRef => r.isStarted
-            case _                 => true
-          }) shallDie(actor)
+          case r: RepointableRef => r.isStarted
+          case _                 => true
+        }) shallDie(actor)
     }
     actor.asInstanceOf[InternalActorRef].stop()
   }
@@ -273,17 +273,16 @@ private[akka] trait Children { this: ActorCell =>
         if (oldInfo eq null)
           Serialization.currentTransportInformation.value = system.provider.serializationInformation
 
-        props.args.forall(
-          arg =>
-            arg == null ||
-            arg.isInstanceOf[NoSerializationVerificationNeeded] ||
-            settings.NoSerializationVerificationNeededClassPrefix.exists(arg.getClass.getName.startsWith) || {
-              val o = arg.asInstanceOf[AnyRef]
-              val serializer = ser.findSerializerFor(o)
-              val bytes = serializer.toBinary(o)
-              val ms = Serializers.manifestFor(serializer, o)
-              ser.deserialize(bytes, serializer.identifier, ms).get != null
-            })
+        props.args.forall(arg =>
+          arg == null ||
+          arg.isInstanceOf[NoSerializationVerificationNeeded] ||
+          settings.NoSerializationVerificationNeededClassPrefix.exists(arg.getClass.getName.startsWith) || {
+            val o = arg.asInstanceOf[AnyRef]
+            val serializer = ser.findSerializerFor(o)
+            val bytes = serializer.toBinary(o)
+            val ms = Serializers.manifestFor(serializer, o)
+            ser.deserialize(bytes, serializer.identifier, ms).get != null
+          })
       } catch {
         case NonFatal(e) =>
           throw new IllegalArgumentException(s"pre-creation serialization check failed at [${cell.self.path}/$name]", e)

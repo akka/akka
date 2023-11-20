@@ -29,9 +29,7 @@ final case class SerializationCheckFailedException private[dungeon] (msg: Object
       "To avoid this error, either disable 'akka.actor.serialize-messages', mark the message with 'akka.actor.NoSerializationVerificationNeeded', or configure serialization to support this message",
       cause)
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] trait Dispatch { this: ActorCell =>
 
@@ -115,9 +113,7 @@ private[akka] trait Dispatch { this: ActorCell =>
     this
   }
 
-  /**
-   * Start this cell, i.e. attach it to the dispatcher.
-   */
+  /** Start this cell, i.e. attach it to the dispatcher. */
   def start(): this.type = {
     // This call is expected to start off the actor by scheduling its mailbox.
     dispatcher.attach(this)
@@ -179,11 +175,12 @@ private[akka] trait Dispatch { this: ActorCell =>
         if (system.settings.NoSerializationVerificationNeededClassPrefix.exists(msg.getClass.getName.startsWith))
           envelope
         else {
-          val deserializedMsg = try {
-            serializeAndDeserializePayload(msg)
-          } catch {
-            case NonFatal(e) => throw SerializationCheckFailedException(msg, e)
-          }
+          val deserializedMsg =
+            try {
+              serializeAndDeserializePayload(msg)
+            } catch {
+              case NonFatal(e) => throw SerializationCheckFailedException(msg, e)
+            }
           envelope.message match {
             case dl: DeadLetter => envelope.copy(message = dl.copy(message = deserializedMsg))
             case _              => envelope.copy(message = deserializedMsg)

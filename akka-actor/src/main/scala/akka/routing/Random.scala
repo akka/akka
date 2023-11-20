@@ -20,9 +20,7 @@ object RandomRoutingLogic {
   def apply(): RandomRoutingLogic = new RandomRoutingLogic
 }
 
-/**
- * Randomly selects one of the target routees to send a message to
- */
+/** Randomly selects one of the target routees to send a message to */
 @nowarn("msg=@SerialVersionUID has no effect")
 @SerialVersionUID(1L)
 final class RandomRoutingLogic extends RoutingLogic {
@@ -87,14 +85,10 @@ final case class RandomPool(
 
   override def nrOfInstances(sys: ActorSystem) = this.nrOfInstances
 
-  /**
-   * Setting the supervisor strategy to be used for the “head” Router actor.
-   */
+  /** Setting the supervisor strategy to be used for the “head” Router actor. */
   def withSupervisorStrategy(strategy: SupervisorStrategy): RandomPool = copy(supervisorStrategy = strategy)
 
-  /**
-   * Setting the resizer to be used.
-   */
+  /** Setting the resizer to be used. */
   def withResizer(resizer: Resizer): RandomPool = copy(resizer = Some(resizer))
 
   /**

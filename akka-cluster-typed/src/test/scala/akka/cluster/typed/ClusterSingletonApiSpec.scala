@@ -58,9 +58,11 @@ class ClusterSingletonApiSpec
 
   val system2 = akka.actor.ActorSystem(
     system.name,
-    ConfigFactory.parseString("""
+    ConfigFactory
+      .parseString("""
         akka.cluster.roles = ["singleton"]
-      """).withFallback(system.settings.config))
+      """)
+      .withFallback(system.settings.config))
   val adaptedSystem2 = system2.toTyped
   val clusterNode2 = Cluster(adaptedSystem2)
 
@@ -95,15 +97,19 @@ class ClusterSingletonApiSpec
       val node1PongProbe = TestProbe[Pong.type]()(system)
       val node2PongProbe = TestProbe[Pong.type]()(adaptedSystem2)
 
-      node1PongProbe.awaitAssert({
-        node1ref ! Ping(node1PongProbe.ref)
-        node1PongProbe.expectMessage(Pong)
-      }, 3.seconds)
+      node1PongProbe.awaitAssert(
+        {
+          node1ref ! Ping(node1PongProbe.ref)
+          node1PongProbe.expectMessage(Pong)
+        },
+        3.seconds)
 
-      node2PongProbe.awaitAssert({
-        node2ref ! Ping(node2PongProbe.ref)
-        node2PongProbe.expectMessage(Pong)
-      }, 3.seconds)
+      node2PongProbe.awaitAssert(
+        {
+          node2ref ! Ping(node2PongProbe.ref)
+          node2PongProbe.expectMessage(Pong)
+        },
+        3.seconds)
 
     }
   }

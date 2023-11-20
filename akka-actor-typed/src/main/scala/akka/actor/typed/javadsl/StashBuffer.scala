@@ -4,7 +4,7 @@
 
 package akka.actor.typed.javadsl
 
-import java.util.function.{ Predicate, Function => JFunction }
+import java.util.function.{ Function => JFunction, Predicate }
 
 import akka.actor.typed.{ scaladsl, Behavior }
 import akka.annotation.DoNotInherit
@@ -48,9 +48,7 @@ import akka.japi.function.Procedure
    */
   def capacity: Int
 
-  /**
-   * @return `true` if no more messages can be added, i.e. size equals the capacity of the stash buffer
-   */
+  /** @return `true` if no more messages can be added, i.e. size equals the capacity of the stash buffer */
   def isFull: Boolean
 
   /**
@@ -96,9 +94,7 @@ import akka.japi.function.Procedure
    */
   def anyMatch(predicate: Predicate[T]): Boolean
 
-  /**
-   * Removes all messages from the buffer.
-   */
+  /** Removes all messages from the buffer. */
   def clear(): Unit
 
   /**
@@ -144,7 +140,5 @@ import akka.japi.function.Procedure
 
 }
 
-/**
- * Is thrown when the size of the stash exceeds the capacity of the stash buffer.
- */
+/** Is thrown when the size of the stash exceeds the capacity of the stash buffer. */
 final class StashOverflowException(message: String) extends scaladsl.StashOverflowException(message)

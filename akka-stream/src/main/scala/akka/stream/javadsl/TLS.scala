@@ -92,9 +92,7 @@ object TLS {
  */
 object TLSPlacebo {
 
-  /**
-   * Returns a reusable [[BidiFlow]] instance representing a [[TLSPlacebo$]].
-   */
+  /** Returns a reusable [[BidiFlow]] instance representing a [[TLSPlacebo$]]. */
   def getInstance(): javadsl.BidiFlow[SslTlsOutbound, ByteString, ByteString, SessionBytes, NotUsed] = forJava
 
   private val forJava: javadsl.BidiFlow[SslTlsOutbound, ByteString, ByteString, SessionBytes, NotUsed] =

@@ -81,10 +81,12 @@ class ActorTestKitSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike wi
 
     "spawn a named actor" in {
       val spawnedWithName = Promise[String]()
-      spawn(Behaviors.setup[AnyRef] { context =>
-        spawnedWithName.trySuccess(context.self.path.name)
-        Behaviors.empty
-      }, "name")
+      spawn(
+        Behaviors.setup[AnyRef] { context =>
+          spawnedWithName.trySuccess(context.self.path.name)
+          Behaviors.empty
+        },
+        "name")
 
       spawnedWithName.future.futureValue should ===("name")
     }

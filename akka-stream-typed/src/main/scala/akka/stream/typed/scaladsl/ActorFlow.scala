@@ -15,16 +15,14 @@ import akka.stream._
 import akka.stream.scaladsl._
 import akka.util.Timeout
 
-/**
- * Collection of Flows aimed at integrating with typed Actors.
- */
+/** Collection of Flows aimed at integrating with typed Actors. */
 object ActorFlow {
 
   // TODO would be nice to provide Implicits to allow .ask() directly on Flow/Source
 
-  private def askImpl[I, Q, A, O](parallelism: Int)(ref: ActorRef[Q])(
-      makeMessage: (I, ActorRef[A]) => Q,
-      makeOut: (I, Future[A]) => Future[O])(implicit timeout: Timeout): Flow[I, O, NotUsed] = {
+  private def askImpl[I, Q, A, O](parallelism: Int)(
+      ref: ActorRef[Q])(makeMessage: (I, ActorRef[A]) => Q, makeOut: (I, Future[A]) => Future[O])(implicit
+      timeout: Timeout): Flow[I, O, NotUsed] = {
     import akka.actor.typed.scaladsl.adapter._
     val classicRef = ref.toClassic
 
@@ -91,8 +89,8 @@ object ActorFlow {
    * @tparam A Answer type that the Actor is expected to reply with, it will become the Output type of this Flow
    */
   @implicitNotFound("Missing an implicit akka.util.Timeout for the ask() stage")
-  def ask[I, Q, A](ref: ActorRef[Q])(makeMessage: (I, ActorRef[A]) => Q)(
-      implicit timeout: Timeout): Flow[I, A, NotUsed] =
+  def ask[I, Q, A](ref: ActorRef[Q])(makeMessage: (I, ActorRef[A]) => Q)(implicit
+      timeout: Timeout): Flow[I, A, NotUsed] =
     ask(parallelism = 2)(ref)(makeMessage)(timeout)
 
   /**
@@ -130,16 +128,16 @@ object ActorFlow {
    * @tparam A answer type that the Actor is expected to reply with, it will become the Output type of this Flow
    */
   @implicitNotFound("Missing an implicit akka.util.Timeout for the ask() stage")
-  def ask[I, Q, A](parallelism: Int)(ref: ActorRef[Q])(makeMessage: (I, ActorRef[A]) => Q)(
-      implicit timeout: Timeout): Flow[I, A, NotUsed] = askImpl(parallelism)(ref)(makeMessage, (_, o: Future[A]) => o)
+  def ask[I, Q, A](parallelism: Int)(ref: ActorRef[Q])(makeMessage: (I, ActorRef[A]) => Q)(implicit
+      timeout: Timeout): Flow[I, A, NotUsed] = askImpl(parallelism)(ref)(makeMessage, (_, o: Future[A]) => o)
 
   /**
    * Use for messages whose response is known to be a [[akka.pattern.StatusReply]]. When a [[akka.pattern.StatusReply#success]] response
    * arrives the future is completed with the wrapped value, if a [[akka.pattern.StatusReply#error]] arrives the future is instead
    * failed.
    */
-  def askWithStatus[I, Q, A](ref: ActorRef[Q])(makeMessage: (I, ActorRef[StatusReply[A]]) => Q)(
-      implicit timeout: Timeout): Flow[I, A, NotUsed] =
+  def askWithStatus[I, Q, A](ref: ActorRef[Q])(makeMessage: (I, ActorRef[StatusReply[A]]) => Q)(implicit
+      timeout: Timeout): Flow[I, A, NotUsed] =
     askWithStatus(2)(ref)(makeMessage)
 
   /**
@@ -157,20 +155,16 @@ object ActorFlow {
 
   }
 
-  /**
-   * Use the `ask` pattern to send a request-reply message to the target `ref` actor without including the context.
-   */
+  /** Use the `ask` pattern to send a request-reply message to the target `ref` actor without including the context. */
   @implicitNotFound("Missing an implicit akka.util.Timeout for the ask() stage")
-  def askWithContext[I, Q, A, Ctx](ref: ActorRef[Q])(makeMessage: (I, ActorRef[A]) => Q)(
-      implicit timeout: Timeout): Flow[(I, Ctx), (A, Ctx), NotUsed] =
+  def askWithContext[I, Q, A, Ctx](ref: ActorRef[Q])(makeMessage: (I, ActorRef[A]) => Q)(implicit
+      timeout: Timeout): Flow[(I, Ctx), (A, Ctx), NotUsed] =
     askWithContext(parallelism = 2)(ref)(makeMessage)
 
-  /**
-   * Use the `ask` pattern to send a request-reply message to the target `ref` actor without including the context.
-   */
+  /** Use the `ask` pattern to send a request-reply message to the target `ref` actor without including the context. */
   @implicitNotFound("Missing an implicit akka.util.Timeout for the ask() stage")
-  def askWithContext[I, Q, A, Ctx](parallelism: Int)(ref: ActorRef[Q])(makeMessage: (I, ActorRef[A]) => Q)(
-      implicit timeout: Timeout): Flow[(I, Ctx), (A, Ctx), NotUsed] =
+  def askWithContext[I, Q, A, Ctx](parallelism: Int)(ref: ActorRef[Q])(makeMessage: (I, ActorRef[A]) => Q)(implicit
+      timeout: Timeout): Flow[(I, Ctx), (A, Ctx), NotUsed] =
     askImpl[(I, Ctx), Q, A, (A, Ctx)](parallelism)(ref)(
       (in, r) => makeMessage(in._1, r),
       (in, o: Future[A]) => o.map(a => a -> in._2)(ExecutionContexts.parasitic))
@@ -180,8 +174,8 @@ object ActorFlow {
    * arrives the future is completed with the wrapped value, if a [[akka.pattern.StatusReply#error]] arrives the future is instead
    * failed.
    */
-  def askWithStatusAndContext[I, Q, A, Ctx](ref: ActorRef[Q])(makeMessage: (I, ActorRef[StatusReply[A]]) => Q)(
-      implicit timeout: Timeout): Flow[(I, Ctx), (A, Ctx), NotUsed] =
+  def askWithStatusAndContext[I, Q, A, Ctx](ref: ActorRef[Q])(makeMessage: (I, ActorRef[StatusReply[A]]) => Q)(implicit
+      timeout: Timeout): Flow[(I, Ctx), (A, Ctx), NotUsed] =
     askWithStatusAndContext(2)(ref)(makeMessage)
 
   /**

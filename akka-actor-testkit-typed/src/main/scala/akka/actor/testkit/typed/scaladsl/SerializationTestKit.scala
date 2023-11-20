@@ -9,9 +9,7 @@ import akka.actor.typed.scaladsl.adapter._
 import akka.serialization.SerializationExtension
 import akka.serialization.Serializers
 
-/**
- * Utilities to test serialization.
- */
+/** Utilities to test serialization. */
 class SerializationTestKit(system: ActorSystem[_]) {
 
   private val serialization = SerializationExtension(system.toClassic)

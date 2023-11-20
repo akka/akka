@@ -26,8 +26,8 @@ class MultiNodeSampleSpecMultiJvmNode2 extends MultiNodeSample
 
 object MultiNodeSample {
   class Ponger extends Actor {
-    def receive = {
-      case "ping" => sender() ! "pong"
+    def receive = { case "ping" =>
+      sender() ! "pong"
     }
   }
 }

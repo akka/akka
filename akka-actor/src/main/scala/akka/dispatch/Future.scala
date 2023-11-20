@@ -19,12 +19,10 @@ import akka.annotation.InternalApi
 import akka.annotation.InternalStableApi
 import akka.compat
 import akka.dispatch.internal.SameThreadExecutionContext
-import akka.japi.{ Procedure, Function => JFunc, Option => JOption }
+import akka.japi.{ Function => JFunc, Option => JOption, Procedure }
 import akka.util.unused
 
-/**
- * ExecutionContexts is the Java API for ExecutionContexts
- */
+/** ExecutionContexts is the Java API for ExecutionContexts */
 object ExecutionContexts {
 
   /**
@@ -71,9 +69,7 @@ object ExecutionContexts {
       errorReporter: Procedure[Throwable]): ExecutionContextExecutorService =
     ExecutionContext.fromExecutorService(executorService, errorReporter.apply)
 
-  /**
-   * @return a reference to the global ExecutionContext
-   */
+  /** @return a reference to the global ExecutionContext */
   def global(): ExecutionContextExecutor = ExecutionContext.global
 
   /**
@@ -90,9 +86,7 @@ object ExecutionContexts {
   @InternalStableApi
   private[akka] val parasitic: ExecutionContext = SameThreadExecutionContext()
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi
   @deprecated("Use ExecutionContexts.parasitic instead", "2.6.4")
   private[akka] object sameThreadExecutionContext extends ExecutionContext with BatchingExecutor {
@@ -104,9 +98,7 @@ object ExecutionContexts {
 
 }
 
-/**
- * Futures is the Java API for Futures and Promises
- */
+/** Futures is the Java API for Futures and Promises */
 object Futures {
   import akka.util.ccompat.JavaConverters._
 
@@ -128,28 +120,20 @@ object Futures {
    */
   def promise[T](): Promise[T] = Promise[T]()
 
-  /**
-   * creates an already completed Promise with the specified exception
-   */
+  /** creates an already completed Promise with the specified exception */
   def failed[T](exception: Throwable): Future[T] = Future.failed(exception)
 
-  /**
-   * Creates an already completed Promise with the specified result
-   */
+  /** Creates an already completed Promise with the specified result */
   def successful[T](result: T): Future[T] = Future.successful(result)
 
-  /**
-   * Creates an already completed CompletionStage with the specified exception
-   */
+  /** Creates an already completed CompletionStage with the specified exception */
   def failedCompletionStage[T](ex: Throwable): CompletionStage[T] = {
     val f = CompletableFuture.completedFuture[T](null.asInstanceOf[T])
     f.obtrudeException(ex)
     f
   }
 
-  /**
-   * Returns a Future that will hold the optional result of the first Future with a result that matches the predicate
-   */
+  /** Returns a Future that will hold the optional result of the first Future with a result that matches the predicate */
   def find[T <: AnyRef](
       futures: JIterable[Future[T]],
       predicate: JFunc[T, java.lang.Boolean],
@@ -158,9 +142,7 @@ object Futures {
     compat.Future.find[T](futures.asScala)(predicate.apply(_))(executor).map(JOption.fromScalaOption)
   }
 
-  /**
-   * Returns a Future to the result of the first future in the list that is completed
-   */
+  /** Returns a Future to the result of the first future in the list that is completed */
   def firstCompletedOf[T <: AnyRef](futures: JIterable[Future[T]], executor: ExecutionContext): Future[T] =
     Future.firstCompletedOf(futures.asScala)(executor)
 
@@ -177,9 +159,7 @@ object Futures {
       executor: ExecutionContext): Future[R] =
     compat.Future.fold(futures.asScala)(zero)(fun.apply)(executor)
 
-  /**
-   * Reduces the results of the supplied futures and binary function.
-   */
+  /** Reduces the results of the supplied futures and binary function. */
   def reduce[T <: AnyRef, R >: T](
       futures: JIterable[Future[T]],
       fun: akka.japi.Function2[R, T, R],

@@ -5,7 +5,7 @@
 package akka.persistence.typed.javadsl
 
 import java.util.Objects
-import java.util.function.{ BiFunction, Predicate, Supplier, Function => JFunction }
+import java.util.function.{ BiFunction, Function => JFunction, Predicate, Supplier }
 
 import scala.compat.java8.FunctionConverters._
 
@@ -178,9 +178,7 @@ object EventHandlerBuilderByState {
   def builder[State, Event](statePredicate: Predicate[State]): EventHandlerBuilderByState[State, State, Event] =
     new EventHandlerBuilderByState(classOf[Any].asInstanceOf[Class[State]], statePredicate)
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private final case class EventHandlerCase[State, Event](
       statePredicate: State => Boolean,
       eventPredicate: Event => Boolean,
@@ -197,11 +195,11 @@ final class EventHandlerBuilderByState[S <: State, State, Event](
 
   private def addCase(eventPredicate: Event => Boolean, handler: BiFunction[State, Event, State]): Unit = {
     cases = EventHandlerCase[State, Event](
-        statePredicate = state =>
-          if (state == null) statePredicate.test(state.asInstanceOf[S])
-          else statePredicate.test(state.asInstanceOf[S]) && stateClass.isAssignableFrom(state.getClass),
-        eventPredicate = eventPredicate,
-        handler) :: cases
+      statePredicate = state =>
+        if (state == null) statePredicate.test(state.asInstanceOf[S])
+        else statePredicate.test(state.asInstanceOf[S]) && stateClass.isAssignableFrom(state.getClass),
+      eventPredicate = eventPredicate,
+      handler) :: cases
   }
 
   /**
@@ -231,9 +229,11 @@ final class EventHandlerBuilderByState[S <: State, State, Event](
   def onEvent[E <: Event](
       eventClass: Class[E],
       handler: JFunction[E, State]): EventHandlerBuilderByState[S, State, Event] = {
-    onEvent[E](eventClass, new BiFunction[S, E, State] {
-      override def apply(state: S, event: E): State = handler(event)
-    })
+    onEvent[E](
+      eventClass,
+      new BiFunction[S, E, State] {
+        override def apply(state: S, event: E): State = handler(event)
+      })
   }
 
   /**

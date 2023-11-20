@@ -19,7 +19,7 @@ import akka.persistence.typed.scaladsl.EventSourcedBehavior
 import akka.persistence.typed.scaladsl.ReplicatedEventSourcing
 
 object ReplicatedMovieWatchListExampleSpec {
-  //#movie-entity
+  // #movie-entity
   object MovieWatchList {
     sealed trait Command
     final case class AddMovie(movieId: String) extends Command
@@ -57,7 +57,7 @@ object ReplicatedMovieWatchListExampleSpec {
     }
 
   }
-  //#movie-entity
+  // #movie-entity
 
 }
 

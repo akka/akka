@@ -21,10 +21,9 @@ object SpawnProtocolSpec {
   case object Pong
 
   val target: Behavior[Message] =
-    Behaviors.receiveMessage {
-      case Ping(replyTo) =>
-        replyTo ! Pong
-        Behaviors.same
+    Behaviors.receiveMessage { case Ping(replyTo) =>
+      replyTo ! Pong
+      Behaviors.same
     }
 }
 

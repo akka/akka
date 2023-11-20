@@ -14,11 +14,10 @@ class Murmur2Spec extends AnyWordSpecLike with Matchers {
     // expected correct hash values from the kafka murmur2 impl
     // https://github.com/apache/kafka/blob/db42afd6e24ef4291390b4d1c1f10758beedefed/clients/src/main/java/org/apache/kafka/common/utils/Utils.java#L500
     Seq("1" -> -1993445489, "12" -> 126087238, "123" -> -267702483, "1234" -> -1614185708, "12345" -> -1188365604)
-      .foreach {
-        case (string, expectedHash) =>
-          s"calculate the correct checksum for '$string'" in {
-            Murmur2.murmur2(string.getBytes(UTF_8)) should ===(expectedHash)
-          }
+      .foreach { case (string, expectedHash) =>
+        s"calculate the correct checksum for '$string'" in {
+          Murmur2.murmur2(string.getBytes(UTF_8)) should ===(expectedHash)
+        }
       }
   }
 }

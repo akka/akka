@@ -32,15 +32,15 @@ object TestKitDocSpec {
 
   class TestFsmActor extends Actor with FSM[Int, String] {
     startWith(1, "")
-    when(1) {
-      case Event("go", _) => goto(2).using("go")
+    when(1) { case Event("go", _) =>
+      goto(2).using("go")
     }
-    when(2) {
-      case Event("back", _) => goto(1).using("back")
+    when(2) { case Event("back", _) =>
+      goto(1).using("back")
     }
   }
 
-  //#my-double-echo
+  // #my-double-echo
   class MyDoubleEcho extends Actor {
     var dest1: ActorRef = _
     var dest2: ActorRef = _
@@ -54,49 +54,46 @@ object TestKitDocSpec {
     }
   }
 
-  //#my-double-echo
+  // #my-double-echo
 
-  //#test-probe-forward-actors
+  // #test-probe-forward-actors
   class Source(target: ActorRef) extends Actor {
-    def receive = {
-      case "start" => target ! "work"
+    def receive = { case "start" =>
+      target ! "work"
     }
   }
 
   class Destination extends Actor {
-    def receive = {
-      case x => // Do something..
+    def receive = { case x => // Do something..
     }
   }
 
-  //#test-probe-forward-actors
+  // #test-probe-forward-actors
 
-  //#timer
+  // #timer
   case class TriggerScheduling(foo: String)
 
   object SchedKey
   case class ScheduledMessage(foo: String)
 
   class TestTimerActor extends Actor with Timers {
-    override def receive = {
-      case TriggerScheduling(foo) => triggerScheduling(ScheduledMessage(foo))
+    override def receive = { case TriggerScheduling(foo) =>
+      triggerScheduling(ScheduledMessage(foo))
     }
 
     def triggerScheduling(msg: ScheduledMessage) =
       timers.startSingleTimer(SchedKey, msg, 500.millis)
   }
-  //#timer
+  // #timer
 
   class LoggingActor extends Actor {
-    //#logging-receive
+    // #logging-receive
     import akka.event.LoggingReceive
-    def receive = LoggingReceive {
-      case msg => // Do something ...
+    def receive = LoggingReceive { case msg => // Do something ...
     }
-    def otherState: Receive = LoggingReceive.withLabel("other") {
-      case msg => // Do something else ...
+    def otherState: Receive = LoggingReceive.withLabel("other") { case msg => // Do something else ...
     }
-    //#logging-receive
+    // #logging-receive
   }
 }
 
@@ -104,12 +101,12 @@ class TestKitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
   import TestKitDocSpec._
 
   "demonstrate usage of TestActorRef" in {
-    //#test-actor-ref
+    // #test-actor-ref
     import akka.testkit.TestActorRef
 
     val actorRef = TestActorRef[MyActor]
     val actor = actorRef.underlyingActor
-    //#test-actor-ref
+    // #test-actor-ref
   }
 
   "demonstrate built-in expect methods" in {
@@ -119,25 +116,25 @@ class TestKitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
     testActor.tell("hello", ActorRef.noSender)
     testActor.tell("world", ActorRef.noSender)
     testActor.tell(42, ActorRef.noSender)
-    //#test-expect
+    // #test-expect
     val hello: String = expectMsg("hello")
     val any: String = expectMsgAnyOf("hello", "world")
     val all: immutable.Seq[String] = expectMsgAllOf("hello", "world")
     val i: Int = expectMsgType[Int]
     expectNoMessage(200.millis)
-    //#test-expect
+    // #test-expect
     testActor.tell("receveN-1", ActorRef.noSender)
     testActor.tell("receveN-2", ActorRef.noSender)
-    //#test-expect
+    // #test-expect
     val two: immutable.Seq[AnyRef] = receiveN(2)
-    //#test-expect
+    // #test-expect
     assert("hello" == hello)
     assert("hello" == any)
     assert(42 == i)
   }
 
   "demonstrate usage of TestFSMRef" in {
-    //#test-fsm-ref
+    // #test-fsm-ref
     import akka.testkit.TestFSMRef
     import scala.concurrent.duration._
 
@@ -159,12 +156,12 @@ class TestKitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
     assert(fsm.isTimerActive("test") == true)
     fsm.cancelTimer("test")
     assert(fsm.isTimerActive("test") == false)
-    //#test-fsm-ref
+    // #test-fsm-ref
   }
 
   "demonstrate testing of behavior" in {
 
-    //#test-behavior
+    // #test-behavior
     import akka.testkit.TestActorRef
     import akka.pattern.ask
 
@@ -172,35 +169,35 @@ class TestKitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
     // hypothetical message stimulating a '42' answer
     val future: Future[Any] = actorRef ? Say42
     future.futureValue should be(42)
-    //#test-behavior
+    // #test-behavior
   }
 
   "demonstrate unhandled message" in {
-    //#test-unhandled
+    // #test-unhandled
     import akka.testkit.TestActorRef
     system.eventStream.subscribe(testActor, classOf[UnhandledMessage])
     val ref = TestActorRef[MyActor]
     ref.receive(Unknown)
     expectMsg(1 second, UnhandledMessage(Unknown, system.deadLetters, ref))
-    //#test-unhandled
+    // #test-unhandled
   }
 
   "demonstrate expecting exceptions" in {
-    //#test-expecting-exceptions
+    // #test-expecting-exceptions
     import akka.testkit.TestActorRef
 
     val actorRef = TestActorRef(new Actor {
-      def receive = {
-        case "hello" => throw new IllegalArgumentException("boom")
+      def receive = { case "hello" =>
+        throw new IllegalArgumentException("boom")
       }
     })
     intercept[IllegalArgumentException] { actorRef.receive("hello") }
-    //#test-expecting-exceptions
+    // #test-expecting-exceptions
   }
 
   "demonstrate within" in {
     type Worker = MyActor
-    //#test-within
+    // #test-within
     import akka.actor.Props
     import scala.concurrent.duration._
 
@@ -211,19 +208,19 @@ class TestKitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
       expectNoMessage() // will block for the rest of the 200ms
       Thread.sleep(300) // will NOT make this block fail
     }
-    //#test-within
+    // #test-within
   }
 
   "demonstrate dilated duration" in {
-    //#duration-dilation
+    // #duration-dilation
     import scala.concurrent.duration._
     import akka.testkit._
     10.milliseconds.dilated
-    //#duration-dilation
+    // #duration-dilation
   }
 
   "demonstrate usage of probe" in {
-    //#test-probe
+    // #test-probe
     val probe1 = TestProbe()
     val probe2 = TestProbe()
     val actor = system.actorOf(Props[MyDoubleEcho]())
@@ -231,9 +228,9 @@ class TestKitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
     actor ! "hello"
     probe1.expectMsg(500 millis, "hello")
     probe2.expectMsg(500 millis, "hello")
-    //#test-probe
+    // #test-probe
 
-    //#test-special-probe
+    // #test-special-probe
     final case class Update(id: Int, value: String)
 
     val probe = new TestProbe(system) {
@@ -244,58 +241,58 @@ class TestKitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
         sender() ! "ACK"
       }
     }
-    //#test-special-probe
+    // #test-special-probe
   }
 
   "demonstrate usage of test probe with custom name" in {
-    //#test-probe-with-custom-name
+    // #test-probe-with-custom-name
     val worker = TestProbe("worker")
     val aggregator = TestProbe("aggregator")
 
     worker.ref.path.name should startWith("worker")
     aggregator.ref.path.name should startWith("aggregator")
-    //#test-probe-with-custom-name
+    // #test-probe-with-custom-name
   }
 
   "demonstrate probe watch" in {
     import akka.testkit.TestProbe
     val target = system.actorOf(Props.empty)
-    //#test-probe-watch
+    // #test-probe-watch
     val probe = TestProbe()
     probe.watch(target)
     target ! PoisonPill
     probe.expectTerminated(target)
-    //#test-probe-watch
+    // #test-probe-watch
   }
 
   "demonstrate probe reply" in {
     import akka.testkit.TestProbe
     import scala.concurrent.duration._
     import akka.pattern.ask
-    //#test-probe-reply
+    // #test-probe-reply
     val probe = TestProbe()
     val future = probe.ref ? "hello"
     probe.expectMsg(0 millis, "hello") // TestActor runs on CallingThreadDispatcher
     probe.reply("world")
     assert(future.isCompleted && future.value.contains(Success("world")))
-    //#test-probe-reply
+    // #test-probe-reply
   }
 
   "demonstrate probe forward" in {
     import akka.testkit.TestProbe
     import akka.actor.Props
-    //#test-probe-forward
+    // #test-probe-forward
     val probe = TestProbe()
     val source = system.actorOf(Props(classOf[Source], probe.ref))
     val dest = system.actorOf(Props[Destination]())
     source ! "start"
     probe.expectMsg("work")
     probe.forward(dest)
-    //#test-probe-forward
+    // #test-probe-forward
   }
 
   "demonstrate using inheritance to test timers" in {
-    //#timer-test
+    // #timer-test
     import akka.testkit.TestProbe
     import akka.actor.Props
 
@@ -307,18 +304,18 @@ class TestKitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
 
     actor ! TriggerScheduling("abc")
     probe.expectMsg(ScheduledMessage("abc"))
-    //#timer-test
+    // #timer-test
   }
 
   "demonstrate calling thread dispatcher" in {
-    //#calling-thread-dispatcher
+    // #calling-thread-dispatcher
     import akka.testkit.CallingThreadDispatcher
     val ref = system.actorOf(Props[MyActor]().withDispatcher(CallingThreadDispatcher.Id))
-    //#calling-thread-dispatcher
+    // #calling-thread-dispatcher
   }
 
   "demonstrate EventFilter" in {
-    //#event-filter
+    // #event-filter
     import akka.testkit.EventFilter
     import com.typesafe.config.ConfigFactory
 
@@ -335,36 +332,36 @@ class TestKitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
     } finally {
       shutdown(system)
     }
-    //#event-filter
+    // #event-filter
   }
 
   "demonstrate TestKitBase" in {
-    //#test-kit-base
+    // #test-kit-base
     import akka.testkit.TestKitBase
 
     class MyTest extends TestKitBase {
       implicit lazy val system: ActorSystem = ActorSystem()
 
-      //#put-your-test-code-here
+      // #put-your-test-code-here
       val probe = TestProbe()
       probe.send(testActor, "hello")
       try expectMsg("hello")
       catch { case NonFatal(e) => system.terminate(); throw e }
-      //#put-your-test-code-here
+      // #put-your-test-code-here
 
       shutdown(system)
     }
-    //#test-kit-base
+    // #test-kit-base
   }
 
   "demonstrate within() nesting" in {
     intercept[AssertionError] {
-      //#test-within-probe
+      // #test-within-probe
       val probe = TestProbe()
       within(1 second) {
         probe.expectMsg("hello")
       }
-      //#test-within-probe
+      // #test-within-probe
     }
   }
 

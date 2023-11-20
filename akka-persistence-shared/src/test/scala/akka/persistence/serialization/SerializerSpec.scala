@@ -297,8 +297,8 @@ class MessageSerializerPersistenceSpec extends AkkaSpec(customSerializers) {
 
 object MessageSerializerRemotingSpec {
   class LocalActor(port: Int) extends Actor {
-    def receive = {
-      case m => context.actorSelection(s"akka://remote@127.0.0.1:${port}/user/remote").tell(m, Actor.noSender)
+    def receive = { case m =>
+      context.actorSelection(s"akka://remote@127.0.0.1:${port}/user/remote").tell(m, Actor.noSender)
     }
   }
 

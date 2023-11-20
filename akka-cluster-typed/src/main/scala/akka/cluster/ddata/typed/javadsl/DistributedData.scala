@@ -84,9 +84,7 @@ abstract class DistributedData extends Extension {
   def selfUniqueAddress: SelfUniqueAddress
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] class DistributedDataImpl(system: ActorSystem[_]) extends DistributedData {
 
   override val replicator: ActorRef[Replicator.Command] =

@@ -49,10 +49,12 @@ object SendQueueSpec {
   }
 }
 
-class SendQueueSpec extends AkkaSpec("""
+class SendQueueSpec
+    extends AkkaSpec("""
     akka.stream.materializer.debug.fuzzing-mode = on
     akka.stream.secret-test-fuzzing-warning-disable = yep
-  """) with ImplicitSender {
+  """)
+    with ImplicitSender {
   import SendQueueSpec._
 
   def sendToDeadLetters[T](pending: Vector[T]): Unit =

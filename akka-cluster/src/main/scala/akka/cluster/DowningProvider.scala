@@ -9,9 +9,7 @@ import scala.concurrent.duration.FiniteDuration
 import akka.ConfigurationException
 import akka.actor.{ ActorSystem, ExtendedActorSystem, Props }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[cluster] object DowningProvider {
 
   /**
@@ -23,8 +21,8 @@ private[cluster] object DowningProvider {
     val eas = system.asInstanceOf[ExtendedActorSystem]
     eas.dynamicAccess
       .createInstanceFor[DowningProvider](fqcn, List((classOf[ActorSystem], system)))
-      .recover {
-        case e => throw new ConfigurationException(s"Could not create cluster downing provider [$fqcn]", e)
+      .recover { case e =>
+        throw new ConfigurationException(s"Could not create cluster downing provider [$fqcn]", e)
       }
       .get
   }
@@ -66,9 +64,7 @@ abstract class DowningProvider {
 
 }
 
-/**
- * Default downing provider used when no provider is configured.
- */
+/** Default downing provider used when no provider is configured. */
 final class NoDowning(system: ActorSystem) extends DowningProvider {
   override def downRemovalMargin: FiniteDuration = Cluster(system).settings.DownRemovalMargin
   override val downingActorProps: Option[Props] = None

@@ -34,11 +34,11 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
 
     "produce exactly one element" in {
       implicit val ec = system.dispatcher
-      //#source-single
+      // #source-single
       val s: Future[immutable.Seq[Int]] = Source.single(1).runWith(Sink.seq)
       s.foreach(list => println(s"Collected elements: $list")) // prints: Collected elements: List(1)
 
-      //#source-single
+      // #source-single
 
       s.futureValue should ===(immutable.Seq(1))
 
@@ -185,14 +185,16 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
 
       // compiler to check the correct materialized value of type = SourceQueueWithComplete[Int] available
       val combined1: Source[Int, BoundedSourceQueue[Int]] =
-        Source.combineMat(queueSource, intSeqSource)(Concat(_))(Keep.left) //Keep.left (i.e. preserve queueSource's materialized value)
+        Source.combineMat(queueSource, intSeqSource)(Concat(_))(
+          Keep.left
+        ) // Keep.left (i.e. preserve queueSource's materialized value)
 
       val (queue1, sinkProbe1) = combined1.toMat(TestSink[Int]())(Keep.both).run()
       sinkProbe1.request(6)
       queue1.offer(10)
       queue1.offer(20)
       queue1.offer(30)
-      queue1.complete() //complete queueSource so that combined1 with `Concat` then pulls elements from intSeqSource
+      queue1.complete() // complete queueSource so that combined1 with `Concat` then pulls elements from intSeqSource
       sinkProbe1.expectNext(10)
       sinkProbe1.expectNext(20)
       sinkProbe1.expectNext(30)
@@ -202,19 +204,23 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
 
       // compiler to check the correct materialized value of type = SourceQueueWithComplete[Int] available
       val combined2: Source[Int, BoundedSourceQueue[Int]] =
-        //queueSource to be the second of combined source
-        Source.combineMat(intSeqSource, queueSource)(Concat(_))(Keep.right) //Keep.right (i.e. preserve queueSource's materialized value)
+        // queueSource to be the second of combined source
+        Source.combineMat(intSeqSource, queueSource)(Concat(_))(
+          Keep.right
+        ) // Keep.right (i.e. preserve queueSource's materialized value)
 
       val (queue2, sinkProbe2) = combined2.toMat(TestSink[Int]())(Keep.both).run()
       sinkProbe2.request(6)
       queue2.offer(10)
       queue2.offer(20)
       queue2.offer(30)
-      queue2.complete() //complete queueSource so that combined1 with `Concat` then pulls elements from queueSource
-      sinkProbe2.expectNext(1) //as intSeqSource iss the first in combined source, elements from intSeqSource come first
+      queue2.complete() // complete queueSource so that combined1 with `Concat` then pulls elements from queueSource
+      sinkProbe2.expectNext(
+        1
+      ) // as intSeqSource iss the first in combined source, elements from intSeqSource come first
       sinkProbe2.expectNext(2)
       sinkProbe2.expectNext(3)
-      sinkProbe2.expectNext(10) //after intSeqSource run out elements, queueSource elements come
+      sinkProbe2.expectNext(10) // after intSeqSource run out elements, queueSource elements come
       sinkProbe2.expectNext(20)
       sinkProbe2.expectNext(30)
     }
@@ -258,13 +264,14 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
     "terminate with a failure if there is an exception thrown" in {
       val t = new RuntimeException("expected")
       EventFilter[RuntimeException](message = "expected", occurrences = 1).intercept(
-        whenReady(Source
-          .unfold((0, 1)) {
-            case (a, _) if a > 10000000 => throw t
-            case (a, b)                 => Some((b, a + b) -> a)
-          }
-          .runFold(List.empty[Int]) { case (xs, x) => x :: xs }
-          .failed) { x =>
+        whenReady(
+          Source
+            .unfold((0, 1)) {
+              case (a, _) if a > 10000000 => throw t
+              case (a, b)                 => Some((b, a + b) -> a)
+            }
+            .runFold(List.empty[Int]) { case (xs, x) => x :: xs }
+            .failed) { x =>
           (x should be).theSameInstanceAs(t)
         })
     }
@@ -281,7 +288,7 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
 
     "generate an unbounded fibonacci sequence" in {
       Source
-        .unfold((0, 1))({ case (a, b) => Some((b, a + b) -> a) })
+        .unfold((0, 1)) { case (a, b) => Some((b, a + b) -> a) }
         .take(36)
         .runFold(List.empty[Int]) { case (xs, x) => x :: xs }
         .futureValue should ===(expected)
@@ -389,24 +396,24 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
 
     "continuously generate the same sequence" in {
       val expected = Seq(1, 2, 3, 1, 2, 3, 1, 2, 3)
-      //#cycle
+      // #cycle
       Source
         .cycle(() => List(1, 2, 3).iterator)
         .grouped(9)
         .runWith(Sink.head)
         // This will produce the Seq(1, 2, 3, 1, 2, 3, 1, 2, 3)
-        //#cycle
+        // #cycle
         .futureValue should ===(expected)
     }
 
     "throw an exception in case of empty iterator" in {
-      //#cycle-error
+      // #cycle-error
       val empty = Iterator.empty
       Source
         .cycle(() => empty)
         .runWith(Sink.head)
         // This will return a failed future with an `IllegalArgumentException`
-        //#cycle-error
+        // #cycle-error
         .failed
         .futureValue shouldBe an[IllegalArgumentException]
     }

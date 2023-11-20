@@ -12,9 +12,7 @@ import akka.actor.Terminated
 import akka.annotation.{ InternalApi, InternalStableApi }
 import akka.util.MessageBuffer
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object RecoveryPermitter {
   def props(maxPermits: Int): Props =
     Props(new RecoveryPermitter(maxPermits))

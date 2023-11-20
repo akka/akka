@@ -16,9 +16,7 @@ import akka.stream._
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.stage.{ GraphStage, GraphStageLogic, OutHandler }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] final class Unfold[S, E](s: S, f: S => Option[(S, E)]) extends GraphStage[SourceShape[E]] {
   val out: Outlet[E] = Outlet("Unfold.out")
   override val shape: SourceShape[E] = SourceShape(out)
@@ -39,9 +37,7 @@ import akka.stream.stage.{ GraphStage, GraphStageLogic, OutHandler }
     }
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] final class UnfoldAsync[S, E](s: S, f: S => Future[Option[(S, E)]])
     extends GraphStage[SourceShape[E]] {
   val out: Outlet[E] = Outlet("UnfoldAsync.out")

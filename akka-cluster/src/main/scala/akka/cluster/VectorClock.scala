@@ -16,9 +16,7 @@ import scala.collection.immutable.TreeMap
  */
 private[cluster] object VectorClock {
 
-  /**
-   * Hash representation of a versioned node name.
-   */
+  /** Hash representation of a versioned node name. */
   type Node = String
 
   object Node {
@@ -31,7 +29,7 @@ private[cluster] object VectorClock {
       val digester = MessageDigest.getInstance("MD5")
       digester.update(name.getBytes("UTF-8"))
       digester.digest.map { h =>
-        "%02x".format(0xFF & h)
+        "%02x".format(0xff & h)
       }.mkString
     }
   }
@@ -47,14 +45,10 @@ private[cluster] object VectorClock {
   case object Same extends Ordering
   case object Concurrent extends Ordering
 
-  /**
-   * Marker to ensure that we do a full order comparison instead of bailing out early.
-   */
+  /** Marker to ensure that we do a full order comparison instead of bailing out early. */
   private case object FullOrder extends Ordering
 
-  /**
-   * Marker to signal that we have reached the end of a vector clock.
-   */
+  /** Marker to signal that we have reached the end of a vector clock. */
   private val cmpEndMarker = (VectorClock.Node("endmarker"), Timestamp.EndMarker)
 
 }
@@ -74,32 +68,22 @@ final case class VectorClock(versions: TreeMap[VectorClock.Node, Long] = TreeMap
 
   import VectorClock._
 
-  /**
-   * Increment the version for the node passed as argument. Returns a new VectorClock.
-   */
+  /** Increment the version for the node passed as argument. Returns a new VectorClock. */
   def :+(node: Node): VectorClock = {
     val currentTimestamp = versions.getOrElse(node, Timestamp.Zero)
     copy(versions = versions.updated(node, currentTimestamp + 1))
   }
 
-  /**
-   * Returns true if <code>this</code> and <code>that</code> are concurrent else false.
-   */
+  /** Returns true if <code>this</code> and <code>that</code> are concurrent else false. */
   def <>(that: VectorClock): Boolean = compareOnlyTo(that, Concurrent) eq Concurrent
 
-  /**
-   * Returns true if <code>this</code> is before <code>that</code> else false.
-   */
+  /** Returns true if <code>this</code> is before <code>that</code> else false. */
   def <(that: VectorClock): Boolean = compareOnlyTo(that, Before) eq Before
 
-  /**
-   * Returns true if <code>this</code> is after <code>that</code> else false.
-   */
+  /** Returns true if <code>this</code> is after <code>that</code> else false. */
   def >(that: VectorClock): Boolean = compareOnlyTo(that, After) eq After
 
-  /**
-   * Returns true if this VectorClock has the same history as the 'that' VectorClock else false.
-   */
+  /** Returns true if this VectorClock has the same history as the 'that' VectorClock else false. */
   def ==(that: VectorClock): Boolean = compareOnlyTo(that, Same) eq Same
 
   /**
@@ -176,9 +160,7 @@ final case class VectorClock(versions: TreeMap[VectorClock.Node, Long] = TreeMap
     compareOnlyTo(that, FullOrder)
   }
 
-  /**
-   * Merges this VectorClock with another VectorClock. E.g. merges its versioned history.
-   */
+  /** Merges this VectorClock with another VectorClock. E.g. merges its versioned history. */
   def merge(that: VectorClock): VectorClock = {
     var mergedVersions = that.versions
     for ((node, time) <- versions) {

@@ -47,14 +47,18 @@ object ConcurrentStartupShardingSpec {
 
     override def preStart(): Unit = {
       val region =
-        ClusterSharding(context.system).start(s"type-$n", Props.empty, ClusterShardingSettings(context.system), {
-          case msg => (msg.toString, msg)
-        }, _ => "1")
+        ClusterSharding(context.system).start(
+          s"type-$n",
+          Props.empty,
+          ClusterShardingSettings(context.system),
+          { case msg =>
+            (msg.toString, msg)
+          },
+          _ => "1")
       probe ! region
     }
 
-    def receive = {
-      case _ =>
+    def receive = { case _ =>
     }
   }
 }

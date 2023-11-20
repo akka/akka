@@ -36,9 +36,7 @@ import akka.util.{ ByteString => AkkaByteString }
 import akka.util.ccompat._
 import akka.util.ccompat.JavaConverters._
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @ccompatUsedUntil213
 @InternalApi
 private[akka] object ReplicatorMessageSerializer {
@@ -66,9 +64,7 @@ private[akka] object ReplicatorMessageSerializer {
     // so we use non-volatile
     private var lastUsed = System.nanoTime()
 
-    /**
-     * Get value from cache or `null` if it doesn't exist.
-     */
+    /** Get value from cache or `null` if it doesn't exist. */
     def get(a: A): B = get(a, n.get)
 
     private def get(a: A, startPos: Int): B = {
@@ -147,9 +143,7 @@ private[akka] object ReplicatorMessageSerializer {
   }
 }
 
-/**
- * Protobuf serializer of ReplicatorMessage messages.
- */
+/** Protobuf serializer of ReplicatorMessage messages. */
 class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
     extends SerializerWithStringManifest
     with SerializationSupport
@@ -265,16 +259,15 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
   private def statusToProto(status: Status): dm.Status = {
     val b = dm.Status.newBuilder()
     b.setChunk(status.chunk).setTotChunks(status.totChunks)
-    status.digests.foreach {
-      case (key, (digest, usedTimestamp)) =>
-        val entryBuilder =
-          dm.Status.Entry
-            .newBuilder()
-            .setKey(key)
-            .setDigest(ByteStringUtils.toProtoByteStringUnsafe(digest.toArrayUnsafe()))
-        if (usedTimestamp != 0L)
-          entryBuilder.setUsedTimestamp(usedTimestamp)
-        b.addEntries(entryBuilder)
+    status.digests.foreach { case (key, (digest, usedTimestamp)) =>
+      val entryBuilder =
+        dm.Status.Entry
+          .newBuilder()
+          .setKey(key)
+          .setDigest(ByteStringUtils.toProtoByteStringUnsafe(digest.toArrayUnsafe()))
+      if (usedTimestamp != 0L)
+        entryBuilder.setUsedTimestamp(usedTimestamp)
+      b.addEntries(entryBuilder)
     }
     status.toSystemUid.foreach(b.setToSystemUid) // can be None when sending back to a node of version 2.5.21
     b.setFromSystemUid(status.fromSystemUid.get)
@@ -297,13 +290,12 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
 
   private def gossipToProto(gossip: Gossip): dm.Gossip = {
     val b = dm.Gossip.newBuilder().setSendBack(gossip.sendBack)
-    gossip.updatedData.foreach {
-      case (key, (data, usedTimestamp)) =>
-        val entryBuilder =
-          dm.Gossip.Entry.newBuilder().setKey(key).setEnvelope(dataEnvelopeToProto(data))
-        if (usedTimestamp != 0L)
-          entryBuilder.setUsedTimestamp(usedTimestamp)
-        b.addEntries(entryBuilder)
+    gossip.updatedData.foreach { case (key, (data, usedTimestamp)) =>
+      val entryBuilder =
+        dm.Gossip.Entry.newBuilder().setKey(key).setEnvelope(dataEnvelopeToProto(data))
+      if (usedTimestamp != 0L)
+        entryBuilder.setUsedTimestamp(usedTimestamp)
+      b.addEntries(entryBuilder)
     }
     gossip.toSystemUid.foreach(b.setToSystemUid) // can be None when sending back to a node of version 2.5.21
     b.setFromSystemUid(gossip.fromSystemUid.get)
@@ -327,16 +319,15 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
     val b = dm.DeltaPropagation.newBuilder().setFromNode(uniqueAddressToProto(deltaPropagation._fromNode))
     if (deltaPropagation.reply)
       b.setReply(deltaPropagation.reply)
-    deltaPropagation.deltas.foreach {
-      case (key, Delta(data, fromSeqNr, toSeqNr)) =>
-        val b2 = dm.DeltaPropagation.Entry
-          .newBuilder()
-          .setKey(key)
-          .setEnvelope(dataEnvelopeToProto(data))
-          .setFromSeqNr(fromSeqNr)
-        if (toSeqNr != fromSeqNr)
-          b2.setToSeqNr(toSeqNr)
-        b.addEntries(b2)
+    deltaPropagation.deltas.foreach { case (key, Delta(data, fromSeqNr, toSeqNr)) =>
+      val b2 = dm.DeltaPropagation.Entry
+        .newBuilder()
+        .setKey(key)
+        .setEnvelope(dataEnvelopeToProto(data))
+        .setFromSeqNr(fromSeqNr)
+      if (toSeqNr != fromSeqNr)
+        b2.setToSeqNr(toSeqNr)
+      b.addEntries(b2)
     }
     b.build()
   }
@@ -356,7 +347,7 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
 
   private def getToProto(get: Get[_]): dm.Get = {
     val timoutInMillis = get.consistency.timeout.toMillis
-    require(timoutInMillis <= 0XFFFFFFFFL, "Timeouts must fit in a 32-bit unsigned int")
+    require(timoutInMillis <= 0xffffffffL, "Timeouts must fit in a 32-bit unsigned int")
 
     val b = dm.Get.newBuilder().setKey(otherMessageToProto(get.key)).setTimeout(timoutInMillis.toInt)
 
@@ -489,23 +480,22 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
   }
 
   private def pruningToProto(entries: Map[UniqueAddress, PruningState]): Iterable[dm.DataEnvelope.PruningEntry] = {
-    entries.map {
-      case (removedAddress, state) =>
-        val b = dm.DataEnvelope.PruningEntry.newBuilder().setRemovedAddress(uniqueAddressToProto(removedAddress))
-        state match {
-          case PruningState.PruningInitialized(owner, seen) =>
-            seen.toVector.sorted(Member.addressOrdering).map(addressToProto).foreach { a =>
-              b.addSeen(a)
-            }
-            b.setOwnerAddress(uniqueAddressToProto(owner))
-            b.setPerformed(false)
-          case PruningState.PruningPerformed(obsoleteTime) =>
-            b.setPerformed(true).setObsoleteTime(obsoleteTime)
-            // TODO ownerAddress is only needed for PruningInitialized, but kept here for
-            // wire backwards compatibility with 2.4.16 (required field)
-            b.setOwnerAddress(uniqueAddressToProto(dummyAddress))
-        }
-        b.build()
+    entries.map { case (removedAddress, state) =>
+      val b = dm.DataEnvelope.PruningEntry.newBuilder().setRemovedAddress(uniqueAddressToProto(removedAddress))
+      state match {
+        case PruningState.PruningInitialized(owner, seen) =>
+          seen.toVector.sorted(Member.addressOrdering).map(addressToProto).foreach { a =>
+            b.addSeen(a)
+          }
+          b.setOwnerAddress(uniqueAddressToProto(owner))
+          b.setPerformed(false)
+        case PruningState.PruningPerformed(obsoleteTime) =>
+          b.setPerformed(true).setObsoleteTime(obsoleteTime)
+          // TODO ownerAddress is only needed for PruningInitialized, but kept here for
+          // wire backwards compatibility with 2.4.16 (required field)
+          b.setOwnerAddress(uniqueAddressToProto(dummyAddress))
+      }
+      b.build()
     }
   }
 

@@ -10,9 +10,7 @@ import akka.annotation.InternalApi
 import akka.event.Logging
 import akka.util.OptionVal
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object TimerSchedulerImpl {
   sealed trait TimerMsg {
     def key: Any
@@ -43,9 +41,7 @@ import akka.util.OptionVal
   }
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] class TimerSchedulerImpl(ctx: ActorContext) extends TimerScheduler {
   import TimerSchedulerImpl._
 

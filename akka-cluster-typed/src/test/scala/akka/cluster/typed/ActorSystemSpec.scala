@@ -109,10 +109,13 @@ class ActorSystemSpec
 
   "An ActorSystem" must {
     "start the guardian actor and terminate when it terminates" in {
-      withSystem("a", Behaviors.receiveMessage[Probe] { p =>
-        p.replyTo ! p.message
-        Behaviors.stopped
-      }, doTerminate = false) { sys =>
+      withSystem(
+        "a",
+        Behaviors.receiveMessage[Probe] { p =>
+          p.replyTo ! p.message
+          Behaviors.stopped
+        },
+        doTerminate = false) { sys =>
         val inbox = TestInbox[String]("a")
         sys ! Probe("hello", inbox.ref)
         eventually {
@@ -138,14 +141,15 @@ class ActorSystemSpec
 
     "terminate the guardian actor" in {
       val inbox = TestInbox[String]("terminate")
-      val sys = system(Behaviors.setup[Any] { _ =>
-        inbox.ref ! "started"
-        Behaviors.receiveSignal {
-          case (_, PostStop) =>
+      val sys = system(
+        Behaviors.setup[Any] { _ =>
+          inbox.ref ! "started"
+          Behaviors.receiveSignal { case (_, PostStop) =>
             inbox.ref ! "done"
             Behaviors.same
-        }
-      }, "terminate")
+          }
+        },
+        "terminate")
 
       eventually {
         inbox.hasMessages should ===(true)
@@ -160,9 +164,11 @@ class ActorSystemSpec
     }
 
     "be able to terminate immediately" in {
-      val sys = system(Behaviors.receiveMessage[Probe] { _ =>
-        Behaviors.unhandled
-      }, "terminate")
+      val sys = system(
+        Behaviors.receiveMessage[Probe] { _ =>
+          Behaviors.unhandled
+        },
+        "terminate")
       // for this case the guardian might not have been started before
       // the system terminates and then it will not receive PostStop, which
       // is OK since it wasn't really started yet

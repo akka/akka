@@ -16,7 +16,7 @@ object MapConcat {
     implicit val system: ActorSystem = ActorSystem()
     implicit val ec: ExecutionContext = system.dispatcher
 
-    //#map-concat
+    // #map-concat
     def duplicate(i: Int): List[Int] = List(i, i)
 
     Source(1 to 3).mapConcat(i => duplicate(i)).runForeach(println)
@@ -27,7 +27,7 @@ object MapConcat {
     // 2
     // 3
     // 3
-    //#map-concat
+    // #map-concat
 
   }
 

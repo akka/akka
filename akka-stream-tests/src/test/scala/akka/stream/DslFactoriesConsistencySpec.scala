@@ -152,21 +152,40 @@ class DslFactoriesConsistencySpec extends AnyWordSpec with Matchers {
       Ignore(_ == akka.stream.scaladsl.Sink.getClass, _ == "apply", _ == 24, _ => true),
       Ignore(_ == akka.stream.scaladsl.Sink.getClass, _ == "collection", _ => true, _ => true),
       Ignore(_ == akka.stream.scaladsl.Sink.getClass, _ == "actorRef", _ => true, _ => true), // Internal in scaladsl
-      Ignore(_ == akka.stream.scaladsl.Sink.getClass, _ == "actorRefWithAck", _ => true, _ => true), // Internal in scaladsl
-      Ignore(_ == akka.stream.scaladsl.Sink.getClass, _ == "actorRefWithBackpressure", _ => true, _ => true), // Internal in scaladsl
+      Ignore(
+        _ == akka.stream.scaladsl.Sink.getClass,
+        _ == "actorRefWithAck",
+        _ => true,
+        _ => true
+      ), // Internal in scaladsl
+      Ignore(
+        _ == akka.stream.scaladsl.Sink.getClass,
+        _ == "actorRefWithBackpressure",
+        _ => true,
+        _ => true
+      ), // Internal in scaladsl
       Ignore(_ == akka.stream.scaladsl.Source.getClass, _ == "actorRef", _ => true, _ => true), // Internal in scaladsl
-      Ignore(_ == akka.stream.scaladsl.Source.getClass, _ == "actorRefWithAck", _ => true, _ => true), // Internal in scaladsl
-      Ignore(_ == akka.stream.scaladsl.Source.getClass, _ == "actorRefWithBackpressure", _ => true, _ => true), // Internal in scaladsl
+      Ignore(
+        _ == akka.stream.scaladsl.Source.getClass,
+        _ == "actorRefWithAck",
+        _ => true,
+        _ => true
+      ), // Internal in scaladsl
+      Ignore(
+        _ == akka.stream.scaladsl.Source.getClass,
+        _ == "actorRefWithBackpressure",
+        _ => true,
+        _ => true
+      ), // Internal in scaladsl
       Ignore(_ == akka.stream.scaladsl.BidiFlow.getClass, _ == "apply", _ == 24, _ => true),
       Ignore(_ == akka.stream.scaladsl.GraphDSL.getClass, _ == "runnable", _ == 24, _ => true),
       Ignore(_ == akka.stream.scaladsl.GraphDSL.getClass, _ == "create", _ == 24, _ => true),
       // all generated methods like scaladsl.Sink$.akka$stream$scaladsl$Sink$$newOnCompleteStage$1
       Ignore(_ => true, _.contains("$"), _ => true, _ => true))
 
-    ignores.foldLeft(false) {
-      case (acc, i) =>
-        acc || (i.cls(m.declaringClass) && i.name(m.name) && i.parameters(m.parameterTypes.length) && i.paramTypes(
-          m.parameterTypes))
+    ignores.foldLeft(false) { case (acc, i) =>
+      acc || (i.cls(m.declaringClass) && i.name(m.name) && i.parameters(m.parameterTypes.length) && i.paramTypes(
+        m.parameterTypes))
     }
   }
 
@@ -176,13 +195,11 @@ class DslFactoriesConsistencySpec extends AnyWordSpec with Matchers {
    *   runnableN => runnable
    *   createN => create
    */
-  private val unspecializeName: PartialFunction[Method, Method] = {
-    case m => m.copy(name = m.name.filter(Character.isLetter))
+  private val unspecializeName: PartialFunction[Method, Method] = { case m =>
+    m.copy(name = m.name.filter(Character.isLetter))
   }
 
-  /**
-   * Adapt java side non curried functions to scala side like
-   */
+  /** Adapt java side non curried functions to scala side like */
   private val curryLikeJava: PartialFunction[Method, Method] = {
     case m if m.parameterTypes.size > 1 =>
       m.copy(

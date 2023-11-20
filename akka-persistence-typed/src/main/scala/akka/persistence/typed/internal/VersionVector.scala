@@ -40,9 +40,7 @@ private[akka] object VersionVector {
   case object Same extends Ordering
   case object Concurrent extends Ordering
 
-  /**
-   * Marker to ensure that we do a full order comparison instead of bailing out early.
-   */
+  /** Marker to ensure that we do a full order comparison instead of bailing out early. */
   private case object FullOrder extends Ordering
 
   /** INTERNAL API */
@@ -51,9 +49,7 @@ private[akka] object VersionVector {
     final val EndMarker = Long.MinValue
   }
 
-  /**
-   * Marker to signal that we have reached the end of a version vector.
-   */
+  /** Marker to signal that we have reached the end of a version vector. */
   private val cmpEndMarker = (null, Timestamp.EndMarker)
 
 }
@@ -79,50 +75,34 @@ private[akka] sealed abstract class VersionVector {
 
   import VersionVector._
 
-  /**
-   * Increment the version for the key passed as argument. Returns a new VersionVector.
-   */
+  /** Increment the version for the key passed as argument. Returns a new VersionVector. */
   def +(key: String): VersionVector = increment(key)
 
-  /**
-   * Increment the version for the key passed as argument. Returns a new VersionVector.
-   */
+  /** Increment the version for the key passed as argument. Returns a new VersionVector. */
   def increment(key: String): VersionVector
 
   def updated(key: String, version: Long): VersionVector
 
   def isEmpty: Boolean
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[akka] def size: Int
 
   def versionAt(key: String): Long
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[akka] def contains(key: String): Boolean
 
-  /**
-   * Returns true if <code>this</code> and <code>that</code> are concurrent else false.
-   */
+  /** Returns true if <code>this</code> and <code>that</code> are concurrent else false. */
   def <>(that: VersionVector): Boolean = compareOnlyTo(that, Concurrent) eq Concurrent
 
-  /**
-   * Returns true if <code>this</code> is before <code>that</code> else false.
-   */
+  /** Returns true if <code>this</code> is before <code>that</code> else false. */
   def <(that: VersionVector): Boolean = compareOnlyTo(that, Before) eq Before
 
-  /**
-   * Returns true if <code>this</code> is after <code>that</code> else false.
-   */
+  /** Returns true if <code>this</code> is after <code>that</code> else false. */
   def >(that: VersionVector): Boolean = compareOnlyTo(that, After) eq After
 
-  /**
-   * Returns true if this VersionVector has the same history as the 'that' VersionVector else false.
-   */
+  /** Returns true if this VersionVector has the same history as the 'that' VersionVector else false. */
   def ==(that: VersionVector): Boolean = compareOnlyTo(that, Same) eq Same
 
   /**
@@ -185,9 +165,7 @@ private[akka] sealed abstract class VersionVector {
     else compare(this.versionsIterator, that.versionsIterator, if (order eq Concurrent) FullOrder else order)
   }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[akka] def versionsIterator: Iterator[(String, Long)]
 
   /**
@@ -208,9 +186,7 @@ private[akka] sealed abstract class VersionVector {
 
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] final case class OneVersionVector private[akka] (key: String, version: Long)
     extends VersionVector {
   import VersionVector.Timestamp
@@ -264,9 +240,7 @@ private[akka] sealed abstract class VersionVector {
 // TODO we could add more specialized/optimized implementations for 2 and 3 entries, because
 // that will be the typical number of data centers
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] final case class ManyVersionVector(versions: TreeMap[String, Long]) extends VersionVector {
   import VersionVector.Timestamp
 

@@ -12,9 +12,7 @@ import akka.cluster.UniqueAddress
 import akka.cluster.ddata.{ ORMultiMap, ORMultiMapKey, SelfUniqueAddress }
 import akka.cluster.typed.internal.receptionist.ClusterReceptionist.{ DDataKey, EmptyORMultiMap, Entry }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object ShardedServiceRegistry {
   def apply(numberOfKeys: Int): ShardedServiceRegistry = {
     val emptyRegistries = (0 until numberOfKeys).map { n =>
@@ -31,9 +29,6 @@ import akka.cluster.typed.internal.receptionist.ClusterReceptionist.{ DDataKey, 
  *
  * Two level structure for keeping service registry to be able to shard entries over multiple ddata keys (to not
  * get too large ddata messages)
- *
-
- *
  */
 @InternalApi private[akka] final case class ShardedServiceRegistry(
     serviceRegistries: Map[DDataKey, ServiceRegistry],
@@ -59,9 +54,7 @@ import akka.cluster.typed.internal.receptionist.ClusterReceptionist.{ DDataKey, 
     serviceRegistries(ddataKey).actorRefsFor(key)
   }
 
-  /**
-   * @return keys that has a registered service instance on the given `address`
-   */
+  /** @return keys that has a registered service instance on the given `address` */
   def keysFor(address: UniqueAddress)(implicit node: SelfUniqueAddress): Set[AbstractServiceKey] =
     serviceRegistries.valuesIterator.flatMap(_.keysFor(address)).toSet
 
@@ -82,11 +75,10 @@ import akka.cluster.typed.internal.receptionist.ClusterReceptionist.{ DDataKey, 
 
   def entriesPerDdataKey(
       entries: Map[AbstractServiceKey, Set[Entry]]): Map[DDataKey, Map[AbstractServiceKey, Set[Entry]]] =
-    entries.foldLeft(Map.empty[DDataKey, Map[AbstractServiceKey, Set[Entry]]]) {
-      case (acc, (key, entries)) =>
-        val ddataKey = ddataKeyFor(key.asServiceKey)
-        val updated = acc.getOrElse(ddataKey, Map.empty) + (key -> entries)
-        acc + (ddataKey -> updated)
+    entries.foldLeft(Map.empty[DDataKey, Map[AbstractServiceKey, Set[Entry]]]) { case (acc, (key, entries)) =>
+      val ddataKey = ddataKeyFor(key.asServiceKey)
+      val updated = acc.getOrElse(ddataKey, Map.empty) + (key -> entries)
+      acc + (ddataKey -> updated)
     }
 
   def addNode(node: UniqueAddress): ShardedServiceRegistry =
@@ -103,9 +95,7 @@ import akka.cluster.typed.internal.receptionist.ClusterReceptionist.{ DDataKey, 
 
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] final case class ServiceRegistry(entries: ORMultiMap[ServiceKey[_], Entry]) extends AnyVal {
 
   // let's hide all the ugly casts we can in here
@@ -128,12 +118,10 @@ import akka.cluster.typed.internal.receptionist.ClusterReceptionist.{ DDataKey, 
     copy(entries = entries.removeBinding(node, key, value))
 
   def removeAll(entries: Map[AbstractServiceKey, Set[Entry]])(implicit node: SelfUniqueAddress): ServiceRegistry = {
-    entries.foldLeft(this) {
-      case (acc, (key, entries)) =>
-        entries.foldLeft(acc) {
-          case (innerAcc, entry) =>
-            innerAcc.removeBinding[key.Protocol](key.asServiceKey, entry)
-        }
+    entries.foldLeft(this) { case (acc, (key, entries)) =>
+      entries.foldLeft(acc) { case (innerAcc, entry) =>
+        innerAcc.removeBinding[key.Protocol](key.asServiceKey, entry)
+      }
     }
   }
 
@@ -141,9 +129,7 @@ import akka.cluster.typed.internal.receptionist.ClusterReceptionist.{ DDataKey, 
 
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object ServiceRegistry {
   final val Empty = ServiceRegistry(EmptyORMultiMap)
 

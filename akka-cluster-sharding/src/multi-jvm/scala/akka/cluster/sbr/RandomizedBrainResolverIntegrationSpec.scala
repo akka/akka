@@ -319,19 +319,18 @@ class RandomizedSplitBrainResolverIntegrationSpec
             nextDelay()
           }
 
-          flaky.foreach {
-            case (i, (from, to)) =>
-              if (i != 0) {
-                // heal previous flakiness
-                val (prevFrom, prevTo) = flaky(i - 1)
-                for (n <- prevTo)
-                  passThrough(prevFrom, n)
-              }
+          flaky.foreach { case (i, (from, to)) =>
+            if (i != 0) {
+              // heal previous flakiness
+              val (prevFrom, prevTo) = flaky(i - 1)
+              for (n <- prevTo)
+                passThrough(prevFrom, n)
+            }
 
-              for (n <- to)
-                blackhole(from, n)
+            for (n <- to)
+              blackhole(from, n)
 
-              nextDelay()
+            nextDelay()
           }
 
           if (healLastFlaky) {
@@ -404,11 +403,11 @@ class RandomizedSplitBrainResolverIntegrationSpec
   "SplitBrainResolver with lease" must {
 
     for (scenario <- scenarios) {
-      scenario.toString taggedAs (LongRunningTest) in {
+      scenario.toString taggedAs LongRunningTest in {
         // temporarily disabled for aeron-udp in multi-node: https://github.com/akka/akka/pull/30706/
         val arteryConfig = system.settings.config.getConfig("akka.remote.artery")
         if (arteryConfig.getInt("canonical.port") == 6000 &&
-            arteryConfig.getString("transport") == "aeron-udp") {
+          arteryConfig.getString("transport") == "aeron-udp") {
           pending
         }
         DisposableSys(scenario).verify()

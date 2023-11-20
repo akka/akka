@@ -18,7 +18,7 @@ class MySpec()
     with AnyWordSpecLike
     with Matchers
     with BeforeAndAfterAll {
-  //#implicit-sender
+  // #implicit-sender
 
   override def afterAll(): Unit = {
     TestKit.shutdownActorSystem(system)

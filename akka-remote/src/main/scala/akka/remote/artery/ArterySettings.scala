@@ -28,10 +28,13 @@ private[akka] final class ArterySettings private (config: Config) {
   import config._
 
   def withDisabledCompression(): ArterySettings =
-    ArterySettings(ConfigFactory.parseString("""|akka.remote.artery.advanced.compression {
+    ArterySettings(
+      ConfigFactory
+        .parseString("""|akka.remote.artery.advanced.compression {
          |  actor-refs.max = off
          |  manifests.max = off
-         |}""".stripMargin).withFallback(config))
+         |}""".stripMargin)
+        .withFallback(config))
 
   val Enabled: Boolean = getBoolean("enabled")
 

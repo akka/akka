@@ -15,21 +15,15 @@ import akka.util.ccompat.JavaConverters._
 
 object LoggingEvent {
 
-  /**
-   * Scala API
-   */
+  /** Scala API */
   def apply(level: Level, loggerName: String, threadName: String, message: String, timeStamp: Long): LoggingEvent =
     new LoggingEvent(level, loggerName, threadName, message, timeStamp, None, None, Map.empty)
 
-  /**
-   * Java API
-   */
+  /** Java API */
   def create(level: Level, loggerName: String, threadName: String, message: String, timeStamp: Long): LoggingEvent =
     apply(level, loggerName, threadName, message, timeStamp)
 
-  /**
-   * Java API
-   */
+  /** Java API */
   def create(
       level: Level,
       loggerName: String,
@@ -56,21 +50,15 @@ final case class LoggingEvent(
     throwable: Option[Throwable],
     mdc: Map[String, String]) {
 
-  /**
-   * Java API
-   */
+  /** Java API */
   def getMarker: Optional[Marker] =
     marker.asJava
 
-  /**
-   * Java API
-   */
+  /** Java API */
   def getThrowable: Optional[Throwable] =
     throwable.asJava
 
-  /**
-   * Java API
-   */
+  /** Java API */
   def getMdc: java.util.Map[String, String] = {
     import akka.util.ccompat.JavaConverters._
     mdc.asJava

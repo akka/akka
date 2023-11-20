@@ -232,8 +232,8 @@ object ProducerControllerImpl {
       send: SequencedMessage[A] => Unit,
       producer: ActorRef[RequestNext[A]],
       loadedState: DurableProducerQueue.State[A]): State[A] = {
-    val unconfirmed = loadedState.unconfirmed.toVector.zipWithIndex.map {
-      case (u, i) => SequencedMessage[A](producerId, u.seqNr, u.message, i == 0, u.ack)(self)
+    val unconfirmed = loadedState.unconfirmed.toVector.zipWithIndex.map { case (u, i) =>
+      SequencedMessage[A](producerId, u.seqNr, u.message, i == 0, u.ack)(self)
     }
     State(
       requested = false,
@@ -346,7 +346,12 @@ object ProducerControllerImpl {
     val manifest = Serializers.manifestFor(ser, mAnyRef)
     val serializerId = ser.identifier
     if (bytes.length <= chunkSize) {
-      ChunkedMessage(ByteString.fromArrayUnsafe(bytes), firstChunk = true, lastChunk = true, serializerId, manifest) :: Nil
+      ChunkedMessage(
+        ByteString.fromArrayUnsafe(bytes),
+        firstChunk = true,
+        lastChunk = true,
+        serializerId,
+        manifest) :: Nil
     } else {
       val builder = Vector.newBuilder[ChunkedMessage]
       val chunksIter = ByteString.fromArrayUnsafe(bytes).grouped(chunkSize)
@@ -525,8 +530,8 @@ private class ProducerControllerImpl[A: ClassTag](
       val (replies, newReplyAfterStore) = s.replyAfterStore.partition { case (seqNr, _) => seqNr <= newConfirmedSeqNr }
       if (replies.nonEmpty && traceEnabled)
         context.log.trace("Sending confirmation replies from [{}] to [{}].", replies.head._1, replies.last._1)
-      replies.foreach {
-        case (seqNr, replyTo) => replyTo ! seqNr
+      replies.foreach { case (seqNr, replyTo) =>
+        replyTo ! seqNr
       }
 
       val newUnconfirmed =

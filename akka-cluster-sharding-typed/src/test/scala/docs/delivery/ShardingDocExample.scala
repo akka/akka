@@ -23,7 +23,7 @@ import akka.util.Timeout
 
 object ShardingDocExample {
 
-  //#consumer
+  // #consumer
   trait DB {
     def save(id: String, value: TodoList.State): Future[Done]
     def load(id: String): Future[TodoList.State]
@@ -102,9 +102,9 @@ object ShardingDocExample {
       }
     }
   }
-  //#consumer
+  // #consumer
 
-  //#producer
+  // #producer
   import akka.cluster.sharding.typed.delivery.ShardingProducerController
 
   object TodoService {
@@ -182,11 +182,11 @@ object ShardingDocExample {
     }
 
   }
-  //#producer
+  // #producer
 
   def illustrateInit(): Unit = {
     Behaviors.setup[Nothing] { context =>
-      //#init
+      // #init
       import akka.cluster.sharding.typed.scaladsl.ClusterSharding
       import akka.cluster.sharding.typed.scaladsl.Entity
       import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
@@ -208,7 +208,7 @@ object ShardingDocExample {
         context.spawn(ShardingProducerController(producerId, region, durableQueueBehavior = None), "producerController")
 
       context.spawn(TodoService(producerController), "producer")
-      //#init
+      // #init
 
       Behaviors.empty
     }

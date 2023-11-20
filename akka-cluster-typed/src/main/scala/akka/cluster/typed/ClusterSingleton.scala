@@ -12,8 +12,8 @@ import akka.actor.typed._
 import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.cluster.ClusterSettings.DataCenter
 import akka.cluster.singleton.{
-  ClusterSingletonProxySettings,
-  ClusterSingletonManagerSettings => ClassicClusterSingletonManagerSettings
+  ClusterSingletonManagerSettings => ClassicClusterSingletonManagerSettings,
+  ClusterSingletonProxySettings
 }
 import akka.cluster.typed.internal.AdaptedClusterSingletonImpl
 import akka.coordination.lease.LeaseUsageSettings
@@ -23,9 +23,7 @@ object ClusterSingletonSettings {
   def apply(system: ActorSystem[_]): ClusterSingletonSettings =
     fromConfig(system.settings.config.getConfig("akka.cluster"))
 
-  /**
-   * Java API
-   */
+  /** Java API */
   def create(system: ActorSystem[_]): ClusterSingletonSettings = apply(system)
 
   def fromConfig(config: Config): ClusterSingletonSettings = {
@@ -109,25 +107,19 @@ final class ClusterSingletonSettings(
       bufferSize,
       leaseSettings)
 
-  /**
-   * INTERNAL API:
-   */
+  /** INTERNAL API: */
   @InternalApi
   private[akka] def toManagerSettings(singletonName: String): ClassicClusterSingletonManagerSettings =
     new ClassicClusterSingletonManagerSettings(singletonName, role, removalMargin, handOverRetryInterval, leaseSettings)
 
-  /**
-   * INTERNAL API:
-   */
+  /** INTERNAL API: */
   @InternalApi
   private[akka] def toProxySettings(singletonName: String): ClusterSingletonProxySettings = {
     new ClusterSingletonProxySettings(singletonName, role, singletonIdentificationInterval, bufferSize)
       .withDataCenter(dataCenter)
   }
 
-  /**
-   * INTERNAL API:
-   */
+  /** INTERNAL API: */
   @InternalApi
   private[akka] def shouldRunManager(cluster: Cluster): Boolean = {
     (role.isEmpty || cluster.selfMember.roles(role.get)) &&
@@ -142,15 +134,11 @@ object ClusterSingleton extends ExtensionId[ClusterSingleton] {
 
   override def createExtension(system: ActorSystem[_]): ClusterSingleton = new AdaptedClusterSingletonImpl(system)
 
-  /**
-   * Java API:
-   */
+  /** Java API: */
   def get(system: ActorSystem[_]): ClusterSingleton = apply(system)
 }
 
-/**
- * INTERNAL API:
- */
+/** INTERNAL API: */
 @InternalApi
 private[akka] object ClusterSingletonImpl {
   def managerNameFor(singletonName: String) = s"singletonManager$singletonName"
@@ -181,9 +169,7 @@ final class SingletonActor[M] private (
     val stopMessage: Option[M],
     val settings: Option[ClusterSingletonSettings]) {
 
-  /**
-   * [[akka.actor.typed.Props]] of the singleton actor, such as dispatcher settings.
-   */
+  /** [[akka.actor.typed.Props]] of the singleton actor, such as dispatcher settings. */
   def withProps(props: Props): SingletonActor[M] = copy(props = props)
 
   /**
@@ -194,9 +180,7 @@ final class SingletonActor[M] private (
    */
   def withStopMessage(msg: M): SingletonActor[M] = copy(stopMessage = Option(msg))
 
-  /**
-   * Additional settings, typically loaded from configuration.
-   */
+  /** Additional settings, typically loaded from configuration. */
   def withSettings(settings: ClusterSingletonSettings): SingletonActor[M] = copy(settings = Option(settings))
 
   private def copy(
@@ -271,9 +255,7 @@ object ClusterSingletonManagerSettings {
    */
   def create(config: Config): ClusterSingletonManagerSettings = apply(config)
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   private[akka] def roleOption(role: String): Option[String] =
     if (role == "") None else Option(role)
 

@@ -55,17 +55,16 @@ class MaterializerWithAttributesSpec
   }
 
   class StreamActor extends Actor {
-    def receive = {
-      case "do it!" =>
-        implicit val materializer = Materializer(context, Attributes.name("bar"))
+    def receive = { case "do it!" =>
+      implicit val materializer = Materializer(context, Attributes.name("bar"))
 
-        val firstAttributes = Source.fromGraph(attributesSource).to(Sink.ignore).run()
-        val secondAttributes = Source.fromGraph(attributesSource).to(Sink.ignore).run()(Materializer(context))
+      val firstAttributes = Source.fromGraph(attributesSource).to(Sink.ignore).run()
+      val secondAttributes = Source.fromGraph(attributesSource).to(Sink.ignore).run()(Materializer(context))
 
-        sender() ! firstAttributes
-        sender() ! secondAttributes
+      sender() ! firstAttributes
+      sender() ! secondAttributes
 
-        context.stop(self)
+      context.stop(self)
     }
   }
 

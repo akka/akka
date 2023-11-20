@@ -12,9 +12,7 @@ import akka.persistence.typed.internal._
 import akka.persistence.typed.internal.SideEffect
 import akka.util.ccompat.JavaConverters._
 
-/**
- * INTERNAL API: see `class EffectFactories`
- */
+/** INTERNAL API: see `class EffectFactories` */
 @InternalApi private[akka] object EffectFactories extends EffectFactories[Nothing, Nothing]
 
 /**
@@ -25,9 +23,7 @@ import akka.util.ccompat.JavaConverters._
  */
 @DoNotInherit sealed class EffectFactories[Event, State] {
 
-  /**
-   * Persist a single event
-   */
+  /** Persist a single event */
   final def persist(event: Event): EffectBuilder[Event, State] = Persist(event)
 
   /**
@@ -37,19 +33,13 @@ import akka.util.ccompat.JavaConverters._
    */
   final def persist(events: java.util.List[Event]): EffectBuilder[Event, State] = PersistAll(events.asScala.toVector)
 
-  /**
-   * Do not persist anything
-   */
+  /** Do not persist anything */
   def none(): EffectBuilder[Event, State] = PersistNothing.asInstanceOf[EffectBuilder[Event, State]]
 
-  /**
-   * Stop this persistent actor
-   */
+  /** Stop this persistent actor */
   def stop(): EffectBuilder[Event, State] = none().thenStop()
 
-  /**
-   * This command is not handled, but it is not an error that it isn't.
-   */
+  /** This command is not handled, but it is not an error that it isn't. */
   def unhandled(): EffectBuilder[Event, State] = Unhandled.asInstanceOf[EffectBuilder[Event, State]]
 
   /**
@@ -91,9 +81,11 @@ import akka.util.ccompat.JavaConverters._
    * finding mistakes.
    */
   def reply[ReplyMessage](replyTo: ActorRef[ReplyMessage], replyWithMessage: ReplyMessage): ReplyEffect[Event, State] =
-    none().thenReply[ReplyMessage](replyTo, new function.Function[State, ReplyMessage] {
-      override def apply(param: State): ReplyMessage = replyWithMessage
-    })
+    none().thenReply[ReplyMessage](
+      replyTo,
+      new function.Function[State, ReplyMessage] {
+        override def apply(param: State): ReplyMessage = replyWithMessage
+      })
 
   /**
    * When [[EventSourcedBehaviorWithEnforcedReplies]] is used there will be compilation errors if the returned effect
@@ -134,14 +126,11 @@ import akka.util.ccompat.JavaConverters._
    *                  but if a known subtype of `State` is expected that can be specified instead (preferably by
    *                  explicitly typing the lambda parameter like so: `thenRun((SubState state) -> { ... })`).
    *                  If the state is not of the expected type an [[java.lang.ClassCastException]] is thrown.
-   *
    */
   final def thenRun[NewState <: State](callback: function.Procedure[NewState]): EffectBuilder[Event, State] =
     CompositeEffect(this, SideEffect[State](s => callback.apply(s.asInstanceOf[NewState])))
 
-  /**
-   * Run the given callback. Callbacks are run sequentially.
-   */
+  /** Run the given callback. Callbacks are run sequentially. */
   final def thenRun(callback: function.Effect): EffectBuilder[Event, State] =
     CompositeEffect(this, SideEffect[State]((_: State) => callback.apply()))
 

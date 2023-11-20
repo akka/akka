@@ -8,24 +8,26 @@ object TestConfigExample {
 
   def illustrateApplicationConfig(): Unit = {
 
-    //#default-application-conf
+    // #default-application-conf
     import com.typesafe.config.ConfigFactory
 
     ConfigFactory.load()
-    //#default-application-conf
+    // #default-application-conf
 
-    //#parse-string
+    // #parse-string
     ConfigFactory.parseString("""
       akka.loglevel = DEBUG
       akka.log-config-on-start = on
       """)
-    //#parse-string
+    // #parse-string
 
-    //#fallback-application-conf
-    ConfigFactory.parseString("""
+    // #fallback-application-conf
+    ConfigFactory
+      .parseString("""
       akka.loglevel = DEBUG
       akka.log-config-on-start = on
-      """).withFallback(ConfigFactory.load())
-    //#fallback-application-conf
+      """)
+      .withFallback(ConfigFactory.load())
+    // #fallback-application-conf
   }
 }

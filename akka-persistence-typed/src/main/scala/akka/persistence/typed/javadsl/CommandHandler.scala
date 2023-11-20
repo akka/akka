@@ -5,7 +5,7 @@
 package akka.persistence.typed.javadsl
 
 import java.util.Objects
-import java.util.function.{ BiFunction, Predicate, Supplier, Function => JFunction }
+import java.util.function.{ BiFunction, Function => JFunction, Predicate, Supplier }
 
 import scala.compat.java8.FunctionConverters._
 
@@ -179,9 +179,7 @@ object CommandHandlerBuilderByState {
       statePredicate: Predicate[State]): CommandHandlerBuilderByState[Command, Event, State, State] =
     new CommandHandlerBuilderByState(classOf[Any].asInstanceOf[Class[State]], statePredicate)
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private final case class CommandHandlerCase[Command, Event, State](
       commandPredicate: Command => Boolean,
       statePredicate: State => Boolean,
@@ -198,12 +196,12 @@ final class CommandHandlerBuilderByState[Command, Event, S <: State, State] @Int
 
   private def addCase(predicate: Command => Boolean, handler: BiFunction[S, Command, Effect[Event, State]]): Unit = {
     cases = CommandHandlerCase[Command, Event, State](
-        commandPredicate = predicate,
-        statePredicate = state =>
-          if (state == null) statePredicate.test(state.asInstanceOf[S])
-          else
-            statePredicate.test(state.asInstanceOf[S]) && stateClass.isAssignableFrom(state.getClass),
-        handler.asInstanceOf[BiFunction[State, Command, Effect[Event, State]]]) :: cases
+      commandPredicate = predicate,
+      statePredicate = state =>
+        if (state == null) statePredicate.test(state.asInstanceOf[S])
+        else
+          statePredicate.test(state.asInstanceOf[S]) && stateClass.isAssignableFrom(state.getClass),
+      handler.asInstanceOf[BiFunction[State, Command, Effect[Event, State]]]) :: cases
   }
 
   /**
@@ -233,9 +231,11 @@ final class CommandHandlerBuilderByState[Command, Event, S <: State, State] @Int
   def onCommand(
       predicate: Predicate[Command],
       handler: JFunction[Command, Effect[Event, State]]): CommandHandlerBuilderByState[Command, Event, S, State] = {
-    addCase(cmd => predicate.test(cmd), new BiFunction[S, Command, Effect[Event, State]] {
-      override def apply(state: S, cmd: Command): Effect[Event, State] = handler(cmd)
-    })
+    addCase(
+      cmd => predicate.test(cmd),
+      new BiFunction[S, Command, Effect[Event, State]] {
+        override def apply(state: S, cmd: Command): Effect[Event, State] = handler(cmd)
+      })
     this
   }
 
@@ -268,9 +268,11 @@ final class CommandHandlerBuilderByState[Command, Event, S <: State, State] @Int
   def onCommand[C <: Command](
       commandClass: Class[C],
       handler: JFunction[C, Effect[Event, State]]): CommandHandlerBuilderByState[Command, Event, S, State] = {
-    onCommand[C](commandClass, new BiFunction[S, C, Effect[Event, State]] {
-      override def apply(state: S, cmd: C): Effect[Event, State] = handler(cmd)
-    })
+    onCommand[C](
+      commandClass,
+      new BiFunction[S, C, Effect[Event, State]] {
+        override def apply(state: S, cmd: C): Effect[Event, State] = handler(cmd)
+      })
   }
 
   /**
@@ -285,9 +287,11 @@ final class CommandHandlerBuilderByState[Command, Event, S <: State, State] @Int
   def onCommand[C <: Command](
       commandClass: Class[C],
       handler: Supplier[Effect[Event, State]]): CommandHandlerBuilderByState[Command, Event, S, State] = {
-    onCommand[C](commandClass, new BiFunction[S, C, Effect[Event, State]] {
-      override def apply(state: S, cmd: C): Effect[Event, State] = handler.get()
-    })
+    onCommand[C](
+      commandClass,
+      new BiFunction[S, C, Effect[Event, State]] {
+        override def apply(state: S, cmd: C): Effect[Event, State] = handler.get()
+      })
   }
 
   /**
@@ -328,9 +332,11 @@ final class CommandHandlerBuilderByState[Command, Event, S <: State, State] @Int
    * @return A CommandHandler from the appended states.
    */
   def onAnyCommand(handler: JFunction[Command, Effect[Event, State]]): CommandHandler[Command, Event, State] = {
-    addCase(_ => true, new BiFunction[S, Command, Effect[Event, State]] {
-      override def apply(state: S, cmd: Command): Effect[Event, State] = handler(cmd)
-    })
+    addCase(
+      _ => true,
+      new BiFunction[S, Command, Effect[Event, State]] {
+        override def apply(state: S, cmd: Command): Effect[Event, State] = handler(cmd)
+      })
     build()
   }
 
@@ -352,9 +358,11 @@ final class CommandHandlerBuilderByState[Command, Event, S <: State, State] @Int
    * @return A CommandHandler from the appended states.
    */
   def onAnyCommand(handler: Supplier[Effect[Event, State]]): CommandHandler[Command, Event, State] = {
-    addCase(_ => true, new BiFunction[S, Command, Effect[Event, State]] {
-      override def apply(state: S, cmd: Command): Effect[Event, State] = handler.get()
-    })
+    addCase(
+      _ => true,
+      new BiFunction[S, Command, Effect[Event, State]] {
+        override def apply(state: S, cmd: Command): Effect[Event, State] = handler.get()
+      })
     build()
   }
 

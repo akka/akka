@@ -9,9 +9,7 @@ import scala.collection.immutable
 import akka.annotation.InternalApi
 import akka.util.ccompat._
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @ccompatUsedUntil213
 private[cluster] object Reachability {
   val empty = new Reachability(Vector.empty, Map.empty)
@@ -146,9 +144,9 @@ private[cluster] class Reachability private (
             if (oldRecord.status == Terminated || oldRecord.status == status)
               this
             else {
-              if (status == Reachable && oldObserverRows.forall {
-                    case (_, r) => r.status == Reachable || r.subject == subject
-                  }) {
+              if (status == Reachable && oldObserverRows.forall { case (_, r) =>
+                  r.status == Reachable || r.subject == subject
+                }) {
                 // all Reachable, prune by removing the records of the observer, and bump the version
                 new Reachability(records.filterNot(_.observer == observer), newVersions)
               } else {
@@ -234,9 +232,7 @@ private[cluster] class Reachability private (
    */
   def isReachable(node: UniqueAddress): Boolean = isAllReachable || !allUnreachableOrTerminated.contains(node)
 
-  /**
-   * @return true if the given observer node can reach the subject node.
-   */
+  /** @return true if the given observer node can reach the subject node. */
   def isReachable(observer: UniqueAddress, subject: UniqueAddress): Boolean =
     status(observer, subject) == Reachable
 

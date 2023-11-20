@@ -112,11 +112,13 @@ class SerializationSetupSpec
 
     "fail during ActorSystem creation when misconfigured" in {
       val config =
-        ConfigFactory.parseString("""
+        ConfigFactory
+          .parseString("""
              akka.loglevel = OFF
              akka.stdout-loglevel = OFF
              akka.actor.serializers.doe = "john.is.not.here"
-          """).withFallback(ConfigFactory.load())
+          """)
+          .withFallback(ConfigFactory.load())
 
       a[ClassNotFoundException] should be thrownBy {
         val system = ActorSystem("SerializationSetupSpec-FailingSystem", config)

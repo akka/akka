@@ -7,9 +7,7 @@ package akka.actor.typed.delivery.internal
 import akka.annotation.InternalApi
 import akka.util.ByteString
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] final case class ChunkedMessage(
     serialized: ByteString,
     firstChunk: Boolean,

@@ -44,7 +44,7 @@ object DistributedDataDocSpec {
     #//#japi-serializer-config
     """
 
-  //#data-bot
+  // #data-bot
   import java.util.concurrent.ThreadLocalRandom
   import akka.actor.Actor
   import akka.actor.ActorLogging
@@ -86,7 +86,6 @@ object DistributedDataDocSpec {
         }
 
       case _: UpdateResponse[_] => // ignore
-
       case c @ Changed(DataKey) =>
         val data = c.get(DataKey)
         log.info("Current elements: {}", data.elements)
@@ -95,7 +94,7 @@ object DistributedDataDocSpec {
     override def postStop(): Unit = tickTask.cancel()
 
   }
-  //#data-bot
+  // #data-bot
 
 }
 
@@ -106,7 +105,7 @@ class DistributedDataDocSpec extends AkkaSpec(DistributedDataDocSpec.config) {
     val probe = TestProbe()
     implicit val self: ActorRef = probe.ref
 
-    //#update
+    // #update
     implicit val node: SelfUniqueAddress = DistributedData(system).selfUniqueAddress
     val replicator = DistributedData(system).replicator
 
@@ -125,21 +124,21 @@ class DistributedDataDocSpec extends AkkaSpec(DistributedDataDocSpec.config) {
 
     val writeAll = WriteAll(timeout = 5.seconds)
     replicator ! Update(ActiveFlagKey, Flag.Disabled, writeAll)(_.switchOn)
-    //#update
+    // #update
 
     probe.expectMsgType[UpdateResponse[_]] match {
-      //#update-response1
+      // #update-response1
       case UpdateSuccess(Counter1Key, req) => // ok
-      //#update-response1
+      // #update-response1
       case unexpected => fail("Unexpected response: " + unexpected)
     }
 
     probe.expectMsgType[UpdateResponse[_]] match {
-      //#update-response2
+      // #update-response2
       case UpdateSuccess(Set1Key, req) => // ok
       case UpdateTimeout(Set1Key, req) =>
       // write to 3 nodes failed within 1.second
-      //#update-response2
+      // #update-response2
       case UpdateSuccess(Set2Key, None) =>
       case unexpected                   => fail("Unexpected response: " + unexpected)
     }
@@ -151,7 +150,7 @@ class DistributedDataDocSpec extends AkkaSpec(DistributedDataDocSpec.config) {
     implicit val self: ActorRef = probe.ref
     def sender() = self
 
-    //#update-request-context
+    // #update-request-context
     implicit val node = DistributedData(system).selfUniqueAddress
     val replicator = DistributedData(system).replicator
     val writeTwo = WriteTo(n = 2, timeout = 3.second)
@@ -168,14 +167,14 @@ class DistributedDataDocSpec extends AkkaSpec(DistributedDataDocSpec.config) {
       case UpdateTimeout(Counter1Key, Some(replyTo: ActorRef)) =>
         replyTo ! "nack"
     }
-    //#update-request-context
+    // #update-request-context
   }
 
   "demonstrate get" in {
     val probe = TestProbe()
     implicit val self: ActorRef = probe.ref
 
-    //#get
+    // #get
     val replicator = DistributedData(system).replicator
     val Counter1Key = PNCounterKey("counter1")
     val Set1Key = GSetKey[String]("set1")
@@ -192,25 +191,25 @@ class DistributedDataDocSpec extends AkkaSpec(DistributedDataDocSpec.config) {
 
     val readAll = ReadAll(timeout = 5.seconds)
     replicator ! Get(ActiveFlagKey, readAll)
-    //#get
+    // #get
 
     probe.expectMsgType[GetResponse[_]] match {
-      //#get-response1
+      // #get-response1
       case g @ GetSuccess(Counter1Key, req) =>
         val value = g.get(Counter1Key).value
       case NotFound(Counter1Key, req) => // key counter1 does not exist
-      //#get-response1
+      // #get-response1
       case unexpected => fail("Unexpected response: " + unexpected)
     }
 
     probe.expectMsgType[GetResponse[_]] match {
-      //#get-response2
+      // #get-response2
       case g @ GetSuccess(Set1Key, req) =>
         val elements = g.get(Set1Key).elements
       case GetFailure(Set1Key, req) =>
       // read from 3 nodes failed within 1.second
       case NotFound(Set1Key, req) => // key set1 does not exist
-      //#get-response2
+      // #get-response2
       case g @ GetSuccess(Set2Key, None) =>
         val elements = g.get(Set2Key).elements
       case unexpected => fail("Unexpected response: " + unexpected)
@@ -223,7 +222,7 @@ class DistributedDataDocSpec extends AkkaSpec(DistributedDataDocSpec.config) {
     implicit val self: ActorRef = probe.ref
     def sender() = self
 
-    //#get-request-context
+    // #get-request-context
     implicit val node = DistributedData(system).selfUniqueAddress
     val replicator = DistributedData(system).replicator
     val readTwo = ReadFrom(n = 2, timeout = 3.second)
@@ -242,7 +241,7 @@ class DistributedDataDocSpec extends AkkaSpec(DistributedDataDocSpec.config) {
       case NotFound(Counter1Key, Some(replyTo: ActorRef)) =>
         replyTo ! 0L
     }
-    //#get-request-context
+    // #get-request-context
   }
 
   "demonstrate subscribe" in {
@@ -251,7 +250,7 @@ class DistributedDataDocSpec extends AkkaSpec(DistributedDataDocSpec.config) {
     implicit val self: ActorRef = probe.ref
     def sender() = self
 
-    //#subscribe
+    // #subscribe
     val replicator = DistributedData(system).replicator
     val Counter1Key = PNCounterKey("counter1")
     // subscribe to changes of the Counter1Key value
@@ -265,14 +264,14 @@ class DistributedDataDocSpec extends AkkaSpec(DistributedDataDocSpec.config) {
         // incoming request to retrieve current value of the counter
         sender() ! currentValue
     }
-    //#subscribe
+    // #subscribe
   }
 
   "demonstrate delete" in {
     val probe = TestProbe()
     implicit val self: ActorRef = probe.ref
 
-    //#delete
+    // #delete
     val replicator = DistributedData(system).replicator
     val Counter1Key = PNCounterKey("counter1")
     val Set2Key = ORSetKey[String]("set2")
@@ -281,12 +280,12 @@ class DistributedDataDocSpec extends AkkaSpec(DistributedDataDocSpec.config) {
 
     val writeMajority = WriteMajority(timeout = 5.seconds)
     replicator ! Delete(Set2Key, writeMajority)
-    //#delete
+    // #delete
   }
 
   "demonstrate PNCounter" in {
     def println(o: Any): Unit = ()
-    //#pncounter
+    // #pncounter
     implicit val node = DistributedData(system).selfUniqueAddress
 
     val c0 = PNCounter.empty
@@ -294,12 +293,12 @@ class DistributedDataDocSpec extends AkkaSpec(DistributedDataDocSpec.config) {
     val c2 = c1 :+ 7
     val c3: PNCounter = c2.decrement(2)
     println(c3.value) // 6
-    //#pncounter
+    // #pncounter
   }
 
   "demonstrate PNCounterMap" in {
     def println(o: Any): Unit = ()
-    //#pncountermap
+    // #pncountermap
     implicit val node = DistributedData(system).selfUniqueAddress
     val m0 = PNCounterMap.empty[String]
     val m1 = m0.increment(node, "a", 7)
@@ -307,35 +306,35 @@ class DistributedDataDocSpec extends AkkaSpec(DistributedDataDocSpec.config) {
     val m3 = m2.increment(node, "b", 1)
     println(m3.get("a")) // 5
     m3.entries.foreach { case (key, value) => println(s"$key -> $value") }
-    //#pncountermap
+    // #pncountermap
   }
 
   "demonstrate GSet" in {
     def println(o: Any): Unit = ()
-    //#gset
+    // #gset
     val s0 = GSet.empty[String]
     val s1 = s0 + "a"
     val s2 = s1 + "b" + "c"
     if (s2.contains("a"))
       println(s2.elements) // a, b, c
-    //#gset
+    // #gset
   }
 
   "demonstrate ORSet" in {
     def println(o: Any): Unit = ()
-    //#orset
+    // #orset
     implicit val node = DistributedData(system).selfUniqueAddress
     val s0 = ORSet.empty[String]
     val s1 = s0 :+ "a"
     val s2 = s1 :+ "b"
     val s3 = s2.remove("a")
     println(s3.elements) // b
-    //#orset
+    // #orset
   }
 
   "demonstrate ORMultiMap" in {
     def println(o: Any): Unit = ()
-    //#ormultimap
+    // #ormultimap
     implicit val node = DistributedData(system).selfUniqueAddress
     val m0 = ORMultiMap.empty[String, Int]
     val m1 = m0 :+ ("a" -> Set(1, 2, 3))
@@ -343,32 +342,32 @@ class DistributedDataDocSpec extends AkkaSpec(DistributedDataDocSpec.config) {
     val m3 = m2.removeBinding(node, "a", 2)
     val m4 = m3.addBinding(node, "b", 1)
     println(m4.entries)
-    //#ormultimap
+    // #ormultimap
   }
 
   "demonstrate Flag" in {
     def println(o: Any): Unit = ()
-    //#flag
+    // #flag
     val f0 = Flag.Disabled
     val f1 = f0.switchOn
     println(f1.enabled)
-    //#flag
+    // #flag
   }
 
   "demonstrate LWWRegister" in {
     def println(o: Any): Unit = ()
-    //#lwwregister
+    // #lwwregister
     implicit val node = DistributedData(system).selfUniqueAddress
     val r1 = LWWRegister.create("Hello")
     val r2 = r1.withValueOf("Hi")
     println(s"${r1.value} by ${r1.updatedBy} at ${r1.timestamp}")
-    //#lwwregister
+    // #lwwregister
     r2.value should be("Hi")
   }
 
   "demonstrate LWWRegister with custom clock" in {
     def println(o: Any): Unit = ()
-    //#lwwregister-custom-clock
+    // #lwwregister-custom-clock
     case class Record(version: Int, name: String, address: String)
 
     implicit val node = DistributedData(system).selfUniqueAddress
@@ -385,7 +384,7 @@ class DistributedDataDocSpec extends AkkaSpec(DistributedDataDocSpec.config) {
 
     val r3 = r1.merge(r2)
     println(r3.value)
-    //#lwwregister-custom-clock
+    // #lwwregister-custom-clock
 
     r3.value.address should be("Madison Square")
   }

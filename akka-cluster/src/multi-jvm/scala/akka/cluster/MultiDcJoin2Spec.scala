@@ -82,8 +82,8 @@ abstract class MultiDcJoin2Spec extends MultiNodeClusterSpec(MultiDcJoin2MultiJv
         Cluster(system).join(first)
         within(20.seconds) {
           awaitAssert {
-            Cluster(system).state.members
-              .exists(m => m.address == address(fourth) && m.status == MemberStatus.Up) should ===(true)
+            Cluster(system).state.members.exists(m =>
+              m.address == address(fourth) && m.status == MemberStatus.Up) should ===(true)
           }
         }
       }
@@ -93,8 +93,8 @@ abstract class MultiDcJoin2Spec extends MultiNodeClusterSpec(MultiDcJoin2MultiJv
         Cluster(system).join(second)
         within(20.seconds) {
           awaitAssert {
-            Cluster(system).state.members
-              .exists(m => m.address == address(fifth) && m.status == MemberStatus.Up) should ===(true)
+            Cluster(system).state.members.exists(m =>
+              m.address == address(fifth) && m.status == MemberStatus.Up) should ===(true)
           }
         }
       }

@@ -34,13 +34,15 @@ object EntityPassivationSpec {
     akka.scheduled-clock-interval = 100 ms
     """)
 
-  val disabledConfig: Config = ConfigFactory.parseString("""
+  val disabledConfig: Config = ConfigFactory
+    .parseString("""
     akka.cluster.sharding {
       passivation {
         strategy = none
       }
     }
-    """).withFallback(config)
+    """)
+    .withFallback(config)
 
   object Entity {
     case object Stop
@@ -68,8 +70,8 @@ object EntityPassivationSpec {
     }
   }
 
-  val extractEntityId: ShardRegion.ExtractEntityId = {
-    case Entity.Envelope(_, id, message) => (id.toString, message)
+  val extractEntityId: ShardRegion.ExtractEntityId = { case Entity.Envelope(_, id, message) =>
+    (id.toString, message)
   }
 
   val extractShardId: ShardRegion.ExtractShardId = {
@@ -112,8 +114,8 @@ abstract class AbstractEntityPassivationSpec(config: Config, expectedEntities: I
 
   def expectState(region: ActorRef)(expectedShards: (Int, Iterable[Int])*): Unit =
     eventually {
-      getState(region).shards should contain theSameElementsAs expectedShards.map {
-        case (shardId, entityIds) => ShardRegion.ShardState(shardId.toString, entityIds.map(_.toString).toSet)
+      getState(region).shards should contain theSameElementsAs expectedShards.map { case (shardId, entityIds) =>
+        ShardRegion.ShardState(shardId.toString, entityIds.map(_.toString).toSet)
       }
     }
 

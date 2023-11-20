@@ -26,7 +26,9 @@ import akka.event.LoggingAdapter
  * Not for user extension
  */
 @implicitNotFound("A Materializer is required.  You may want to have the ActorSystem in implicit scope")
-@nowarn("msg=deprecated") // Name(symbol) is deprecated but older Scala versions don't have a string signature, since "2.5.8"
+@nowarn(
+  "msg=deprecated"
+) // Name(symbol) is deprecated but older Scala versions don't have a string signature, since "2.5.8"
 @DoNotInherit
 abstract class Materializer {
 
@@ -154,9 +156,7 @@ abstract class Materializer {
    */
   def shutdown(): Unit
 
-  /**
-   * Indicates if the materializer has been shut down.
-   */
+  /** Indicates if the materializer has been shut down. */
   def isShutdown: Boolean
 
   /**
@@ -174,15 +174,11 @@ abstract class Materializer {
   @InternalApi
   private[akka] def logger: LoggingAdapter
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi
   private[akka] def supervisor: ActorRef
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi
   private[akka] def actorOf(context: MaterializationContext, props: Props): ActorRef
 
@@ -192,9 +188,7 @@ abstract class Materializer {
 
 object Materializer {
 
-  /**
-   * Implicitly provides the system wide materializer from a classic or typed `ActorSystem`
-   */
+  /** Implicitly provides the system wide materializer from a classic or typed `ActorSystem` */
   implicit def matFromSystem(implicit provider: ClassicActorSystemProvider): Materializer =
     SystemMaterializer(provider.classicSystem).materializer
 

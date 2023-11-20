@@ -30,9 +30,7 @@ private[akka] object StreamRefsProtocol {
     if (payload == null) throw ReactiveStreamsCompliance.elementMustNotBeNullException
   }
 
-  /**
-   * INTERNAL API: Initial message sent to remote side to establish partnership between origin and remote stream refs.
-   */
+  /** INTERNAL API: Initial message sent to remote side to establish partnership between origin and remote stream refs. */
   @InternalApi
   private[akka] final case class OnSubscribeHandshake(targetRef: ActorRef)
       extends StreamRefsProtocol

@@ -146,7 +146,7 @@ class FlowGroupBySpec extends StreamSpec("""
         .runWith(TestSink[Seq[String]]())
       down.request(1)
       val ex = down.expectError()
-      ex.getMessage.indexOf("Key cannot be null") should not be (-1)
+      ex.getMessage.indexOf("Key cannot be null") should not be -1
       ex.isInstanceOf[IllegalArgumentException] should be(true)
     }
 
@@ -585,7 +585,7 @@ class FlowGroupBySpec extends StreamSpec("""
 
           state.probe.request(1)
 
-          //need to verify elements that are first element in subFlow or is in nextElement buffer before
+          // need to verify elements that are first element in subFlow or is in nextElement buffer before
           // pushing next element from upstream
           if (state.firstElement != null) {
             state.probe.expectNext() should ===(state.firstElement)
@@ -622,10 +622,10 @@ class FlowGroupBySpec extends StreamSpec("""
           val probe: TestSubscriber.Probe[ByteString] = Await.result(probes(probeIndex).future, 300.millis)
           probeIndex += 1
           map.put(index, SubFlowState(probe, false, byteString))
-          //stream automatically requests next element
+          // stream automatically requests next element
         } else {
           val state = map(index)
-          if (state.firstElement != null) { //first element in subFlow
+          if (state.firstElement != null) { // first element in subFlow
             if (!state.hasDemand) blockingNextElement = byteString
             randomDemand()
           } else if (state.hasDemand) {
@@ -665,14 +665,23 @@ class FlowGroupBySpec extends StreamSpec("""
 
       val threeProcessed = Promise[Done]()
       val blockSubStream1 = TestLatch()
-      List(Elem(1, 1, () => {
-        // timeout just to not wait forever if something is wrong, not really relevant for test
-        Await.result(blockSubStream1, 10.seconds)
-        1
-      }), Elem(2, 1, () => 2), Elem(3, 2, () => {
-        threeProcessed.success(Done)
-        3
-      })).foreach(queue.offer)
+      List(
+        Elem(
+          1,
+          1,
+          () => {
+            // timeout just to not wait forever if something is wrong, not really relevant for test
+            Await.result(blockSubStream1, 10.seconds)
+            1
+          }),
+        Elem(2, 1, () => 2),
+        Elem(
+          3,
+          2,
+          () => {
+            threeProcessed.success(Done)
+            3
+          })).foreach(queue.offer)
       // two and three are processed as fast as possible, not blocked by substream 1 being clogged
       threeProcessed.future.futureValue should ===(Done)
       // let 1 pass so stream can complete

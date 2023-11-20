@@ -53,7 +53,8 @@ object MultiJournalReplicationSpec {
     }
   }
 
-  def separateJournalsConfig: Config = ConfigFactory.parseString(s"""
+  def separateJournalsConfig: Config = ConfigFactory
+    .parseString(s"""
     journal1 {
       journal.class = "${classOf[PersistenceTestKitPlugin].getName}"
       query = $${akka.persistence.testkit.query}
@@ -62,7 +63,9 @@ object MultiJournalReplicationSpec {
       journal.class = "${classOf[PersistenceTestKitPlugin].getName}"
       query = $${akka.persistence.testkit.query}
     }
-    """).withFallback(ConfigFactory.load()).resolve()
+    """)
+    .withFallback(ConfigFactory.load())
+    .resolve()
 
 }
 

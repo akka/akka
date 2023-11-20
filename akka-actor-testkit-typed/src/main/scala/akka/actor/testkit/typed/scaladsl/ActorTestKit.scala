@@ -161,9 +161,7 @@ object ActorTestKit {
   def shutdown(system: ActorSystem[_], timeout: Duration, throwIfShutdownFails: Boolean = false): Unit =
     TestKitUtils.shutdown(system, timeout, throwIfShutdownFails)
 
-  /**
-   * Config loaded from `application-test.conf`, which is used if no specific config is given.
-   */
+  /** Config loaded from `application-test.conf`, which is used if no specific config is given. */
   val ApplicationTestConfig: Config = ConfigFactory.load("application-test")
 
   private val dummyMessage = new DeadLetterSuppression {}
@@ -196,9 +194,7 @@ final class ActorTestKit private[akka] (
   implicit def testKitSettings: TestKitSettings =
     settings.getOrElse(TestKitSettings(system))
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   implicit def system: ActorSystem[Nothing] = internalSystem
 
   private val childName: Iterator[String] = Iterator.from(0).map(_.toString)
@@ -253,9 +249,11 @@ final class ActorTestKit private[akka] (
    */
   def stop[T](ref: ActorRef[T], max: FiniteDuration = timeout.duration): Unit =
     try {
-      Await.result(internalTestKitGuardian.ask { (x: ActorRef[ActorTestKitGuardian.Ack.type]) =>
-        ActorTestKitGuardian.StopActor(ref, x)
-      }(Timeout(max), scheduler), max)
+      Await.result(
+        internalTestKitGuardian.ask { (x: ActorRef[ActorTestKitGuardian.Ack.type]) =>
+          ActorTestKitGuardian.StopActor(ref, x)
+        }(Timeout(max), scheduler),
+        max)
     } catch {
       case _: TimeoutException =>
         assert(false, s"timeout ($max) during stop() waiting for actor [${ref.path}] to stop")
@@ -311,9 +309,7 @@ final class ActorTestKit private[akka] (
     probe
   }
 
-  /**
-   * Additional testing utilities for serialization.
-   */
+  /** Additional testing utilities for serialization. */
   val serializationTestKit: SerializationTestKit = new SerializationTestKit(internalSystem)
 
   // FIXME needed for Akka internal tests but, users shouldn't spawn system actors?

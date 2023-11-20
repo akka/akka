@@ -13,15 +13,15 @@ object AsPublisher {
   implicit val ec: ExecutionContextExecutor = system.dispatcher
   def asPublisherExample() = {
     def asPublisherExample() = {
-      //#asPublisher
+      // #asPublisher
       val source = Source(1 to 5)
 
       val publisher = source.runWith(Sink.asPublisher(false))
       Source.fromPublisher(publisher).runWith(Sink.foreach(println)) // 1 2 3 4 5
       Source
         .fromPublisher(publisher)
-        .runWith(Sink.foreach(println)) //No output, because the source was not able to subscribe to the publisher.
-      //#asPublisher
+        .runWith(Sink.foreach(println)) // No output, because the source was not able to subscribe to the publisher.
+      // #asPublisher
     }
   }
 }

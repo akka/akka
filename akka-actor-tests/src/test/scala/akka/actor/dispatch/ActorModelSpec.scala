@@ -94,7 +94,7 @@ object ActorModelSpec {
         ack(); sender() ! Status.Failure(new ActorInterruptedException(new InterruptedException("Ping!")));
         busy.switchOff(()); throw new InterruptedException("Ping!")
       }
-      case InterruptNicely(msg)         => { ack(); sender() ! msg; busy.switchOff(()); Thread.currentThread().interrupt() }
+      case InterruptNicely(msg) => { ack(); sender() ! msg; busy.switchOff(()); Thread.currentThread().interrupt() }
       case ThrowException(e: Throwable) => { ack(); busy.switchOff(()); throw e }
       case DoubleStop                   => { ack(); context.stop(self); context.stop(self); busy.switchOff }
     }
@@ -163,8 +163,8 @@ object ActorModelSpec {
     }
   }
 
-  def assertDispatcher(dispatcher: MessageDispatcherInterceptor)(stops: Long = dispatcher.stops.get())(
-      implicit system: ActorSystem): Unit = {
+  def assertDispatcher(dispatcher: MessageDispatcherInterceptor)(stops: Long = dispatcher.stops.get())(implicit
+      system: ActorSystem): Unit = {
     val deadline = System.currentTimeMillis + dispatcher.shutdownTimeout.toMillis * 5
     try {
       await(deadline)(stops == dispatcher.stops.get)
@@ -260,10 +260,13 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
   def newTestActor(dispatcher: String) = system.actorOf(Props[DispatcherActor]().withDispatcher(dispatcher))
 
   def awaitStarted(ref: ActorRef): Unit = {
-    awaitCond(ref match {
-      case r: RepointableRef => r.isStarted
-      case _                 => true
-    }, 1 second, 10 millis)
+    awaitCond(
+      ref match {
+        case r: RepointableRef => r.isStarted
+        case _                 => true
+      },
+      1 second,
+      10 millis)
   }
 
   protected def interceptedDispatcher(): MessageDispatcherInterceptor
@@ -428,10 +431,9 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
 
         val c = system.scheduler.scheduleOnce(2.seconds) {
           import akka.util.ccompat.JavaConverters._
-          Thread.getAllStackTraces().asScala.foreach {
-            case (thread, stack) =>
-              println(s"$thread:")
-              stack.foreach(s => println(s"\t$s"))
+          Thread.getAllStackTraces().asScala.foreach { case (thread, stack) =>
+            println(s"$thread:")
+            stack.foreach(s => println(s"\t$s"))
           }
         }
         assert(Await.result(f1, timeout.duration) === "foo")
@@ -509,7 +511,8 @@ object DispatcherModelSpec {
       }
     """ +
     // use unique dispatcher id for each test, since MessageDispatcherInterceptor holds state
-    (for (n <- 1 to 30) yield """
+    (for (n <- 1 to 30)
+      yield """
         test-dispatcher-%s {
           type = "akka.actor.dispatch.DispatcherModelSpec$MessageDispatcherInterceptorConfigurator"
         }""".format(n)).mkString
@@ -647,7 +650,7 @@ class BalancingDispatcherModelSpec extends ActorModelSpec(BalancingDispatcherMod
       system.stop(a)
       system.stop(b)
 
-      while (!a.isTerminated && !b.isTerminated) {} //Busy wait for termination
+      while (!a.isTerminated && !b.isTerminated) {} // Busy wait for termination
 
       assertRefDefaultZero(a)(registers = 1, unregisters = 1, msgsReceived = 1, msgsProcessed = 1)
       assertRefDefaultZero(b)(registers = 1, unregisters = 1, msgsReceived = 1, msgsProcessed = 1)

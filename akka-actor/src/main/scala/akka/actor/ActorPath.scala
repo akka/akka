@@ -12,16 +12,12 @@ import scala.collection.immutable
 
 import akka.japi.Util.immutableSeq
 
-/**
- * Java API
- */
+/** Java API */
 object ActorPaths {
   // static forwarders to `object ActorPath`, since `trait ActorPath`
   // could not be changed to `abstract ActorPath` in a binary compatible way
 
-  /**
-   * Parse string as actor path; throws java.net.MalformedURLException if unable to do so.
-   */
+  /** Parse string as actor path; throws java.net.MalformedURLException if unable to do so. */
   def fromString(s: String): ActorPath = ActorPath.fromString(s)
 
   /**
@@ -55,9 +51,7 @@ object ActorPaths {
 
 object ActorPath {
 
-  /**
-   * Parse string as actor path; throws java.net.MalformedURLException if unable to do so.
-   */
+  /** Parse string as actor path; throws java.net.MalformedURLException if unable to do so. */
   def fromString(s: String): ActorPath = s match {
     case ActorPathExtractor(address, elems) => RootActorPath(address) / elems
     case _                                  => throw new MalformedURLException("cannot parse as ActorPath: " + s)
@@ -88,17 +82,18 @@ object ActorPath {
 
     // If the number of cases increase remember to add a `@switch` annotation e.g.:
     // (findInvalidPathElementCharPosition(element): @switch) match {
-    (findInvalidPathElementCharPosition(element)) match {
+    findInvalidPathElementCharPosition(element) match {
       case ValidPathCode =>
       // valid
       case EmptyPathCode =>
         throw InvalidActorNameException(s"Actor path element must not be empty $fullPathMsg")
       case invalidAt =>
-        throw InvalidActorNameException(s"""Invalid actor path element [$element]$fullPathMsg, illegal character [${element(
-          invalidAt)}] at position: $invalidAt. """ +
-        """Actor paths MUST: """ +
-        """not start with `$`, """ +
-        s"""include only ASCII letters and can only contain these special characters: ${ActorPath.ValidSymbols}.""")
+        throw InvalidActorNameException(
+          s"""Invalid actor path element [$element]$fullPathMsg, illegal character [${element(
+              invalidAt)}] at position: $invalidAt. """ +
+          """Actor paths MUST: """ +
+          """not start with `$`, """ +
+          s"""include only ASCII letters and can only contain these special characters: ${ActorPath.ValidSymbols}.""")
     }
   }
 
@@ -129,7 +124,8 @@ object ActorPath {
             case '%' if pos + 2 < len && isHexChar(s.charAt(pos + 1)) && isHexChar(s.charAt(pos + 2)) =>
               validate(pos + 3)
             case _ => pos
-          } else ValidPathCode
+          }
+        else ValidPathCode
 
       if (len > 0 && s.charAt(0) != '$') validate(0) else 0
     }
@@ -164,52 +160,34 @@ sealed trait ActorPath extends Comparable[ActorPath] with Serializable {
    */
   def address: Address
 
-  /**
-   * The name of the actor that this path refers to.
-   */
+  /** The name of the actor that this path refers to. */
   def name: String
 
-  /**
-   * The path for the parent actor.
-   */
+  /** The path for the parent actor. */
   def parent: ActorPath
 
-  /**
-   * Create a new child actor path.
-   */
+  /** Create a new child actor path. */
   def /(child: String): ActorPath
 
-  /**
-   * Java API: Create a new child actor path.
-   */
+  /** Java API: Create a new child actor path. */
   def child(child: String): ActorPath = /(child)
 
-  /**
-   * Recursively create a descendant’s path by appending all child names.
-   */
+  /** Recursively create a descendant’s path by appending all child names. */
   def /(child: Iterable[String]): ActorPath =
     child.foldLeft(this)((path, elem) => if (elem.isEmpty) path else path / elem)
 
-  /**
-   * Java API: Recursively create a descendant’s path by appending all child names.
-   */
+  /** Java API: Recursively create a descendant’s path by appending all child names. */
   def descendant(names: java.lang.Iterable[String]): ActorPath = /(immutableSeq(names))
 
-  /**
-   * Sequence of names for this path from root to this. Performance implication: has to allocate a list.
-   */
+  /** Sequence of names for this path from root to this. Performance implication: has to allocate a list. */
   def elements: immutable.Iterable[String]
 
-  /**
-   * Java API: Sequence of names for this path from root to this. Performance implication: has to allocate a list.
-   */
+  /** Java API: Sequence of names for this path from root to this. Performance implication: has to allocate a list. */
   @nowarn("msg=deprecated")
   def getElements: java.lang.Iterable[String] =
     scala.collection.JavaConverters.asJavaIterableConverter(elements).asJava
 
-  /**
-   * Walk up the tree to obtain and return the RootActorPath.
-   */
+  /** Walk up the tree to obtain and return the RootActorPath. */
   def root: RootActorPath
 
   /**
@@ -297,14 +275,10 @@ final case class RootActorPath(address: Address, name: String = "/") extends Act
     case _: ChildActorPath => 1
   }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   private[akka] def uid: Int = ActorCell.undefinedUid
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   override private[akka] def withUid(uid: Int): ActorPath =
     if (uid == ActorCell.undefinedUid) this
     else throw new IllegalStateException(s"RootActorPath must have undefinedUid, [$uid != ${ActorCell.undefinedUid}")
@@ -345,9 +319,7 @@ final class ChildActorPath private[akka] (val parent: ActorPath, val name: Strin
     rec(this)
   }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   override private[akka] def withUid(uid: Int): ActorPath =
     if (uid == this.uid) this
     else new ChildActorPath(parent, name, uid)

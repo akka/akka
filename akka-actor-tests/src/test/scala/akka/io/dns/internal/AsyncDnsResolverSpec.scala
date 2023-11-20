@@ -21,10 +21,12 @@ import akka.io.dns.internal.AsyncDnsResolver.ResolveFailedException
 import akka.io.dns.internal.DnsClient.{ Answer, Question4, Question6, SrvQuestion }
 import akka.testkit.{ AkkaSpec, TestActor, TestProbe, WithLogCapturing }
 
-class AsyncDnsResolverSpec extends AkkaSpec("""
+class AsyncDnsResolverSpec
+    extends AkkaSpec("""
     akka.loglevel = DEBUG
     akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
-  """) with WithLogCapturing {
+  """)
+    with WithLogCapturing {
 
   val defaultConfig = ConfigFactory.parseString("""
           nameservers = ["one","two"]
@@ -89,8 +91,7 @@ class AsyncDnsResolverSpec extends AkkaSpec("""
 
     "fails if all dns clients timeout" in new Setup {
       r ! Resolve("cats.com", Ip(ipv4 = true, ipv6 = false))
-      senderProbe.expectMsgPF(remainingOrDefault) {
-        case Failure(ResolveFailedException(_)) =>
+      senderProbe.expectMsgPF(remainingOrDefault) { case Failure(ResolveFailedException(_)) =>
       }
     }
 
@@ -100,8 +101,7 @@ class AsyncDnsResolverSpec extends AkkaSpec("""
       dnsClient1.reply(Failure(new RuntimeException("Fail")))
       dnsClient2.expectMsg(Question4(2, "cats.com"))
       dnsClient2.reply(Failure(new RuntimeException("Yet another fail")))
-      senderProbe.expectMsgPF(remainingOrDefault) {
-        case Failure(ResolveFailedException(_)) =>
+      senderProbe.expectMsgPF(remainingOrDefault) { case Failure(ResolveFailedException(_)) =>
       }
     }
 
@@ -265,23 +265,29 @@ class AsyncDnsResolverSpec extends AkkaSpec("""
 
       // want to send up to 100 (or barring that, as many Resolves as we can) in 100 millis
       try {
-        awaitCond(p = {
-          if (resolvesSent < 100) {
-            r ! Resolve(s"{$resolvesSent}outof${resolvesSent + 1}cats.com", Ip(ipv4 = true, ipv6 = false))
-            resolvesSent += 1
-            false // not done yet
-          } else true
-        }, max = 100.millis, interval = 100.micros)
+        awaitCond(
+          p = {
+            if (resolvesSent < 100) {
+              r ! Resolve(s"{$resolvesSent}outof${resolvesSent + 1}cats.com", Ip(ipv4 = true, ipv6 = false))
+              resolvesSent += 1
+              false // not done yet
+            } else true
+          },
+          max = 100.millis,
+          interval = 100.micros)
       } catch {
         case _: AssertionError =>
           // not actually a problem if we didn't send 100 messages, but not being able to send multiple renders the test invalid
           resolvesSent shouldBe >(1)
       }
 
-      awaitAssert(a = {
-        usedIds.size shouldBe resolvesSent
-        qCount shouldBe resolvesSent
-      }, max = 300.millis, interval = 1.milli)
+      awaitAssert(
+        a = {
+          usedIds.size shouldBe resolvesSent
+          qCount shouldBe resolvesSent
+        },
+        max = 300.millis,
+        interval = 1.milli)
 
       // Since we don't reply, the resolves may timeout, but that will still leave them pending
     }
@@ -342,9 +348,12 @@ class AsyncDnsResolverSpec extends AkkaSpec("""
     requestFrom(firstSender)
     requestFrom(secondSender)
 
-    awaitAssert(a = {
-      qCount shouldBe 1
-    }, max = 100.millis, interval = 1.milli)
+    awaitAssert(
+      a = {
+        qCount shouldBe 1
+      },
+      max = 100.millis,
+      interval = 1.milli)
 
     firstSender.expectMsgType[Failure]
     secondSender.expectMsgType[Failure]
@@ -359,8 +368,13 @@ class AsyncDnsResolverSpec extends AkkaSpec("""
 
   def resolver(clients: List[ActorRef], config: Config): ActorRef = {
     val settings = new DnsSettings(system.asInstanceOf[ExtendedActorSystem], config)
-    system.actorOf(Props(new AsyncDnsResolver(settings, new SimpleDnsCache(), (_, _) => {
-      clients
-    })))
+    system.actorOf(
+      Props(
+        new AsyncDnsResolver(
+          settings,
+          new SimpleDnsCache(),
+          (_, _) => {
+            clients
+          })))
   }
 }

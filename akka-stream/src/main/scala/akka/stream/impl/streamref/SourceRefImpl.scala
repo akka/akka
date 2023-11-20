@@ -23,9 +23,7 @@ private[stream] final case class SourceRefImpl[T](initialPartnerRef: ActorRef) e
     Source.fromGraph(new SourceRefStageImpl(OptionVal.Some(initialPartnerRef))).mapMaterializedValue(_ => NotUsed)
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[stream] object SourceRefStageImpl {
   private sealed trait ActorRefStage { def ref: ActorRef }
 

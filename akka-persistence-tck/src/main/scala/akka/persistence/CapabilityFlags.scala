@@ -7,7 +7,7 @@ package akka.persistence
 import scala.language.implicitConversions
 
 sealed abstract class CapabilityFlag {
-  private val capturedStack = (new Throwable().getStackTrace)
+  private val capturedStack = new Throwable().getStackTrace
     .filter(_.getMethodName.startsWith("supports"))
     .find { el =>
       val clazz = Class.forName(el.getClassName)

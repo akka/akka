@@ -59,9 +59,7 @@ final class EventEnvelope(
   def this(offset: Offset, persistenceId: String, sequenceNr: Long, event: Any, timestamp: Long) =
     this(offset, persistenceId, sequenceNr, event, timestamp, None)
 
-  /**
-   * Java API
-   */
+  /** Java API */
   def getEventMetaData(): Optional[Any] = {
     import scala.compat.java8.OptionConverters._
     eventMetadata.asJava

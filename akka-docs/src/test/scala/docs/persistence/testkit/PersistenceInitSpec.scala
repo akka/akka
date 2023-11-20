@@ -19,19 +19,21 @@ import scala.concurrent.duration._
 
 //#imports
 
-class PersistenceInitSpec extends ScalaTestWithActorTestKit(s"""
+class PersistenceInitSpec
+    extends ScalaTestWithActorTestKit(s"""
   akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
   akka.persistence.snapshot-store.plugin = "akka.persistence.snapshot-store.local"
   akka.persistence.snapshot-store.local.dir = "target/snapshot-${UUID.randomUUID().toString}"
-  """) with AnyWordSpecLike {
+  """)
+    with AnyWordSpecLike {
 
   "PersistenceInit" should {
     "initialize plugins" in {
-      //#init
+      // #init
       val timeout = 5.seconds
       val done: Future[Done] = PersistenceInit.initializeDefaultPlugins(system, timeout)
       Await.result(done, timeout)
-      //#init
+      // #init
     }
   }
 }

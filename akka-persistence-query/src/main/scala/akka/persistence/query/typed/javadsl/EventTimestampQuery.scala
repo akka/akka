@@ -10,9 +10,7 @@ import java.util.concurrent.CompletionStage
 
 import akka.persistence.query.javadsl.ReadJournal
 
-/**
- * [[EventsBySliceQuery]] that is using a timestamp based offset should also implement this query.
- */
+/** [[EventsBySliceQuery]] that is using a timestamp based offset should also implement this query. */
 trait EventTimestampQuery extends ReadJournal {
 
   def timestampOf(persistenceId: String, sequenceNr: Long): CompletionStage[Optional[Instant]]

@@ -17,37 +17,37 @@ object SupervisionCompileOnly {
 
   val behavior = Behaviors.empty[String]
 
-  //#restart
+  // #restart
   Behaviors.supervise(behavior).onFailure[IllegalStateException](SupervisorStrategy.restart)
-  //#restart
+  // #restart
 
-  //#resume
+  // #resume
   Behaviors.supervise(behavior).onFailure[IllegalStateException](SupervisorStrategy.resume)
-  //#resume
+  // #resume
 
-  //#restart-limit
+  // #restart-limit
   Behaviors
     .supervise(behavior)
     .onFailure[IllegalStateException](
       SupervisorStrategy.restart.withLimit(maxNrOfRetries = 10, withinTimeRange = 10.seconds))
-  //#restart-limit
+  // #restart-limit
 
-  //#multiple
+  // #multiple
   Behaviors
     .supervise(Behaviors.supervise(behavior).onFailure[IllegalStateException](SupervisorStrategy.restart))
     .onFailure[IllegalArgumentException](SupervisorStrategy.stop)
-  //#multiple
+  // #multiple
 
-  //#wrap
+  // #wrap
   object Counter {
     sealed trait Command
     case class Increment(nr: Int) extends Command
     case class GetCount(replyTo: ActorRef[Int]) extends Command
 
-    //#top-level
+    // #top-level
     def apply(): Behavior[Command] =
       Behaviors.supervise(counter(1)).onFailure(SupervisorStrategy.restart)
-    //#top-level
+    // #top-level
 
     private def counter(count: Int): Behavior[Command] =
       Behaviors.receiveMessage[Command] {
@@ -58,9 +58,9 @@ object SupervisionCompileOnly {
           Behaviors.same
       }
   }
-  //#wrap
+  // #wrap
 
-  //#restart-stop-children
+  // #restart-stop-children
   def child(size: Long): Behavior[String] =
     Behaviors.receiveMessage(msg => child(size + msg.length))
 
@@ -82,9 +82,9 @@ object SupervisionCompileOnly {
       }
       .onFailure(SupervisorStrategy.restart)
   }
-  //#restart-stop-children
+  // #restart-stop-children
 
-  //#restart-keep-children
+  // #restart-keep-children
   def parent2: Behavior[String] = {
     Behaviors.setup { ctx =>
       val child1 = ctx.spawn(child(0), "child1")
@@ -104,7 +104,7 @@ object SupervisionCompileOnly {
         .onFailure(SupervisorStrategy.restart.withStopChildren(false))
     }
   }
-  //#restart-keep-children
+  // #restart-keep-children
 
   trait Resource {
     def close(): Unit
@@ -113,7 +113,7 @@ object SupervisionCompileOnly {
   def claimResource(): Resource = ???
 
   @nowarn("msg=never used")
-  //#restart-PreRestart-signal
+  // #restart-PreRestart-signal
   def withPreRestart: Behavior[String] = {
     Behaviors
       .supervise[String] {
@@ -138,5 +138,5 @@ object SupervisionCompileOnly {
       .onFailure[Exception](SupervisorStrategy.restart)
   }
 
-  //#restart-PreRestart-signal
+  // #restart-PreRestart-signal
 }

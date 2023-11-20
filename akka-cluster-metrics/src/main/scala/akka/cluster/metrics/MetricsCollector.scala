@@ -77,8 +77,8 @@ private[metrics] object MetricsCollector {
       else // Use complete fall back chain.
         create(collectorCustom).orElse(create(collectorSigar)).orElse(create(collectorJMX))
 
-    collector.recover {
-      case e => throw new ConfigurationException(s"Could not create metrics collector: ${e.getMessage}", e)
+    collector.recover { case e =>
+      throw new ConfigurationException(s"Could not create metrics collector: ${e.getMessage}", e)
     }.get
   }
 }
@@ -95,9 +95,7 @@ class JmxMetricsCollector(address: Address, decayFactor: Double) extends Metrics
   private def this(address: Address, settings: ClusterMetricsSettings) =
     this(address, EWMA.alpha(settings.CollectorMovingAverageHalfLife, settings.CollectorSampleInterval))
 
-  /**
-   * This constructor is used when creating an instance from configured FQCN
-   */
+  /** This constructor is used when creating an instance from configured FQCN */
   def this(system: ActorSystem) = this(Cluster(system).selfAddress, ClusterMetricsExtension(system).settings)
 
   private val decayFactorOption = Some(decayFactor)
@@ -137,9 +135,7 @@ class JmxMetricsCollector(address: Address, decayFactor: Double) extends Metrics
   def processors: Option[Metric] =
     Metric.create(name = Processors, value = osMBean.getAvailableProcessors, decayFactor = None)
 
-  /**
-   * Current heap to be passed in to heapUsed, heapCommitted and heapMax
-   */
+  /** Current heap to be passed in to heapUsed, heapCommitted and heapMax */
   def heapMemoryUsage: MemoryUsage = memoryMBean.getHeapMemoryUsage
 
   /**
@@ -194,16 +190,12 @@ class SigarMetricsCollector(address: Address, decayFactor: Double, sigar: SigarP
   def this(address: Address, settings: ClusterMetricsSettings) =
     this(address, settings, DefaultSigarProvider(settings).createSigarInstance)
 
-  /**
-   * This constructor is used when creating an instance from configured FQCN
-   */
+  /** This constructor is used when creating an instance from configured FQCN */
   def this(system: ActorSystem) = this(Cluster(system).selfAddress, ClusterMetricsExtension(system).settings)
 
   private val decayFactorOption = Some(decayFactor)
 
-  /**
-   * Verify at the end of construction that Sigar is operational.
-   */
+  /** Verify at the end of construction that Sigar is operational. */
   metrics()
 
   // Construction complete.
@@ -254,9 +246,7 @@ class SigarMetricsCollector(address: Address, decayFactor: Double, sigar: SigarP
   def cpuIdle(cpuPerc: CpuPerc): Option[Metric] =
     Metric.create(name = CpuIdle, value = cpuPerc.getIdle.asInstanceOf[Number], decayFactor = decayFactorOption)
 
-  /**
-   * Releases any native resources associated with this instance.
-   */
+  /** Releases any native resources associated with this instance. */
   override def close(): Unit = SigarProvider.close(sigar)
 
 }

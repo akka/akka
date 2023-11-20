@@ -41,16 +41,16 @@ object AdapterSpec {
 
   class ClassicFailInConstructor extends classic.Actor {
     throw new TestException("Exception in constructor")
-    def receive = {
-      case "ping" => sender() ! "pong"
+    def receive = { case "ping" =>
+      sender() ! "pong"
     }
   }
 
   def classicForwarder(ref: classic.ActorRef): classic.Props = classic.Props(new ClassicForwarder(ref))
 
   class ClassicForwarder(ref: classic.ActorRef) extends classic.Actor {
-    def receive = {
-      case a: String => ref ! a
+    def receive = { case a: String =>
+      ref ! a
     }
   }
 
@@ -90,10 +90,9 @@ object AdapterSpec {
             Behaviors.same
         }
       }
-      .receiveSignal {
-        case (_, Terminated(_)) =>
-          probe ! "terminated"
-          Behaviors.same
+      .receiveSignal { case (_, Terminated(_)) =>
+        probe ! "terminated"
+        Behaviors.same
       }
 
   def unhappyTyped(msg: String): Behavior[String] = Behaviors.setup[String] { ctx =>
@@ -212,13 +211,15 @@ class AdapterSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll with 
       for { _ <- 0 to 10 } {
         var systemN: akka.actor.typed.ActorSystem[Done] = null
         try {
-          systemN = ActorSystem.create(Behaviors.receive[Done] { (context, message) =>
-            context.self ! Done
-            message match {
-              case Done => Behaviors.stopped
-            }
+          systemN = ActorSystem.create(
+            Behaviors.receive[Done] { (context, message) =>
+              context.self ! Done
+              message match {
+                case Done => Behaviors.stopped
+              }
 
-          }, "AdapterSpec-stopping-guardian-2")
+            },
+            "AdapterSpec-stopping-guardian-2")
 
         } finally if (system != null) TestKit.shutdownActorSystem(systemN.toClassic)
       }
@@ -231,7 +232,7 @@ class AdapterSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll with 
     }
 
     "allow seamless access to untyped extensions" in {
-      SerializationExtension(typedSystem) should not be (null)
+      SerializationExtension(typedSystem) should not be null
     }
   }
 

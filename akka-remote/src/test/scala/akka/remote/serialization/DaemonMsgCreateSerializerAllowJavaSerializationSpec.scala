@@ -52,11 +52,10 @@ private[akka] trait SerializationVerification { self: AkkaSpec =>
     // can't compare props.creator when function
     got.props.clazz should ===(expected.props.clazz)
     got.props.args.length should ===(expected.props.args.length)
-    got.props.args.zip(expected.props.args).foreach {
-      case (g, e) =>
-        if (e.isInstanceOf[Function0[_]]) ()
-        else if (e.isInstanceOf[Function1[_, _]]) ()
-        else g should ===(e)
+    got.props.args.zip(expected.props.args).foreach { case (g, e) =>
+      if (e.isInstanceOf[Function0[_]]) ()
+      else if (e.isInstanceOf[Function1[_, _]]) ()
+      else g should ===(e)
     }
     got.props.deploy should ===(expected.props.deploy)
     got.deploy should ===(expected.deploy)
@@ -127,9 +126,11 @@ class DaemonMsgCreateSerializerAllowJavaSerializationSpec
   }
 }
 
-class DaemonMsgCreateSerializerNoJavaSerializationSpec extends AkkaSpec("""
+class DaemonMsgCreateSerializerNoJavaSerializationSpec
+    extends AkkaSpec("""
    akka.actor.allow-java-serialization=off
-  """) with SerializationVerification {
+  """)
+    with SerializationVerification {
 
   import DaemonMsgCreateSerializerAllowJavaSerializationSpec.MyActor
 

@@ -17,9 +17,7 @@ import akka.annotation.DoNotInherit
 import akka.stream.impl.streamref.StreamRefResolverImpl
 import akka.stream.scaladsl.{ Sink, Source }
 
-/**
- * See full documentation on [[SinkRef]].
- */
+/** See full documentation on [[SinkRef]]. */
 object SinkRef {
 
   /** Implicitly converts a [[SinkRef]] to a [[Sink]]. The same can be achieved by calling `.sink` on the reference. */
@@ -51,9 +49,7 @@ trait SinkRef[In] {
   final def getSink(): javadsl.Sink[In, NotUsed] = sink().asJava
 }
 
-/**
- * See full documentation on [[SourceRef]].
- */
+/** See full documentation on [[SourceRef]]. */
 object SourceRef {
 
   /** Implicitly converts a SourceRef to a Source. The same can be achieved by calling `.source` on the SourceRef itself. */
@@ -117,9 +113,7 @@ final case class InvalidPartnerActorException(expectedRef: ActorRef, gotRef: Act
       s"Do note that stream refs are one-shot references and have to be paired up in 1:1 pairs. " +
       s"Multi-cast such as broadcast etc can be implemented by sharing multiple new stream references. ")
 
-/**
- * The stream ref resolver extension provides a way to serialize and deserialize streamrefs in user serializers.
- */
+/** The stream ref resolver extension provides a way to serialize and deserialize streamrefs in user serializers. */
 object StreamRefResolver extends ExtensionId[StreamRefResolver] {
   override def get(system: ActorSystem): StreamRefResolver = super.get(system)
   override def get(system: ClassicActorSystemProvider): StreamRefResolver = super.get(system)
@@ -147,13 +141,9 @@ object StreamRefResolver extends ExtensionId[StreamRefResolver] {
    */
   def toSerializationFormat[T](ref: SinkRef[T]): String
 
-  /**
-   * Deserialize an `SourceRef` in the [[#toSerializationFormat]].
-   */
+  /** Deserialize an `SourceRef` in the [[#toSerializationFormat]]. */
   def resolveSourceRef[T](serializedSourceRef: String): SourceRef[T]
 
-  /**
-   * Deserialize an `SinkRef` in the [[#toSerializationFormat]].
-   */
+  /** Deserialize an `SinkRef` in the [[#toSerializationFormat]]. */
   def resolveSinkRef[T](serializedSinkRef: String): SinkRef[T]
 }

@@ -94,9 +94,7 @@ private[cluster] class CrossDcHeartbeatSender extends Actor {
     cluster.unsubscribe(self)
   }
 
-  /**
-   * Looks up and returns the remote cluster heartbeat connection for the specific address.
-   */
+  /** Looks up and returns the remote cluster heartbeat connection for the specific address. */
   def heartbeatReceiver(address: Address): ActorSelection =
     context.actorSelection(ClusterHeartbeatReceiver.path(address))
 
@@ -128,12 +126,11 @@ private[cluster] class CrossDcHeartbeatSender extends Actor {
     case ClusterHeartbeatSender.ExpectedFirstHeartbeat(from) => triggerFirstHeartbeat(from)
   }
 
-  def introspecting: Actor.Receive = {
-    case ReportStatus() =>
-      sender() ! {
-        if (activelyMonitoring) CrossDcHeartbeatSender.MonitoringActive(dataCentersState)
-        else CrossDcHeartbeatSender.MonitoringDormant()
-      }
+  def introspecting: Actor.Receive = { case ReportStatus() =>
+    sender() ! {
+      if (activelyMonitoring) CrossDcHeartbeatSender.MonitoringActive(dataCentersState)
+      else CrossDcHeartbeatSender.MonitoringDormant()
+    }
   }
 
   def init(snapshot: CurrentClusterState): Unit = {
@@ -336,21 +333,24 @@ private[cluster] object CrossDcHeartbeatingState {
       crossDcFailureDetector: FailureDetectorRegistry[Address],
       nrOfMonitoredNodesPerDc: Int,
       members: immutable.SortedSet[Member]): CrossDcHeartbeatingState = {
-    new CrossDcHeartbeatingState(selfDataCenter, crossDcFailureDetector, nrOfMonitoredNodesPerDc, state = {
-      // TODO unduplicate this with the logic in MembershipState.ageSortedTopOldestMembersPerDc
-      val groupedByDc = members.filter(atLeastInUpState).groupBy(_.dataCenter)
+    new CrossDcHeartbeatingState(
+      selfDataCenter,
+      crossDcFailureDetector,
+      nrOfMonitoredNodesPerDc,
+      state = {
+        // TODO unduplicate this with the logic in MembershipState.ageSortedTopOldestMembersPerDc
+        val groupedByDc = members.filter(atLeastInUpState).groupBy(_.dataCenter)
 
-      if (members.ordering == Member.ageOrdering) {
-        // we already have the right ordering
-        groupedByDc
-      } else {
-        // we need to enforce the ageOrdering for the SortedSet in each DC
-        groupedByDc.map {
-          case (dc, ms) =>
+        if (members.ordering == Member.ageOrdering) {
+          // we already have the right ordering
+          groupedByDc
+        } else {
+          // we need to enforce the ageOrdering for the SortedSet in each DC
+          groupedByDc.map { case (dc, ms) =>
             dc -> immutable.SortedSet.empty[Member](Member.ageOrdering).union(ms)
+          }
         }
-      }
-    })
+      })
   }
 
 }

@@ -9,9 +9,7 @@ import org.agrona.concurrent.OneToOneConcurrentArrayQueue
 import akka.annotation.InternalApi
 import akka.stream.scaladsl.PartitionHub
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] class FixedSizePartitionHub[T](partitioner: T => Int, lanes: Int, bufferSize: Int)
     extends PartitionHub[T](
       // during tear down or restart it's possible that some streams have been removed
@@ -26,9 +24,7 @@ import akka.stream.scaladsl.PartitionHub
 
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] class FixedSizePartitionQueue(lanes: Int, capacity: Int)
     extends PartitionHub.Internal.PartitionQueue {
 

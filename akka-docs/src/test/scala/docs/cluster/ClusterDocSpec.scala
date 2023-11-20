@@ -20,15 +20,15 @@ object ClusterDocSpec {
 class ClusterDocSpec extends AkkaSpec(ClusterDocSpec.config) with CompileOnlySpec {
 
   "demonstrate leave" in compileOnlySpec {
-    //#leave
+    // #leave
     val cluster = Cluster(system)
     cluster.leave(cluster.selfAddress)
-    //#leave
+    // #leave
   }
 
   "demonstrate data center" in compileOnlySpec {
     {
-      //#dcAccess
+      // #dcAccess
       val cluster = Cluster(system)
       // this node's data center
       val dc = cluster.selfDataCenter
@@ -37,19 +37,19 @@ class ClusterDocSpec extends AkkaSpec(ClusterDocSpec.config) with CompileOnlySpe
       // a specific member's data center
       val aMember = cluster.state.members.head
       val aDc = aMember.dataCenter
-      //#dcAccess
+      // #dcAccess
     }
   }
 
   "demonstrate programmatic joining to seed nodes" in compileOnlySpec {
-    //#join-seed-nodes
+    // #join-seed-nodes
     import akka.actor.Address
     import akka.cluster.Cluster
 
     val cluster = Cluster(system)
-    val list: List[Address] = ??? //your method to dynamically get seed nodes
+    val list: List[Address] = ??? // your method to dynamically get seed nodes
     cluster.joinSeedNodes(list)
-    //#join-seed-nodes
+    // #join-seed-nodes
   }
 
 }

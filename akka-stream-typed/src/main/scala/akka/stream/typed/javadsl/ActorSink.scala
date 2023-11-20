@@ -9,9 +9,7 @@ import akka.actor.typed._
 import akka.stream.javadsl._
 import akka.stream.typed
 
-/**
- * Collection of Sinks aimed at integrating with typed Actors.
- */
+/** Collection of Sinks aimed at integrating with typed Actors. */
 object ActorSink {
 
   /**

@@ -458,6 +458,5 @@ package akka.stream
  *   * [[akka.stream.impl.TraversalBuilder.printTraversal]]: Prints the Traversal in a readable format
  *   * [[akka.stream.impl.TraversalBuilder.printWiring]]: Prints the calculated port assignments. Useful for
  *     debugging if everything is wired to the right thing.
- *
  */
 package object impl {}

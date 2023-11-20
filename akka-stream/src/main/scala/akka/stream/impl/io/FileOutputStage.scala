@@ -26,9 +26,7 @@ import akka.stream.stage.{ GraphStageLogic, GraphStageWithMaterializedValue, InH
 import akka.util.ByteString
 import akka.util.ccompat.JavaConverters._
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] final class FileOutputStage(path: Path, startPosition: Long, openOptions: immutable.Set[OpenOption])
     extends GraphStageWithMaterializedValue[SinkShape[ByteString], Future[IOResult]] {

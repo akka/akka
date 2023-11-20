@@ -19,9 +19,7 @@ import akka.actor.typed.scaladsl.LoggerOps
 import akka.actor.typed.scaladsl.adapter._
 import akka.annotation.InternalApi
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] object TopicImpl {
 
@@ -43,12 +41,10 @@ private[akka] object TopicImpl {
   final case class SubscriberTerminated[T](subscriber: ActorRef[T]) extends Command[T]
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
-private[akka] final class TopicImpl[T](topicName: String, context: ActorContext[TopicImpl.Command[T]])(
-    implicit classTag: ClassTag[T])
+private[akka] final class TopicImpl[T](topicName: String, context: ActorContext[TopicImpl.Command[T]])(implicit
+    classTag: ClassTag[T])
     extends AbstractBehavior[TopicImpl.Command[T]](context) {
 
   /*
@@ -73,7 +69,7 @@ private[akka] final class TopicImpl[T](topicName: String, context: ActorContext[
   private val receptionist = context.system.receptionist
   private val receptionistAdapter = context.messageAdapter[Receptionist.Listing] {
     case topicServiceKey.Listing(topics) => TopicInstancesUpdated(topics)
-    case _                               => throw new IllegalArgumentException() // FIXME exhaustiveness check fails on receptionist listing match
+    case _ => throw new IllegalArgumentException() // FIXME exhaustiveness check fails on receptionist listing match
   }
   receptionist ! Receptionist.Subscribe(topicServiceKey, receptionistAdapter)
 

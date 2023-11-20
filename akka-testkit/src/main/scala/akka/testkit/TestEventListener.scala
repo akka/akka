@@ -47,9 +47,7 @@ object TestEvent {
   }
   final case class Mute(filters: immutable.Seq[EventFilter]) extends TestEvent with NoSerializationVerificationNeeded {
 
-    /**
-     * Java API: create a Mute command from a list of filters
-     */
+    /** Java API: create a Mute command from a list of filters */
     def this(filters: JIterable[EventFilter]) = this(immutableSeq(filters))
   }
   object UnMute {
@@ -59,9 +57,7 @@ object TestEvent {
       extends TestEvent
       with NoSerializationVerificationNeeded {
 
-    /**
-     * Java API: create an UnMute command from a list of filters
-     */
+    /** Java API: create an UnMute command from a list of filters */
     def this(filters: JIterable[EventFilter]) = this(immutableSeq(filters))
   }
 }
@@ -133,9 +129,7 @@ abstract class EventFilter(occurrences: Int) {
   protected val message: Either[String, Regex] = Left("")
   protected val complete: Boolean = false
 
-  /**
-   * internal implementation helper, no guaranteed API
-   */
+  /** internal implementation helper, no guaranteed API */
   protected def doMatch(src: String, msg: Any) = {
     val msgstr = if (msg != null) msg.toString else "null"
     (source.isDefined && source.get == src || source.isEmpty) &&
@@ -192,9 +186,7 @@ object EventFilter {
       if (message ne null) Left(message) else Option(pattern).map(new Regex(_)).toRight(start),
       message ne null)(occurrences)
 
-  /**
-   * Create a filter for Error events. See apply() for more details.
-   */
+  /** Create a filter for Error events. See apply() for more details. */
   def error(
       message: String = null,
       source: String = null,
@@ -357,9 +349,7 @@ final case class ErrorFilter(
       else Left(message),
       complete)(occurrences)
 
-  /**
-   * Java API: filter only on the given type of exception
-   */
+  /** Java API: filter only on the given type of exception */
   def this(throwable: Class[_]) = this(throwable, null, null, false, false, Int.MaxValue)
 
 }

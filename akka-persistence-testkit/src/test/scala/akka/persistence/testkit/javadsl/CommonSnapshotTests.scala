@@ -148,7 +148,7 @@ trait CommonSnapshotTests extends JavaDslUtils {
 
       val a = system.actorOf(Props(classOf[A], pid, Some(testActor)))
 
-      //consecutive calls should stack
+      // consecutive calls should stack
       failNextPersisted()
       failNextPersisted()
 

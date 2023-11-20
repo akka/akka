@@ -15,11 +15,11 @@ import akka.persistence.typed.scaladsl.ReplicatedEventSourcing
 @nowarn("msg=never used")
 object ReplicatedEventSourcingCompileOnlySpec {
 
-  //#replicas
+  // #replicas
   val DCA = ReplicaId("DC-A")
   val DCB = ReplicaId("DC-B")
   val AllReplicas = Set(DCA, DCB)
-  //#replicas
+  // #replicas
 
   val queryPluginId = ""
 
@@ -28,7 +28,7 @@ object ReplicatedEventSourcingCompileOnlySpec {
   trait Event
 
   object Shared {
-    //#factory-shared
+    // #factory-shared
     def apply(
         system: ActorSystem[_],
         entityId: String,
@@ -40,11 +40,11 @@ object ReplicatedEventSourcingCompileOnlySpec {
         EventSourcedBehavior[Command, State, Event](???, ???, ???, ???)
       }
     }
-    //#factory-shared
+    // #factory-shared
   }
 
   object PerReplica {
-    //#factory
+    // #factory
     def apply(
         system: ActorSystem[_],
         entityId: String,
@@ -56,7 +56,7 @@ object ReplicatedEventSourcingCompileOnlySpec {
       }
     }
 
-    //#factory
+    // #factory
   }
 
 }

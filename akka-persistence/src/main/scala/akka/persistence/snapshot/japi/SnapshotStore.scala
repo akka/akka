@@ -10,9 +10,7 @@ import akka.japi.Util._
 import akka.persistence._
 import akka.persistence.snapshot.{ SnapshotStore => SSnapshotStore }
 
-/**
- * Java API: abstract snapshot store.
- */
+/** Java API: abstract snapshot store. */
 abstract class SnapshotStore extends SSnapshotStore with SnapshotStorePlugin {
   import context.dispatcher
 

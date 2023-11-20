@@ -33,8 +33,8 @@ object EventSourcedProducerQueueSpec {
     akka.persistence.journal.inmem.test-serialization = on
     akka.persistence.snapshot-store.plugin = "akka.persistence.snapshot-store.local"
     akka.persistence.snapshot-store.local.dir = "target/EventSourcedDurableProducerQueueSpec-${UUID
-      .randomUUID()
-      .toString}"
+        .randomUUID()
+        .toString}"
     """)
 }
 

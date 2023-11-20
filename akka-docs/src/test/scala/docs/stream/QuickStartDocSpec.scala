@@ -37,48 +37,48 @@ class QuickStartDocSpec extends AnyWordSpec with BeforeAndAfterAll with ScalaFut
   "demonstrate Source" in {
     implicit val system = ActorSystem("QuickStart")
 
-    //#create-source
+    // #create-source
     val source: Source[Int, NotUsed] = Source(1 to 100)
-    //#create-source
+    // #create-source
 
-    //#run-source
+    // #run-source
     source.runForeach(i => println(i))
-    //#run-source
+    // #run-source
 
-    //#transform-source
+    // #transform-source
     val factorials = source.scan(BigInt(1))((acc, next) => acc * next)
 
     val result: Future[IOResult] =
       factorials.map(num => ByteString(s"$num\n")).runWith(FileIO.toPath(Paths.get("factorials.txt")))
-    //#transform-source
+    // #transform-source
 
-    //#use-transformed-sink
+    // #use-transformed-sink
     factorials.map(_.toString).runWith(lineSink("factorial2.txt"))
-    //#use-transformed-sink
+    // #use-transformed-sink
 
-    //#add-streams
+    // #add-streams
     factorials
       .zipWith(Source(0 to 100))((num, idx) => s"$idx! = $num")
       .throttle(1, 1.second)
-      //#add-streams
+      // #add-streams
       .take(3)
-      //#add-streams
+      // #add-streams
       .runForeach(println)
-    //#add-streams
+    // #add-streams
 
-    //#run-source-and-terminate
+    // #run-source-and-terminate
     val done: Future[Done] = source.runForeach(i => println(i))
 
     implicit val ec = system.dispatcher
     done.onComplete(_ => system.terminate())
-    //#run-source-and-terminate
+    // #run-source-and-terminate
 
     done.futureValue
   }
 
-  //#transform-sink
+  // #transform-sink
   def lineSink(filename: String): Sink[String, Future[IOResult]] =
     Flow[String].map(s => ByteString(s + "\n")).toMat(FileIO.toPath(Paths.get(filename)))(Keep.right)
-  //#transform-sink
+  // #transform-sink
 
 }

@@ -11,9 +11,7 @@ import org.slf4j.event.Level
 
 import akka.annotation.{ DoNotInherit, InternalApi }
 
-/**
- * Logging options when using `Behaviors.logMessages`.
- */
+/** Logging options when using `Behaviors.logMessages`. */
 @DoNotInherit
 abstract sealed class LogOptions {
 
@@ -23,14 +21,10 @@ abstract sealed class LogOptions {
    */
   def withEnabled(enabled: Boolean): LogOptions
 
-  /**
-   * The [[org.slf4j.event.Level]] to use when logging messages.
-   */
+  /** The [[org.slf4j.event.Level]] to use when logging messages. */
   def withLevel(level: Level): LogOptions
 
-  /**
-   * A [[org.slf4j.Logger]] to use when logging messages.
-   */
+  /** A [[org.slf4j.Logger]] to use when logging messages. */
   def withLogger(logger: Logger): LogOptions
 
   def enabled: Boolean
@@ -41,14 +35,10 @@ abstract sealed class LogOptions {
   def getLogger: Optional[Logger]
 }
 
-/**
- * Factories for log options
- */
+/** Factories for log options */
 object LogOptions {
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi
   private[akka] final case class LogOptionsImpl(enabled: Boolean, level: Level, logger: Option[Logger])
       extends LogOptions {
@@ -59,27 +49,19 @@ object LogOptions {
      */
     override def withEnabled(enabled: Boolean): LogOptions = this.copy(enabled = enabled)
 
-    /**
-     * The [[org.slf4j.event.Level]] to use when logging messages.
-     */
+    /** The [[org.slf4j.event.Level]] to use when logging messages. */
     override def withLevel(level: Level): LogOptions = this.copy(level = level)
 
-    /**
-     * A [[org.slf4j.Logger]] to use when logging messages.
-     */
+    /** A [[org.slf4j.Logger]] to use when logging messages. */
     override def withLogger(logger: Logger): LogOptions = this.copy(logger = Option(logger))
 
     /** Java API */
     override def getLogger: Optional[Logger] = Optional.ofNullable(logger.orNull)
   }
 
-  /**
-   * Scala API: Create a new log options with defaults.
-   */
+  /** Scala API: Create a new log options with defaults. */
   def apply(): LogOptions = LogOptionsImpl(enabled = true, Level.DEBUG, None)
 
-  /**
-   * Java API: Create a new log options.
-   */
+  /** Java API: Create a new log options. */
   def create(): LogOptions = apply()
 }

@@ -58,9 +58,7 @@ abstract class GraphStageWithMaterializedValue[+S <: Shape, +M] extends Graph[S,
 
   private var _traversalBuilder: TraversalBuilder = _
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[akka] final override def traversalBuilder: TraversalBuilder = {
     // _traversalBuilder instance is cached to avoid allocations, no need for volatile or synchronization
     if (_traversalBuilder eq null) {
@@ -159,17 +157,13 @@ object GraphStageLogic {
     override def onUpstreamFailure(ex: Throwable): Unit = ()
   }
 
-  /**
-   * Output handler that terminates the operator upon cancellation.
-   */
+  /** Output handler that terminates the operator upon cancellation. */
   object EagerTerminateOutput extends OutHandler {
     override def onPull(): Unit = ()
     override def toString = "EagerTerminateOutput"
   }
 
-  /**
-   * Output handler that does not terminate the operator upon cancellation.
-   */
+  /** Output handler that does not terminate the operator upon cancellation. */
   object IgnoreTerminateOutput extends OutHandler {
     override def onPull(): Unit = ()
     override def onDownstreamFinish(cause: Throwable): Unit = ()
@@ -273,9 +267,7 @@ object GraphStageLogic {
   private[stream] val NoPromise: Promise[Done] = Promise.successful(Done)
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] object ConcurrentAsyncCallbackState {
   sealed trait State[+E]
@@ -314,14 +306,10 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
 
   def this(shape: Shape) = this(shape.inlets.size, shape.outlets.size)
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   private[stream] var stageId: Int = Int.MinValue
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   private[stream] var attributes: Attributes = Attributes.none
 
   /**
@@ -339,9 +327,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    */
   private[stream] val handlers = new Array[Any](inCount + outCount)
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   private[stream] def inHandler(id: Int): InHandler = {
     if (id > inCount) throw new IllegalArgumentException(s"$id not in inHandler range $inCount in $this")
     if (inCount < 1)
@@ -356,25 +342,17 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
     handlers(inCount + id).asInstanceOf[OutHandler]
   }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   // Using common array to reduce overhead for small port counts
   private[stream] val portToConn = new Array[Connection](handlers.length)
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   private[this] var _interpreter: GraphInterpreter = _
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   private[stream] def interpreter_=(gi: GraphInterpreter): Unit = _interpreter = gi
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   private[akka] def interpreter: GraphInterpreter =
     if (_interpreter == null)
       throw new IllegalStateException(
@@ -423,14 +401,10 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    */
   final protected def totallyIgnorantInput: InHandler = TotallyIgnorantInput
 
-  /**
-   * Output handler that terminates the operator upon cancellation.
-   */
+  /** Output handler that terminates the operator upon cancellation. */
   final protected def eagerTerminateOutput: OutHandler = EagerTerminateOutput
 
-  /**
-   * Output handler that does not terminate the operator upon cancellation.
-   */
+  /** Output handler that does not terminate the operator upon cancellation. */
   final protected def ignoreTerminateOutput: OutHandler = IgnoreTerminateOutput
 
   /**
@@ -440,32 +414,24 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
   final protected def conditionalTerminateOutput(predicate: () => Boolean): OutHandler =
     new ConditionalTerminateOutput(predicate)
 
-  /**
-   * Assigns callbacks for the events for an [[Inlet]]
-   */
+  /** Assigns callbacks for the events for an [[Inlet]] */
   final protected def setHandler(in: Inlet[_], handler: InHandler): Unit = {
     handlers(in.id) = handler
     if (_interpreter != null) _interpreter.setHandler(conn(in), handler)
   }
 
-  /**
-   * Assign callbacks for linear operator for both [[Inlet]] and [[Outlet]]
-   */
+  /** Assign callbacks for linear operator for both [[Inlet]] and [[Outlet]] */
   final protected def setHandlers(in: Inlet[_], out: Outlet[_], handler: InHandler with OutHandler): Unit = {
     setHandler(in, handler)
     setHandler(out, handler)
   }
 
-  /**
-   * Retrieves the current callback for the events on the given [[Inlet]]
-   */
+  /** Retrieves the current callback for the events on the given [[Inlet]] */
   final protected def getHandler(in: Inlet[_]): InHandler = {
     handlers(in.id).asInstanceOf[InHandler]
   }
 
-  /**
-   * Assigns callbacks for the events for an [[Outlet]]
-   */
+  /** Assigns callbacks for the events for an [[Outlet]] */
   final protected def setHandler(out: Outlet[_], handler: OutHandler): Unit = {
     handlers(out.id + inCount) = handler
     if (_interpreter != null) _interpreter.setHandler(conn(out), handler)
@@ -474,9 +440,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
   private def conn(in: Inlet[_]): Connection = portToConn(in.id)
   private def conn(out: Outlet[_]): Connection = portToConn(out.id + inCount)
 
-  /**
-   * Retrieves the current callback for the events on the given [[Outlet]]
-   */
+  /** Retrieves the current callback for the events on the given [[Outlet]] */
   final protected def getHandler(out: Outlet[_]): OutHandler = {
     handlers(out.id + inCount).asInstanceOf[OutHandler]
   }
@@ -527,9 +491,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    */
   final protected def cancel[T](in: Inlet[T]): Unit = cancel(in, SubscriptionWithCancelException.NoMoreElementsNeeded)
 
-  /**
-   * Requests to stop receiving events from a given input port. Cancelling clears any ungrabbed elements from the port.
-   */
+  /** Requests to stop receiving events from a given input port. Cancelling clears any ungrabbed elements from the port. */
   final protected def cancel[T](in: Inlet[T], cause: Throwable): Unit = cancel(conn(in), cause)
 
   private def cancel[T](connection: Connection, cause: Throwable): Unit =
@@ -539,8 +501,8 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
         // ignore pushs now, since the stage wanted it cancelled already
         // do not ignore termination signals
         connection.inHandler = EagerTerminateInput
-        val callback = getAsyncCallback[(Connection, Throwable)] {
-          case (connection, cause) => doCancel(connection, cause)
+        val callback = getAsyncCallback[(Connection, Throwable)] { case (connection, cause) =>
+          doCancel(connection, cause)
         }
         materializer.scheduleOnce(delay, () => callback.invoke((connection, cause)))
       case _ =>
@@ -609,17 +571,17 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
         connection.slot match {
           case Empty | _ @(_: Cancelled) => false // cancelled (element is discarded when cancelled)
           case _                         => true // completed but element still there to grab
-        } else if ((connection.portState & (InReady | InFailed)) == (InReady | InFailed))
+        }
+      else if ((connection.portState & (InReady | InFailed)) == (InReady | InFailed))
         connection.slot match {
           case Failed(_, elem) => elem.asInstanceOf[AnyRef] ne Empty // failed but element still there to grab
           case _               => false
-        } else false
+        }
+      else false
     }
   }
 
-  /**
-   * Indicates whether the port has been closed. A closed port cannot be pulled.
-   */
+  /** Indicates whether the port has been closed. A closed port cannot be pulled. */
   final protected def isClosed[T](in: Inlet[T]): Boolean = (conn(in).portState & InClosed) != 0
 
   /**
@@ -662,18 +624,14 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
   final protected def setKeepGoing(enabled: Boolean): Unit =
     interpreter.setKeepGoing(this, enabled)
 
-  /**
-   * Signals that there will be no more elements emitted on the given port.
-   */
+  /** Signals that there will be no more elements emitted on the given port. */
   final protected def complete[T](out: Outlet[T]): Unit =
     getHandler(out) match {
       case e: Emitting[T @unchecked] => e.addFollowUp(new EmittingCompletion[T](e.out, e.previous))
       case _                         => interpreter.complete(conn(out))
     }
 
-  /**
-   * Signals failure through the given port.
-   */
+  /** Signals failure through the given port. */
   final protected def fail[T](out: Outlet[T], ex: Throwable): Unit = interpreter.fail(conn(out), ex)
 
   /**
@@ -685,9 +643,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
 
   // Variable used from `OutHandler.onDownstreamFinish` to carry over cancellation cause in cases where
   // `OutHandler` implementations call `super.onDownstreamFinished()`.
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[stream] var lastCancellationCause: Throwable = _
 
   /**
@@ -764,15 +720,11 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
     _subInletsAndOutlets = Set.empty
   }
 
-  /**
-   * Return true if the given output port is ready to be pushed.
-   */
+  /** Return true if the given output port is ready to be pushed. */
   final def isAvailable[T](out: Outlet[T]): Boolean =
     (conn(out).portState & (OutReady | OutClosed)) == OutReady
 
-  /**
-   * Indicates whether the port has been closed. A closed port cannot be pushed.
-   */
+  /** Indicates whether the port has been closed. A closed port cannot be pushed. */
   final protected def isClosed[T](out: Outlet[T]): Boolean = (conn(out).portState & OutClosed) != 0
 
   /**
@@ -785,14 +737,14 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    * the `onClose` function is invoked with the elements which were read.
    */
   final protected def readN[T](in: Inlet[T], n: Int)(andThen: Seq[T] => Unit, onClose: Seq[T] => Unit): Unit =
-    //FIXME `onClose` is a poor name for `onComplete` rename this at the earliest possible opportunity
+    // FIXME `onClose` is a poor name for `onComplete` rename this at the earliest possible opportunity
     if (n < 0) throw new IllegalArgumentException("cannot read negative number of elements")
     else if (n == 0) andThen(Nil)
     else {
       val result = new Array[AnyRef](n).asInstanceOf[Array[T]]
       var pos = 0
 
-      if (isAvailable(in)) { //If we already have data available, then shortcircuit and read the first
+      if (isAvailable(in)) { // If we already have data available, then shortcircuit and read the first
         result(pos) = grab(in)
         pos += 1
       }
@@ -800,11 +752,15 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
       if (n != pos) { // If we aren't already done
         requireNotReading(in)
         if (!hasBeenPulled(in)) pull(in)
-        setHandler(in, new Reading(in, n - pos, getHandler(in))((elem: T) => {
-          result(pos) = elem
-          pos += 1
-          if (pos == n) andThen(result.toSeq)
-        }, () => onClose(result.take(pos).toSeq)))
+        setHandler(
+          in,
+          new Reading(in, n - pos, getHandler(in))(
+            (elem: T) => {
+              result(pos) = elem
+              pos += 1
+              if (pos == n) andThen(result.toSeq)
+            },
+            () => onClose(result.take(pos).toSeq)))
       } else andThen(result.toSeq)
     }
 
@@ -819,7 +775,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
       n: Int,
       andThen: Procedure[java.util.List[T]],
       onClose: Procedure[java.util.List[T]]): Unit = {
-    //FIXME `onClose` is a poor name for `onComplete` rename this at the earliest possible opportunity
+    // FIXME `onClose` is a poor name for `onComplete` rename this at the earliest possible opportunity
     import akka.util.ccompat.JavaConverters._
     readN(in, n)(seq => andThen(seq.asJava), seq => onClose(seq.asJava))
   }
@@ -1237,7 +1193,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
         Future.failed(streamDetachedException)
     }
 
-    //external call
+    // external call
     override def invoke(event: T): Unit = invokeWithPromise(event, NoPromise)
 
     @tailrec
@@ -1391,15 +1347,11 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
   private def streamDetachedException =
     new StreamDetachedException(s"Stage with GraphStageLogic ${this} stopped before async invocation was processed")
 
-  /**
-   * Invoked before any external events are processed, at the startup of the operator.
-   */
+  /** Invoked before any external events are processed, at the startup of the operator. */
   @throws(classOf[Exception])
   def preStart(): Unit = ()
 
-  /**
-   * Invoked after processing of external events stopped because the operator is about to stop or fail.
-   */
+  /** Invoked after processing of external events stopped because the operator is about to stop or fail. */
   @throws(classOf[Exception])
   def postStop(): Unit = ()
 
@@ -1422,22 +1374,24 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
     private var closed = false
     private var pulled = false
 
-    private val _sink = new SubSink[T](name, getAsyncCallback[ActorSubscriberMessage] { msg =>
-      if (!closed) msg match {
-        case OnNext(e) =>
-          elem = e.asInstanceOf[T]
-          pulled = false
-          handler.onPush()
-        case OnComplete =>
-          closed = true
-          handler.onUpstreamFinish()
-          GraphStageLogic.this.completedOrFailed(this)
-        case OnError(ex) =>
-          closed = true
-          handler.onUpstreamFailure(ex)
-          GraphStageLogic.this.completedOrFailed(this)
-      }
-    }.invoke _)
+    private val _sink = new SubSink[T](
+      name,
+      getAsyncCallback[ActorSubscriberMessage] { msg =>
+        if (!closed) msg match {
+          case OnNext(e) =>
+            elem = e.asInstanceOf[T]
+            pulled = false
+            handler.onPush()
+          case OnComplete =>
+            closed = true
+            handler.onUpstreamFinish()
+            GraphStageLogic.this.completedOrFailed(this)
+          case OnError(ex) =>
+            closed = true
+            handler.onUpstreamFailure(ex)
+            GraphStageLogic.this.completedOrFailed(this)
+        }
+      }.invoke _)
 
     GraphStageLogic.this.created(this)
 
@@ -1518,15 +1472,11 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
     private val _source = new SubSource[T](name, callback)
     GraphStageLogic.this.created(this)
 
-    /**
-     * Set the source into timed-out mode if it has not yet been materialized.
-     */
+    /** Set the source into timed-out mode if it has not yet been materialized. */
     def timeout(d: FiniteDuration): Unit =
       if (_source.timeout(d)) closed = true
 
-    /**
-     * Get the Source for this dynamic output port.
-     */
+    /** Get the Source for this dynamic output port. */
     def source: Graph[SourceShape[T], NotUsed] = _source
 
     /**
@@ -1535,9 +1485,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
      */
     def setHandler(handler: OutHandler): Unit = this.handler = handler
 
-    /**
-     * Returns `true` if this output port can be pushed.
-     */
+    /** Returns `true` if this output port can be pushed. */
     def isAvailable: Boolean = available
 
     /**
@@ -1548,18 +1496,14 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
      */
     def isClosed: Boolean = closed
 
-    /**
-     * Push to this output port.
-     */
+    /** Push to this output port. */
     def push(elem: T): Unit = {
       if (!isAvailable) throw new IllegalArgumentException(s"Cannot push port ($this) twice, or before it being pulled")
       available = false
       _source.pushSubstream(elem)
     }
 
-    /**
-     * Complete this output port.
-     */
+    /** Complete this output port. */
     def complete(): Unit = {
       available = false
       closed = true
@@ -1567,9 +1511,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
       GraphStageLogic.this.completedOrFailed(this)
     }
 
-    /**
-     * Fail this output port.
-     */
+    /** Fail this output port. */
     def fail(ex: Throwable): Unit = {
       available = false
       closed = true
@@ -1856,9 +1798,7 @@ abstract class GraphStageLogicWithLogging(_shape: Shape) extends GraphStageLogic
 /** Java API: [[TimerGraphStageLogic]] with [[StageLogging]]. */
 abstract class TimerGraphStageLogicWithLogging(_shape: Shape) extends TimerGraphStageLogic(_shape) with StageLogging
 
-/**
- * Collection of callbacks for an input port of a [[GraphStage]]
- */
+/** Collection of callbacks for an input port of a [[GraphStage]] */
 trait InHandler {
 
   /**
@@ -1868,22 +1808,16 @@ trait InHandler {
   @throws(classOf[Exception])
   def onPush(): Unit
 
-  /**
-   * Called when the input port is finished. After this callback no other callbacks will be called for this port.
-   */
+  /** Called when the input port is finished. After this callback no other callbacks will be called for this port. */
   @throws(classOf[Exception])
   def onUpstreamFinish(): Unit = GraphInterpreter.currentInterpreter.activeStage.completeStage()
 
-  /**
-   * Called when the input port has failed. After this callback no other callbacks will be called for this port.
-   */
+  /** Called when the input port has failed. After this callback no other callbacks will be called for this port. */
   @throws(classOf[Exception])
   def onUpstreamFailure(ex: Throwable): Unit = GraphInterpreter.currentInterpreter.activeStage.failStage(ex)
 }
 
-/**
- * Collection of callbacks for an output port of a [[GraphStage]]
- */
+/** Collection of callbacks for an output port of a [[GraphStage]] */
 trait OutHandler {
 
   /**
@@ -1898,7 +1832,10 @@ trait OutHandler {
    * be called for this port.
    */
   @throws(classOf[Exception])
-  @deprecatedOverriding("Override `def onDownstreamFinish(cause: Throwable)`, instead.", since = "2.6.0") // warns when overriding
+  @deprecatedOverriding(
+    "Override `def onDownstreamFinish(cause: Throwable)`, instead.",
+    since = "2.6.0"
+  ) // warns when overriding
   @deprecated("Call onDownstreamFinish with a cancellation cause.", since = "2.6.0") // warns when calling
   def onDownstreamFinish(): Unit = {
     val thisStage = GraphInterpreter.currentInterpreter.activeStage
@@ -1919,7 +1856,7 @@ trait OutHandler {
       require(cause ne null, "Cancellation cause must not be null")
       require(thisStage.lastCancellationCause eq null, "onDownstreamFinish(cause) must not be called recursively")
       thisStage.lastCancellationCause = cause
-      (onDownstreamFinish(): @nowarn("msg=deprecated")) // if not overridden, call old deprecated variant
+      onDownstreamFinish(): @nowarn("msg=deprecated") // if not overridden, call old deprecated variant
     } finally thisStage.lastCancellationCause = null
   }
 }

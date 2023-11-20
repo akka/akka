@@ -20,7 +20,7 @@ class RecipeByteStrings extends RecipeSpec {
       val rawBytes = Source(List(ByteString(1, 2), ByteString(3), ByteString(4, 5, 6), ByteString(7, 8, 9)))
       val ChunkLimit = 2
 
-      //#bytestring-chunker
+      // #bytestring-chunker
       import akka.stream.stage._
 
       class Chunker(val chunkSize: Int) extends GraphStage[FlowShape[ByteString, ByteString]] {
@@ -30,11 +30,13 @@ class RecipeByteStrings extends RecipeSpec {
         override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
           private var buffer = ByteString.empty
 
-          setHandler(out, new OutHandler {
-            override def onPull(): Unit = {
-              emitChunk()
-            }
-          })
+          setHandler(
+            out,
+            new OutHandler {
+              override def onPull(): Unit = {
+                emitChunk()
+              }
+            })
           setHandler(
             in,
             new InHandler {
@@ -72,7 +74,7 @@ class RecipeByteStrings extends RecipeSpec {
       }
 
       val chunksStream = rawBytes.via(new Chunker(ChunkLimit))
-      //#bytestring-chunker
+      // #bytestring-chunker
 
       val chunksFuture = chunksStream.limit(10).runWith(Sink.seq)
       val chunks = Await.result(chunksFuture, 3.seconds)
@@ -84,7 +86,7 @@ class RecipeByteStrings extends RecipeSpec {
     "have a working bytes limiter" in {
       val SizeLimit = 9
 
-      //#bytes-limiter
+      // #bytes-limiter
       import akka.stream.stage._
       class ByteLimiter(val maximumBytes: Long) extends GraphStage[FlowShape[ByteString, ByteString]] {
         val in = Inlet[ByteString]("ByteLimiter.in")
@@ -94,24 +96,27 @@ class RecipeByteStrings extends RecipeSpec {
         override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
           private var count = 0
 
-          setHandlers(in, out, new InHandler with OutHandler {
+          setHandlers(
+            in,
+            out,
+            new InHandler with OutHandler {
 
-            override def onPull(): Unit = {
-              pull(in)
-            }
+              override def onPull(): Unit = {
+                pull(in)
+              }
 
-            override def onPush(): Unit = {
-              val chunk = grab(in)
-              count += chunk.size
-              if (count > maximumBytes) failStage(new IllegalStateException("Too much bytes"))
-              else push(out, chunk)
-            }
-          })
+              override def onPush(): Unit = {
+                val chunk = grab(in)
+                count += chunk.size
+                if (count > maximumBytes) failStage(new IllegalStateException("Too much bytes"))
+                else push(out, chunk)
+              }
+            })
         }
       }
 
       val limiter = Flow[ByteString].via(new ByteLimiter(SizeLimit))
-      //#bytes-limiter
+      // #bytes-limiter
 
       val bytes1 = Source(List(ByteString(1, 2), ByteString(3), ByteString(4, 5, 6), ByteString(7, 8, 9)))
       val bytes2 = Source(List(ByteString(1, 2), ByteString(3), ByteString(4, 5, 6), ByteString(7, 8, 9, 10)))
@@ -128,9 +133,9 @@ class RecipeByteStrings extends RecipeSpec {
 
       val data = Source(List(ByteString(1, 2), ByteString(3), ByteString(4, 5, 6), ByteString(7, 8, 9)))
 
-      //#compacting-bytestrings
+      // #compacting-bytestrings
       val compacted: Source[ByteString, NotUsed] = data.map(_.compact)
-      //#compacting-bytestrings
+      // #compacting-bytestrings
 
       Await.result(compacted.limit(10).runWith(Sink.seq), 3.seconds).forall(_.isCompact) should be(true)
     }

@@ -33,9 +33,11 @@ object DnsDiscoverySpec {
 
   lazy val dockerDnsServerPort = SocketUtil.temporaryLocalPort()
 
-  val configWithAsyncDnsResolverAsDefault = ConfigFactory.parseString("""
+  val configWithAsyncDnsResolverAsDefault = ConfigFactory
+    .parseString("""
       akka.io.dns.resolver = "async-dns"
-    """).withFallback(config)
+    """)
+    .withFallback(config)
 
 }
 

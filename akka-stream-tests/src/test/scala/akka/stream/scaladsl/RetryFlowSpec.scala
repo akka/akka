@@ -14,10 +14,12 @@ import akka.stream.OverflowStrategy
 import akka.stream.testkit.{ StreamSpec, TestPublisher, TestSubscriber }
 import akka.stream.testkit.scaladsl.{ TestSink, TestSource }
 
-class RetryFlowSpec extends StreamSpec("""
+class RetryFlowSpec
+    extends StreamSpec("""
     akka.stream.materializer.initial-input-buffer-size = 1
     akka.stream.materializer.max-input-buffer-size = 1
-  """) with CustomMatchers {
+  """)
+    with CustomMatchers {
 
   final val Failed = new Exception("prepared failure")
   final val FailedElem: Try[Int] = Failure(Failed)
@@ -29,8 +31,8 @@ class RetryFlowSpec extends StreamSpec("""
     })
 
   val failAllValuesFlow: FlowWithContext[Int, Int, Try[Int], Int, NotUsed] =
-    FlowWithContext.fromTuples(Flow.fromFunction {
-      case (_, j) => (FailedElem, j)
+    FlowWithContext.fromTuples(Flow.fromFunction { case (_, j) =>
+      (FailedElem, j)
     })
 
   val alwaysRecoveringFunc: ((Int, Int), (Try[Int], Int)) => Option[(Int, Int)] = {
@@ -170,14 +172,14 @@ class RetryFlowSpec extends StreamSpec("""
     "allow retrying a successful element" in {
       class SomeContext
 
-      //#retry-success
+      // #retry-success
       val flow: FlowWithContext[Int, SomeContext, Int, SomeContext, NotUsed] = // ???
-        //#retry-success
-        FlowWithContext.fromTuples[Int, SomeContext, Int, SomeContext, NotUsed](Flow.fromFunction {
-          case (i, ctx) => i / 2 -> ctx
+        // #retry-success
+        FlowWithContext.fromTuples[Int, SomeContext, Int, SomeContext, NotUsed](Flow.fromFunction { case (i, ctx) =>
+          i / 2 -> ctx
         })
 
-      //#retry-success
+      // #retry-success
 
       val retryFlow: FlowWithContext[Int, SomeContext, Int, SomeContext, NotUsed] =
         RetryFlow.withBackoffAndContext(
@@ -189,7 +191,7 @@ class RetryFlowSpec extends StreamSpec("""
           case ((_, _), (result, ctx)) if result > 0 => Some(result -> ctx)
           case _                                     => None
         })
-      //#retry-success
+      // #retry-success
 
       val (source, sink) = TestSource[(Int, SomeContext)]().via(retryFlow).toMat(TestSink())(Keep.both).run()
 
@@ -269,8 +271,8 @@ class RetryFlowSpec extends StreamSpec("""
       })
 
       val (source, sink) = TestSource[(State, NotUsed)]()
-        .via(RetryFlow.withBackoffAndContext(10.millis, 5.seconds, 0d, NumRetries, flow) {
-          case (_, (s, _)) => Some(s -> NotUsed)
+        .via(RetryFlow.withBackoffAndContext(10.millis, 5.seconds, 0d, NumRetries, flow) { case (_, (s, _)) =>
+          Some(s -> NotUsed)
         })
         .toMat(TestSink())(Keep.both)
         .run()
@@ -282,8 +284,8 @@ class RetryFlowSpec extends StreamSpec("""
 
       val timesBetweenRetries = retriedAt
         .sliding(2)
-        .collect {
-          case before :: after :: Nil => before - after
+        .collect { case before :: after :: Nil =>
+          before - after
         }
         .toIndexedSeq
 
@@ -370,7 +372,8 @@ class RetryFlowSpec extends StreamSpec("""
       externalIn.expectCancellation()
     }
 
-    "propagate error before the RetryFlow, while on retry spin" in new ConstructBench[Int, Int, Int]((v, _) => Some(v)) {
+    "propagate error before the RetryFlow, while on retry spin" in new ConstructBench[Int, Int, Int]((v, _) =>
+      Some(v)) {
       externalOut.request(92)
       // spinning message
       externalIn.sendNext(1 -> 0)

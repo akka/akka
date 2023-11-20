@@ -44,40 +44,39 @@ import akka.pattern.{
 
   override val supervisorStrategy: OneForOneStrategy = {
     val decider = super.supervisorStrategy.decider
-    OneForOneStrategy(strategy.maxNrOfRetries, strategy.withinTimeRange, strategy.loggingEnabled) {
-      case ex =>
-        val defaultDirective: Directive =
-          decider.applyOrElse(ex, (_: Any) => Escalate)
+    OneForOneStrategy(strategy.maxNrOfRetries, strategy.withinTimeRange, strategy.loggingEnabled) { case ex =>
+      val defaultDirective: Directive =
+        decider.applyOrElse(ex, (_: Any) => Escalate)
 
-        strategy.decider.applyOrElse(ex, (_: Any) => defaultDirective) match {
-          // Whatever the final Directive is, we will translate all Restarts
-          // to our own Restarts, which involves stopping the child.
-          case Restart =>
-            val nextRestartCount = restartCount + 1
+      strategy.decider.applyOrElse(ex, (_: Any) => defaultDirective) match {
+        // Whatever the final Directive is, we will translate all Restarts
+        // to our own Restarts, which involves stopping the child.
+        case Restart =>
+          val nextRestartCount = restartCount + 1
 
-            if (strategy.withinTimeRange.isFinite && restartCount == 0) {
-              // If the user has defined a time range for the maxNrOfRetries, we'll schedule a message
-              // to ourselves every time that range elapses, to reset the restart counter. We hide it
-              // behind this conditional to avoid queuing the message unnecessarily
-              val finiteWithinTimeRange = strategy.withinTimeRange.asInstanceOf[FiniteDuration]
-              system.scheduler.scheduleOnce(finiteWithinTimeRange, self, ResetRestartCount(nextRestartCount))
-            }
-            val childRef = sender()
-            if (strategy.maxNrOfRetries >= 0 && nextRestartCount > strategy.maxNrOfRetries) {
-              // If we've exceeded the maximum # of retries allowed by the Strategy, die.
-              log.debug(
-                s"Terminating on restart #{} which exceeds max allowed restarts ({})",
-                nextRestartCount,
-                strategy.maxNrOfRetries)
-              become(receive)
-              stop(self)
-            } else {
-              become(waitChildTerminatedBeforeBackoff(childRef).orElse(handleBackoff))
-            }
-            Stop
+          if (strategy.withinTimeRange.isFinite && restartCount == 0) {
+            // If the user has defined a time range for the maxNrOfRetries, we'll schedule a message
+            // to ourselves every time that range elapses, to reset the restart counter. We hide it
+            // behind this conditional to avoid queuing the message unnecessarily
+            val finiteWithinTimeRange = strategy.withinTimeRange.asInstanceOf[FiniteDuration]
+            system.scheduler.scheduleOnce(finiteWithinTimeRange, self, ResetRestartCount(nextRestartCount))
+          }
+          val childRef = sender()
+          if (strategy.maxNrOfRetries >= 0 && nextRestartCount > strategy.maxNrOfRetries) {
+            // If we've exceeded the maximum # of retries allowed by the Strategy, die.
+            log.debug(
+              s"Terminating on restart #{} which exceeds max allowed restarts ({})",
+              nextRestartCount,
+              strategy.maxNrOfRetries)
+            become(receive)
+            stop(self)
+          } else {
+            become(waitChildTerminatedBeforeBackoff(childRef).orElse(handleBackoff))
+          }
+          Stop
 
-          case other => other
-        }
+        case other => other
+      }
     }
   }
 
@@ -92,10 +91,9 @@ import akka.pattern.{
     case StartChild => // Ignore it, we will schedule a new one once current child terminated.
   }
 
-  def onTerminated: Receive = {
-    case Terminated(c) =>
-      log.debug(s"Terminating, because child [$c] terminated itself")
-      stop(self)
+  def onTerminated: Receive = { case Terminated(c) =>
+    log.debug(s"Terminating, because child [$c] terminated itself")
+    stop(self)
   }
 
   def receive: Receive = onTerminated.orElse(handleBackoff)

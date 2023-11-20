@@ -20,15 +20,11 @@ import akka.util.Version
 object ClusterSettings {
   type DataCenter = String
 
-  /**
-   * INTERNAL API.
-   */
+  /** INTERNAL API. */
   @InternalApi
   private[akka] val DcRolePrefix = "dc-"
 
-  /**
-   * INTERNAL API.
-   */
+  /** INTERNAL API. */
   @InternalApi
   private[akka] val DefaultDataCenter: DataCenter = "default"
 
@@ -111,9 +107,7 @@ final class ClusterSettings(val config: Config, val systemName: String) {
     }
   }
 
-  /**
-   * Is in fact always a `FiniteDuration` but needs to stay `Duration` for binary compatibility
-   */
+  /** Is in fact always a `FiniteDuration` but needs to stay `Duration` for binary compatibility */
   val PruneGossipTombstonesAfter: Duration = {
     val key = "prune-gossip-tombstones-after"
     cc.getMillisDuration(key).requiring(_ >= Duration.Zero, key + " >= 0s")
@@ -169,8 +163,8 @@ final class ClusterSettings(val config: Config, val systemName: String) {
     cc.getConfig("role")
       .root
       .asScala
-      .collect {
-        case (key, value: ConfigObject) => key -> value.toConfig.getInt("min-nr-of-members")
+      .collect { case (key, value: ConfigObject) =>
+        key -> value.toConfig.getInt("min-nr-of-members")
       }
       .toMap
   }

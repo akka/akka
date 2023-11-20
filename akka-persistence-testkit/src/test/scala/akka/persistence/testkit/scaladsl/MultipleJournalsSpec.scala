@@ -46,7 +46,8 @@ object MultipleJournalsSpec {
 
   }
 
-  def config = ConfigFactory.parseString(s"""
+  def config = ConfigFactory
+    .parseString(s"""
     journal1 {
       # journal and query expected to be next to each other under config path
       journal.class = "${classOf[PersistenceTestKitPlugin].getName}"
@@ -56,7 +57,9 @@ object MultipleJournalsSpec {
       journal.class = "${classOf[PersistenceTestKitPlugin].getName}"
       query = $${akka.persistence.testkit.query}
     }
-  """).withFallback(ConfigFactory.load()).resolve()
+  """)
+    .withFallback(ConfigFactory.load())
+    .resolve()
 
 }
 

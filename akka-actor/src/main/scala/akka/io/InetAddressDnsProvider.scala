@@ -8,9 +8,7 @@ import scala.annotation.nowarn
 
 import akka.annotation.InternalApi
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @nowarn("msg=deprecated")
 @InternalApi
 class InetAddressDnsProvider extends DnsProvider {

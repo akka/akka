@@ -17,9 +17,7 @@ import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
 import akka.testkit.WithLogCapturing
 
-/**
- * Covers some corner cases around sending triggering an entity with StartEntity
- */
+/** Covers some corner cases around sending triggering an entity with StartEntity */
 object StartEntitySpec {
 
   final case class EntityEnvelope(id: String, msg: Any)
@@ -107,12 +105,12 @@ class StartEntitySpec extends AkkaSpec(StartEntitySpec.config) with ImplicitSend
 
       // should trigger start of entity again, and an ack
       expectMsg(ShardRegion.StartEntityAck("1", "1"))
-      awaitAssert({
+      awaitAssert {
         sharding ! ShardRegion.GetShardRegionState
         val state = expectMsgType[ShardRegion.CurrentShardRegionState]
-        state.shards should have size (1)
+        state.shards should have size 1
         state.shards.head.entityIds should ===(Set("1"))
-      })
+      }
     }
   }
 
@@ -133,23 +131,23 @@ class StartEntitySpec extends AkkaSpec(StartEntitySpec.config) with ImplicitSend
       entity ! "just-stop"
 
       // Make sure the shard has processed the termination
-      awaitAssert({
+      awaitAssert {
         sharding ! ShardRegion.GetShardRegionState
         val state = expectMsgType[ShardRegion.CurrentShardRegionState]
-        state.shards should have size (1)
+        state.shards should have size 1
         state.shards.head.entityIds should ===(Set.empty[String])
-      })
+      }
 
       // the backoff is 10s by default, so plenty time to
       // bypass region and send start entity directly to shard
       system.actorSelection(entity.path.parent) ! ShardRegion.StartEntity("1")
       expectMsg(ShardRegion.StartEntityAck("1", "1"))
-      awaitAssert({
+      awaitAssert {
         sharding ! ShardRegion.GetShardRegionState
         val state = expectMsgType[ShardRegion.CurrentShardRegionState]
-        state.shards should have size (1)
+        state.shards should have size 1
         state.shards.head.entityIds should ===(Set("1"))
-      })
+      }
     }
   }
 
@@ -178,12 +176,12 @@ class StartEntitySpec extends AkkaSpec(StartEntitySpec.config) with ImplicitSend
 
       // regardless we should get an ack and the entity should be alive
       expectMsg(ShardRegion.StartEntityAck("1", "1"))
-      awaitAssert({
+      awaitAssert {
         sharding ! ShardRegion.GetShardRegionState
         val state = expectMsgType[ShardRegion.CurrentShardRegionState]
-        state.shards should have size (1)
+        state.shards should have size 1
         state.shards.head.entityIds should ===(Set("1"))
-      })
+      }
 
     }
   }

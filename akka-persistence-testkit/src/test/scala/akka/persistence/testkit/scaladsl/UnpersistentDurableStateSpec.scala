@@ -70,10 +70,9 @@ object UnpersistentDurableStateSpec {
           persistenceId = PersistenceId.ofUniqueId(id),
           emptyState = State(0, Map.empty, Int.MaxValue),
           commandHandler = applyCommand(_, _, context))
-          .receiveSignal {
-            case (state, RecoveryCompleted) =>
-              context.log.debug2("Recovered state for id [{}] is [{}]", id, state)
-              recoveryDone ! Done
+          .receiveSignal { case (state, RecoveryCompleted) =>
+            context.log.debug2("Recovered state for id [{}] is [{}]", id, state)
+            recoveryDone ! Done
           }
           .withTag("count")
       }
@@ -87,7 +86,7 @@ object UnpersistentDurableStateSpec {
           .thenRun { nextState => // should be the same as newState, but...
             state.notifyAfter.keysIterator
               .filter { at =>
-                (at <= nextState.nextNotifyAt) && !(nextState.notifyAfter.isDefinedAt(at))
+                (at <= nextState.nextNotifyAt) && !nextState.notifyAfter.isDefinedAt(at)
               }
               .foreach { at =>
                 state.notifyAfter(at) ! Done

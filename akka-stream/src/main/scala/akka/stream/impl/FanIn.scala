@@ -13,9 +13,7 @@ import akka.stream.ActorAttributes
 import akka.stream.Attributes
 import akka.util.unused
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object FanIn {
 
   final case class OnError(id: Int, cause: Throwable)
@@ -259,9 +257,7 @@ import akka.util.unused
 
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @DoNotInherit private[akka] class FanIn(attributes: Attributes, val inputCount: Int)
     extends Actor
     with ActorLogging

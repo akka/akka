@@ -20,9 +20,7 @@ import akka.cluster.sharding.ShardRegion
 import akka.cluster.sharding.ShardRegion.EntityId
 import akka.cluster.sharding.ShardRegion.ShardId
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] object RememberEntityStarterManager {
   def props(region: ActorRef, settings: ClusterShardingSettings) =
@@ -34,9 +32,7 @@ private[akka] object RememberEntityStarterManager {
   private case object ContinueAfterDelay extends NoSerializationVerificationNeeded
 }
 
-/**
- * INTERNAL API: Actor responsible for starting entities when rememberEntities is enabled
- */
+/** INTERNAL API: Actor responsible for starting entities when rememberEntities is enabled */
 @InternalApi
 private[akka] final class RememberEntityStarterManager(region: ActorRef, settings: ClusterShardingSettings)
     extends Actor
@@ -59,10 +55,9 @@ private[akka] final class RememberEntityStarterManager(region: ActorRef, setting
     case _: Terminated    => // RememberEntityStarter was done
   }
 
-  private val constantStrategyIdle: Receive = {
-    case s: StartEntities =>
-      start(s, isConstantStrategy = true)
-      context.become(constantStrategyWaiting(Vector.empty))
+  private val constantStrategyIdle: Receive = { case s: StartEntities =>
+    start(s, isConstantStrategy = true)
+    context.become(constantStrategyWaiting(Vector.empty))
   }
 
   private def constantStrategyWaiting(workQueue: Vector[StartEntities]): Receive = {
@@ -89,9 +84,7 @@ private[akka] final class RememberEntityStarterManager(region: ActorRef, setting
 
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] object RememberEntityStarter {
   def props(
@@ -107,9 +100,7 @@ private[akka] object RememberEntityStarter {
   private case object ResendUnAcked extends NoSerializationVerificationNeeded
 }
 
-/**
- * INTERNAL API: Actor responsible for starting entities when rememberEntities is enabled
- */
+/** INTERNAL API: Actor responsible for starting entities when rememberEntities is enabled */
 @InternalApi
 private[akka] final class RememberEntityStarter(
     region: ActorRef,

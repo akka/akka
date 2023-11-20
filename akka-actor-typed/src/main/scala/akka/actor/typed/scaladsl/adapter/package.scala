@@ -33,9 +33,7 @@ package object adapter {
 
   import language.implicitConversions
 
-  /**
-   * Extension methods added to [[akka.actor.ActorSystem]].
-   */
+  /** Extension methods added to [[akka.actor.ActorSystem]]. */
   implicit class ClassicActorSystemOps(val sys: akka.actor.ActorSystem) extends AnyVal {
 
     /**
@@ -70,15 +68,11 @@ package object adapter {
     def toTyped: ActorSystem[Nothing] = AdapterExtension(sys).adapter
   }
 
-  /**
-   * Extension methods added to [[akka.actor.typed.ActorSystem]].
-   */
+  /** Extension methods added to [[akka.actor.typed.ActorSystem]]. */
   implicit class TypedActorSystemOps(val sys: ActorSystem[_]) extends AnyVal {
     def toClassic: akka.actor.ActorSystem = sys.classicSystem
 
-    /**
-     * INTERNAL API
-     */
+    /** INTERNAL API */
     @InternalApi private[akka] def internalSystemActorOf[U](
         behavior: Behavior[U],
         name: String,
@@ -87,9 +81,7 @@ package object adapter {
     }
   }
 
-  /**
-   * Extension methods added to [[akka.actor.ActorContext]].
-   */
+  /** Extension methods added to [[akka.actor.ActorContext]]. */
   implicit class ClassicActorContextOps(val ctx: akka.actor.ActorContext) extends AnyVal {
 
     /**
@@ -126,9 +118,7 @@ package object adapter {
       ctx.stop(ActorRefAdapter.toClassic(child))
   }
 
-  /**
-   * Extension methods added to [[akka.actor.typed.scaladsl.ActorContext]].
-   */
+  /** Extension methods added to [[akka.actor.typed.scaladsl.ActorContext]]. */
   implicit class TypedActorContextOps(val ctx: scaladsl.ActorContext[_]) extends AnyVal {
     def actorOf(props: akka.actor.Props): akka.actor.ActorRef =
       ActorContextAdapter.toClassic(ctx).actorOf(props)
@@ -141,16 +131,12 @@ package object adapter {
     // watch, unwatch and stop not needed here because of the implicit ActorRef conversion
   }
 
-  /**
-   * Extension methods added to [[akka.actor.typed.ActorRef]].
-   */
+  /** Extension methods added to [[akka.actor.typed.ActorRef]]. */
   implicit class TypedActorRefOps(val ref: ActorRef[_]) extends AnyVal {
     def toClassic: akka.actor.ActorRef = ActorRefAdapter.toClassic(ref)
   }
 
-  /**
-   * Extension methods added to [[akka.actor.ActorRef]].
-   */
+  /** Extension methods added to [[akka.actor.ActorRef]]. */
   implicit class ClassicActorRefOps(val ref: akka.actor.ActorRef) extends AnyVal {
 
     /**
@@ -161,26 +147,18 @@ package object adapter {
     def toTyped[T]: ActorRef[T] = ActorRefAdapter(ref)
   }
 
-  /**
-   * Implicit conversion from classic [[akka.actor.ActorRef]] to [[akka.actor.typed.ActorRef]].
-   */
+  /** Implicit conversion from classic [[akka.actor.ActorRef]] to [[akka.actor.typed.ActorRef]]. */
   implicit def actorRefAdapter[T](ref: akka.actor.ActorRef): ActorRef[T] = ActorRefAdapter(ref)
 
-  /**
-   * Extension methods added to [[akka.actor.typed.Scheduler]].
-   */
+  /** Extension methods added to [[akka.actor.typed.Scheduler]]. */
   implicit class TypedSchedulerOps(val scheduler: Scheduler) extends AnyVal {
     def toClassic: akka.actor.Scheduler = SchedulerAdapter.toClassic(scheduler)
   }
 
-  /**
-   * Extension methods added to [[akka.actor.Scheduler]].
-   */
+  /** Extension methods added to [[akka.actor.Scheduler]]. */
   implicit class ClassicSchedulerOps(val scheduler: akka.actor.Scheduler) extends AnyVal {
 
-    /**
-     * Adapt the classic `Scheduler` to `akka.actor.typed.Scheduler`.
-     */
+    /** Adapt the classic `Scheduler` to `akka.actor.typed.Scheduler`. */
     def toTyped: Scheduler = new SchedulerAdapter(scheduler)
   }
 

@@ -20,16 +20,12 @@ import akka.annotation.{ DoNotInherit, InternalApi }
   def copy(name: String): SeqActorName
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object SeqActorName {
   def apply(prefix: String) = new SeqActorNameImpl(prefix, new AtomicLong(0))
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] final class SeqActorNameImpl(val prefix: String, counter: AtomicLong) extends SeqActorName {
   def next(): String = prefix + '-' + counter.getAndIncrement()
 

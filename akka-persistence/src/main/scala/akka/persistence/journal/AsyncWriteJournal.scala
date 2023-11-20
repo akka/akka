@@ -17,9 +17,7 @@ import akka.pattern.pipe
 import akka.persistence._
 import akka.util.Helpers.toRootLowerCase
 
-/**
- * Abstract journal, optimized for asynchronous, non-blocking writes.
- */
+/** Abstract journal, optimized for asynchronous, non-blocking writes. */
 trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
   import AsyncWriteJournal._
   import JournalProtocol._
@@ -176,8 +174,8 @@ trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
           .map { highSeqNr =>
             RecoverySuccess(highSeqNr)
           }
-          .recover {
-            case e => ReplayMessagesFailure(e)
+          .recover { case e =>
+            ReplayMessagesFailure(e)
           }
           .pipeTo(replyTo)
           .foreach { _ =>
@@ -190,8 +188,8 @@ trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
           .map { _ =>
             DeleteMessagesSuccess(toSequenceNr)
           }
-          .recover {
-            case e => DeleteMessagesFailure(e, toSequenceNr)
+          .recover { case e =>
+            DeleteMessagesFailure(e, toSequenceNr)
           }
           .pipeTo(persistentActor)
           .onComplete { _ =>
@@ -200,7 +198,7 @@ trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
     }
   }
 
-  //#journal-plugin-api
+  // #journal-plugin-api
   /**
    * Plugin API: asynchronously writes a batch (`Seq`) of persistent messages to the
    * journal.
@@ -285,16 +283,13 @@ trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
    *
    * Allows plugin implementers to use `f pipeTo self` and
    * handle additional messages for implementing advanced features
-   *
    */
   def receivePluginInternal: Actor.Receive = Actor.emptyBehavior
-  //#journal-plugin-api
+  // #journal-plugin-api
 
 }
 
-/**
- * INTERNAL API.
- */
+/** INTERNAL API. */
 private[persistence] object AsyncWriteJournal {
   val successUnit: Success[Unit] = Success(())
 
@@ -307,8 +302,8 @@ private[persistence] object AsyncWriteJournal {
     private val delayed = Map.empty[Long, Desequenced]
     private var delivered = 0L
 
-    def receive = {
-      case d: Desequenced => resequence(d)
+    def receive = { case d: Desequenced =>
+      resequence(d)
     }
 
     @scala.annotation.tailrec

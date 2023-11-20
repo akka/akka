@@ -11,7 +11,7 @@ import java.net.URL
 object MapWithResource {
   implicit val actorSystem: ActorSystem = ???
 
-  //#mapWithResource-blocking-api
+  // #mapWithResource-blocking-api
   trait DBDriver {
     def create(url: URL, userName: String, password: String): Connection
   }
@@ -19,7 +19,7 @@ object MapWithResource {
     def close(): Unit
   }
   trait Database {
-    //blocking query
+    // blocking query
     def doQuery(connection: Connection, query: String): QueryResult = ???
   }
   trait QueryResult {
@@ -30,14 +30,14 @@ object MapWithResource {
     def toList(): List[DataBaseRecord]
   }
   trait DataBaseRecord
-  //#mapWithResource-blocking-api
+  // #mapWithResource-blocking-api
   val url: URL = ???
   val userName = "Akka"
   val password = "Hakking"
   val dbDriver: DBDriver = ???
   def mapWithResourceExample(): Unit = {
-    //#mapWithResource
-    //some database for JVM
+    // #mapWithResource
+    // some database for JVM
     val db: Database = ???
     Source(
       List(
@@ -51,6 +51,6 @@ object MapWithResource {
         })
       .mapConcat(identity)
       .runForeach(println)
-    //#mapWithResource
+    // #mapWithResource
   }
 }

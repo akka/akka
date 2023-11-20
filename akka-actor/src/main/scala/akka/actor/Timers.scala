@@ -23,9 +23,7 @@ trait Timers extends Actor {
   private def actorCell = context.asInstanceOf[ActorCell]
   private val _timers = new TimerSchedulerImpl(context)
 
-  /**
-   * Start and cancel timers via the enclosed `TimerScheduler`.
-   */
+  /** Start and cancel timers via the enclosed `TimerScheduler`. */
   final def timers: TimerScheduler = _timers
 
   override protected[akka] def aroundPreRestart(reason: Throwable, message: Option[Any]): Unit = {
@@ -67,9 +65,7 @@ trait Timers extends Actor {
  */
 abstract class AbstractActorWithTimers extends AbstractActor with Timers {
 
-  /**
-   * Start and cancel timers via the enclosed `TimerScheduler`.
-   */
+  /** Start and cancel timers via the enclosed `TimerScheduler`. */
   final def getTimers: TimerScheduler = timers
 }
 
@@ -278,18 +274,14 @@ abstract class AbstractActorWithTimers extends AbstractActor with Timers {
       interval: java.time.Duration): Unit =
     startTimerAtFixedRate(key, msg, initialDelay.asScala, interval.asScala)
 
-  /**
-   * Deprecated API: See [[TimerScheduler#startTimerWithFixedDelay]] or [[TimerScheduler#startTimerAtFixedRate]].
-   */
+  /** Deprecated API: See [[TimerScheduler#startTimerWithFixedDelay]] or [[TimerScheduler#startTimerAtFixedRate]]. */
   @deprecated(
     "Use startTimerWithFixedDelay or startTimerAtFixedRate instead. This has the same semantics as " +
     "startTimerAtFixedRate, but startTimerWithFixedDelay is often preferred.",
     since = "2.6.0")
   def startPeriodicTimer(key: Any, msg: Any, interval: FiniteDuration): Unit
 
-  /**
-   * Deprecated API: See [[TimerScheduler#startTimerWithFixedDelay]] or [[TimerScheduler#startTimerAtFixedRate]].
-   */
+  /** Deprecated API: See [[TimerScheduler#startTimerWithFixedDelay]] or [[TimerScheduler#startTimerAtFixedRate]]. */
   @deprecated(
     "Use startTimerWithFixedDelay or startTimerAtFixedRate instead. This has the same semantics as " +
     "startTimerAtFixedRate, but startTimerWithFixedDelay is often preferred.",
@@ -320,9 +312,7 @@ abstract class AbstractActorWithTimers extends AbstractActor with Timers {
   final def startSingleTimer(key: Any, msg: Any, timeout: java.time.Duration): Unit =
     startSingleTimer(key, msg, timeout.asScala)
 
-  /**
-   * Check if a timer with a given `key` is active.
-   */
+  /** Check if a timer with a given `key` is active. */
   def isTimerActive(key: Any): Boolean
 
   /**
@@ -336,9 +326,7 @@ abstract class AbstractActorWithTimers extends AbstractActor with Timers {
    */
   def cancel(key: Any): Unit
 
-  /**
-   * Cancel all timers.
-   */
+  /** Cancel all timers. */
   def cancelAll(): Unit
 
 }

@@ -15,9 +15,7 @@ import MemberStatus._
 
 import akka.annotation.InternalApi
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[cluster] object Gossip {
   type Timestamp = Long
   val emptyMembers: immutable.SortedSet[Member] = immutable.SortedSet.empty
@@ -112,60 +110,42 @@ private[cluster] final case class Gossip(
       members.exists(_.dataCenter != dc1)
     }
 
-  /**
-   * Increments the version for this 'Node'.
-   */
+  /** Increments the version for this 'Node'. */
   def :+(node: VectorClock.Node): Gossip = copy(version = version :+ node)
 
-  /**
-   * Adds a member to the member node ring.
-   */
+  /** Adds a member to the member node ring. */
   def :+(member: Member): Gossip = {
     if (members contains member) this
     else this.copy(members = members + member)
   }
 
-  /**
-   * Marks the gossip as seen by this node (address) by updating the address entry in the 'gossip.overview.seen'
-   */
+  /** Marks the gossip as seen by this node (address) by updating the address entry in the 'gossip.overview.seen' */
   def seen(node: UniqueAddress): Gossip = {
     if (seenByNode(node)) this
     else this.copy(overview = overview.copy(seen = overview.seen + node))
   }
 
-  /**
-   * Marks the gossip as seen by only this node (address) by replacing the 'gossip.overview.seen'
-   */
+  /** Marks the gossip as seen by only this node (address) by replacing the 'gossip.overview.seen' */
   def onlySeen(node: UniqueAddress): Gossip = {
     this.copy(overview = overview.copy(seen = Set(node)))
   }
 
-  /**
-   * Remove all seen entries
-   */
+  /** Remove all seen entries */
   def clearSeen(): Gossip = {
     this.copy(overview = overview.copy(seen = Set.empty))
   }
 
-  /**
-   * The nodes that have seen the current version of the Gossip.
-   */
+  /** The nodes that have seen the current version of the Gossip. */
   def seenBy: Set[UniqueAddress] = overview.seen
 
-  /**
-   * Has this Gossip been seen by this node.
-   */
+  /** Has this Gossip been seen by this node. */
   def seenByNode(node: UniqueAddress): Boolean = overview.seen(node)
 
-  /**
-   * Merges the seen table of two Gossip instances.
-   */
+  /** Merges the seen table of two Gossip instances. */
   def mergeSeen(that: Gossip): Gossip =
     this.copy(overview = overview.copy(seen = overview.seen.union(that.overview.seen)))
 
-  /**
-   * Merges two Gossip instances including membership tables, tombstones, and the VectorClock histories.
-   */
+  /** Merges two Gossip instances including membership tables, tombstones, and the VectorClock histories. */
   def merge(that: Gossip): Gossip = {
 
     // 1. merge sets of tombstones

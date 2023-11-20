@@ -23,9 +23,8 @@ class NameserverAddressParserSpec extends AnyWordSpec with Matchers {
       DnsSettings.parseNameserverAddress("8.8.8.8") shouldEqual new InetSocketAddress("8.8.8.8", 53)
     }
     "handle default port in IPv6 address" in {
-      DnsSettings.parseNameserverAddress("[2001:4860:4860::8888]") shouldEqual new InetSocketAddress(
-        "2001:4860:4860::8888",
-        53)
+      DnsSettings
+        .parseNameserverAddress("[2001:4860:4860::8888]") shouldEqual new InetSocketAddress("2001:4860:4860::8888", 53)
     }
   }
 }

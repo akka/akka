@@ -40,9 +40,11 @@ class RemotingFeaturesConfig(val useUnsafe: Boolean) extends MultiNodeConfig {
   val workerInstances = 3
   val iterationCount = 10
 
-  protected val baseConfig = ConfigFactory.parseString(s"""
+  protected val baseConfig = ConfigFactory
+    .parseString(s"""
       akka.remote.use-unsafe-remote-features-outside-cluster = $useUnsafe
-      """).withFallback(RemotingMultiNodeSpec.commonConfig)
+      """)
+    .withFallback(RemotingMultiNodeSpec.commonConfig)
 
   commonConfig(debugConfig(on = false).withFallback(baseConfig))
 
@@ -300,7 +302,7 @@ abstract class RemotingFeaturesSpec(val multiNodeConfig: RemotingFeaturesConfig)
 
   "A remote round robin pool" must {
     s"${if (useUnsafe) "be instantiated on remote node and communicate through its RemoteActorRef"
-    else "not be instantiated on remote node and communicate through its LocalActorRef "} " in {
+      else "not be instantiated on remote node and communicate through its LocalActorRef "} " in {
 
       runOn(first, second, third) {
         enterBarrier("start", "broadcast-end", "end")
@@ -315,8 +317,8 @@ abstract class RemotingFeaturesSpec(val multiNodeConfig: RemotingFeaturesConfig)
           actor ! "hit"
         }
 
-        val replies = receiveWhile(5.seconds, messages = workerInstances * iterationCount) {
-          case ref: ActorRef => ref.path.address
+        val replies = receiveWhile(5.seconds, messages = workerInstances * iterationCount) { case ref: ActorRef =>
+          ref.path.address
         }.foldLeft(Map(node(first).address -> 0, node(second).address -> 0, node(third).address -> 0)) {
           case (replyMap, address) =>
             if (useUnsafe) address.hasLocalScope shouldBe false

@@ -32,7 +32,7 @@ class PinnedDispatcher(
   @volatile
   private var owner: ActorCell = _actor
 
-  //Relies on an external lock provided by MessageDispatcher.attach
+  // Relies on an external lock provided by MessageDispatcher.attach
   protected[akka] override def register(actorCell: ActorCell) = {
     val actor = owner
     if ((actor ne null) && actorCell != actor)
@@ -40,7 +40,7 @@ class PinnedDispatcher(
     owner = actorCell
     super.register(actorCell)
   }
-  //Relies on an external lock provided by MessageDispatcher.detach
+  // Relies on an external lock provided by MessageDispatcher.detach
   protected[akka] override def unregister(actor: ActorCell) = {
     super.unregister(actor)
     owner = null

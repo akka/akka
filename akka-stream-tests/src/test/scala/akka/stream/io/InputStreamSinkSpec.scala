@@ -158,7 +158,7 @@ class InputStreamSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
       val sinkProbe = TestProbe()
       val inputStream = Source[ByteString](bytes).runWith(testSink(sinkProbe))
 
-      //need to wait while all elements arrive to sink
+      // need to wait while all elements arrive to sink
       bytes.foreach { _ =>
         sinkProbe.expectMsg(GraphStageMessages.Push)
       }
@@ -175,7 +175,7 @@ class InputStreamSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
       val sinkProbe = TestProbe()
       val inputStream = Source(bytes1 :: bytes2 :: Nil).runWith(testSink(sinkProbe))
 
-      //need to wait while both elements arrive to sink
+      // need to wait while both elements arrive to sink
       sinkProbe.expectMsgAllOf(GraphStageMessages.Push, GraphStageMessages.Push)
 
       readN(inputStream, 15) should ===((15, bytes1 ++ bytes2.take(5)))
@@ -233,7 +233,7 @@ class InputStreamSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
          itself throws an exception when being materialized. If
          Source.empty is used, the same exception is thrown by
          Materializer.
-       */
+         */
       }
     }
 

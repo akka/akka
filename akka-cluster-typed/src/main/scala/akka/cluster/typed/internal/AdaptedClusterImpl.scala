@@ -17,9 +17,7 @@ import akka.cluster.ClusterEvent.MemberEvent
 import akka.cluster.typed._
 import akka.cluster.typed.PrepareForFullClusterShutdown
 
-/**
- * INTERNAL API:
- */
+/** INTERNAL API: */
 @InternalApi
 private[akka] object AdapterClusterImpl {
 
@@ -103,12 +101,10 @@ private[akka] object AdapterClusterImpl {
           case _ => throw new IllegalArgumentException() // compiler exhaustiveness check pleaser
 
         }
-        .receiveSignal {
-
-          case (_, Terminated(ref)) =>
-            upSubscribers = upSubscribers.filterNot(_ == ref)
-            removedSubscribers = removedSubscribers.filterNot(_ == ref)
-            Behaviors.same
+        .receiveSignal { case (_, Terminated(ref)) =>
+          upSubscribers = upSubscribers.filterNot(_ == ref)
+          removedSubscribers = removedSubscribers.filterNot(_ == ref)
+          Behaviors.same
 
         }
         .narrow[ClusterStateSubscription]
@@ -145,9 +141,7 @@ private[akka] object AdapterClusterImpl {
 
 }
 
-/**
- * INTERNAL API:
- */
+/** INTERNAL API: */
 @InternalApi
 private[akka] final class AdapterClusterImpl(system: ActorSystem[_]) extends Cluster {
   import AdapterClusterImpl._

@@ -7,9 +7,7 @@ package akka.io.dns.internal
 import akka.io.dns.RecordType
 import akka.util.{ ByteIterator, ByteStringBuilder, OptionVal }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[akka] object RecordTypeSerializer {
 
   // TODO other type than ByteStringBuilder? (was used in akka-dns)

@@ -51,13 +51,16 @@ object ReplicatedEntityProvider {
    */
   def apply[M: ClassTag](typeName: String, allReplicaIds: Set[ReplicaId])(
       settingsPerReplicaFactory: (EntityTypeKey[M], ReplicaId) => ReplicatedEntity[M]): ReplicatedEntityProvider[M] = {
-    new ReplicatedEntityProvider(allReplicaIds.map { replicaId =>
-      if (typeName.contains(Separator))
-        throw new IllegalArgumentException(s"typeName [$typeName] contains [$Separator] which is a reserved character")
+    new ReplicatedEntityProvider(
+      allReplicaIds.map { replicaId =>
+        if (typeName.contains(Separator))
+          throw new IllegalArgumentException(
+            s"typeName [$typeName] contains [$Separator] which is a reserved character")
 
-      val typeKey = EntityTypeKey[M](s"$typeName${Separator}${replicaId.id}")
-      (settingsPerReplicaFactory(typeKey, replicaId), typeName)
-    }.toVector, directReplication = true)
+        val typeKey = EntityTypeKey[M](s"$typeName${Separator}${replicaId.id}")
+        (settingsPerReplicaFactory(typeKey, replicaId), typeName)
+      }.toVector,
+      directReplication = true)
   }
 
   /**
@@ -69,9 +72,11 @@ object ReplicatedEntityProvider {
   def perDataCenter[M: ClassTag, E](typeName: String, allReplicaIds: Set[ReplicaId])(
       create: ReplicationId => Behavior[M]): ReplicatedEntityProvider[M] = {
     apply(typeName, allReplicaIds) { (typeKey, replicaId) =>
-      ReplicatedEntity(replicaId, Entity(typeKey) { entityContext =>
-        create(ReplicationId.fromString(entityContext.entityId))
-      }.withDataCenter(replicaId.id))
+      ReplicatedEntity(
+        replicaId,
+        Entity(typeKey) { entityContext =>
+          create(ReplicationId.fromString(entityContext.entityId))
+        }.withDataCenter(replicaId.id))
     }
   }
 
@@ -85,9 +90,11 @@ object ReplicatedEntityProvider {
   def perRole[M: ClassTag, E](typeName: String, allReplicaIds: Set[ReplicaId])(
       create: ReplicationId => Behavior[M]): ReplicatedEntityProvider[M] = {
     apply(typeName, allReplicaIds) { (typeKey, replicaId) =>
-      ReplicatedEntity(replicaId, Entity(typeKey) { entityContext =>
-        create(ReplicationId.fromString(entityContext.entityId))
-      }.withRole(replicaId.id))
+      ReplicatedEntity(
+        replicaId,
+        Entity(typeKey) { entityContext =>
+          create(ReplicationId.fromString(entityContext.entityId))
+        }.withRole(replicaId.id))
     }
   }
 
@@ -104,9 +111,11 @@ object ReplicatedEntityProvider {
       createBehavior: java.util.function.Function[ReplicationId, Behavior[M]]): ReplicatedEntityProvider[M] = {
     implicit val classTag: ClassTag[M] = ClassTag(messageClass)
     apply(typeName, allReplicaIds.asScala.toSet) { (typeKey, replicaId) =>
-      ReplicatedEntity(replicaId, Entity(typeKey) { entityContext =>
-        createBehavior(ReplicationId.fromString(entityContext.entityId))
-      }.withDataCenter(replicaId.id))
+      ReplicatedEntity(
+        replicaId,
+        Entity(typeKey) { entityContext =>
+          createBehavior(ReplicationId.fromString(entityContext.entityId))
+        }.withDataCenter(replicaId.id))
     }
   }
 
@@ -125,17 +134,16 @@ object ReplicatedEntityProvider {
       createBehavior: akka.japi.function.Function[ReplicationId, Behavior[M]]): ReplicatedEntityProvider[M] = {
     implicit val classTag: ClassTag[M] = ClassTag(messageClass)
     apply(typeName, allReplicaIds.asScala.toSet) { (typeKey, replicaId) =>
-      ReplicatedEntity(replicaId, Entity(typeKey) { entityContext =>
-        createBehavior(ReplicationId.fromString(entityContext.entityId))
-      }.withRole(replicaId.id))
+      ReplicatedEntity(
+        replicaId,
+        Entity(typeKey) { entityContext =>
+          createBehavior(ReplicationId.fromString(entityContext.entityId))
+        }.withRole(replicaId.id))
     }
   }
 }
 
-/**
- *
- * @tparam M The type of messages the replicated entity accepts
- */
+/** @tparam M The type of messages the replicated entity accepts */
 final class ReplicatedEntityProvider[M] private (
     val replicas: immutable.Seq[(ReplicatedEntity[M], String)],
     val directReplication: Boolean) {
@@ -145,7 +153,6 @@ final class ReplicatedEntityProvider[M] private (
    * to also have it enabled through [[akka.persistence.typed.scaladsl.EventSourcedBehavior.withEventPublishing]]
    * or [[akka.persistence.typed.javadsl.ReplicatedEventSourcedBehavior.withEventPublishing]]
    * to work.
-   *
    */
   def withDirectReplication(enabled: Boolean): ReplicatedEntityProvider[M] =
     new ReplicatedEntityProvider(replicas, directReplication = enabled)

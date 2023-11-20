@@ -24,7 +24,7 @@ import akka.serialization.jackson.CborSerializable
 
 object ReplicatedShoppingCartExampleSpec {
 
-  //#shopping-cart
+  // #shopping-cart
   object ShoppingCart {
 
     type ProductId = String
@@ -79,7 +79,7 @@ object ReplicatedShoppingCartExampleSpec {
       }
     }
   }
-  //#shopping-cart
+  // #shopping-cart
 }
 
 class ReplicatedShoppingCartExampleSpec

@@ -26,9 +26,12 @@ object ClusterReceptionistUnreachabilitySpecConfig extends MultiNodeConfig {
   val second = role("second")
   val third = role("third")
 
-  commonConfig(ConfigFactory.parseString("""
+  commonConfig(
+    ConfigFactory
+      .parseString("""
         akka.loglevel = INFO
-      """).withFallback(MultiNodeClusterSpec.clusterConfig))
+      """)
+      .withFallback(MultiNodeClusterSpec.clusterConfig))
 
   testTransport(on = true)
 }
@@ -67,22 +70,25 @@ abstract class ClusterReceptionistUnreachabilitySpec
     }
 
     "register a service" in {
-      val localServiceRef = spawn(Behaviors.receiveMessage[String] {
-        case msg =>
+      val localServiceRef = spawn(
+        Behaviors.receiveMessage[String] { case msg =>
           probe.ref ! msg
           Behaviors.same
-      }, "my-service")
+        },
+        "my-service")
       typedSystem.receptionist ! Receptionist.Register(MyServiceKey, localServiceRef)
       enterBarrier("all registered")
     }
 
     "see registered services" in {
-      awaitAssert({
-        val listing = receptionistProbe.expectMessageType[Receptionist.Listing]
-        listing.serviceInstances(MyServiceKey) should have size (3)
-        listing.allServiceInstances(MyServiceKey) should have size (3)
-        listing.servicesWereAddedOrRemoved should ===(true)
-      }, 20.seconds)
+      awaitAssert(
+        {
+          val listing = receptionistProbe.expectMessageType[Receptionist.Listing]
+          listing.serviceInstances(MyServiceKey) should have size 3
+          listing.allServiceInstances(MyServiceKey) should have size 3
+          listing.servicesWereAddedOrRemoved should ===(true)
+        },
+        20.seconds)
 
       enterBarrier("all seen registered")
     }
@@ -96,21 +102,25 @@ abstract class ClusterReceptionistUnreachabilitySpec
 
       runOn(first, third) {
         // assert service on 2 is not in listing but in all and flag is false
-        awaitAssert({
-          val listing = receptionistProbe.expectMessageType[Receptionist.Listing]
-          listing.serviceInstances(MyServiceKey) should have size (2)
-          listing.allServiceInstances(MyServiceKey) should have size (3)
-          listing.servicesWereAddedOrRemoved should ===(false)
-        }, 20.seconds)
+        awaitAssert(
+          {
+            val listing = receptionistProbe.expectMessageType[Receptionist.Listing]
+            listing.serviceInstances(MyServiceKey) should have size 2
+            listing.allServiceInstances(MyServiceKey) should have size 3
+            listing.servicesWereAddedOrRemoved should ===(false)
+          },
+          20.seconds)
       }
       runOn(second) {
         // assert service on 1 and 3 is not in listing but in all and flag is false
-        awaitAssert({
-          val listing = receptionistProbe.expectMessageType[Receptionist.Listing]
-          listing.serviceInstances(MyServiceKey) should have size (1)
-          listing.allServiceInstances(MyServiceKey) should have size (3)
-          listing.servicesWereAddedOrRemoved should ===(false)
-        }, 20.seconds)
+        awaitAssert(
+          {
+            val listing = receptionistProbe.expectMessageType[Receptionist.Listing]
+            listing.serviceInstances(MyServiceKey) should have size 1
+            listing.allServiceInstances(MyServiceKey) should have size 3
+            listing.servicesWereAddedOrRemoved should ===(false)
+          },
+          20.seconds)
       }
       enterBarrier("all seen unreachable")
     }
@@ -122,12 +132,12 @@ abstract class ClusterReceptionistUnreachabilitySpec
         testConductor.passThrough(third, second, Direction.Both).await
       }
 
-      awaitAssert({
+      awaitAssert {
         val listing = receptionistProbe.expectMessageType[Receptionist.Listing]
-        listing.serviceInstances(MyServiceKey) should have size (3)
-        listing.allServiceInstances(MyServiceKey) should have size (3)
+        listing.serviceInstances(MyServiceKey) should have size 3
+        listing.allServiceInstances(MyServiceKey) should have size 3
         listing.servicesWereAddedOrRemoved should ===(false)
-      })
+      }
       enterBarrier("all seen reachable-again")
     }
 

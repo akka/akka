@@ -16,9 +16,7 @@ import akka.stream.impl.{ TlsModuleIslandTag, TraversalBuilder }
 import akka.stream.impl.StreamLayout.AtomicModule
 import akka.util.ByteString
 
-/**
- * INTERNAL API.
- */
+/** INTERNAL API. */
 @InternalApi private[stream] final case class TlsModule(
     plainIn: Inlet[SslTlsOutbound],
     plainOut: Outlet[SslTlsInbound],
@@ -39,9 +37,7 @@ import akka.util.ByteString
     TraversalBuilder.atomic(this, attributes).makeIsland(TlsModuleIslandTag)
 }
 
-/**
- * INTERNAL API.
- */
+/** INTERNAL API. */
 @InternalApi private[stream] object TlsModule {
   def apply(
       attributes: Attributes,

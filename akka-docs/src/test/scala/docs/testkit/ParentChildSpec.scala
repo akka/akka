@@ -16,9 +16,7 @@ import akka.actor.ActorRefFactory
 import akka.testkit.TestKit
 import org.scalatest.BeforeAndAfterAll
 
-/**
- * Parent-Child examples
- */
+/** Parent-Child examples */
 //#test-example
 class Parent extends Actor {
   val child = context.actorOf(Props[Child](), "child")
@@ -31,16 +29,16 @@ class Parent extends Actor {
 }
 
 class Child extends Actor {
-  def receive = {
-    case "ping" => context.parent ! "pong"
+  def receive = { case "ping" =>
+    context.parent ! "pong"
   }
 }
 //#test-example
 
 //#test-dependentchild
 class DependentChild(parent: ActorRef) extends Actor {
-  def receive = {
-    case "ping" => parent ! "pong"
+  def receive = { case "ping" =>
+    parent ! "pong"
   }
 }
 //#test-dependentchild
@@ -66,12 +64,10 @@ class GenericDependentParent(childMaker: ActorRefFactory => ActorRef) extends Ac
 }
 //#test-dependentparent
 
-/**
- * Test specification
- */
+/** Test specification */
 class MockedChild extends Actor {
-  def receive = {
-    case "ping" => sender() ! "pong"
+  def receive = { case "ping" =>
+    sender() ! "pong"
   }
 }
 
@@ -105,23 +101,23 @@ class ParentChildSpec extends AnyWordSpec with Matchers with TestKitBase with Be
   "A GenericDependentParent" should {
     "be tested with a child probe" in {
       val probe = TestProbe()
-      //#child-maker-test
+      // #child-maker-test
       val maker = (_: ActorRefFactory) => probe.ref
       val parent = system.actorOf(Props(new GenericDependentParent(maker)))
-      //#child-maker-test
+      // #child-maker-test
       probe.send(parent, "pingit")
       probe.expectMsg("ping")
     }
 
     "demonstrate production version of child creator" in {
-      //#child-maker-prod
+      // #child-maker-prod
       val maker = (f: ActorRefFactory) => f.actorOf(Props(new Child))
       val parent = system.actorOf(Props(new GenericDependentParent(maker)))
-      //#child-maker-prod
+      // #child-maker-prod
     }
   }
 
-  //#test-TestProbe-parent
+  // #test-TestProbe-parent
   "A TestProbe serving as parent" should {
     "test its child responses" in {
       val parent = TestProbe()
@@ -130,9 +126,9 @@ class ParentChildSpec extends AnyWordSpec with Matchers with TestKitBase with Be
       parent.expectMsg("pong")
     }
   }
-  //#test-TestProbe-parent
+  // #test-TestProbe-parent
 
-  //#test-fabricated-parent
+  // #test-fabricated-parent
   "A fabricated parent" should {
     "test its child responses" in {
       val proxy = TestProbe()
@@ -148,5 +144,5 @@ class ParentChildSpec extends AnyWordSpec with Matchers with TestKitBase with Be
       proxy.expectMsg("pong")
     }
   }
-  //#test-fabricated-parent
+  // #test-fabricated-parent
 }

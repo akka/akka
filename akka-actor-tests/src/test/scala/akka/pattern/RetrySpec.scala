@@ -29,10 +29,10 @@ class RetrySpec extends AkkaSpec with RetrySupport {
       @volatile var counter = 0
       val retried = retry(
         () =>
-          Future.successful({
+          Future.successful {
             counter += 1
             counter
-          }),
+          },
         5,
         1 second)
 
@@ -94,10 +94,13 @@ class RetrySpec extends AkkaSpec with RetrySupport {
         } else Future.successful(5)
       }
 
-      val retried = retry(() => attempt(), 5, attempted => {
-        attemptedCount = attempted
-        Some(100.milliseconds * attempted)
-      })
+      val retried = retry(
+        () => attempt(),
+        5,
+        attempted => {
+          attemptedCount = attempted
+          Some(100.milliseconds * attempted)
+        })
       within(30000000 seconds) {
         intercept[IllegalStateException] { Await.result(retried, remaining) }.getMessage should ===("6")
         attemptedCount shouldBe 5

@@ -122,19 +122,18 @@ class PrimitivesSerializationSpec extends AkkaSpec(PrimitivesSerializationSpec.t
   "StringSerializer" must {
     val random = Random.nextString(256)
     Seq("empty string" -> "", "hello" -> "hello", "árvíztűrőütvefúrógép" -> "árvíztűrőütvefúrógép", "random" -> random)
-      .foreach {
-        case (scenario, item) =>
-          s"resolve serializer for [$scenario]" in {
-            serialization.serializerFor(item.getClass).getClass should ===(classOf[StringSerializer])
-          }
+      .foreach { case (scenario, item) =>
+        s"resolve serializer for [$scenario]" in {
+          serialization.serializerFor(item.getClass).getClass should ===(classOf[StringSerializer])
+        }
 
-          s"serialize and de-serialize [$scenario]" in {
-            verifySerialization(item)
-          }
+        s"serialize and de-serialize [$scenario]" in {
+          verifySerialization(item)
+        }
 
-          s"serialize and de-serialize value [$scenario] using ByteBuffers" in {
-            verifySerializationByteBuffer(item)
-          }
+        s"serialize and de-serialize value [$scenario] using ByteBuffers" in {
+          verifySerializationByteBuffer(item)
+        }
       }
 
     "have right serializer id" in {

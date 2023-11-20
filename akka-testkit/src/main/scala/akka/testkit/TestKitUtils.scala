@@ -10,9 +10,7 @@ import scala.util.matching.Regex
 
 import akka.annotation.InternalApi
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] object TestKitUtils {
 

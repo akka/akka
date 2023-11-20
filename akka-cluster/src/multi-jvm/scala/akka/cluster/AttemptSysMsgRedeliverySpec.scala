@@ -27,8 +27,8 @@ object AttemptSysMsgRedeliveryMultiJvmSpec extends MultiNodeConfig {
   testTransport(on = true)
 
   class Echo extends Actor {
-    def receive = {
-      case m => sender() ! m
+    def receive = { case m =>
+      sender() ! m
     }
   }
 }

@@ -81,11 +81,11 @@ class FlowConcatAllLazySpec extends StreamSpec("""
         .expectNext(1, 2)
         .cancel()
         .expectNoMessage()
-      materialized.get() shouldBe (false)
+      materialized.get() shouldBe false
     }
 
     "work in example" in {
-      //#concatAllLazy
+      // #concatAllLazy
       val sourceA = Source(List(1, 2, 3))
       val sourceB = Source(List(4, 5, 6))
       val sourceC = Source(List(7, 8, 9))
@@ -93,8 +93,8 @@ class FlowConcatAllLazySpec extends StreamSpec("""
         .concatAllLazy(sourceB, sourceC)
         .fold(new StringJoiner(","))((joiner, input) => joiner.add(String.valueOf(input)))
         .runWith(Sink.foreach(println))
-      //prints 1,2,3,4,5,6,7,8,9
-      //#concatAllLazy
+      // prints 1,2,3,4,5,6,7,8,9
+      // #concatAllLazy
     }
 
   }

@@ -110,10 +110,9 @@ object DeliveryThroughputSpec extends MultiNodeConfig {
             case Stop =>
               Behaviors.stopped
           }
-          .receiveSignal {
-            case (_, PostStop) =>
-              rateReporter.halt()
-              Behaviors.same
+          .receiveSignal { case (_, PostStop) =>
+            rateReporter.halt()
+            Behaviors.same
           }
 
       }
@@ -166,7 +165,7 @@ object DeliveryThroughputSpec extends MultiNodeConfig {
         resultReporter: BenchmarkFileReporter): Unit = {
       val numberOfMessages = testSettings.totalMessages
       val took = NANOSECONDS.toMillis(System.nanoTime - startTime)
-      val throughput = (numberOfMessages * 1000.0 / took)
+      val throughput = numberOfMessages * 1000.0 / took
 
       resultReporter.reportResults(
         s"=== ${resultReporter.testName} ${testSettings.testName}: " +
@@ -198,7 +197,7 @@ object DeliveryThroughputSpec extends MultiNodeConfig {
           context.messageAdapter[WorkPullingProducerController.RequestNext[Consumer.Command]](WrappedRequestNext(_))
         var startTime = System.nanoTime()
         var remaining = numberOfMessages + context.system.settings.config
-            .getInt("akka.reliable-delivery.consumer-controller.flow-control-window")
+          .getInt("akka.reliable-delivery.consumer-controller.flow-control-window")
 
         Behaviors.receiveMessage {
           case WrappedRequestNext(next) =>
@@ -245,7 +244,7 @@ object DeliveryThroughputSpec extends MultiNodeConfig {
             context.messageAdapter[ShardingProducerController.RequestNext[Consumer.Command]](WrappedRequestNext(_))
           var startTime = System.nanoTime()
           var remaining = numberOfMessages + context.system.settings.config
-              .getInt("akka.reliable-delivery.sharding.consumer-controller.flow-control-window")
+            .getInt("akka.reliable-delivery.sharding.consumer-controller.flow-control-window")
           var latestDemand: ShardingProducerController.RequestNext[Consumer.Command] = null
           var messagesSentToEachEntity: Map[String, Long] = Map.empty[String, Long].withDefaultValue(0L)
 
@@ -279,7 +278,7 @@ object DeliveryThroughputSpec extends MultiNodeConfig {
                 remaining,
                 latestDemand,
                 messagesSentToEachEntity,
-                (remaining % testSettings.numberOfConsumers))
+                remaining % testSettings.numberOfConsumers)
               Behaviors.same
           }
         }
@@ -370,7 +369,7 @@ abstract class DeliveryThroughputSpec
     runPerfFlames(first, second, third)(delay = 5.seconds)
 
     runOn(second, third) {
-      val range = if (myself == second) (1 to numberOfConsumers by 2) else (2 to numberOfConsumers by 2)
+      val range = if (myself == second) 1 to numberOfConsumers by 2 else 2 to numberOfConsumers by 2
       val consumers = range.map { n =>
         val consumerController =
           spawn(ConsumerController[Consumer.Command](serviceKey(testName)), s"consumerController-$n-$testName")

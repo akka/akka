@@ -68,14 +68,14 @@ import akka.persistence.testkit._
 
 class SampleEventStoragePolicy extends EventStorage.JournalPolicies.PolicyType {
 
-  //you can use internal state, it does not need to be thread safe
+  // you can use internal state, it does not need to be thread safe
   var count = 1
 
   override def tryProcess(persistenceId: String, processingUnit: JournalOperation): ProcessingResult =
     if (count < 10) {
       count += 1
-      //check the type of operation and react with success or with reject or with failure.
-      //if you return ProcessingSuccess the operation will be performed, otherwise not.
+      // check the type of operation and react with success or with reject or with failure.
+      // if you return ProcessingSuccess the operation will be performed, otherwise not.
       processingUnit match {
         case ReadEvents(batch) if batch.nonEmpty => ProcessingSuccess
         case WriteEvents(batch) if batch.size > 1 =>
@@ -94,14 +94,14 @@ class SampleEventStoragePolicy extends EventStorage.JournalPolicies.PolicyType {
 //#set-snapshot-storage-policy
 class SampleSnapshotStoragePolicy extends SnapshotStorage.SnapshotPolicies.PolicyType {
 
-  //you can use internal state, it does not need to be thread safe
+  // you can use internal state, it does not need to be thread safe
   var count = 1
 
   override def tryProcess(persistenceId: String, processingUnit: SnapshotOperation): ProcessingResult =
     if (count < 10) {
       count += 1
-      //check the type of operation and react with success or with reject or with failure.
-      //if you return ProcessingSuccess the operation will be performed, otherwise not.
+      // check the type of operation and react with success or with reject or with failure.
+      // if you return ProcessingSuccess the operation will be performed, otherwise not.
       processingUnit match {
         case ReadSnapshot(_, payload) if payload.nonEmpty =>
           ProcessingSuccess

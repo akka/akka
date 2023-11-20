@@ -6,16 +6,12 @@ package akka.remote
 
 import akka.actor._
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[akka] final case class RARP(provider: RemoteActorRefProvider) extends Extension {
   def configureDispatcher(props: Props): Props = provider.remoteSettings.configureDispatcher(props)
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[akka] object RARP extends ExtensionId[RARP] with ExtensionIdProvider {
 
   override def lookup = RARP
@@ -31,7 +27,5 @@ private[akka] object RARP extends ExtensionId[RARP] with ExtensionIdProvider {
  */
 private[akka] trait PriorityMessage
 
-/**
- * Failure detector heartbeat messages are marked with this trait.
- */
+/** Failure detector heartbeat messages are marked with this trait. */
 private[akka] trait HeartbeatMessage extends PriorityMessage

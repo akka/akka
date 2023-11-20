@@ -23,9 +23,7 @@ import akka.serialization._
 import akka.util.ccompat._
 import akka.util.ccompat.JavaConverters._
 
-/**
- * INTERNAL API: Protobuf serializer of DistributedPubSubMediator messages.
- */
+/** INTERNAL API: Protobuf serializer of DistributedPubSubMediator messages. */
 @ccompatUsedUntil213
 private[akka] class DistributedPubSubMessageSerializer(val system: ExtendedActorSystem)
     extends SerializerWithStringManifest
@@ -116,9 +114,8 @@ private[akka] class DistributedPubSubMessageSerializer(val system: ExtendedActor
 
   private def statusToProto(status: Status): dm.Status = {
     val versions = status.versions
-      .map {
-        case (a, v) =>
-          dm.Status.Version.newBuilder().setAddress(addressToProto(a)).setTimestamp(v).build()
+      .map { case (a, v) =>
+        dm.Status.Version.newBuilder().setAddress(addressToProto(a)).setTimestamp(v).build()
       }
       .toVector
       .asJava
@@ -139,11 +136,10 @@ private[akka] class DistributedPubSubMessageSerializer(val system: ExtendedActor
     val buckets = delta.buckets
       .map { b =>
         val entries = b.content
-          .map {
-            case (key, value) =>
-              val b = dm.Delta.Entry.newBuilder().setKey(key).setVersion(value.version)
-              value.ref.foreach(r => b.setRef(Serialization.serializedActorPath(r)))
-              b.build()
+          .map { case (key, value) =>
+            val b = dm.Delta.Entry.newBuilder().setKey(key).setVersion(value.version)
+            value.ref.foreach(r => b.setRef(Serialization.serializedActorPath(r)))
+            b.build()
           }
           .toVector
           .asJava

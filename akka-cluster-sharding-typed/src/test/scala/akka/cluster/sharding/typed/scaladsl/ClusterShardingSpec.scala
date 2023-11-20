@@ -84,10 +84,9 @@ object ClusterShardingSpec {
           toMe ! "Hello!"
           Behaviors.same
       }
-      .receiveSignal {
-        case (_, PostStop) =>
-          stopProbe.foreach(_ ! "PostStop")
-          Behaviors.same
+      .receiveSignal { case (_, PostStop) =>
+        stopProbe.foreach(_ ! "PostStop")
+        Behaviors.same
       }
 
   def behaviorWithId() = Behaviors.receive[IdTestProtocol] {

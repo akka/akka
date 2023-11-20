@@ -32,9 +32,7 @@ import akka.stream.impl.StreamLayout._
 import akka.stream.scaladsl._
 import akka.stream.stage._
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 // TODO: Fix variance issues
 @InternalApi private[akka] final case class GraphStageModule[+S <: Shape @uncheckedVariance, +M](
     shape: S,
@@ -51,14 +49,10 @@ import akka.stream.stage._
   override def toString: String = f"GraphStage($stage) [${System.identityHashCode(this)}%08x]"
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object GraphStages {
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[akka] abstract class SimpleLinearGraphStage[T] extends GraphStage[FlowShape[T, T]] {
     val in = Inlet[T](Logging.simpleName(this) + ".in")
     val out = Outlet[T](Logging.simpleName(this) + ".out")
@@ -82,9 +76,7 @@ import akka.stream.stage._
 
   def identity[T] = Identity.asInstanceOf[SimpleLinearGraphStage[T]]
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[akka] object Detacher extends SimpleLinearGraphStage[Any] {
     override def initialAttributes = DefaultAttributes.detacher
 
@@ -133,37 +125,39 @@ import akka.stream.stage._
     override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[Done]) = {
       val finishPromise = Promise[Done]()
 
-      (new GraphStageLogic(shape) with InHandler with OutHandler {
-        def onPush(): Unit = push(out, grab(in))
+      (
+        new GraphStageLogic(shape) with InHandler with OutHandler {
+          def onPush(): Unit = push(out, grab(in))
 
-        override def onUpstreamFinish(): Unit = {
-          finishPromise.success(Done)
-          completeStage()
-        }
-
-        override def onUpstreamFailure(ex: Throwable): Unit = {
-          finishPromise.failure(ex)
-          failStage(ex)
-        }
-
-        def onPull(): Unit = pull(in)
-
-        override def onDownstreamFinish(cause: Throwable): Unit = {
-          cause match {
-            case _: SubscriptionWithCancelException.NonFailureCancellation =>
-              finishPromise.success(Done)
-            case ex =>
-              finishPromise.failure(ex)
+          override def onUpstreamFinish(): Unit = {
+            finishPromise.success(Done)
+            completeStage()
           }
-          cancelStage(cause)
-        }
 
-        override def postStop(): Unit = {
-          if (!finishPromise.isCompleted) finishPromise.failure(new AbruptStageTerminationException(this))
-        }
+          override def onUpstreamFailure(ex: Throwable): Unit = {
+            finishPromise.failure(ex)
+            failStage(ex)
+          }
 
-        setHandlers(in, out, this)
-      }, finishPromise.future)
+          def onPull(): Unit = pull(in)
+
+          override def onDownstreamFinish(cause: Throwable): Unit = {
+            cause match {
+              case _: SubscriptionWithCancelException.NonFailureCancellation =>
+                finishPromise.success(Done)
+              case ex =>
+                finishPromise.failure(ex)
+            }
+            cancelStage(cause)
+          }
+
+          override def postStop(): Unit = {
+            if (!finishPromise.isCompleted) finishPromise.failure(new AbruptStageTerminationException(this))
+          }
+
+          setHandlers(in, out, this)
+        },
+        finishPromise.future)
     }
 
     override def toString = "TerminationWatcher"
@@ -411,11 +405,10 @@ import akka.stream.stage._
               }
 
             }
-            .recover {
-              case t =>
-                sinkIn.cancel()
-                materialized.failure(t)
-                failStage(t)
+            .recover { case t =>
+              sinkIn.cancel()
+              materialized.failure(t)
+              failStage(t)
             }
         }
       }

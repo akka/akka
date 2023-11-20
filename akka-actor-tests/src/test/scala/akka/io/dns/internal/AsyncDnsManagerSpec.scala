@@ -18,12 +18,15 @@ import akka.testkit.WithLogCapturing
 
 // tests deprecated DNS API
 @nowarn("msg=deprecated")
-class AsyncDnsManagerSpec extends AkkaSpec("""
+class AsyncDnsManagerSpec
+    extends AkkaSpec("""
     akka.loglevel = DEBUG
     akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
     akka.io.dns.resolver = async-dns
     akka.io.dns.async-dns.nameservers = default
-  """) with ImplicitSender with WithLogCapturing {
+  """)
+    with ImplicitSender
+    with WithLogCapturing {
 
   val dns = Dns(system).manager
 

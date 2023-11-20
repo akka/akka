@@ -63,15 +63,20 @@ object AccessSystemFromConstructorExtensionId extends ExtensionId[AccessSystemFr
 }
 class AccessSystemFromConstructor(system: ActorSystem[_]) extends Extension {
   system.log.info("I log from the constructor")
-  system.receptionist ! Receptionist.Find(ServiceKey[String]("i-just-made-it-up"), system.deadLetters) // or touch the receptionist!
+  system.receptionist ! Receptionist.Find(
+    ServiceKey[String]("i-just-made-it-up"),
+    system.deadLetters
+  ) // or touch the receptionist!
 }
 
 object ExtensionsSpec {
-  val config = ConfigFactory.parseString("""
+  val config = ConfigFactory
+    .parseString("""
 akka.actor.typed {
   library-extensions += "akka.actor.typed.InstanceCountingExtension"
   }
-   """).resolve()
+   """)
+    .resolve()
 }
 
 class ExtensionsSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCapturing {
@@ -111,9 +116,7 @@ class ExtensionsSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with
     "load extensions from the configuration" in
     withEmptyActorSystem(
       "ExtensionsSpec03",
-      Some(
-        ConfigFactory.parseString(
-          """
+      Some(ConfigFactory.parseString("""
           akka.actor.typed.extensions = ["akka.actor.typed.DummyExtension1$", "akka.actor.typed.SlowExtension$"]
         """))) { sys =>
       sys.hasExtension(DummyExtension1) should ===(true)
@@ -175,8 +178,9 @@ class ExtensionsSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with
     intercept[RuntimeException] {
       withEmptyActorSystem(
         "ExtensionsSpec08",
-        Some(ConfigFactory.parseString(
-          """akka.actor.typed.library-extensions += "akka.actor.typed.MissingExtension""""))) { _ =>
+        Some(
+          ConfigFactory.parseString(
+            """akka.actor.typed.library-extensions += "akka.actor.typed.MissingExtension""""))) { _ =>
         ()
       }
     }
@@ -225,9 +229,7 @@ class ExtensionsSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with
     "override extensions via ActorSystemSetup" in
     withEmptyActorSystem(
       "ExtensionsSpec10",
-      Some(
-        ConfigFactory.parseString(
-          """
+      Some(ConfigFactory.parseString("""
           akka.actor.typed.extensions = ["akka.actor.typed.DummyExtension1$", "akka.actor.typed.SlowExtension$"]
         """)),
       Some(ActorSystemSetup(new DummyExtension1Setup(_ => new DummyExtension1ViaSetup)))) { sys =>
@@ -243,9 +245,7 @@ class ExtensionsSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with
     "allow for interaction with log from extension constructor" in {
       withEmptyActorSystem(
         "ExtensionsSpec11",
-        Some(
-          ConfigFactory.parseString(
-            """
+        Some(ConfigFactory.parseString("""
           akka.actor.typed.extensions = ["akka.actor.typed.AccessSystemFromConstructorExtensionId$"]
         """)),
         None) { sys =>

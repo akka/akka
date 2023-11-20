@@ -12,9 +12,7 @@ import akka.stream.scaladsl.{ Sink, Source }
 import akka.stream.stage.{ GraphStageWithMaterializedValue, InHandler, OutHandler }
 import akka.testkit.TestProbe
 
-/**
- * Messages emitted after the corresponding `stageUnderTest` methods has been invoked.
- */
+/** Messages emitted after the corresponding `stageUnderTest` methods has been invoked. */
 object GraphStageMessages {
   sealed trait StageMessage
   case object Push extends StageMessage with NoSerializationVerificationNeeded

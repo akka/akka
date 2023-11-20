@@ -14,9 +14,7 @@ import akka.stream.Attributes.SourceLocation
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.stage._
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] final class UnfoldResourceSource[R, T](
     create: () => R,
     readData: R => Option[T],

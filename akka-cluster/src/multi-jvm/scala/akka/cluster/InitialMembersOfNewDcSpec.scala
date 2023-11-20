@@ -78,9 +78,9 @@ abstract class InitialMembersOfNewDcSpec
     "see all dc1 nodes see each other as up" in {
       runOn(two, three) {
         within(20.seconds) {
-          awaitAssert({
+          awaitAssert {
             cluster.state.members.filter(_.status == MemberStatus.Up) should have size 3
-          })
+          }
         }
       }
       enterBarrier("dc1 fully up")
@@ -97,9 +97,9 @@ abstract class InitialMembersOfNewDcSpec
       // Check how long it takes for all other nodes to see every node as up
       runOn(one, two, three, four) {
         within(20.seconds) {
-          awaitAssert({
+          awaitAssert {
             cluster.state.members.filter(_.status == MemberStatus.Up) should have size 4
-          })
+          }
         }
         val totalTime = System.nanoTime() - startTime
         log.info("Can see new node (and all others as up): {}ms", totalTime.nanos.toMillis)

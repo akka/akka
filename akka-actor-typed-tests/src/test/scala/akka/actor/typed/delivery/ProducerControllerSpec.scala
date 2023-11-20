@@ -17,7 +17,8 @@ import akka.actor.typed.delivery.internal.ProducerControllerImpl
 
 class ProducerControllerSpec
     extends ScalaTestWithActorTestKit(
-      ConfigFactory.parseString("""
+      ConfigFactory
+        .parseString("""
   akka.reliable-delivery.consumer-controller.flow-control-window = 20
   """).withFallback(TestSerializer.config))
     with AnyWordSpecLike

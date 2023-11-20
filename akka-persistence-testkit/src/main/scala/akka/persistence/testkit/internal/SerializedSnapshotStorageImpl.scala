@@ -10,9 +10,7 @@ import akka.persistence.SnapshotMetadata
 import akka.persistence.testkit.SnapshotStorage
 import akka.serialization.{ Serialization, SerializationExtension, Serializers }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[testkit] class SerializedSnapshotStorageImpl(system: ActorSystem) extends SnapshotStorage {
 

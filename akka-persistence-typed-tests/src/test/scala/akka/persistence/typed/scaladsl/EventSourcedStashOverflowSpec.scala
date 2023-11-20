@@ -28,12 +28,14 @@ object EventSourcedStashOverflowSpec {
     def apply(persistenceId: PersistenceId): Behavior[Command] =
       EventSourcedBehavior[Command, String, List[String]](
         persistenceId,
-        Nil, { (_, command) =>
+        Nil,
+        { (_, command) =>
           command match {
             case DoNothing(replyTo) =>
               Effect.persist(List.empty[String]).thenRun(_ => replyTo ! Done)
           }
-        }, { (state, event) =>
+        },
+        { (state, event) =>
           // original reproducer slept 2 seconds here but a pure application of an event seems unlikely to take that long
           // so instead we delay recovery using a special journal
           event :: state

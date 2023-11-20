@@ -108,15 +108,14 @@ class NoPersistPersistentActorWithAtLeastOnceDelivery(
     case n: Int =>
       deliver(downStream)(deliveryId => Msg(deliveryId, n))
       if (n == respondAfter)
-        //switch to wait all message confirmed
+        // switch to wait all message confirmed
         context.become(waitConfirm)
     case Confirm(deliveryId) =>
       confirmDelivery(deliveryId)
     case _ => // do nothing
   }
 
-  override def receiveRecover = {
-    case _ => // do nothing
+  override def receiveRecover = { case _ => // do nothing
   }
 
   val waitConfirm: Actor.Receive = {
@@ -146,7 +145,7 @@ class PersistPersistentActorWithAtLeastOnceDelivery(
       persist(MsgSent(n)) { _ =>
         deliver(downStream)(deliveryId => Msg(deliveryId, n))
         if (n == respondAfter)
-          //switch to wait all message confirmed
+          // switch to wait all message confirmed
           context.become(waitConfirm)
       }
     case Confirm(deliveryId) =>
@@ -154,8 +153,7 @@ class PersistPersistentActorWithAtLeastOnceDelivery(
     case _ => // do nothing
   }
 
-  override def receiveRecover = {
-    case _ => // do nothing
+  override def receiveRecover = { case _ => // do nothing
   }
 
   val waitConfirm: Actor.Receive = {
@@ -185,7 +183,7 @@ class PersistAsyncPersistentActorWithAtLeastOnceDelivery(
       persistAsync(MsgSent(n)) { _ =>
         deliver(downStream)(deliveryId => Msg(deliveryId, n))
         if (n == respondAfter)
-          //switch to wait all message confirmed
+          // switch to wait all message confirmed
           context.become(waitConfirm)
       }
     case Confirm(deliveryId) =>
@@ -193,8 +191,7 @@ class PersistAsyncPersistentActorWithAtLeastOnceDelivery(
     case _ => // do nothing
   }
 
-  override def receiveRecover = {
-    case _ => // do nothing
+  override def receiveRecover = { case _ => // do nothing
   }
 
   val waitConfirm: Actor.Receive = {
@@ -227,7 +224,7 @@ class DestinationActor extends Actor {
     case Msg(deliveryId, _) =>
       seqNr += 1
       if (seqNr % 11 == 0) {
-        //drop it
+        // drop it
       } else {
         sender() ! Confirm(deliveryId)
       }

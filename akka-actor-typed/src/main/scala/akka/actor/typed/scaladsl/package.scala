@@ -21,7 +21,7 @@ package object scaladsl {
    * }}}
    * or
    * {{{
-   *import akka.actor.typed.scaladsl._
+   * import akka.actor.typed.scaladsl._
    * }}}
    *
    * @param log the underlying [[org.slf4j.Logger]]

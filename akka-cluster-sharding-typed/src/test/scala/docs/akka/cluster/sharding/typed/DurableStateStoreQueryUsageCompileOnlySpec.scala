@@ -13,7 +13,7 @@ import akka.stream.scaladsl.Source
 @nowarn
 object DurableStateStoreQueryUsageCompileOnlySpec {
   def getQuery[Record](system: ActorSystem, pluginId: String, offset: Offset) = {
-    //#get-durable-state-store-query-example
+    // #get-durable-state-store-query-example
     import akka.persistence.state.DurableStateStoreRegistry
     import akka.persistence.query.scaladsl.DurableStateStoreQuery
     import akka.persistence.query.DurableStateChange
@@ -26,6 +26,6 @@ object DurableStateStoreQueryUsageCompileOnlySpec {
       case UpdatedDurableState(persistenceId, revision, value, offset, timestamp) => Some(value)
       case _: DeletedDurableState[_]                                              => None
     }
-    //#get-durable-state-store-query-example
+    // #get-durable-state-store-query-example
   }
 }

@@ -31,14 +31,10 @@ package akka.util
  */
 class TypedMultiMap[T <: AnyRef, K[_ <: T]] private (private val map: Map[T, Set[Any]]) {
 
-  /**
-   * Return the set of keys which are mapped to non-empty value sets.
-   */
+  /** Return the set of keys which are mapped to non-empty value sets. */
   def keySet: Set[T] = map.keySet
 
-  /**
-   * Return a map that has the given value added to the mappings for the given key.
-   */
+  /** Return a map that has the given value added to the mappings for the given key. */
   def inserted(key: T)(value: K[key.type]): TypedMultiMap[T, K] = {
     val set = map.get(key) match {
       case Some(s) => s
@@ -47,18 +43,14 @@ class TypedMultiMap[T <: AnyRef, K[_ <: T]] private (private val map: Map[T, Set
     new TypedMultiMap[T, K](map.updated(key, set + value))
   }
 
-  /**
-   * Obtain all mappings for the given key.
-   */
+  /** Obtain all mappings for the given key. */
   def get(key: T): Set[K[key.type]] =
     map.get(key) match {
       case Some(s) => s.asInstanceOf[Set[K[key.type]]]
       case None    => Set.empty
     }
 
-  /**
-   * Return a map that has the given value removed from all keys.
-   */
+  /** Return a map that has the given value removed from all keys. */
   def valueRemoved(value: Any): TypedMultiMap[T, K] = {
     val s = Set(value)
     val m = map.collect {
@@ -67,14 +59,10 @@ class TypedMultiMap[T <: AnyRef, K[_ <: T]] private (private val map: Map[T, Set
     new TypedMultiMap[T, K](m)
   }
 
-  /**
-   * Return a map that has all mappings for the given key removed.
-   */
+  /** Return a map that has all mappings for the given key removed. */
   def keyRemoved(key: T): TypedMultiMap[T, K] = new TypedMultiMap[T, K](map - key)
 
-  /**
-   * Return a map that has the given mapping from the given key removed.
-   */
+  /** Return a map that has the given mapping from the given key removed. */
   def removed(key: T)(value: K[key.type]): TypedMultiMap[T, K] = {
     map.get(key) match {
       case None => this
@@ -109,8 +97,6 @@ class TypedMultiMap[T <: AnyRef, K[_ <: T]] private (private val map: Map[T, Set
 object TypedMultiMap {
   private val _empty = new TypedMultiMap[Nothing, Nothing](Map.empty)
 
-  /**
-   * Obtain the empty map for the given key type and key–value type function.
-   */
+  /** Obtain the empty map for the given key type and key–value type function. */
   def empty[T <: AnyRef, K[_ <: T]]: TypedMultiMap[T, K] = _empty.asInstanceOf[TypedMultiMap[T, K]]
 }

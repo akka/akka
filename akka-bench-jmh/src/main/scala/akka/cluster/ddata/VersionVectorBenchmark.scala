@@ -56,19 +56,19 @@ class VersionVectorBenchmark {
   }
 
   @Benchmark
-  def increment: VersionVector = (vv1 + nodeA)
+  def increment: VersionVector = vv1 + nodeA
 
   @Benchmark
-  def compareSame1: Boolean = (vv1 == dot1)
+  def compareSame1: Boolean = vv1 == dot1
 
   @Benchmark
-  def compareSame2: Boolean = (vv2 == dot1)
+  def compareSame2: Boolean = vv2 == dot1
 
   @Benchmark
-  def compareGreaterThan1: Boolean = (vv1 > dot1)
+  def compareGreaterThan1: Boolean = vv1 > dot1
 
   @Benchmark
-  def compareGreaterThan2: Boolean = (vv2 > dot1)
+  def compareGreaterThan2: Boolean = vv2 > dot1
 
   @Benchmark
   def merge: VersionVector = vv1.merge(vv2)

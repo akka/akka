@@ -47,9 +47,7 @@ object ManifestInfo extends ExtensionId[ManifestInfo] with ExtensionIdProvider {
 
   override def createExtension(system: ExtendedActorSystem): ManifestInfo = new ManifestInfo(system)
 
-  /**
-   * Comparable version information
-   */
+  /** Comparable version information */
   final class Version(val version: String) extends Comparable[Version] {
     private val impl = new akka.util.Version(version)
 
@@ -105,9 +103,7 @@ object ManifestInfo extends ExtensionId[ManifestInfo] with ExtensionIdProvider {
 final class ManifestInfo(val system: ExtendedActorSystem) extends Extension {
   import ManifestInfo._
 
-  /**
-   * Versions of artifacts from known vendors.
-   */
+  /** Versions of artifacts from known vendors. */
   val versions: Map[String, Version] = {
 
     var manifests = Map.empty[String, Version]
@@ -133,9 +129,9 @@ final class ManifestInfo(val system: ExtendedActorSystem) extends Extension {
           }
 
           if (title != null
-              && version != null
-              && vendor != null
-              && knownVendors(vendor)) {
+            && version != null
+            && vendor != null
+            && knownVendors(vendor)) {
             manifests = manifests.updated(title, new Version(version))
           }
         } finally {

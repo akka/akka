@@ -23,7 +23,7 @@ class FlowLimitSpec extends StreamSpec("""
     }
 
     "produce output that is identical to the input when n = input.length" in {
-      val input = (1 to 6)
+      val input = 1 to 6
       val n = input.length
       val future = Source(input).limit(n).grouped(Integer.MAX_VALUE).runWith(Sink.head)
       val result = Await.result(future, remainingOrDefault)
@@ -31,7 +31,7 @@ class FlowLimitSpec extends StreamSpec("""
     }
 
     "produce output that is identical to the input when n > input.length" in {
-      val input = (1 to 6)
+      val input = 1 to 6
       val n = input.length + 2 // n > input.length
       val future = Source(input).limit(n).grouped(Integer.MAX_VALUE).runWith(Sink.head)
       val result = Await.result(future, remainingOrDefault)
@@ -40,7 +40,7 @@ class FlowLimitSpec extends StreamSpec("""
 
     "produce n messages before throwing a StreamLimitReachedException when n < input.size" in {
       // TODO: check if it actually produces n messages
-      val input = (1 to 6)
+      val input = 1 to 6
       val n = input.length - 2 // n < input.length
 
       val future = Source(input).limit(n).grouped(Integer.MAX_VALUE).runWith(Sink.head)
@@ -51,7 +51,7 @@ class FlowLimitSpec extends StreamSpec("""
     }
 
     "throw a StreamLimitReachedException when n < 0" in {
-      val input = (1 to 6)
+      val input = 1 to 6
       val n = -1
 
       val future = Source(input).limit(n).grouped(Integer.MAX_VALUE).runWith(Sink.head)

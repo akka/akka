@@ -8,9 +8,7 @@ import akka.NotUsed
 import akka.persistence.query.EventEnvelope
 import akka.stream.javadsl.Source
 
-/**
- * A plugin may optionally support this query by implementing this interface.
- */
+/** A plugin may optionally support this query by implementing this interface. */
 trait EventsByPersistenceIdQuery extends ReadJournal {
 
   /**

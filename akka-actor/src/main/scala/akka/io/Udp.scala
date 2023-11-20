@@ -37,20 +37,14 @@ object Udp extends ExtensionId[UdpExt] with ExtensionIdProvider {
 
   override def createExtension(system: ExtendedActorSystem): UdpExt = new UdpExt(system)
 
-  /**
-   * Java API: retrieve the Udp extension for the given system.
-   */
+  /** Java API: retrieve the Udp extension for the given system. */
   override def get(system: ActorSystem): UdpExt = super.get(system)
   override def get(system: ClassicActorSystemProvider): UdpExt = super.get(system)
 
-  /**
-   * The common interface for [[Command]] and [[Event]].
-   */
+  /** The common interface for [[Command]] and [[Event]]. */
   sealed trait Message
 
-  /**
-   * The common type of all commands supported by the UDP implementation.
-   */
+  /** The common type of all commands supported by the UDP implementation. */
   trait Command extends SelectionHandler.HasFailureMessage with Message {
     def failureMessage = CommandFailed(this)
   }
@@ -142,9 +136,7 @@ object Udp extends ExtensionId[UdpExt] with ExtensionIdProvider {
    */
   case object ResumeReading extends Command
 
-  /**
-   * The common type of all events emitted by the UDP implementation.
-   */
+  /** The common type of all events emitted by the UDP implementation. */
   trait Event extends Message
 
   /**
@@ -166,9 +158,7 @@ object Udp extends ExtensionId[UdpExt] with ExtensionIdProvider {
    */
   final case class Bound(localAddress: InetSocketAddress) extends Event
 
-  /**
-   * The “simple sender” sends this message type in response to a [[SimpleSender]] query.
-   */
+  /** The “simple sender” sends this message type in response to a [[SimpleSender]] query. */
   sealed trait SimpleSenderReady extends Event
   case object SimpleSenderReady extends SimpleSenderReady
 
@@ -229,21 +219,15 @@ class UdpExt(system: ExtendedActorSystem) extends IO.Extension {
       name = "IO-UDP-FF")
   }
 
-  /**
-   * Java API: retrieve the UDP manager actor’s reference.
-   */
+  /** Java API: retrieve the UDP manager actor’s reference. */
   def getManager: ActorRef = manager
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   private[io] val bufferPool: BufferPool =
     new DirectByteBufferPool(settings.DirectBufferSize, settings.MaxDirectBufferPoolSize)
 }
 
-/**
- * Java API: factory methods for the message types used when communicating with the Udp service.
- */
+/** Java API: factory methods for the message types used when communicating with the Udp service. */
 object UdpMessage {
   import java.lang.{ Iterable => JIterable }
 
@@ -283,9 +267,7 @@ object UdpMessage {
    */
   def send(payload: ByteString, target: InetSocketAddress, ack: Event): Command = Send(payload, target, ack)
 
-  /**
-   * The same as `send(payload, target, noAck())`.
-   */
+  /** The same as `send(payload, target, noAck())`. */
   def send(payload: ByteString, target: InetSocketAddress): Command = Send(payload, target)
 
   /**
@@ -297,9 +279,7 @@ object UdpMessage {
   def bind(handler: ActorRef, endpoint: InetSocketAddress, options: JIterable[SocketOption]): Command =
     Bind(handler, endpoint, options.asScala.to(immutable.IndexedSeq))
 
-  /**
-   * Bind without specifying options.
-   */
+  /** Bind without specifying options. */
   def bind(handler: ActorRef, endpoint: InetSocketAddress): Command = Bind(handler, endpoint, Nil)
 
   /**
@@ -321,9 +301,7 @@ object UdpMessage {
    */
   def simpleSender(options: JIterable[SocketOption]): Command = SimpleSender(options.asScala.to(immutable.IndexedSeq))
 
-  /**
-   * Retrieve a simple sender without specifying options.
-   */
+  /** Retrieve a simple sender without specifying options. */
   def simpleSender: Command = SimpleSender
 
   /**

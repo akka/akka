@@ -65,7 +65,7 @@ private[akka] object JavaFlowAndRsConverters {
   final def asJava[T](p: rs.Publisher[T]): Flow.Publisher[T] = p match {
     case null                                     => null // null remains null
     case adapter: JavaFlowPublisherToRsAdapter[T] => adapter.delegate // unwrap adapter instead of wrapping again
-    case delegate                                 => new RsPublisherToJavaFlowAdapter(delegate) // adapt, it is a real Publisher
+    case delegate => new RsPublisherToJavaFlowAdapter(delegate) // adapt, it is a real Publisher
   }
   final def asRs[T](p: Flow.Publisher[T]): rs.Publisher[T] = p match {
     case null                                     => null // null remains null

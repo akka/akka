@@ -161,8 +161,8 @@ private[persistence] class LocalSnapshotStore(config: Config) extends SnapshotSt
       files
         .map(_.getName)
         .flatMap { filename =>
-          extractMetadata(filename).map {
-            case (pid, snr, tms) => SnapshotMetadata(URLDecoder.decode(pid, UTF_8), snr, tms)
+          extractMetadata(filename).map { case (pid, snr, tms) =>
+            SnapshotMetadata(URLDecoder.decode(pid, UTF_8), snr, tms)
           }
         }
         .filter(md => criteria.matches(md) && !saving.contains(md))

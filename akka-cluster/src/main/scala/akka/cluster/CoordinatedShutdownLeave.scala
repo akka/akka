@@ -11,18 +11,14 @@ import akka.actor.Props
 import akka.cluster.ClusterEvent._
 import akka.cluster.MemberStatus._
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[akka] object CoordinatedShutdownLeave {
   def props(): Props = Props[CoordinatedShutdownLeave]()
 
   case object LeaveReq
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[akka] class CoordinatedShutdownLeave extends Actor {
   import CoordinatedShutdownLeave.LeaveReq
 
@@ -32,12 +28,11 @@ private[akka] class CoordinatedShutdownLeave extends Actor {
     cluster.unsubscribe(self)
   }
 
-  def receive = {
-    case LeaveReq =>
-      // MemberRemoved is needed in case it was downed instead
-      cluster.leave(cluster.selfAddress)
-      cluster.subscribe(self, classOf[MemberLeft], classOf[MemberRemoved])
-      context.become(waitingLeaveCompleted(sender()))
+  def receive = { case LeaveReq =>
+    // MemberRemoved is needed in case it was downed instead
+    cluster.leave(cluster.selfAddress)
+    cluster.subscribe(self, classOf[MemberLeft], classOf[MemberRemoved])
+    context.become(waitingLeaveCompleted(sender()))
   }
 
   def waitingLeaveCompleted(replyTo: ActorRef): Receive = {
@@ -46,8 +41,8 @@ private[akka] class CoordinatedShutdownLeave extends Actor {
         // not joined yet
         done(replyTo)
       } else if (s.members.exists(m =>
-                   m.uniqueAddress == cluster.selfUniqueAddress &&
-                   (m.status == Leaving || m.status == Exiting || m.status == Down))) {
+          m.uniqueAddress == cluster.selfUniqueAddress &&
+          (m.status == Leaving || m.status == Exiting || m.status == Down))) {
         done(replyTo)
       }
     case MemberLeft(m) =>

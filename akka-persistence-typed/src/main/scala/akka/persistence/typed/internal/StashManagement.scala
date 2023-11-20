@@ -27,17 +27,13 @@ private[akka] trait StashManagement[C, E, S] {
 
   protected def isInternalStashEmpty: Boolean = stashState.internalStashBuffer.isEmpty
 
-  /**
-   * Stash a command to the internal stash buffer, which is used while waiting for persist to be completed.
-   */
+  /** Stash a command to the internal stash buffer, which is used while waiting for persist to be completed. */
   protected def stashInternal(msg: InternalProtocol): Behavior[InternalProtocol] = {
     stash(msg, stashState.internalStashBuffer)
     Behaviors.same
   }
 
-  /**
-   * Stash a command to the user stash buffer, which is used when `Stash` effect is used.
-   */
+  /** Stash a command to the user stash buffer, which is used when `Stash` effect is used. */
   protected def stashUser(msg: InternalProtocol): Unit =
     stash(msg, stashState.userStashBuffer)
 
@@ -61,9 +57,7 @@ private[akka] trait StashManagement[C, E, S] {
     }
   }
 
-  /**
-   * `tryUnstashOne` is called at the end of processing each command, published event, or when persist is completed
-   */
+  /** `tryUnstashOne` is called at the end of processing each command, published event, or when persist is completed */
   protected def tryUnstashOne(behavior: Behavior[InternalProtocol]): Behavior[InternalProtocol] = {
     val buffer =
       if (stashState.isUnstashAllInProgress) stashState.userStashBuffer
@@ -79,9 +73,7 @@ private[akka] trait StashManagement[C, E, S] {
 
   }
 
-  /**
-   * @return false if `tryUnstashOne` will unstash a message
-   */
+  /** @return false if `tryUnstashOne` will unstash a message */
   protected def isStashEmpty: Boolean =
     if (stashState.isUnstashAllInProgress) stashState.userStashBuffer.isEmpty
     else stashState.internalStashBuffer.isEmpty

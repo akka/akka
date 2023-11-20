@@ -36,9 +36,7 @@ private[testkit] class SerializedEventStorageImpl(system: ActorSystem) extends E
 
   private lazy val serialization = SerializationExtension(system)
 
-  /**
-   * @return (serializer id, serialized bytes)
-   */
+  /** @return (serializer id, serialized bytes) */
   override def toInternal(pr: PersistentRepr): Serialized =
     Serialization.withTransportInformation(system.asInstanceOf[ExtendedActorSystem]) { () =>
       val (payload, tags) = pr.payload match {
@@ -60,9 +58,7 @@ private[testkit] class SerializedEventStorageImpl(system: ActorSystem) extends E
         metadata = pr.metadata)
     }
 
-  /**
-   * @param internal (serializer id, serialized bytes)
-   */
+  /** @param internal (serializer id, serialized bytes) */
   override def toRepr(internal: Serialized): PersistentRepr = {
     val event = serialization.deserialize(internal.payload, internal.payloadSerId, internal.payloadSerManifest).get
     val eventForRepr =

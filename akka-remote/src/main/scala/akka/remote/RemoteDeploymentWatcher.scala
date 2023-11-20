@@ -11,9 +11,7 @@ import akka.actor.Terminated
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
 import akka.dispatch.sysmsg.DeathWatchNotification
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[akka] object RemoteDeploymentWatcher {
   final case class WatchRemote(actor: ActorRef, supervisor: ActorRef)
 }

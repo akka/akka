@@ -7,9 +7,7 @@ package akka.actor.typed.internal
 import akka.actor.WrappedMessage
 import akka.annotation.InternalApi
 
-/**
- * A marker trait for internal messages.
- */
+/** A marker trait for internal messages. */
 @InternalApi private[akka] sealed trait InternalMessage
 
 /**

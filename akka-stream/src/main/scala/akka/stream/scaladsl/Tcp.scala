@@ -52,9 +52,7 @@ object Tcp extends ExtensionId[Tcp] with ExtensionIdProvider {
     def unbind(): Future[Unit] = unbindAction()
   }
 
-  /**
-   * Represents an accepted incoming TCP connection.
-   */
+  /** Represents an accepted incoming TCP connection. */
   final case class IncomingConnection(
       localAddress: InetSocketAddress,
       remoteAddress: InetSocketAddress,
@@ -71,9 +69,7 @@ object Tcp extends ExtensionId[Tcp] with ExtensionIdProvider {
 
   }
 
-  /**
-   * Represents a prospective outgoing TCP connection.
-   */
+  /** Represents a prospective outgoing TCP connection. */
   final case class OutgoingConnection(remoteAddress: InetSocketAddress, localAddress: InetSocketAddress)
 
   def apply()(implicit system: ActorSystem): Tcp = super.apply(system)
@@ -87,14 +83,14 @@ object Tcp extends ExtensionId[Tcp] with ExtensionIdProvider {
 
   // just wraps/unwraps the TLS byte events to provide ByteString, ByteString flows
   private val tlsWrapping: BidiFlow[ByteString, TLSProtocol.SendBytes, TLSProtocol.SslTlsInbound, ByteString, NotUsed] =
-    BidiFlow.fromFlows(Flow[ByteString].map(TLSProtocol.SendBytes.apply), Flow[TLSProtocol.SslTlsInbound].collect {
-      case sb: TLSProtocol.SessionBytes => sb.bytes
+    BidiFlow.fromFlows(
+      Flow[ByteString].map(TLSProtocol.SendBytes.apply),
+      Flow[TLSProtocol.SslTlsInbound].collect { case sb: TLSProtocol.SessionBytes =>
+        sb.bytes
       // ignore other kinds of inbounds (currently only Truncated)
-    })
+      })
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[akka] val defaultBacklog = 100
 }
 

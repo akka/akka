@@ -10,9 +10,7 @@ import akka.cluster.ddata.ORMap.ZeroTag
 
 object LWWMap {
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[akka] case object LWWMapTag extends ZeroTag {
     override def zero: DeltaReplicatedData = LWWMap.empty
     override final val value: Int = 4
@@ -22,14 +20,10 @@ object LWWMap {
   def empty[A, B]: LWWMap[A, B] = _empty.asInstanceOf[LWWMap[A, B]]
   def apply(): LWWMap[Any, Any] = _empty
 
-  /**
-   * Java API
-   */
+  /** Java API */
   def create[A, B](): LWWMap[A, B] = empty
 
-  /**
-   * Extract the [[LWWMap#entries]].
-   */
+  /** Extract the [[LWWMap#entries]]. */
   def unapply[A, B](m: LWWMap[A, B]): Option[Map[A, B]] = Some(m.entries)
 }
 
@@ -65,14 +59,10 @@ final class LWWMap[A, B] private[akka] (private[akka] val underlying: ORMap[A, L
   type T = LWWMap[A, B]
   type D = ORMap.DeltaOp
 
-  /**
-   * Scala API: All entries of the map.
-   */
+  /** Scala API: All entries of the map. */
   def entries: Map[A, B] = underlying.entries.map { case (k, r) => k -> r.value }
 
-  /**
-   * Java API: All entries of the map.
-   */
+  /** Java API: All entries of the map. */
   def getEntries(): java.util.Map[A, B] = {
     import akka.util.ccompat.JavaConverters._
     entries.asJava
@@ -86,17 +76,13 @@ final class LWWMap[A, B] private[akka] (private[akka] val underlying: ORMap[A, L
 
   def size: Int = underlying.size
 
-  /**
-   * Adds an entry to the map
-   */
+  /** Adds an entry to the map */
   def :+(entry: (A, B))(implicit node: SelfUniqueAddress): LWWMap[A, B] = {
     val (key, value) = entry
     put(node, key, value)
   }
 
-  /**
-   * Adds an entry to the map
-   */
+  /** Adds an entry to the map */
   def put(node: SelfUniqueAddress, key: A, value: B): LWWMap[A, B] =
     put(node.uniqueAddress, key, value, defaultClock[B])
 
@@ -111,9 +97,7 @@ final class LWWMap[A, B] private[akka] (private[akka] val underlying: ORMap[A, L
   def put(node: SelfUniqueAddress, key: A, value: B, clock: Clock[B]): LWWMap[A, B] =
     put(node.uniqueAddress, key, value, clock)
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[akka] def put(node: UniqueAddress, key: A, value: B, clock: Clock[B]): LWWMap[A, B] = {
     val newRegister = underlying.get(key) match {
       case Some(r) => r.withValue(node, value, clock)
@@ -130,9 +114,7 @@ final class LWWMap[A, B] private[akka] (private[akka] val underlying: ORMap[A, L
   def remove(node: SelfUniqueAddress, key: A): LWWMap[A, B] =
     remove(node.uniqueAddress, key)
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[akka] def remove(node: UniqueAddress, key: A): LWWMap[A, B] =
     new LWWMap(underlying.remove(node, key))
 
@@ -161,7 +143,7 @@ final class LWWMap[A, B] private[akka] (private[akka] val underlying: ORMap[A, L
 
   // this class cannot be a `case class` because we need different `unapply`
 
-  override def toString: String = s"LWW$entries" //e.g. LWWMap(a -> 1, b -> 2)
+  override def toString: String = s"LWW$entries" // e.g. LWWMap(a -> 1, b -> 2)
 
   override def equals(o: Any): Boolean = o match {
     case other: LWWMap[_, _] => underlying == other.underlying

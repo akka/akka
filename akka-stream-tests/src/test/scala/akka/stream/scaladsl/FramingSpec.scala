@@ -102,11 +102,10 @@ class FramingSpec extends StreamSpec {
       }
 
       val futureResults = Future.sequence(resultFutures)
-      futureResults.futureValue.foreach {
-        case (result, expected, delimiter) =>
-          withClue(s"delimiter: $delimiter") {
-            result should ===(expected)
-          }
+      futureResults.futureValue.foreach { case (result, expected, delimiter) =>
+        withClue(s"delimiter: $delimiter") {
+          result should ===(expected)
+        }
       }
 
     }
@@ -169,7 +168,7 @@ class FramingSpec extends StreamSpec {
     val referenceChunk = ByteString(scala.util.Random.nextString(0x100001))
 
     val byteOrders = List(ByteOrder.BIG_ENDIAN, ByteOrder.LITTLE_ENDIAN)
-    val frameLengths = List(0, 1, 2, 3, 0xFF, 0x100, 0x101, 0xFFF, 0x1000, 0x1001, 0xFFFF, 0x10000, 0x10001)
+    val frameLengths = List(0, 1, 2, 3, 0xff, 0x100, 0x101, 0xfff, 0x1000, 0x1001, 0xffff, 0x10000, 0x10001)
     val fieldLengths = List(1, 2, 3, 4)
     val fieldOffsets = List(0, 1, 2, 3, 15, 16, 31, 32, 44, 107)
 
@@ -217,11 +216,10 @@ class FramingSpec extends StreamSpec {
       }
 
       val futureResults = Future.sequence(resultFutures)
-      futureResults.futureValue.foreach {
-        case (result, expected, (byteOrder, fieldOffset, fieldLength)) =>
-          withClue(s"byteOrder: $byteOrder, fieldOffset: $fieldOffset, fieldLength: $fieldLength") {
-            result should ===(expected)
-          }
+      futureResults.futureValue.foreach { case (result, expected, (byteOrder, fieldOffset, fieldLength)) =>
+        withClue(s"byteOrder: $byteOrder, fieldOffset: $fieldOffset, fieldLength: $fieldLength") {
+          result should ===(expected)
+        }
       }
 
     }
@@ -261,11 +259,10 @@ class FramingSpec extends StreamSpec {
       }
 
       val futureResults = Future.sequence(resultFutures)
-      futureResults.futureValue.foreach {
-        case (result, encodedFrames, (byteOrder, fieldOffset, fieldLength)) =>
-          withClue(s"byteOrder: $byteOrder, fieldOffset: $fieldOffset, fieldLength: $fieldLength") {
-            result should ===(encodedFrames)
-          }
+      futureResults.futureValue.foreach { case (result, encodedFrames, (byteOrder, fieldOffset, fieldLength)) =>
+        withClue(s"byteOrder: $byteOrder, fieldOffset: $fieldOffset, fieldLength: $fieldLength") {
+          result should ===(encodedFrames)
+        }
       }
 
     }
@@ -322,7 +319,7 @@ class FramingSpec extends StreamSpec {
     "report truncated frames" in {
       import system.dispatcher
       val resultFutures: List[Future[(Throwable, (ByteOrder, Int, Int, Int))]] = for {
-        //_ <- 1 to 10
+        // _ <- 1 to 10
         byteOrder <- byteOrders
         fieldOffset <- fieldOffsets
         fieldLength <- fieldLengths
@@ -342,12 +339,11 @@ class FramingSpec extends StreamSpec {
       }
 
       val futureResults = Future.sequence(resultFutures)
-      futureResults.futureValue.foreach {
-        case (ex, (byteOrder, fieldOffset, fieldLength, frameLength)) =>
-          withClue(
-            s"byteOrder: $byteOrder, fieldOffset: $fieldOffset, fieldLength: $fieldLength, frameLength: $frameLength") {
-            ex shouldBe a[FramingException]
-          }
+      futureResults.futureValue.foreach { case (ex, (byteOrder, fieldOffset, fieldLength, frameLength)) =>
+        withClue(
+          s"byteOrder: $byteOrder, fieldOffset: $fieldOffset, fieldLength: $fieldLength, frameLength: $frameLength") {
+          ex shouldBe a[FramingException]
+        }
       }
 
     }
@@ -386,7 +382,7 @@ class FramingSpec extends StreamSpec {
 
       def computeFrameSize(@unused arr: Array[Byte], @unused l: Int): Int = 8
 
-      val bs = ByteString.newBuilder.putInt(0xFF010203).putInt(0x04050607).result()
+      val bs = ByteString.newBuilder.putInt(0xff010203).putInt(0x04050607).result()
 
       val res =
         Source

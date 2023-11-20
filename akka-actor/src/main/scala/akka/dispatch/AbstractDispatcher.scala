@@ -52,27 +52,26 @@ final case class TaskInvocation(eventStream: EventStream, runnable: Runnable, cl
     } finally cleanup()
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[akka] trait LoadMetrics { self: Executor =>
   def atFullThrottle(): Boolean
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[akka] object MessageDispatcher {
-  val UNSCHEDULED = 0 //WARNING DO NOT CHANGE THE VALUE OF THIS: It relies on the faster init of 0 in AbstractMessageDispatcher
+  val UNSCHEDULED =
+    0 // WARNING DO NOT CHANGE THE VALUE OF THIS: It relies on the faster init of 0 in AbstractMessageDispatcher
   val SCHEDULED = 1
   val RESCHEDULED = 2
 
   // dispatcher debugging helper using println (see below)
   // since this is a compile-time constant, scalac will elide code behind if (MessageDispatcher.debug) (RK checked with 2.9.1)
   final val debug = false // Deliberately without type ascription to make it a compile-time constant
-  lazy val actors = new Index[MessageDispatcher, ActorRef](16, new ju.Comparator[ActorRef] {
-    override def compare(a: ActorRef, b: ActorRef): Int = a.compareTo(b)
-  })
+  lazy val actors = new Index[MessageDispatcher, ActorRef](
+    16,
+    new ju.Comparator[ActorRef] {
+      override def compare(a: ActorRef, b: ActorRef): Int = a.compareTo(b)
+    })
   def printActors(): Unit =
     if (debug) {
       for {
@@ -131,9 +130,7 @@ abstract class MessageDispatcher(val configurator: MessageDispatcherConfigurator
   private final def updateShutdownSchedule(expect: Int, update: Int): Boolean =
     Unsafe.instance.compareAndSwapInt(this, shutdownScheduleOffset, expect, update)
 
-  /**
-   *  Creates and returns a mailbox for the given actor.
-   */
+  /** Creates and returns a mailbox for the given actor. */
   protected[akka] def createMailbox(actor: Cell, mailboxType: MailboxType): Mailbox
 
   /**
@@ -152,9 +149,7 @@ abstract class MessageDispatcher(val configurator: MessageDispatcherConfigurator
     registerForExecution(actor.mailbox, false, true)
   }
 
-  /**
-   * Detaches the specified actor instance from this dispatcher
-   */
+  /** Detaches the specified actor instance from this dispatcher */
   final def detach(actor: ActorCell): Unit =
     try unregister(actor)
     finally ifSensibleToDoSoThenScheduleShutdown()
@@ -187,16 +182,19 @@ abstract class MessageDispatcher(val configurator: MessageDispatcherConfigurator
         else ifSensibleToDoSoThenScheduleShutdown()
       case RESCHEDULED =>
       case unexpected =>
-        throw new IllegalArgumentException(s"Unexpected actor class marker: $unexpected") // will not happen, for exhaustiveness check
+        throw new IllegalArgumentException(
+          s"Unexpected actor class marker: $unexpected"
+        ) // will not happen, for exhaustiveness check
     }
   }
 
   private def scheduleShutdownAction(): Unit = {
     // IllegalStateException is thrown if scheduler has been shutdown
-    try prerequisites.scheduler.scheduleOnce(shutdownTimeout, shutdownAction)(new ExecutionContext {
-      override def execute(runnable: Runnable): Unit = runnable.run()
-      override def reportFailure(t: Throwable): Unit = MessageDispatcher.this.reportFailure(t)
-    })
+    try
+      prerequisites.scheduler.scheduleOnce(shutdownTimeout, shutdownAction)(new ExecutionContext {
+        override def execute(runnable: Runnable): Unit = runnable.run()
+        override def reportFailure(t: Throwable): Unit = MessageDispatcher.this.reportFailure(t)
+      })
     catch {
       case _: IllegalStateException =>
         shutdown()
@@ -239,7 +237,7 @@ abstract class MessageDispatcher(val configurator: MessageDispatcherConfigurator
       shutdownSchedule match {
         case SCHEDULED =>
           try {
-            if (inhabitants == 0) shutdown() //Warning, racy
+            if (inhabitants == 0) shutdown() // Warning, racy
           } finally {
             while (!updateShutdownSchedule(shutdownSchedule, UNSCHEDULED)) {}
           }
@@ -248,7 +246,9 @@ abstract class MessageDispatcher(val configurator: MessageDispatcherConfigurator
           else run()
         case UNSCHEDULED =>
         case unexpected =>
-          throw new IllegalArgumentException(s"Unexpected actor class marker: $unexpected") // will not happen, for exhaustiveness check
+          throw new IllegalArgumentException(
+            s"Unexpected actor class marker: $unexpected"
+          ) // will not happen, for exhaustiveness check
       }
     }
   }
@@ -262,9 +262,7 @@ abstract class MessageDispatcher(val configurator: MessageDispatcherConfigurator
    */
   protected[akka] def shutdownTimeout: FiniteDuration
 
-  /**
-   * After the call to this method, the dispatcher mustn't begin any new message processing for the specified reference
-   */
+  /** After the call to this method, the dispatcher mustn't begin any new message processing for the specified reference */
   protected[akka] def suspend(actor: ActorCell): Unit = {
     val mbox = actor.mailbox
     if ((mbox.actor eq actor) && (mbox.dispatcher eq this))
@@ -305,24 +303,16 @@ abstract class MessageDispatcher(val configurator: MessageDispatcherConfigurator
       hasSystemMessageHint: Boolean): Boolean
 
   // TODO check whether this should not actually be a property of the mailbox
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   protected[akka] def throughput: Int
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   protected[akka] def throughputDeadlineTime: Duration
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @inline protected[akka] final val isThroughputDeadlineTimeDefined = throughputDeadlineTime.toMillis > 0
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   protected[akka] def executeTask(invocation: TaskInvocation): Unit
 
   /**
@@ -335,15 +325,11 @@ abstract class MessageDispatcher(val configurator: MessageDispatcherConfigurator
   protected[akka] def shutdown(): Unit
 }
 
-/**
- * An ExecutorServiceConfigurator is a class that given some prerequisites and a configuration can create instances of ExecutorService
- */
+/** An ExecutorServiceConfigurator is a class that given some prerequisites and a configuration can create instances of ExecutorService */
 abstract class ExecutorServiceConfigurator(@unused config: Config, @unused prerequisites: DispatcherPrerequisites)
     extends ExecutorServiceFactoryProvider
 
-/**
- * Base class to be used for hooking in new dispatchers into Dispatchers.
- */
+/** Base class to be used for hooking in new dispatchers into Dispatchers. */
 abstract class MessageDispatcherConfigurator(_config: Config, val prerequisites: DispatcherPrerequisites) {
 
   val config: Config = new CachingConfig(_config)
@@ -368,13 +354,12 @@ abstract class MessageDispatcherConfigurator(_config: Config, val prerequisites:
         val args = List(classOf[Config] -> config, classOf[DispatcherPrerequisites] -> prerequisites)
         prerequisites.dynamicAccess
           .createInstanceFor[ExecutorServiceConfigurator](fqcn, args)
-          .recover {
-            case exception =>
-              throw new IllegalArgumentException(
-                ("""Cannot instantiate ExecutorServiceConfigurator ("executor = [%s]"), defined in [%s],
-                make sure it has an accessible constructor with a [%s,%s] signature""")
-                  .format(fqcn, config.getString("id"), classOf[Config], classOf[DispatcherPrerequisites]),
-                exception)
+          .recover { case exception =>
+            throw new IllegalArgumentException(
+              """Cannot instantiate ExecutorServiceConfigurator ("executor = [%s]"), defined in [%s],
+                make sure it has an accessible constructor with a [%s,%s] signature"""
+                .format(fqcn, config.getString("id"), classOf[Config], classOf[DispatcherPrerequisites]),
+              exception)
           }
           .get
     }
@@ -407,7 +392,7 @@ class ThreadPoolExecutorConfigurator(config: Config, prerequisites: DispatcherPr
           case size if size > 0 =>
             Some(config.getString("task-queue-type"))
               .map {
-                case "array"       => ThreadPoolConfig.arrayBlockingQueue(size, false) //TODO config fairness?
+                case "array"       => ThreadPoolConfig.arrayBlockingQueue(size, false) // TODO config fairness?
                 case "" | "linked" => ThreadPoolConfig.linkedBlockingQueue(size)
                 case x =>
                   throw new IllegalArgumentException("[%s] is not a valid task-queue-type [array|linked]!".format(x))

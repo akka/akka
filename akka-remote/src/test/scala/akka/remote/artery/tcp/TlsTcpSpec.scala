@@ -26,24 +26,21 @@ import akka.testkit.TestProbe
 
 class TlsTcpWithDefaultConfigSpec extends TlsTcpSpec(ConfigFactory.empty())
 
-class TlsTcpWithSHA1PRNGSpec
-    extends TlsTcpSpec(ConfigFactory.parseString("""
+class TlsTcpWithSHA1PRNGSpec extends TlsTcpSpec(ConfigFactory.parseString("""
     akka.remote.artery.ssl.config-ssl-engine {
       random-number-generator = "SHA1PRNG"
       enabled-algorithms = ["TLS_DHE_RSA_WITH_AES_256_GCM_SHA384"]
     }
     """))
 
-class TlsTcpWithDefaultRNGSecureSpec
-    extends TlsTcpSpec(ConfigFactory.parseString("""
+class TlsTcpWithDefaultRNGSecureSpec extends TlsTcpSpec(ConfigFactory.parseString("""
     akka.remote.artery.ssl.config-ssl-engine {
       random-number-generator = ""
       enabled-algorithms = ["TLS_DHE_RSA_WITH_AES_256_GCM_SHA384"]
     }
     """))
 
-class TlsTcpWithCrappyRSAWithMD5OnlyHereToMakeSureThingsWorkSpec
-    extends TlsTcpSpec(ConfigFactory.parseString("""
+class TlsTcpWithCrappyRSAWithMD5OnlyHereToMakeSureThingsWorkSpec extends TlsTcpSpec(ConfigFactory.parseString("""
     akka.remote.artery.ssl.config-ssl-engine {
       random-number-generator = ""
       enabled-algorithms = [""SSL_RSA_WITH_NULL_MD5""]
@@ -147,7 +144,9 @@ abstract class TlsTcpSpec(config: Config)
 }
 
 class TlsTcpWithHostnameVerificationSpec
-    extends ArteryMultiNodeSpec(ConfigFactory.parseString("""
+    extends ArteryMultiNodeSpec(
+      ConfigFactory
+        .parseString("""
     akka.remote.artery.ssl.config-ssl-engine {
       hostname-verification = on
     }
@@ -178,8 +177,7 @@ class TlsTcpWithHostnameVerificationSpec
       // depending on JRE version.
       EventFilter
         .warning(
-          pattern =
-            "outbound connection to \\[akka://systemB@127.0.0.1:.*" +
+          pattern = "outbound connection to \\[akka://systemB@127.0.0.1:.*" +
             "Upstream failed, cause: SSLHandshakeException: .*",
           occurrences = 3)
         .intercept {

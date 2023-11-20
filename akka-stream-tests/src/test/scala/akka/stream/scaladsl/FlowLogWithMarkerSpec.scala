@@ -17,9 +17,11 @@ import akka.stream.Supervision._
 import akka.stream.testkit.{ ScriptedTest, StreamSpec }
 import akka.testkit.TestProbe
 
-class FlowLogWithMarkerSpec extends StreamSpec("""
+class FlowLogWithMarkerSpec
+    extends StreamSpec("""
      akka.loglevel = DEBUG # test verifies logging
-     """) with ScriptedTest {
+     """)
+    with ScriptedTest {
 
   val logProbe = {
     val p = TestProbe()
@@ -64,12 +66,19 @@ class FlowLogWithMarkerSpec extends StreamSpec("""
         val debugging: javadsl.Flow[Integer, Integer, NotUsed] = javadsl.Flow
           .of(classOf[Integer])
           .logWithMarker("log-1", _ => LogMarker("marker-1"))
-          .logWithMarker("log-2", _ => LogMarker("marker-2"), new akka.japi.function.Function[Integer, Integer] {
-            def apply(i: Integer) = i
-          })
-          .logWithMarker("log-3", _ => LogMarker("marker-3"), new akka.japi.function.Function[Integer, Integer] {
-            def apply(i: Integer) = i
-          }, log)
+          .logWithMarker(
+            "log-2",
+            _ => LogMarker("marker-2"),
+            new akka.japi.function.Function[Integer, Integer] {
+              def apply(i: Integer) = i
+            })
+          .logWithMarker(
+            "log-3",
+            _ => LogMarker("marker-3"),
+            new akka.japi.function.Function[Integer, Integer] {
+              def apply(i: Integer) = i
+            },
+            log)
           .logWithMarker("log-4", _ => LogMarker("marker-4"), log)
 
         javadsl.Source.single[Integer](1).via(debugging).runWith(javadsl.Sink.ignore[Integer](), system)
@@ -168,12 +177,19 @@ class FlowLogWithMarkerSpec extends StreamSpec("""
         javadsl.Source
           .single[Integer](1)
           .logWithMarker("log-1", _ => LogMarker("marker-1"))
-          .logWithMarker("log-2", _ => LogMarker("marker-2"), new akka.japi.function.Function[Integer, Integer] {
-            def apply(i: Integer) = i
-          })
-          .logWithMarker("log-3", _ => LogMarker("marker-3"), new akka.japi.function.Function[Integer, Integer] {
-            def apply(i: Integer) = i
-          }, log)
+          .logWithMarker(
+            "log-2",
+            _ => LogMarker("marker-2"),
+            new akka.japi.function.Function[Integer, Integer] {
+              def apply(i: Integer) = i
+            })
+          .logWithMarker(
+            "log-3",
+            _ => LogMarker("marker-3"),
+            new akka.japi.function.Function[Integer, Integer] {
+              def apply(i: Integer) = i
+            },
+            log)
           .logWithMarker("log-4", _ => LogMarker("marker-4"), log)
           .runWith(javadsl.Sink.ignore[Integer](), system)
 

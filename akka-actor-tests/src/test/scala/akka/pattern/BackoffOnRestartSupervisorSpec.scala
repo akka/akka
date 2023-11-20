@@ -47,15 +47,18 @@ object TestParentActor {
 class TestParentActor(probe: ActorRef, supervisorProps: Props) extends Actor {
   val supervisor: ActorRef = context.actorOf(supervisorProps)
 
-  def receive: Receive = {
-    case other => probe.forward(other)
+  def receive: Receive = { case other =>
+    probe.forward(other)
   }
 }
 
-class BackoffOnRestartSupervisorSpec extends AkkaSpec("""
+class BackoffOnRestartSupervisorSpec
+    extends AkkaSpec("""
     akka.loglevel = DEBUG
     akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
-    """) with WithLogCapturing with ImplicitSender {
+    """)
+    with WithLogCapturing
+    with ImplicitSender {
 
   def supervisorProps(probeRef: ActorRef) = {
     val options = BackoffOpts
@@ -157,8 +160,8 @@ class BackoffOnRestartSupervisorSpec extends AkkaSpec("""
       val options = BackoffOpts
         .onFailure(Props(new SlowlyFailingActor(postStopLatch)), "someChildName", 1 nanos, 1 nanos, 0.0)
         .withMaxNrOfRetries(-1)
-        .withSupervisorStrategy(OneForOneStrategy(loggingEnabled = false) {
-          case _: TestActor.StoppingException => SupervisorStrategy.Stop
+        .withSupervisorStrategy(OneForOneStrategy(loggingEnabled = false) { case _: TestActor.StoppingException =>
+          SupervisorStrategy.Stop
         })
       val supervisor = system.actorOf(BackoffSupervisor.props(options))
 
@@ -271,10 +274,12 @@ class BackoffOnRestartSupervisorSpec extends AkkaSpec("""
       supervisor ! "THROW"
 
       // note that the message could be lost (dead letters) because ended up with previous crashed child
-      probe.awaitAssert({
-        supervisor ! "PING"
-        probe.expectMsg("PING")
-      }, 1.second)
+      probe.awaitAssert(
+        {
+          supervisor ! "PING"
+          probe.expectMsg("PING")
+        },
+        1.second)
     }
   }
 }

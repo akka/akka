@@ -22,17 +22,17 @@ import org.scalatest.wordspec.AnyWordSpecLike
 
 object OOIntroSpec {
 
-  //#chatroom-protocol
-  //#chatroom-behavior
+  // #chatroom-protocol
+  // #chatroom-behavior
   object ChatRoom {
-    //#chatroom-behavior
+    // #chatroom-behavior
     sealed trait RoomCommand
     final case class GetSession(screenName: String, replyTo: ActorRef[SessionEvent]) extends RoomCommand
-    //#chatroom-protocol
-    //#chatroom-behavior
+    // #chatroom-protocol
+    // #chatroom-behavior
     private final case class PublishSessionMessage(screenName: String, message: String) extends RoomCommand
-    //#chatroom-behavior
-    //#chatroom-protocol
+    // #chatroom-behavior
+    // #chatroom-protocol
 
     sealed trait SessionEvent
     final case class SessionGranted(handle: ActorRef[PostMessage]) extends SessionEvent
@@ -42,8 +42,8 @@ object OOIntroSpec {
     sealed trait SessionCommand
     final case class PostMessage(message: String) extends SessionCommand
     private final case class NotifyClient(message: MessagePosted) extends SessionCommand
-    //#chatroom-protocol
-    //#chatroom-behavior
+    // #chatroom-protocol
+    // #chatroom-behavior
 
     def apply(): Behavior[RoomCommand] =
       Behaviors.setup(context => new ChatRoomBehavior(context))
@@ -96,12 +96,12 @@ object OOIntroSpec {
             Behaviors.same
         }
     }
-    //#chatroom-protocol
+    // #chatroom-protocol
   }
-  //#chatroom-protocol
-  //#chatroom-behavior
+  // #chatroom-protocol
+  // #chatroom-behavior
 
-  //#chatroom-gabbler
+  // #chatroom-gabbler
   object Gabbler {
     import ChatRoom._
 
@@ -119,10 +119,10 @@ object OOIntroSpec {
             Behaviors.stopped
         }
       }
-    //#chatroom-gabbler
+    // #chatroom-gabbler
   }
 
-  //#chatroom-main
+  // #chatroom-main
   object Main {
     def apply(): Behavior[NotUsed] =
       Behaviors.setup { context =>
@@ -131,9 +131,8 @@ object OOIntroSpec {
         context.watch(gabblerRef)
         chatRoom ! ChatRoom.GetSession("ol’ Gabbler", gabblerRef)
 
-        Behaviors.receiveSignal {
-          case (_, Terminated(_)) =>
-            Behaviors.stopped
+        Behaviors.receiveSignal { case (_, Terminated(_)) =>
+          Behaviors.stopped
         }
       }
 
@@ -142,7 +141,7 @@ object OOIntroSpec {
     }
 
   }
-  //#chatroom-main
+  // #chatroom-main
 
 }
 

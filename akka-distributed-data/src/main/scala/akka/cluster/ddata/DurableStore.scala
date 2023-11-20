@@ -79,9 +79,7 @@ object DurableStore {
     def this(message: String) = this(message, null)
   }
 
-  /**
-   * Request to expire (remove) entries.
-   */
+  /** Request to expire (remove) entries. */
   final case class Expire(keys: Set[KeyId])
 
   /**
@@ -203,50 +201,46 @@ final class LmdbDurableStore(config: Config) extends Actor with ActorLogging {
 
   def receive: Receive = init
 
-  def init: Receive = {
-    case LoadAll =>
-      if (dir.exists && dir.list().length > 0) {
-        val debugEnabled = log.isDebugEnabled
-        val t0 = if (debugEnabled) System.nanoTime() else 0L
-        val l = lmdb()
-        val tx = l.env.txnRead()
+  def init: Receive = { case LoadAll =>
+    if (dir.exists && dir.list().length > 0) {
+      val debugEnabled = log.isDebugEnabled
+      val t0 = if (debugEnabled) System.nanoTime() else 0L
+      val l = lmdb()
+      val tx = l.env.txnRead()
+      try {
+        val iter = l.db.iterate(tx)
         try {
-          val iter = l.db.iterate(tx)
-          try {
-            var n = 0
-            val loadData = LoadData(iter.asScala.map { entry =>
-              n += 1
-              val keyArray = new Array[Byte](entry.key.remaining)
-              entry.key.get(keyArray)
-              val key = new String(keyArray, ByteString.UTF_8)
-              val valArray = new Array[Byte](entry.`val`.remaining)
-              entry.`val`.get(valArray)
-              val envelope = serializer.fromBinary(valArray, manifest).asInstanceOf[DurableDataEnvelope]
-              key -> envelope
-            }.toMap)
-            if (loadData.data.nonEmpty)
-              sender() ! loadData
-            sender() ! LoadAllCompleted
-            if (debugEnabled)
-              log.debug(
-                "load all of [{}] entries took [{} ms]",
-                n,
-                TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - t0))
-            context.become(active)
-          } finally {
-            Try(iter.close())
-          }
-        } catch {
-          case NonFatal(e) =>
-            throw new LoadFailed("failed to load durable distributed-data", e)
+          var n = 0
+          val loadData = LoadData(iter.asScala.map { entry =>
+            n += 1
+            val keyArray = new Array[Byte](entry.key.remaining)
+            entry.key.get(keyArray)
+            val key = new String(keyArray, ByteString.UTF_8)
+            val valArray = new Array[Byte](entry.`val`.remaining)
+            entry.`val`.get(valArray)
+            val envelope = serializer.fromBinary(valArray, manifest).asInstanceOf[DurableDataEnvelope]
+            key -> envelope
+          }.toMap)
+          if (loadData.data.nonEmpty)
+            sender() ! loadData
+          sender() ! LoadAllCompleted
+          if (debugEnabled)
+            log.debug("load all of [{}] entries took [{} ms]", n, TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - t0))
+          context.become(active)
         } finally {
-          Try(tx.close())
+          Try(iter.close())
         }
-      } else {
-        // no files to load
-        sender() ! LoadAllCompleted
-        context.become(active)
+      } catch {
+        case NonFatal(e) =>
+          throw new LoadFailed("failed to load durable distributed-data", e)
+      } finally {
+        Try(tx.close())
       }
+    } else {
+      // no files to load
+      sender() ! LoadAllCompleted
+      context.become(active)
+    }
   }
 
   def active: Receive = {

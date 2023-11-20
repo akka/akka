@@ -318,8 +318,8 @@ class TimersAndStashSpec extends AkkaSpec {
   class ActorWithTimerAndStash(probe: ActorRef) extends Actor with Timers with Stash {
     timers.startSingleTimer("key", "scheduled", 50.millis)
     def receive: Receive = stashing
-    def notStashing: Receive = {
-      case msg => probe ! msg
+    def notStashing: Receive = { case msg =>
+      probe ! msg
     }
 
     def stashing: Receive = {

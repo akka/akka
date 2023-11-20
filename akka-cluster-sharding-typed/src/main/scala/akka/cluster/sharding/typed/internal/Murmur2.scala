@@ -24,9 +24,7 @@ import java.nio.charset.StandardCharsets
 
 import akka.annotation.InternalApi
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[sharding] object Murmur2 {
   def toPositive(number: Int): Int = number & 0x7fffffff
@@ -42,7 +40,8 @@ private[sharding] object Murmur2 {
     val length4 = length / 4
     for (i <- 0 until length4) {
       val i4 = i * 4
-      var k = (data(i4 + 0) & 0xff) + ((data(i4 + 1) & 0xff) << 8) + ((data(i4 + 2) & 0xff) << 16) + ((data(i4 + 3) & 0xff) << 24)
+      var k = (data(i4 + 0) & 0xff) + ((data(i4 + 1) & 0xff) << 8) + ((data(i4 + 2) & 0xff) << 16) + ((data(
+        i4 + 3) & 0xff) << 24)
       k *= m
       k ^= k >>> r
       k *= m

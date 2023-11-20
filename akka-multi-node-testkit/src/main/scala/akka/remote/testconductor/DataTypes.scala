@@ -27,9 +27,7 @@ private[akka] sealed trait NetworkOp // messages sent over the wire
 private[akka] sealed trait UnconfirmedClientOp extends ClientOp // unconfirmed messages going to the Player
 private[akka] sealed trait ConfirmedClientOp extends ClientOp
 
-/**
- * First message of connection sets names straight.
- */
+/** First message of connection sets names straight. */
 private[akka] final case class Hello(name: String, addr: Address) extends NetworkOp
 
 private[akka] final case class EnterBarrier(name: String, timeout: Option[FiniteDuration])

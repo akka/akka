@@ -9,9 +9,7 @@ import scala.util.control.NonFatal
 import akka.actor.Actor
 import akka.annotation.InternalApi
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] class SubReceive(initial: Actor.Receive) extends Actor.Receive {
   private var currentReceive = initial
 
@@ -23,9 +21,7 @@ import akka.annotation.InternalApi
   }
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] trait Inputs {
   def NeedsInput: TransferState
   def NeedsInputOrComplete: TransferState
@@ -42,9 +38,7 @@ import akka.annotation.InternalApi
   def inputsAvailable: Boolean
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] trait DefaultInputTransferStates extends Inputs {
   override val NeedsInput: TransferState = new TransferState {
     def isReady = inputsAvailable
@@ -56,9 +50,7 @@ import akka.annotation.InternalApi
   }
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] trait Outputs {
   def NeedsDemand: TransferState
   def NeedsDemandOrCancel: TransferState
@@ -78,9 +70,7 @@ import akka.annotation.InternalApi
   def isOpen: Boolean = !isClosed
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] trait DefaultOutputTransferStates extends Outputs {
   override val NeedsDemand: TransferState = new TransferState {
     def isReady = demandAvailable
@@ -93,9 +83,7 @@ import akka.annotation.InternalApi
 }
 
 // States of the operation that is executed by this processor
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] trait TransferState {
   def isReady: Boolean
   def isCompleted: Boolean
@@ -112,47 +100,35 @@ import akka.annotation.InternalApi
   }
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object Completed extends TransferState {
   def isReady = false
   def isCompleted = true
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object NotInitialized extends TransferState {
   def isReady = false
   def isCompleted = false
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] case class WaitingForUpstreamSubscription(remaining: Int, andThen: TransferPhase)
     extends TransferState {
   def isReady = false
   def isCompleted = false
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object Always extends TransferState {
   def isReady = true
   def isCompleted = false
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] final case class TransferPhase(precondition: TransferState)(val action: () => Unit)
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] trait Pump {
   private var transferState: TransferState = NotInitialized
   private var currentAction: () => Unit =
@@ -199,9 +175,11 @@ import akka.annotation.InternalApi
   // Exchange input buffer elements and output buffer "requests" until one of them becomes empty.
   // Generate upstream requestMore for every Nth consumed input element
   final def pump(): Unit = {
-    try while (transferState.isExecutable) {
-      currentAction()
-    } catch { case NonFatal(e) => pumpFailed(e) }
+    try
+      while (transferState.isExecutable) {
+        currentAction()
+      }
+    catch { case NonFatal(e) => pumpFailed(e) }
 
     if (isPumpFinished) pumpFinished()
   }

@@ -16,7 +16,7 @@ import akka.serialization.jackson.CborSerializable
 
 object HelloWorldPersistentEntityExample {
 
-  //#persistent-entity-usage
+  // #persistent-entity-usage
   import akka.cluster.sharding.typed.scaladsl.ClusterSharding
   import akka.cluster.sharding.typed.scaladsl.Entity
   import akka.util.Timeout
@@ -40,9 +40,9 @@ object HelloWorldPersistentEntityExample {
     }
 
   }
-  //#persistent-entity-usage
+  // #persistent-entity-usage
 
-  //#persistent-entity
+  // #persistent-entity
   import akka.actor.typed.Behavior
   import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
   import akka.persistence.typed.scaladsl.Effect
@@ -89,6 +89,6 @@ object HelloWorldPersistentEntityExample {
     }
 
   }
-  //#persistent-entity
+  // #persistent-entity
 
 }

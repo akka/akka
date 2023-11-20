@@ -60,9 +60,7 @@ object ChangeNumberOfProcesses {
 
 }
 
-/**
- * Query the sharded daemon process for the current scale
- */
+/** Query the sharded daemon process for the current scale */
 final class GetNumberOfProcesses(val replyTo: ActorRef[NumberOfProcesses])
     extends ShardedDaemonProcessCommand
     with ClusterShardingTypedSerializable {
@@ -102,8 +100,6 @@ trait NumberOfProcesses {
 
   def rescaleInProgress: Boolean
 
-  /**
-   * Revision number increased for every re-scale that has been triggered with [[ChangeNumberOfProcesses]]
-   */
+  /** Revision number increased for every re-scale that has been triggered with [[ChangeNumberOfProcesses]] */
   def revision: Long
 }

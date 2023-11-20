@@ -15,9 +15,7 @@ import akka.dispatch.Dispatcher
 import akka.event.Logging.Warning
 import akka.pattern.ask
 
-/**
- * Test whether TestActorRef behaves as an ActorRef should, besides its own spec.
- */
+/** Test whether TestActorRef behaves as an ActorRef should, besides its own spec. */
 object TestActorRefSpec {
 
   var counter = 4
@@ -86,17 +84,16 @@ object TestActorRefSpec {
   class Logger extends Actor {
     var count = 0
     var msg: String = _
-    def receive = {
-      case Warning(_, _, m: String) => count += 1; msg = m
+    def receive = { case Warning(_, _, m: String) =>
+      count += 1; msg = m
     }
   }
 
   class ReceiveTimeoutActor(target: ActorRef) extends Actor {
     context.setReceiveTimeout(1.second)
-    def receive = {
-      case ReceiveTimeout =>
-        target ! "timeout"
-        context.stop(self)
+    def receive = { case ReceiveTimeout =>
+      target ! "timeout"
+      context.stop(self)
     }
   }
 
@@ -125,9 +122,9 @@ class TestActorRefSpec extends AkkaSpec("disp1.type=Dispatcher") with BeforeAndA
           val nested = TestActorRef(Props(new Actor { def receive = { case _ => } }))
           def receive = { case _ => sender() ! nested }
         }))
-        a should not be (null)
+        a should not be null
         val nested = Await.result((a ? "any").mapTo[ActorRef], timeout.duration)
-        nested should not be (null)
+        nested should not be null
         a should not be theSameInstanceAs(nested)
       }
 
@@ -136,9 +133,9 @@ class TestActorRefSpec extends AkkaSpec("disp1.type=Dispatcher") with BeforeAndA
           val nested = context.actorOf(Props(new Actor { def receive = { case _ => } }))
           def receive = { case _ => sender() ! nested }
         }))
-        a should not be (null)
+        a should not be null
         val nested = Await.result((a ? "any").mapTo[ActorRef], timeout.duration)
-        nested should not be (null)
+        nested should not be null
         a should not be theSameInstanceAs(nested)
       }
 
@@ -180,8 +177,8 @@ class TestActorRefSpec extends AkkaSpec("disp1.type=Dispatcher") with BeforeAndA
           }
         }))
         a.!(PoisonPill)(testActor)
-        expectMsgPF(5 seconds) {
-          case WrappedTerminated(Terminated(`a`)) => true
+        expectMsgPF(5 seconds) { case WrappedTerminated(Terminated(`a`)) =>
+          true
         }
         a.isTerminated should ===(true)
         assertThread()
@@ -193,11 +190,14 @@ class TestActorRefSpec extends AkkaSpec("disp1.type=Dispatcher") with BeforeAndA
         counter = 2
 
         val boss = TestActorRef(Props(new TActor {
-          val ref = TestActorRef(Props(new TActor {
-            def receiveT = { case _ => }
-            override def preRestart(reason: Throwable, msg: Option[Any]): Unit = { counter -= 1 }
-            override def postRestart(reason: Throwable): Unit = { counter -= 1 }
-          }), self, "child")
+          val ref = TestActorRef(
+            Props(new TActor {
+              def receiveT = { case _ => }
+              override def preRestart(reason: Throwable, msg: Option[Any]): Unit = { counter -= 1 }
+              override def postRestart(reason: Throwable): Unit = { counter -= 1 }
+            }),
+            self,
+            "child")
 
           override def supervisorStrategy =
             OneForOneStrategy(maxNrOfRetries = 5, withinTimeRange = 1 second)(List(classOf[ActorKilledException]))
@@ -232,8 +232,8 @@ class TestActorRefSpec extends AkkaSpec("disp1.type=Dispatcher") with BeforeAndA
     "allow access to internals" in {
       class TA extends TActor {
         var s: String = _
-        def receiveT = {
-          case x: String => s = x
+        def receiveT = { case x: String =>
+          s = x
         }
       }
       val ref = TestActorRef(new TA)
@@ -273,12 +273,15 @@ class TestActorRefSpec extends AkkaSpec("disp1.type=Dispatcher") with BeforeAndA
     "not throw an exception when parent is passed in the apply" in {
       EventFilter[RuntimeException](occurrences = 1, message = "expected").intercept {
         val parent = TestProbe()
-        val child = TestActorRef(Props(new Actor {
-          def receive: Receive = {
-            case 1 => throw new RuntimeException("expected")
-            case x => sender() ! x
-          }
-        }), parent.ref, "Child")
+        val child = TestActorRef(
+          Props(new Actor {
+            def receive: Receive = {
+              case 1 => throw new RuntimeException("expected")
+              case x => sender() ! x
+            }
+          }),
+          parent.ref,
+          "Child")
 
         child ! 1
       }
@@ -286,12 +289,14 @@ class TestActorRefSpec extends AkkaSpec("disp1.type=Dispatcher") with BeforeAndA
     "not throw an exception when child is created through childActorOf" in {
       EventFilter[RuntimeException](occurrences = 1, message = "expected").intercept {
         val parent = TestProbe()
-        val child = parent.childActorOf(Props(new Actor {
-          def receive: Receive = {
-            case 1 => throw new RuntimeException("expected")
-            case x => sender() ! x
-          }
-        }), "Child")
+        val child = parent.childActorOf(
+          Props(new Actor {
+            def receive: Receive = {
+              case 1 => throw new RuntimeException("expected")
+              case x => sender() ! x
+            }
+          }),
+          "Child")
 
         child ! 1
       }

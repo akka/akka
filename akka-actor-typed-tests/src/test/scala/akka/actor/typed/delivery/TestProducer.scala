@@ -62,10 +62,9 @@ object TestProducer {
   }
 
   private def activeNoDelay(n: Int): Behavior[Command] = {
-    Behaviors.receivePartial {
-      case (ctx, RequestNext(sendTo)) =>
-        sendMessage(n, sendTo, ctx)
-        activeNoDelay(n + 1)
+    Behaviors.receivePartial { case (ctx, RequestNext(sendTo)) =>
+      sendMessage(n, sendTo, ctx)
+      activeNoDelay(n + 1)
     }
   }
 

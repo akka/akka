@@ -210,9 +210,7 @@ trait TimerScheduler[T] {
   def startTimerAtFixedRate(msg: T, initialDelay: java.time.Duration, interval: java.time.Duration): Unit =
     startTimerAtFixedRate(msg, msg, initialDelay, interval)
 
-  /**
-   * Deprecated API: See [[TimerScheduler#startTimerWithFixedDelay]] or [[TimerScheduler#startTimerAtFixedRate]].
-   */
+  /** Deprecated API: See [[TimerScheduler#startTimerWithFixedDelay]] or [[TimerScheduler#startTimerAtFixedRate]]. */
   @deprecated(
     "Use startTimerWithFixedDelay or startTimerAtFixedRate instead. This has the same semantics as " +
     "startTimerAtFixedRate, but startTimerWithFixedDelay is often preferred.",
@@ -243,9 +241,7 @@ trait TimerScheduler[T] {
   def startSingleTimer(msg: T, delay: Duration): Unit =
     startSingleTimer(msg, msg, delay)
 
-  /**
-   * Check if a timer with a given `key` is active.
-   */
+  /** Check if a timer with a given `key` is active. */
   def isTimerActive(key: Any): Boolean
 
   /**
@@ -259,8 +255,6 @@ trait TimerScheduler[T] {
    */
   def cancel(key: Any): Unit
 
-  /**
-   * Cancel all timers.
-   */
+  /** Cancel all timers. */
   def cancelAll(): Unit
 }

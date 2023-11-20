@@ -30,9 +30,7 @@ abstract class DurableStateBehavior[Command, State] private[akka] (
     onPersistFailure: Optional[BackoffSupervisorStrategy])
     extends DeferredBehavior[Command] {
 
-  /**
-   * @param persistenceId stable unique identifier for the `DurableStateBehavior`
-   */
+  /** @param persistenceId stable unique identifier for the `DurableStateBehavior` */
   def this(persistenceId: PersistenceId) = {
     this(persistenceId, Optional.empty[BackoffSupervisorStrategy])
   }
@@ -85,27 +83,19 @@ abstract class DurableStateBehavior[Command, State] private[akka] (
    */
   protected def signalHandler(): SignalHandler[State] = SignalHandler.empty[State]
 
-  /**
-   * @return A new, mutable signal handler builder
-   */
+  /** @return A new, mutable signal handler builder */
   protected final def newSignalHandlerBuilder(): SignalHandlerBuilder[State] =
     SignalHandlerBuilder.builder[State]
 
-  /**
-   * @return A new, mutable, command handler builder
-   */
+  /** @return A new, mutable, command handler builder */
   protected def newCommandHandlerBuilder(): CommandHandlerBuilder[Command, State] = {
     CommandHandlerBuilder.builder[Command, State]()
   }
 
-  /**
-   * Override and define the `DurableStateStore` plugin id that this actor should use instead of the default.
-   */
+  /** Override and define the `DurableStateStore` plugin id that this actor should use instead of the default. */
   def durableStateStorePluginId: String = ""
 
-  /**
-   * The tag that can be used in persistence query.
-   */
+  /** The tag that can be used in persistence query. */
   def tag: String = ""
 
   /**
@@ -114,15 +104,11 @@ abstract class DurableStateBehavior[Command, State] private[akka] (
    */
   def snapshotAdapter(): SnapshotAdapter[State] = NoOpSnapshotAdapter.instance[State]
 
-  /**
-   * INTERNAL API: DeferredBehavior init, not for user extension
-   */
+  /** INTERNAL API: DeferredBehavior init, not for user extension */
   @InternalApi override def apply(context: typed.TypedActorContext[Command]): Behavior[Command] =
     createDurableStateBehavior()
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[akka] final def createDurableStateBehavior(): scaladsl.DurableStateBehavior[Command, State] = {
 
     val behavior = new internal.DurableStateBehaviorImpl[Command, State](
@@ -149,9 +135,7 @@ abstract class DurableStateBehavior[Command, State] private[akka] (
     }
   }
 
-  /**
-   * The last sequence number that was persisted, can only be called from inside the handlers of a `DurableStateBehavior`
-   */
+  /** The last sequence number that was persisted, can only be called from inside the handlers of a `DurableStateBehavior` */
   final def lastSequenceNumber(ctx: ActorContext[_]): Long = {
     scaladsl.DurableStateBehavior.lastSequenceNumber(ctx.asScala)
   }
@@ -194,9 +178,7 @@ abstract class DurableStateBehaviorWithEnforcedReplies[Command, State](
    */
   override protected def commandHandler(): CommandHandlerWithReply[Command, State]
 
-  /**
-   * @return A new, mutable, command handler builder
-   */
+  /** @return A new, mutable, command handler builder */
   protected def newCommandHandlerWithReplyBuilder(): CommandHandlerWithReplyBuilder[Command, State] = {
     CommandHandlerWithReplyBuilder.builder[Command, State]()
   }

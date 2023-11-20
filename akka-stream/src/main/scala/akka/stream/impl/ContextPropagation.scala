@@ -6,9 +6,7 @@ package akka.stream.impl
 
 import akka.annotation.InternalStableApi
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalStableApi trait ContextPropagation {
   def suspendContext(): Unit
   def resumeContext(): Unit
@@ -16,14 +14,10 @@ import akka.annotation.InternalStableApi
   def resumeContext(context: AnyRef): Unit
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalStableApi object ContextPropagation {
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalStableApi def apply(): ContextPropagation = new ContextPropagationImpl
 }
 

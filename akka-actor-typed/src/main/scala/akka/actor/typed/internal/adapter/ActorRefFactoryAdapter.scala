@@ -11,9 +11,7 @@ import akka.annotation.InternalApi
 import akka.util.ErrorMessages
 import akka.util.OptionVal
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[typed] object ActorRefFactoryAdapter {
 
   private val remoteDeploymentNotAllowed = "Remote deployment not allowed for typed actors"

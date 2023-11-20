@@ -9,18 +9,14 @@ import akka.annotation.InternalApi
 import akka.stream._
 import akka.stream.scaladsl._
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object SubFlowImpl {
   trait MergeBack[In, F[+_]] {
     def apply[T](f: Flow[In, T, NotUsed], breadth: Int): F[T]
   }
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] class SubFlowImpl[In, Out, Mat, F[+_], C](
     val subFlow: Flow[In, Out, NotUsed],
     mergeBackFunction: SubFlowImpl.MergeBack[In, F],

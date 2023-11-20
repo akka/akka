@@ -33,9 +33,7 @@ object ClusterSingletonManagerLeaveSpec extends MultiNodeConfig {
 
   case object EchoStarted
 
-  /**
-   * The singleton actor
-   */
+  /** The singleton actor */
   class Echo(testActor: ActorRef) extends Actor {
     override def preStart(): Unit = {
       testActor ! "preStart"
@@ -148,7 +146,7 @@ class ClusterSingletonManagerLeaveSpec
         p.within(15.seconds) {
           p.awaitAssert {
             echoProxy.tell("hello2", p.ref)
-            p.expectMsgType[ActorRef](1.seconds).path.address should not be (firstAddress)
+            p.expectMsgType[ActorRef](1.seconds).path.address should not be firstAddress
 
           }
         }

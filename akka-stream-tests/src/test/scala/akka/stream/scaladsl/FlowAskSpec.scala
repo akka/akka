@@ -28,35 +28,33 @@ object FlowAskSpec {
   case class Reply(payload: Int)
 
   class Replier extends Actor {
-    override def receive: Receive = {
-      case msg: Int => sender() ! Reply(msg)
+    override def receive: Receive = { case msg: Int =>
+      sender() ! Reply(msg)
     }
   }
 
   class ReplyAndProxy(to: ActorRef) extends Actor {
-    override def receive: Receive = {
-      case msg: Int =>
-        to ! msg
-        sender() ! Reply(msg)
+    override def receive: Receive = { case msg: Int =>
+      to ! msg
+      sender() ! Reply(msg)
     }
   }
 
   class RandomDelaysReplier extends Actor {
-    override def receive: Receive = {
-      case msg: Int =>
-        import context.dispatcher
+    override def receive: Receive = { case msg: Int =>
+      import context.dispatcher
 
-        val replyTo = sender()
-        Future {
-          Thread.sleep(ThreadLocalRandom.current().nextInt(1, 10))
-          replyTo ! Reply(msg)
-        }
+      val replyTo = sender()
+      Future {
+        Thread.sleep(ThreadLocalRandom.current().nextInt(1, 10))
+        replyTo ! Reply(msg)
+      }
     }
   }
 
   class StatusReplier extends Actor {
-    override def receive: Receive = {
-      case msg: Int => sender() ! akka.actor.Status.Success(Reply(msg))
+    override def receive: Receive = { case msg: Int =>
+      sender() ! akka.actor.Status.Success(Reply(msg))
     }
   }
 

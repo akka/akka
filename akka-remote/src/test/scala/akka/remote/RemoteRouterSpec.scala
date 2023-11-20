@@ -16,9 +16,8 @@ import akka.testkit.TestActors.echoActorProps
 
 object RemoteRouterSpec {
   class Parent extends Actor {
-    def receive = {
-      case (p: Props, name: String) =>
-        sender() ! context.actorOf(p, name)
+    def receive = { case (p: Props, name: String) =>
+      sender() ! context.actorOf(p, name)
     }
   }
 }
@@ -51,7 +50,8 @@ class RemoteRouterSpec extends AkkaSpec("""
   val sysName = system.name
   val masterSystemName = "Master" + sysName
   val protocol = "akka"
-  val conf = ConfigFactory.parseString(s"""
+  val conf = ConfigFactory
+    .parseString(s"""
     akka {
       actor.deployment {
         /blub {
@@ -84,7 +84,8 @@ class RemoteRouterSpec extends AkkaSpec("""
           target.nodes = ["$protocol://${sysName}@localhost:${port}"]
         }
       }
-    }""").withFallback(system.settings.config)
+    }""")
+    .withFallback(system.settings.config)
   val masterSystem = ActorSystem(masterSystemName, conf)
 
   override def afterTermination(): Unit = {
@@ -226,8 +227,8 @@ class RemoteRouterSpec extends AkkaSpec("""
 
     "set supplied supervisorStrategy" in {
       val probe = TestProbe()(masterSystem)
-      val escalator = OneForOneStrategy() {
-        case e => probe.ref ! e; SupervisorStrategy.Escalate
+      val escalator = OneForOneStrategy() { case e =>
+        probe.ref ! e; SupervisorStrategy.Escalate
       }
       val router = masterSystem.actorOf(
         new RemoteRouterConfig(

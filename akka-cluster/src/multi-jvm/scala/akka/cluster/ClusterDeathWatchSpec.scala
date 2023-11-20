@@ -86,20 +86,22 @@ abstract class ClusterDeathWatchSpec
         val path2 = RootActorPath(second) / "user" / "subject"
         val path3 = RootActorPath(third) / "user" / "subject"
         val watchEstablished = TestLatch(2)
-        system.actorOf(Props(new Actor {
-          context.actorSelection(path2) ! Identify(path2)
-          context.actorSelection(path3) ! Identify(path3)
+        system.actorOf(
+          Props(new Actor {
+            context.actorSelection(path2) ! Identify(path2)
+            context.actorSelection(path3) ! Identify(path3)
 
-          def receive = {
-            case ActorIdentity(`path2`, Some(ref)) =>
-              context.watch(ref)
-              watchEstablished.countDown()
-            case ActorIdentity(`path3`, Some(ref)) =>
-              context.watch(ref)
-              watchEstablished.countDown()
-            case Terminated(actor) => testActor ! actor.path
-          }
-        }).withDeploy(Deploy.local), name = "observer1")
+            def receive = {
+              case ActorIdentity(`path2`, Some(ref)) =>
+                context.watch(ref)
+                watchEstablished.countDown()
+              case ActorIdentity(`path3`, Some(ref)) =>
+                context.watch(ref)
+                watchEstablished.countDown()
+              case Terminated(actor) => testActor ! actor.path
+            }
+          }).withDeploy(Deploy.local),
+          name = "observer1")
 
         watchEstablished.await
         enterBarrier("watch-established")
@@ -221,8 +223,8 @@ abstract class ClusterDeathWatchSpec
         // subject5 is not in RemoteWatcher.watching, the terminated for subject5 is from testActor.watch.
         // You can not verify that it is the testActor receiving it, though the remoteWatcher stats proves
         // it above
-        receiveWhile(messages = 2) {
-          case Terminated(ref) => ref.path.name
+        receiveWhile(messages = 2) { case Terminated(ref) =>
+          ref.path.name
         }.toSet shouldEqual Set("subject5", "subject6")
 
         awaitAssert {

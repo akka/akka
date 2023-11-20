@@ -45,13 +45,17 @@ class GraphStageTimersSpec extends StreamSpec {
     override def createLogic(inheritedAttributes: Attributes) = new TimerGraphStageLogic(shape) {
       val tickCount = Iterator.from(1)
 
-      setHandler(in, new InHandler {
-        override def onPush() = push(out, grab(in))
-      })
+      setHandler(
+        in,
+        new InHandler {
+          override def onPush() = push(out, grab(in))
+        })
 
-      setHandler(out, new OutHandler {
-        override def onPull(): Unit = pull(in)
-      })
+      setHandler(
+        out,
+        new OutHandler {
+          override def onPull(): Unit = pull(in)
+        })
 
       override def preStart() = {
         sideChannel.asyncCallback = getAsyncCallback(onTestEvent)
@@ -143,8 +147,8 @@ class GraphStageTimersSpec extends StreamSpec {
       val driver = setupIsolatedStage
 
       driver ! TestRepeatedTimer
-      val seq = receiveWhile(2.seconds) {
-        case t: Tick => t
+      val seq = receiveWhile(2.seconds) { case t: Tick =>
+        t
       }
       (seq should have).length(5)
       expectNoMessage(1.second)
@@ -158,16 +162,20 @@ class GraphStageTimersSpec extends StreamSpec {
 
         override def preStart(): Unit = scheduleWithFixedDelay("tick", 100.millis, 100.millis)
 
-        setHandler(out, new OutHandler {
-          override def onPull() = () // Do nothing
-          override def onDownstreamFinish(cause: Throwable) = completeStage()
-        })
+        setHandler(
+          out,
+          new OutHandler {
+            override def onPull() = () // Do nothing
+            override def onDownstreamFinish(cause: Throwable) = completeStage()
+          })
 
-        setHandler(in, new InHandler {
-          override def onPush() = () // Do nothing
-          override def onUpstreamFinish() = completeStage()
-          override def onUpstreamFailure(ex: Throwable) = failStage(ex)
-        })
+        setHandler(
+          in,
+          new InHandler {
+            override def onPush() = () // Do nothing
+            override def onUpstreamFinish() = completeStage()
+            override def onUpstreamFailure(ex: Throwable) = failStage(ex)
+          })
 
         override def onTimer(timerKey: Any) = {
           tickCount += 1
@@ -205,13 +213,17 @@ class GraphStageTimersSpec extends StreamSpec {
           override def createLogic(inheritedAttributes: Attributes) = new TimerGraphStageLogic(shape) {
             override def preStart(): Unit = scheduleOnce("tick", 100.millis)
 
-            setHandler(in, new InHandler {
-              override def onPush() = () // Ignore
-            })
+            setHandler(
+              in,
+              new InHandler {
+                override def onPush() = () // Ignore
+              })
 
-            setHandler(out, new OutHandler {
-              override def onPull(): Unit = pull(in)
-            })
+            setHandler(
+              out,
+              new OutHandler {
+                override def onPull(): Unit = pull(in)
+              })
 
             override def onTimer(timerKey: Any) = throw exception
           }

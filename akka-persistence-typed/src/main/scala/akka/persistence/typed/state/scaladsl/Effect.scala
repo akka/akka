@@ -127,9 +127,7 @@ trait EffectBuilder[+State] extends Effect[State] {
   /* The state that will be persisted in this effect */
   def state: Option[State]
 
-  /**
-   * Run the given callback. Callbacks are run sequentially.
-   */
+  /** Run the given callback. Callbacks are run sequentially. */
   def thenRun(callback: State => Unit): EffectBuilder[State]
 
   /** The side effect is to stop the actor */

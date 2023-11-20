@@ -40,9 +40,7 @@ abstract class Lease() {
    */
   def acquire(leaseLostCallback: java.util.function.Consumer[Optional[Throwable]]): CompletionStage[java.lang.Boolean]
 
-  /**
-   * Release the lease so some other owner can acquire it.
-   */
+  /** Release the lease so some other owner can acquire it. */
   def release(): CompletionStage[java.lang.Boolean]
 
   /**

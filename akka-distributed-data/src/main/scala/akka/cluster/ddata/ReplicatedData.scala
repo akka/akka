@@ -39,9 +39,7 @@ trait ReplicatedData {
    */
   type T <: ReplicatedData
 
-  /**
-   * Monotonic merge function.
-   */
+  /** Monotonic merge function. */
   def merge(that: T): T
 
 }
@@ -96,9 +94,7 @@ trait DeltaReplicatedData extends ReplicatedData {
 
 }
 
-/**
- * The delta must implement this type.
- */
+/** The delta must implement this type. */
 trait ReplicatedDelta extends ReplicatedData {
 
   /**
@@ -142,15 +138,11 @@ abstract class AbstractReplicatedData[A <: AbstractReplicatedData[A]] extends Re
 
   override type T = ReplicatedData
 
-  /**
-   * Delegates to [[#mergeData]], which must be implemented by subclass.
-   */
+  /** Delegates to [[#mergeData]], which must be implemented by subclass. */
   final override def merge(that: ReplicatedData): ReplicatedData =
     mergeData(that.asInstanceOf[A])
 
-  /**
-   * Java API: Monotonic merge function.
-   */
+  /** Java API: Monotonic merge function. */
   def mergeData(that: A): A
 
 }
@@ -168,9 +160,7 @@ abstract class AbstractDeltaReplicatedData[A <: AbstractDeltaReplicatedData[A, B
 
   override type D = ReplicatedDelta
 
-  /**
-   * Delegates to [[#deltaData]], which must be implemented by subclass.
-   */
+  /** Delegates to [[#deltaData]], which must be implemented by subclass. */
   final override def delta: Option[ReplicatedDelta] =
     deltaData.asScala
 
@@ -185,9 +175,7 @@ abstract class AbstractDeltaReplicatedData[A <: AbstractDeltaReplicatedData[A, B
    */
   def deltaData: Optional[B]
 
-  /**
-   * Delegates to [[#mergeDeltaData]], which must be implemented by subclass.
-   */
+  /** Delegates to [[#mergeDeltaData]], which must be implemented by subclass. */
   final override def mergeDelta(that: ReplicatedDelta): ReplicatedData =
     mergeDeltaData(that.asInstanceOf[B])
 

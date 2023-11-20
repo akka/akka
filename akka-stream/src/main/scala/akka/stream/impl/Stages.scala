@@ -8,9 +8,7 @@ import akka.annotation.InternalApi
 import akka.stream._
 import akka.stream.Attributes._
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object Stages {
 
   object DefaultAttributes {

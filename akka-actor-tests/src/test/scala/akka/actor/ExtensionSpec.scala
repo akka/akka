@@ -127,8 +127,7 @@ class ExtensionSpec extends AnyWordSpec with Matchers {
       val countBefore = InstanceCountingExtension.createCount.get()
       val system = ActorSystem(
         "extensions",
-        ConfigFactory.parseString(
-          """
+        ConfigFactory.parseString("""
       akka.library-extensions = ["akka.actor.InstanceCountingExtension", "akka.actor.InstanceCountingExtension", "akka.actor.InstanceCountingExtension$"]
       """))
       val listedExtensions = system.settings.config.getStringList("akka.library-extensions").asScala
@@ -143,9 +142,12 @@ class ExtensionSpec extends AnyWordSpec with Matchers {
       intercept[FailingTestExtension.TestException] {
         ActorSystem(
           "failing",
-          ConfigFactory.parseString("""
+          ConfigFactory
+            .parseString("""
             akka.library-extensions += "akka.actor.FailingTestExtension"
-          """).withFallback(ConfigFactory.load()).resolve())
+          """)
+            .withFallback(ConfigFactory.load())
+            .resolve())
       }
 
     }
@@ -154,9 +156,11 @@ class ExtensionSpec extends AnyWordSpec with Matchers {
       intercept[RuntimeException] {
         ActorSystem(
           "failing",
-          ConfigFactory.parseString("""
+          ConfigFactory
+            .parseString("""
             akka.library-extensions += "akka.actor.MissingExtension"
-          """).withFallback(ConfigFactory.load()))
+          """)
+            .withFallback(ConfigFactory.load()))
       }
     }
 

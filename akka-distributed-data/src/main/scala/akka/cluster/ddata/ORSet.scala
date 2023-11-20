@@ -16,36 +16,26 @@ object ORSet {
   def empty[A]: ORSet[A] = _empty.asInstanceOf[ORSet[A]]
   def apply(): ORSet[Any] = _empty
 
-  /**
-   * Java API
-   */
+  /** Java API */
   def create[A](): ORSet[A] = empty[A]
 
-  /**
-   * Extract the [[ORSet#elements]].
-   */
+  /** Extract the [[ORSet#elements]]. */
   def unapply[A](s: ORSet[A]): Option[Set[A]] = Some(s.elements)
 
-  /**
-   * Extract the [[ORSet#elements]] of an `ORSet`.
-   */
+  /** Extract the [[ORSet#elements]] of an `ORSet`. */
   def unapply(a: ReplicatedData): Option[Set[Any]] = a match {
     case s: ORSet[Any] @unchecked => Some(s.elements)
     case _                        => None
   }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[akka] type Dot = VersionVector
 
   sealed trait DeltaOp extends ReplicatedDelta with RequiresCausalDeliveryOfDeltas with ReplicatedDataSerialization {
     type T = DeltaOp
   }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[akka] sealed abstract class AtomicDeltaOp[A] extends DeltaOp with ReplicatedDeltaSize {
     def underlying: ORSet[A]
     override def zero: ORSet[A] = ORSet.empty
@@ -92,9 +82,7 @@ object ORSet {
     }
   }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[akka] final case class DeltaGroup[A](ops: immutable.IndexedSeq[DeltaOp])
       extends DeltaOp
       with ReplicatedDeltaSize {
@@ -167,64 +155,63 @@ object ORSet {
     mergeCommonKeys(commonKeys.iterator, lhs, rhs)
 
   private def mergeCommonKeys[A](commonKeys: Iterator[A], lhs: ORSet[A], rhs: ORSet[A]): Map[A, ORSet.Dot] = {
-    commonKeys.foldLeft(Map.empty[A, ORSet.Dot]) {
-      case (acc, k) =>
-        val lhsDots = lhs.elementsMap(k)
-        val rhsDots = rhs.elementsMap(k)
-        (lhsDots, rhsDots) match {
-          case (OneVersionVector(n1, v1), OneVersionVector(n2, v2)) =>
-            if (n1 == n2 && v1 == v2)
-              // one single common dot
-              acc.updated(k, lhsDots)
-            else {
-              // no common, lhsUniqueDots == lhsDots, rhsUniqueDots == rhsDots
-              val lhsKeep = ORSet.subtractDots(lhsDots, rhs.vvector)
-              val rhsKeep = ORSet.subtractDots(rhsDots, lhs.vvector)
-              val merged = lhsKeep.merge(rhsKeep)
-              // Perfectly possible that an item in both sets should be dropped
-              if (merged.isEmpty) acc
-              else acc.updated(k, merged)
-            }
-          case (ManyVersionVector(lhsVs), ManyVersionVector(rhsVs)) =>
-            val commonDots = lhsVs.filter {
-              case (thisDotNode, v) => rhsVs.get(thisDotNode).contains(v)
-            }
-            val commonDotsKeys = commonDots.keys
-            val lhsUniqueDots = lhsVs -- commonDotsKeys
-            val rhsUniqueDots = rhsVs -- commonDotsKeys
-            val lhsKeep = ORSet.subtractDots(VersionVector(lhsUniqueDots), rhs.vvector)
-            val rhsKeep = ORSet.subtractDots(VersionVector(rhsUniqueDots), lhs.vvector)
-            val merged = lhsKeep.merge(rhsKeep).merge(VersionVector(commonDots))
+    commonKeys.foldLeft(Map.empty[A, ORSet.Dot]) { case (acc, k) =>
+      val lhsDots = lhs.elementsMap(k)
+      val rhsDots = rhs.elementsMap(k)
+      (lhsDots, rhsDots) match {
+        case (OneVersionVector(n1, v1), OneVersionVector(n2, v2)) =>
+          if (n1 == n2 && v1 == v2)
+            // one single common dot
+            acc.updated(k, lhsDots)
+          else {
+            // no common, lhsUniqueDots == lhsDots, rhsUniqueDots == rhsDots
+            val lhsKeep = ORSet.subtractDots(lhsDots, rhs.vvector)
+            val rhsKeep = ORSet.subtractDots(rhsDots, lhs.vvector)
+            val merged = lhsKeep.merge(rhsKeep)
             // Perfectly possible that an item in both sets should be dropped
             if (merged.isEmpty) acc
             else acc.updated(k, merged)
-          case (ManyVersionVector(lhsVs), OneVersionVector(n2, v2)) =>
-            val commonDots = lhsVs.filter {
-              case (n1, v1) => v1 == v2 && n1 == n2
-            }
-            val commonDotsKeys = commonDots.keys
-            val lhsUniqueDots = lhsVs -- commonDotsKeys
-            val rhsUnique = if (commonDotsKeys.isEmpty) rhsDots else VersionVector.empty
-            val lhsKeep = ORSet.subtractDots(VersionVector(lhsUniqueDots), rhs.vvector)
-            val rhsKeep = ORSet.subtractDots(rhsUnique, lhs.vvector)
-            val merged = lhsKeep.merge(rhsKeep).merge(VersionVector(commonDots))
-            // Perfectly possible that an item in both sets should be dropped
-            if (merged.isEmpty) acc
-            else acc.updated(k, merged)
-          case (OneVersionVector(n1, v1), ManyVersionVector(rhsVs)) =>
-            val commonDots = rhsVs.filter {
-              case (n2, v2) => v1 == v2 && n1 == n2
-            }
-            val commonDotsKeys = commonDots.keys
-            val lhsUnique = if (commonDotsKeys.isEmpty) lhsDots else VersionVector.empty
-            val rhsUniqueDots = rhsVs -- commonDotsKeys
-            val lhsKeep = ORSet.subtractDots(lhsUnique, rhs.vvector)
-            val rhsKeep = ORSet.subtractDots(VersionVector(rhsUniqueDots), lhs.vvector)
-            val merged = lhsKeep.merge(rhsKeep).merge(VersionVector(commonDots))
-            // Perfectly possible that an item in both sets should be dropped
-            if (merged.isEmpty) acc
-            else acc.updated(k, merged)
-        }
+          }
+        case (ManyVersionVector(lhsVs), ManyVersionVector(rhsVs)) =>
+          val commonDots = lhsVs.filter { case (thisDotNode, v) =>
+            rhsVs.get(thisDotNode).contains(v)
+          }
+          val commonDotsKeys = commonDots.keys
+          val lhsUniqueDots = lhsVs -- commonDotsKeys
+          val rhsUniqueDots = rhsVs -- commonDotsKeys
+          val lhsKeep = ORSet.subtractDots(VersionVector(lhsUniqueDots), rhs.vvector)
+          val rhsKeep = ORSet.subtractDots(VersionVector(rhsUniqueDots), lhs.vvector)
+          val merged = lhsKeep.merge(rhsKeep).merge(VersionVector(commonDots))
+          // Perfectly possible that an item in both sets should be dropped
+          if (merged.isEmpty) acc
+          else acc.updated(k, merged)
+        case (ManyVersionVector(lhsVs), OneVersionVector(n2, v2)) =>
+          val commonDots = lhsVs.filter { case (n1, v1) =>
+            v1 == v2 && n1 == n2
+          }
+          val commonDotsKeys = commonDots.keys
+          val lhsUniqueDots = lhsVs -- commonDotsKeys
+          val rhsUnique = if (commonDotsKeys.isEmpty) rhsDots else VersionVector.empty
+          val lhsKeep = ORSet.subtractDots(VersionVector(lhsUniqueDots), rhs.vvector)
+          val rhsKeep = ORSet.subtractDots(rhsUnique, lhs.vvector)
+          val merged = lhsKeep.merge(rhsKeep).merge(VersionVector(commonDots))
+          // Perfectly possible that an item in both sets should be dropped
+          if (merged.isEmpty) acc
+          else acc.updated(k, merged)
+        case (OneVersionVector(n1, v1), ManyVersionVector(rhsVs)) =>
+          val commonDots = rhsVs.filter { case (n2, v2) =>
+            v1 == v2 && n1 == n2
+          }
+          val commonDotsKeys = commonDots.keys
+          val lhsUnique = if (commonDotsKeys.isEmpty) lhsDots else VersionVector.empty
+          val rhsUniqueDots = rhsVs -- commonDotsKeys
+          val lhsKeep = ORSet.subtractDots(lhsUnique, rhs.vvector)
+          val rhsKeep = ORSet.subtractDots(VersionVector(rhsUniqueDots), lhs.vvector)
+          val merged = lhsKeep.merge(rhsKeep).merge(VersionVector(commonDots))
+          // Perfectly possible that an item in both sets should be dropped
+          if (merged.isEmpty) acc
+          else acc.updated(k, merged)
+      }
     }
   }
 
@@ -244,16 +231,15 @@ object ORSet {
       elementsMap: Map[A, ORSet.Dot],
       vvector: VersionVector,
       accumulator: Map[A, ORSet.Dot]): Map[A, ORSet.Dot] = {
-    keys.foldLeft(accumulator) {
-      case (acc, k) =>
-        val dots = elementsMap(k)
-        if (vvector > dots || vvector == dots)
-          acc
-        else {
-          // Optimise the set of stored dots to include only those unseen
-          val newDots = subtractDots(dots, vvector)
-          acc.updated(k, newDots)
-        }
+    keys.foldLeft(accumulator) { case (acc, k) =>
+      val dots = elementsMap(k)
+      if (vvector > dots || vvector == dots)
+        acc
+      else {
+        // Optimise the set of stored dots to include only those unseen
+        val newDots = subtractDots(dots, vvector)
+        acc.updated(k, newDots)
+      }
     }
   }
 }
@@ -300,14 +286,10 @@ final class ORSet[A] private[akka] (
   type T = ORSet[A]
   type D = ORSet.DeltaOp
 
-  /**
-   * Scala API
-   */
+  /** Scala API */
   def elements: Set[A] = elementsMap.keySet
 
-  /**
-   * Java API
-   */
+  /** Java API */
   def getElements(): java.util.Set[A] = {
     import akka.util.ccompat.JavaConverters._
     elements.asJava
@@ -325,9 +307,7 @@ final class ORSet[A] private[akka] (
   /** Adds an element to the set. */
   def add(node: SelfUniqueAddress, element: A): ORSet[A] = add(node.uniqueAddress, element)
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[akka] def add(node: UniqueAddress, element: A): ORSet[A] = {
     val newVvector = vvector + node
     val newDot = VersionVector(node, newVvector.versionAt(node))
@@ -354,9 +334,7 @@ final class ORSet[A] private[akka] (
    */
   def remove(node: SelfUniqueAddress, element: A): ORSet[A] = remove(node.uniqueAddress, element)
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[akka] def remove(node: UniqueAddress, element: A): ORSet[A] = {
     val deltaDot = VersionVector(node, vvector.versionAt(node))
     val rmOp = ORSet.RemoveDeltaOp(new ORSet(Map(element -> deltaDot), vvector))
@@ -375,9 +353,7 @@ final class ORSet[A] private[akka] (
    */
   def clear(@unused node: SelfUniqueAddress): ORSet[A] = clear()
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[akka] def clear(): ORSet[A] = {
     val newFullState = new ORSet[A](elementsMap = Map.empty, vvector)
     val clearOp = ORSet.FullStateDeltaOp(newFullState)
@@ -417,7 +393,8 @@ final class ORSet[A] private[akka] (
     val entries00 = ORSet.mergeCommonKeys(commonKeys, this, that)
     val entries0 =
       if (addDeltaOp)
-        entries00 ++ this.elementsMap.filter { case (elem, _) => !that.elementsMap.contains(elem) } else {
+        entries00 ++ this.elementsMap.filter { case (elem, _) => !that.elementsMap.contains(elem) }
+      else {
         val thisUniqueKeys = this.elementsMap.keysIterator.filterNot(that.elementsMap.contains)
         ORSet.mergeDisjointKeys(thisUniqueKeys, this.elementsMap, that.vvector, entries00)
       }
@@ -455,12 +432,11 @@ final class ORSet[A] private[akka] (
     def deleteDotsNodes = deleteDots.map { case (dotNode, _) => dotNode }
     val newElementsMap = {
       val thisDotOption = this.elementsMap.get(elem)
-      val deleteDotsAreGreater = deleteDots.forall {
-        case (dotNode, dotV) =>
-          thisDotOption match {
-            case Some(thisDot) => thisDot.versionAt(dotNode) <= dotV
-            case None          => false
-          }
+      val deleteDotsAreGreater = deleteDots.forall { case (dotNode, dotV) =>
+        thisDotOption match {
+          case Some(thisDot) => thisDot.versionAt(dotNode) <= dotV
+          case None          => false
+        }
       }
       if (deleteDotsAreGreater) {
         thisDotOption match {
@@ -491,27 +467,25 @@ final class ORSet[A] private[akka] (
     vvector.needPruningFrom(removedNode)
 
   override def prune(removedNode: UniqueAddress, collapseInto: UniqueAddress): ORSet[A] = {
-    val pruned = elementsMap.foldLeft(Map.empty[A, ORSet.Dot]) {
-      case (acc, (elem, dot)) =>
-        if (dot.needPruningFrom(removedNode)) acc.updated(elem, dot.prune(removedNode, collapseInto))
-        else acc
+    val pruned = elementsMap.foldLeft(Map.empty[A, ORSet.Dot]) { case (acc, (elem, dot)) =>
+      if (dot.needPruningFrom(removedNode)) acc.updated(elem, dot.prune(removedNode, collapseInto))
+      else acc
     }
     if (pruned.isEmpty)
       copy(vvector = vvector.prune(removedNode, collapseInto))
     else {
       // re-add elements that were pruned, to bump dots to right vvector
       val newSet = new ORSet(elementsMap = elementsMap ++ pruned, vvector = vvector.prune(removedNode, collapseInto))
-      pruned.keys.foldLeft(newSet) {
-        case (s, elem) => s.add(collapseInto, elem)
+      pruned.keys.foldLeft(newSet) { case (s, elem) =>
+        s.add(collapseInto, elem)
       }
     }
   }
 
   override def pruningCleanup(removedNode: UniqueAddress): ORSet[A] = {
-    val updated = elementsMap.foldLeft(elementsMap) {
-      case (acc, (elem, dot)) =>
-        if (dot.needPruningFrom(removedNode)) acc.updated(elem, dot.pruningCleanup(removedNode))
-        else acc
+    val updated = elementsMap.foldLeft(elementsMap) { case (acc, (elem, dot)) =>
+      if (dot.needPruningFrom(removedNode)) acc.updated(elem, dot.pruningCleanup(removedNode))
+      else acc
     }
     new ORSet(updated, vvector.pruningCleanup(removedNode))
   }

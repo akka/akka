@@ -18,13 +18,12 @@ class FactorialBackend extends Actor with ActorLogging {
 
   import context.dispatcher
 
-  def receive = {
-    case (n: Int) =>
-      Future(factorial(n))
-        .map { result =>
-          (n, result)
-        }
-        .pipeTo(sender())
+  def receive = { case (n: Int) =>
+    Future(factorial(n))
+      .map { result =>
+        (n, result)
+      }
+      .pipeTo(sender())
   }
 
   def factorial(n: Int): BigInt = {

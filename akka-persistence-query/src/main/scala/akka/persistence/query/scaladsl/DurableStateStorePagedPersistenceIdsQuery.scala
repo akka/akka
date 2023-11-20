@@ -8,9 +8,7 @@ import akka.NotUsed
 import akka.persistence.state.scaladsl.DurableStateStore
 import akka.stream.scaladsl.Source
 
-/**
- * A DurableStateStore may optionally support this query by implementing this trait.
- */
+/** A DurableStateStore may optionally support this query by implementing this trait. */
 trait DurableStateStorePagedPersistenceIdsQuery[A] extends DurableStateStore[A] {
 
   /**

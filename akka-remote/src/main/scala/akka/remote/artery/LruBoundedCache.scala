@@ -7,9 +7,7 @@ package akka.remote.artery
 import scala.annotation.tailrec
 import scala.reflect.ClassTag
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[akka] case class CacheStatistics(entries: Int, maxProbeDistance: Int, averageProbeDistance: Double)
 
 /**
@@ -38,7 +36,8 @@ private[akka] abstract class LruBoundedCache[K <: AnyRef: ClassTag, V <: AnyRef:
   private[this] val keys = Array.ofDim[K](capacity)
   private[this] val values = Array.ofDim[V](capacity)
   private[this] val hashes = new Array[Int](capacity)
-  private[this] val epochs = Array.fill[Int](capacity)(epoch - evictAgeThreshold) // Guarantee existing "values" are stale
+  private[this] val epochs =
+    Array.fill[Int](capacity)(epoch - evictAgeThreshold) // Guarantee existing "values" are stale
 
   final def get(k: K): Option[V] = {
     val h = hash(k)

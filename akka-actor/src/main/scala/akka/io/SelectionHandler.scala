@@ -43,9 +43,7 @@ abstract class SelectionHandlerSettings(config: Config) {
   def MaxChannelsPerSelector: Int
 }
 
-/**
- * Interface behind which we hide our selector management logic from the connection actors
- */
+/** Interface behind which we hide our selector management logic from the connection actors */
 private[io] trait ChannelRegistry {
 
   /**
@@ -131,9 +129,11 @@ private[io] object SelectionHandler {
           cause: Throwable,
           decision: SupervisorStrategy.Directive): Unit =
         if (cause.isInstanceOf[DeathPactException]) {
-          try context.system.eventStream.publish {
-            Logging.Debug(child.path.toString, getClass, "Closed after handler termination")
-          } catch { case NonFatal(_) => }
+          try
+            context.system.eventStream.publish {
+              Logging.Debug(child.path.toString, getClass, "Closed after handler termination")
+            }
+          catch { case NonFatal(_) => }
         } else super.logFailure(context, child, cause, decision)
     }
 
@@ -328,8 +328,8 @@ private[io] class SelectionHandler(settings: SelectionHandlerSettings)
   // we can never recover from failures of a connection or listener child
   // and log the failure at debug level
   override def supervisorStrategy = {
-    def stoppingDecider: SupervisorStrategy.Decider = {
-      case _: Exception => SupervisorStrategy.Stop
+    def stoppingDecider: SupervisorStrategy.Decider = { case _: Exception =>
+      SupervisorStrategy.Stop
     }
     new OneForOneStrategy()(stoppingDecider) {
       override def logFailure(

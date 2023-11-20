@@ -13,11 +13,11 @@ object Collection {
   implicit val system: ActorSystem = ???
   implicit val ec: ExecutionContextExecutor = system.dispatcher
   def collectionExample(): Unit = {
-    //#collection
+    // #collection
     val source = Source(1 to 5)
     val result: Future[List[Int]] = source.runWith(Sink.collection[Int, List[Int]])
     result.foreach(println)
-    //List(1, 2, 3, 4, 5)
-    //#collection
+    // List(1, 2, 3, 4, 5)
+    // #collection
   }
 }

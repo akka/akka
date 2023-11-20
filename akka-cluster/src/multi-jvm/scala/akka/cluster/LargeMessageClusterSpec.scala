@@ -156,7 +156,7 @@ abstract class LargeMessageClusterSpec
       // for non Aeron transport we use the Slow message and SlowSerializer to slow down
       // to not completely overload the machine/network, see issue #24576
       val arterySettings = ArterySettings(system.settings.config.getConfig("akka.remote.artery"))
-      val aeronUdpEnabled = (arterySettings.Enabled && arterySettings.Transport == ArterySettings.AeronUpd)
+      val aeronUdpEnabled = arterySettings.Enabled && arterySettings.Transport == ArterySettings.AeronUpd
 
       runOn(second) {
         val largeEcho2 = identify(second, "largeEcho")

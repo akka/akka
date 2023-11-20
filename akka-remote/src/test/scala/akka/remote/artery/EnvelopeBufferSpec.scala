@@ -74,8 +74,9 @@ class EnvelopeBufferSpec extends AkkaSpec {
       headerIn.setManifest("manifest1")
 
       envelope.writeHeader(headerIn)
-      envelope.byteBuffer
-        .position() should ===(EnvelopeBuffer.MetadataContainerAndLiteralSectionOffset) // Fully compressed header
+      envelope.byteBuffer.position() should ===(
+        EnvelopeBuffer.MetadataContainerAndLiteralSectionOffset
+      ) // Fully compressed header
 
       envelope.byteBuffer.flip()
       envelope.parseHeader(headerOut)

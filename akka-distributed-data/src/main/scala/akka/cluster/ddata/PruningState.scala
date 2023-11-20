@@ -10,9 +10,7 @@ import akka.cluster.Member
 import akka.cluster.UniqueAddress
 import akka.util.unused
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object PruningState {
   final case class PruningInitialized(owner: UniqueAddress, seen: Set[Address]) extends PruningState {
     override def addSeen(node: Address): PruningState = {
@@ -28,9 +26,7 @@ import akka.util.unused
   }
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] sealed trait PruningState {
   import PruningState._
 

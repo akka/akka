@@ -11,9 +11,7 @@ import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.pattern.internal.{ BackoffOnRestartSupervisor, BackoffOnStopSupervisor }
 import akka.util.JavaDurationConverters._
 
-/**
- * Backoff options allow to specify a number of properties for backoff supervisors.
- */
+/** Backoff options allow to specify a number of properties for backoff supervisors. */
 object BackoffOpts {
 
   /**
@@ -247,9 +245,7 @@ object BackoffOpts {
     onStop(childProps, childName, minBackoff.asScala, maxBackoff.asScala, randomFactor)
 }
 
-/**
- * Not for user extension
- */
+/** Not for user extension */
 @DoNotInherit
 private[akka] sealed trait ExtendedBackoffOptions[T <: ExtendedBackoffOptions[T]] {
 
@@ -308,9 +304,7 @@ private[akka] sealed trait ExtendedBackoffOptions[T <: ExtendedBackoffOptions[T]
    */
   def withHandlerWhileStopped(handler: ActorRef): T
 
-  /**
-   * Returns the props to create the back-off supervisor.
-   */
+  /** Returns the props to create the back-off supervisor. */
   private[akka] def props: Props
 }
 
@@ -361,9 +355,8 @@ private final case class BackoffOnStopOptionsImpl[T](
 
   // additional
   def withDefaultStoppingStrategy =
-    copy(
-      supervisorStrategy =
-        OneForOneStrategy(supervisorStrategy.maxNrOfRetries)(SupervisorStrategy.stoppingStrategy.decider))
+    copy(supervisorStrategy =
+      OneForOneStrategy(supervisorStrategy.maxNrOfRetries)(SupervisorStrategy.stoppingStrategy.decider))
   def withFinalStopMessage(action: Any => Boolean) = copy(finalStopMessage = Some(action))
 
   def props: Props = {

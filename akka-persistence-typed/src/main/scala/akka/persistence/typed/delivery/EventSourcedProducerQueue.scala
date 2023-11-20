@@ -93,39 +93,27 @@ object EventSourcedProducerQueue {
     def withDeleteEvents(newDeleteEvents: Boolean): Settings =
       copy(deleteEvents = newDeleteEvents)
 
-    /**
-     * Scala API
-     */
+    /** Scala API */
     def withRestartMaxBackoff(newRestartMaxBackoff: FiniteDuration): Settings =
       copy(restartMaxBackoff = newRestartMaxBackoff)
 
-    /**
-     * Java API
-     */
+    /** Java API */
     def withRestartMaxBackoff(newRestartMaxBackoff: JavaDuration): Settings =
       copy(restartMaxBackoff = newRestartMaxBackoff.asScala)
 
-    /**
-     * Java API
-     */
+    /** Java API */
     def getRestartMaxBackoff(): JavaDuration =
       restartMaxBackoff.asJava
 
-    /**
-     * Scala API
-     */
+    /** Scala API */
     def withCleanupUnusedAfter(newCleanupUnusedAfter: FiniteDuration): Settings =
       copy(cleanupUnusedAfter = newCleanupUnusedAfter)
 
-    /**
-     * Java API
-     */
+    /** Java API */
     def withCleanupUnusedAfter(newCleanupUnusedAfter: JavaDuration): Settings =
       copy(cleanupUnusedAfter = newCleanupUnusedAfter.asScala)
 
-    /**
-     * Java API
-     */
+    /** Java API */
     def getCleanupUnusedAfter(): JavaDuration =
       cleanupUnusedAfter.asJava
 
@@ -135,9 +123,7 @@ object EventSourcedProducerQueue {
     def withSnapshotPluginId(id: String): Settings =
       copy(snapshotPluginId = id)
 
-    /**
-     * Private copy method for internal use only.
-     */
+    /** Private copy method for internal use only. */
     private def copy(
         restartMaxBackoff: FiniteDuration = restartMaxBackoff,
         snapshotEvery: Int = snapshotEvery,
@@ -198,23 +184,17 @@ object EventSourcedProducerQueue {
     }
   }
 
-  /**
-   * Java API
-   */
+  /** Java API */
   def create[A](persistenceId: PersistenceId): Behavior[DurableProducerQueue.Command[A]] =
     apply(persistenceId)
 
-  /**
-   * Java API
-   */
+  /** Java API */
   def create[A](persistenceId: PersistenceId, settings: Settings): Behavior[DurableProducerQueue.Command[A]] =
     apply(persistenceId, settings)
 
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private class EventSourcedProducerQueue[A](
     context: ActorContext[DurableProducerQueue.Command[A]],
     cleanupUnusedAfter: FiniteDuration) {

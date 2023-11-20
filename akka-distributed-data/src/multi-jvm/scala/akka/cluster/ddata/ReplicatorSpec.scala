@@ -450,10 +450,12 @@ class ReplicatorSpec extends MultiNodeSpec(ReplicatorSpec) with STMultiNodeSpec 
       val probe2 = TestProbe()
       replicator.tell(Get(KeyE, readMajority), probe2.ref)
       probe2.expectMsgType[GetSuccess[_]]
-      replicator.tell(Update(KeyE, GCounter(), writeMajority, None) { data =>
-        probe1.ref ! data.value
-        data :+ 1
-      }, probe2.ref)
+      replicator.tell(
+        Update(KeyE, GCounter(), writeMajority, None) { data =>
+          probe1.ref ! data.value
+          data :+ 1
+        },
+        probe2.ref)
       // verify read your own writes, without waiting for the UpdateSuccess reply
       // note that the order of the replies are not defined, and therefore we use separate probes
       val probe3 = TestProbe()

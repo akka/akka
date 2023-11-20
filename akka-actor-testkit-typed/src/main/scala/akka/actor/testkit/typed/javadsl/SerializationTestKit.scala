@@ -7,9 +7,7 @@ package akka.actor.testkit.typed.javadsl
 import akka.actor.testkit.typed.scaladsl
 import akka.actor.typed.ActorSystem
 
-/**
- * Utilities to test serialization.
- */
+/** Utilities to test serialization. */
 class SerializationTestKit(system: ActorSystem[_]) {
 
   private val delegate = new scaladsl.SerializationTestKit(system)

@@ -11,7 +11,7 @@ import com.typesafe.config.ConfigFactory
 
 object TestKitTypedConf {
 
-  //#testkit-typed-conf
+  // #testkit-typed-conf
 
   val yourConfiguration = ConfigFactory.defaultApplication()
 
@@ -20,13 +20,13 @@ object TestKitTypedConf {
 
   val testKit = PersistenceTestKit(system)
 
-  //#testkit-typed-conf
+  // #testkit-typed-conf
 
 }
 
 object SnapshotTypedConf {
 
-  //#snapshot-typed-conf
+  // #snapshot-typed-conf
 
   val yourConfiguration = ConfigFactory.defaultApplication()
 
@@ -37,6 +37,6 @@ object SnapshotTypedConf {
 
   val testKit = SnapshotTestKit(system)
 
-  //#snapshot-typed-conf
+  // #snapshot-typed-conf
 
 }

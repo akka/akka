@@ -18,9 +18,7 @@ import akka.stream.scaladsl.Framing.FramingException
 import akka.stream.stage.GraphStageLogic
 import akka.util.ByteString
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object TcpFraming {
   val Undefined = Int.MinValue
 
@@ -56,9 +54,7 @@ import akka.util.ByteString
         ((frameLength & 0xff000000) >> 24).toByte))
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] class TcpFraming(flightRecorder: RemotingFlightRecorder = NoOpRemotingFlightRecorder)
     extends ByteStringParser[EnvelopeBuffer] {
 

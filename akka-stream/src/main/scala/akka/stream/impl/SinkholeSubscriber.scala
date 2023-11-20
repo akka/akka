@@ -11,9 +11,7 @@ import org.reactivestreams.{ Subscriber, Subscription }
 import akka.Done
 import akka.annotation.InternalApi
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] final class SinkholeSubscriber[T](whenComplete: Promise[Done]) extends Subscriber[T] {
   private[this] var running: Boolean = false
 

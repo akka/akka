@@ -17,8 +17,8 @@ import akka.util.ccompat._
 @ccompatUsedUntil213
 object ClusterShardingRememberEntitiesSpec {
 
-  val extractEntityId: ShardRegion.ExtractEntityId = {
-    case id: Int => (id.toString, id)
+  val extractEntityId: ShardRegion.ExtractEntityId = { case id: Int =>
+    (id.toString, id)
   }
 
   val extractShardId: ShardRegion.ExtractShardId = {

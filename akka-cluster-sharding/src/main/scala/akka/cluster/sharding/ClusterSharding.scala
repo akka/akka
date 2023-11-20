@@ -153,7 +153,6 @@ import akka.util.ccompat.JavaConverters._
  * then supposed to stop itself. Incoming messages will be buffered by the `ShardRegion`
  * between reception of `Passivate` and termination of the entity. Such buffered messages
  * are thereafter delivered to a new incarnation of the entity.
- *
  */
 object ClusterSharding extends ExtensionId[ClusterSharding] with ExtensionIdProvider {
 
@@ -167,9 +166,7 @@ object ClusterSharding extends ExtensionId[ClusterSharding] with ExtensionIdProv
 
 }
 
-/**
- * @see [[ClusterSharding$ ClusterSharding companion object]]
- */
+/** @see [[ClusterSharding$ ClusterSharding companion object]] */
 class ClusterSharding(system: ExtendedActorSystem) extends Extension {
   import ClusterShardingGuardian._
   import ShardCoordinator.ShardAllocationStrategy
@@ -274,9 +271,7 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
       handOffStopMessage)
   }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[akka] def internalStart(
       typeName: String,
       entityProps: String => Props,
@@ -610,21 +605,22 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
       dataCenter: Optional[String],
       messageExtractor: ShardRegion.MessageExtractor): ActorRef = {
 
-    startProxy(typeName, Option(role.orElse(null)), Option(dataCenter.orElse(null)), extractEntityId = {
-      case msg if messageExtractor.entityId(msg) ne null =>
-        (messageExtractor.entityId(msg), messageExtractor.entityMessage(msg))
-    }, extractShardId = msg => messageExtractor.shardId(msg))
+    startProxy(
+      typeName,
+      Option(role.orElse(null)),
+      Option(dataCenter.orElse(null)),
+      extractEntityId = {
+        case msg if messageExtractor.entityId(msg) ne null =>
+          (messageExtractor.entityId(msg), messageExtractor.entityMessage(msg))
+      },
+      extractShardId = msg => messageExtractor.shardId(msg))
 
   }
 
-  /**
-   * Scala API: get all currently defined sharding type names.
-   */
+  /** Scala API: get all currently defined sharding type names. */
   def shardTypeNames: immutable.Set[String] = regions.keySet().asScala.toSet
 
-  /**
-   * Java API: get all currently defined sharding type names.
-   */
+  /** Java API: get all currently defined sharding type names. */
   def getShardTypeNames: java.util.Set[String] = regions.keySet()
 
   /**
@@ -660,9 +656,7 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
     }
   }
 
-  /**
-   * The default `ShardAllocationStrategy` is configured by `least-shard-allocation-strategy` properties.
-   */
+  /** The default `ShardAllocationStrategy` is configured by `least-shard-allocation-strategy` properties. */
   def defaultShardAllocationStrategy(settings: ClusterShardingSettings): ShardAllocationStrategy = {
     if (settings.tuningParameters.leastShardAllocationAbsoluteLimit > 0) {
       // new algorithm
@@ -678,9 +672,7 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
   }
 }
 
-/**
- * INTERNAL API.
- */
+/** INTERNAL API. */
 private[akka] object ClusterShardingGuardian {
   import ShardCoordinator.ShardAllocationStrategy
   final case class Start(
@@ -831,13 +823,13 @@ private[akka] class ClusterShardingGuardian extends Actor {
 
   def receive: Receive = {
     case Start(
-        typeName,
-        entityProps,
-        settings,
-        extractEntityId,
-        extractShardId,
-        allocationStrategy,
-        handOffStopMessage) =>
+          typeName,
+          entityProps,
+          settings,
+          extractEntityId,
+          extractShardId,
+          allocationStrategy,
+          handOffStopMessage) =>
       try {
         val encName = URLEncoder.encode(typeName, ByteString.UTF_8)
         val cPath = coordinatorPath(encName)

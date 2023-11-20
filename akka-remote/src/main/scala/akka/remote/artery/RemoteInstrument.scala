@@ -47,9 +47,7 @@ abstract class RemoteInstrument {
    */
   def identifier: Byte
 
-  /**
-   * Should the serialization be timed? Otherwise times are always 0.
-   */
+  /** Should the serialization be timed? Otherwise times are always 0. */
   def serializationTimingEnabled: Boolean = false
 
   /**
@@ -69,9 +67,7 @@ abstract class RemoteInstrument {
    */
   def remoteMessageSent(recipient: ActorRef, message: Object, sender: ActorRef, size: Int, time: Long): Unit
 
-  /**
-   * Called while deserializing the message once a message (containing a metadata field designated for this instrument) is found.
-   */
+  /** Called while deserializing the message once a message (containing a metadata field designated for this instrument) is found. */
   def remoteReadMetadata(recipient: ActorRef, message: Object, sender: ActorRef, buffer: ByteBuffer): Unit
 
   /**
@@ -85,9 +81,7 @@ abstract class RemoteInstrument {
   def remoteMessageReceived(recipient: ActorRef, message: Object, sender: ActorRef, size: Int, time: Long): Unit
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] class LoggingRemoteInstrument(system: ActorSystem) extends RemoteInstrument {
 
   private val settings = system
@@ -167,7 +161,6 @@ abstract class RemoteInstrument {
  *  |                   ... metadata entry ...                        |
  *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
  * }}}
- *
  */
 private[remote] final class RemoteInstruments(
     private val system: ExtendedActorSystem,

@@ -14,9 +14,7 @@ import akka.persistence.{ PersistencePlugin, PluginProvider }
 import akka.persistence.query.scaladsl.ReadJournal
 import akka.util.unused
 
-/**
- * Persistence extension for queries.
- */
+/** Persistence extension for queries. */
 object PersistenceQuery extends ExtensionId[PersistenceQuery] with ExtensionIdProvider {
 
   override def get(system: ActorSystem): PersistenceQuery = super.get(system)

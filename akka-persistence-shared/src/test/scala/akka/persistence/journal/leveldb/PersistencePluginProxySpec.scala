@@ -13,7 +13,8 @@ import akka.testkit.{ AkkaSpec, TestProbe }
 
 object PersistencePluginProxySpec {
   lazy val config =
-    ConfigFactory.parseString("""
+    ConfigFactory
+      .parseString("""
       akka {
         actor {
           provider = remote
@@ -40,7 +41,8 @@ object PersistencePluginProxySpec {
         log-dead-letters-during-shutdown = off
         test.single-expect-default = 10s
       }
-    """).withFallback(SharedLeveldbJournal.configToEnableJavaSerializationForTest)
+    """)
+      .withFallback(SharedLeveldbJournal.configToEnableJavaSerializationForTest)
 
   lazy val startTargetConfig =
     ConfigFactory.parseString("""
@@ -56,13 +58,13 @@ object PersistencePluginProxySpec {
       |akka.extensions = ["akka.persistence.Persistence"]
       |akka.persistence.journal.auto-start-journals = [""]
       |akka.persistence.journal.proxy.target-journal-address = "${system
-                                   .asInstanceOf[ExtendedActorSystem]
-                                   .provider
-                                   .getDefaultAddress}"
+                                  .asInstanceOf[ExtendedActorSystem]
+                                  .provider
+                                  .getDefaultAddress}"
       |akka.persistence.snapshot-store.proxy.target-snapshot-store-address = "${system
-                                   .asInstanceOf[ExtendedActorSystem]
-                                   .provider
-                                   .getDefaultAddress}"
+                                  .asInstanceOf[ExtendedActorSystem]
+                                  .provider
+                                  .getDefaultAddress}"
     """.stripMargin)
 
   class ExamplePersistentActor(probe: ActorRef, name: String) extends NamedPersistentActor(name) {
@@ -71,19 +73,18 @@ object PersistencePluginProxySpec {
       case payload =>
         probe ! payload
     }
-    override def receiveCommand = {
-      case payload =>
-        persist(payload) { _ =>
-          probe ! payload
-        }
+    override def receiveCommand = { case payload =>
+      persist(payload) { _ =>
+        probe ! payload
+      }
     }
   }
 
   class ExampleApp(probe: ActorRef) extends Actor {
     val p = context.actorOf(Props(classOf[ExamplePersistentActor], probe, context.system.name))
 
-    def receive = {
-      case m => p.forward(m)
+    def receive = { case m =>
+      p.forward(m)
     }
 
   }

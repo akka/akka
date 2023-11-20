@@ -103,23 +103,20 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
       if (tombstones.isEmpty) this
       else {
         val newTombstones: Map[ActorRef[_], Set[(AbstractServiceKey, Deadline)]] =
-          tombstones.foldLeft(tombstones) {
-            case (acc, (actorRef, entries)) =>
-              val entriesToKeep = entries.filter {
-                case (_, deadline) => deadline.hasTimeLeft()
-              }
-              if (entriesToKeep.size == entries.size) acc
-              else if (entriesToKeep.isEmpty) acc - actorRef
-              else acc.updated(actorRef, entriesToKeep)
+          tombstones.foldLeft(tombstones) { case (acc, (actorRef, entries)) =>
+            val entriesToKeep = entries.filter { case (_, deadline) =>
+              deadline.hasTimeLeft()
+            }
+            if (entriesToKeep.size == entries.size) acc
+            else if (entriesToKeep.isEmpty) acc - actorRef
+            else acc.updated(actorRef, entriesToKeep)
           }
         if (newTombstones eq tombstones) this
         else copy(tombstones = newTombstones)
       }
     }
 
-    /**
-     * @return (reachable-nodes, all)
-     */
+    /** @return (reachable-nodes, all) */
     def activeActorRefsFor[T](
         key: ServiceKey[T],
         selfUniqueAddress: UniqueAddress): (Set[ActorRef[T]], Set[ActorRef[T]]) = {
@@ -273,13 +270,12 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
         def isOld(entry: Entry): Boolean = (now - entry.createdTimestamp) >= settings.pruneRemovedOlderThan.toMillis
 
         val removals = {
-          state.registry.allServices.foldLeft(Map.empty[AbstractServiceKey, Set[Entry]]) {
-            case (acc, (key, entries)) =>
-              val removedEntries =
-                entries.filter(entry => isOnRemovedNode(entry) && (!onlyRemoveOldEntries || isOld(entry)))
+          state.registry.allServices.foldLeft(Map.empty[AbstractServiceKey, Set[Entry]]) { case (acc, (key, entries)) =>
+            val removedEntries =
+              entries.filter(entry => isOnRemovedNode(entry) && (!onlyRemoveOldEntries || isOld(entry)))
 
-              if (removedEntries.isEmpty) acc // no change
-              else acc + (key -> removedEntries)
+            if (removedEntries.isEmpty) acc // no change
+            else acc + (key -> removedEntries)
           }
         }
 
@@ -290,19 +286,18 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
               cluster.selfAddress,
               addresses.mkString(","),
               removals
-                .map {
-                  case (key, entries) => key.asServiceKey.id -> entries.mkString("[", ", ", "]")
+                .map { case (key, entries) =>
+                  key.asServiceKey.id -> entries.mkString("[", ", ", "]")
                 }
                 .mkString(","))
 
           // shard changes over the ddata keys they belong to
           val removalsPerDdataKey = state.registry.entriesPerDdataKey(removals)
 
-          removalsPerDdataKey.foreach {
-            case (ddataKey, removalForKey) =>
-              replicator ! Replicator.Update(ddataKey, EmptyORMultiMap, settings.writeConsistency) { registry =>
-                ServiceRegistry(registry).removeAll(removalForKey).toORMultiMap
-              }
+          removalsPerDdataKey.foreach { case (ddataKey, removalForKey) =>
+            replicator ! Replicator.Update(ddataKey, EmptyORMultiMap, settings.writeConsistency) { registry =>
+              ServiceRegistry(registry).removeAll(removalForKey).toORMultiMap
+            }
           }
 
         }
@@ -333,8 +328,11 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
         case ReceptionistMessages.Register(key, serviceInstance, maybeReplyTo) =>
           if (serviceInstance.path.address.hasLocalScope) {
             val entry = Entry(serviceInstance, setup.selfSystemUid)(System.currentTimeMillis())
-            ctx.log
-              .debugN("ClusterReceptionist [{}] - Actor was registered: [{}] [{}]", cluster.selfAddress, key, entry)
+            ctx.log.debugN(
+              "ClusterReceptionist [{}] - Actor was registered: [{}] [{}]",
+              cluster.selfAddress,
+              key,
+              entry)
             // actor already watched after one service key registration
             if (!state.servicesPerActor.contains(serviceInstance))
               ctx.watchWith(serviceInstance, LocalServiceActorTerminated(serviceInstance))

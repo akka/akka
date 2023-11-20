@@ -85,8 +85,8 @@ abstract class RemoteQuarantinePiercingSpec extends RemotingMultiNodeSpec(Remote
           awaitAssert {
             system.actorSelection(RootActorPath(secondAddress) / "user" / "subject") ! "identify"
             val (uidSecond, subjectSecond) = expectMsgType[(Long, ActorRef)](1.second)
-            uidSecond should not be (uidFirst)
-            subjectSecond should not be (subjectFirst)
+            uidSecond should not be uidFirst
+            subjectSecond should not be subjectFirst
           }
         }
 
@@ -107,9 +107,11 @@ abstract class RemoteQuarantinePiercingSpec extends RemotingMultiNodeSpec(Remote
 
         val freshSystem = ActorSystem(
           system.name,
-          ConfigFactory.parseString(s"""
+          ConfigFactory
+            .parseString(s"""
           akka.remote.artery.canonical.port = ${address.port.get}
-          """).withFallback(system.settings.config))
+          """)
+            .withFallback(system.settings.config))
         freshSystem.actorOf(Props[Subject](), "subject")
 
         Await.ready(freshSystem.whenTerminated, 30.seconds)

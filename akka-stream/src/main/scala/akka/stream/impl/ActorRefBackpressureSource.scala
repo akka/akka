@@ -15,9 +15,7 @@ private object ActorRefBackpressureSource {
   private sealed trait ActorRefStage { def ref: ActorRef }
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] final class ActorRefBackpressureSource[T](
     ackTo: Option[ActorRef],
     ackMessage: Any,

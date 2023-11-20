@@ -6,9 +6,7 @@ package akka.stream.javadsl
 
 import akka.stream._
 
-/**
- * Factories for creating stream refs.
- */
+/** Factories for creating stream refs. */
 object StreamRefs {
 
   /**

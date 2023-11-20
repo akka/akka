@@ -51,10 +51,10 @@ object ExtensionDocSpec {
 
   val initialBehavior: Behavior[Any] = Behaviors.empty[Any]
 
-  //#usage
+  // #usage
   Behaviors.setup[Any] { ctx =>
     DatabasePool(ctx.system).connection().executeQuery("insert into...")
     initialBehavior
   }
-  //#usage
+  // #usage
 }

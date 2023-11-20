@@ -31,10 +31,12 @@ object ActorSystemDispatchersSpec {
 
 }
 
-class ActorSystemDispatchersSpec extends AkkaSpec(ConfigFactory.parseString("""
+class ActorSystemDispatchersSpec
+    extends AkkaSpec(ConfigFactory.parseString("""
     dispatcher-loop-1 = "dispatcher-loop-2"
     dispatcher-loop-2 = "dispatcher-loop-1"
-  """)) with ImplicitSender {
+  """))
+    with ImplicitSender {
 
   import ActorSystemDispatchersSpec._
 
@@ -48,8 +50,8 @@ class ActorSystemDispatchersSpec extends AkkaSpec(ConfigFactory.parseString("""
 
       try {
         val ref = system2.actorOf(Props(new Actor {
-          def receive = {
-            case "ping" => sender() ! "pong"
+          def receive = { case "ping" =>
+            sender() ! "pong"
           }
         }))
 
@@ -123,8 +125,8 @@ class ActorSystemDispatchersSpec extends AkkaSpec(ConfigFactory.parseString("""
 
       try {
         val ref = system2.actorOf(Props(new Actor {
-          def receive = {
-            case "ping" => sender() ! "pong"
+          def receive = { case "ping" =>
+            sender() ! "pong"
           }
         }).withDispatcher(Dispatchers.InternalDispatcherId))
 

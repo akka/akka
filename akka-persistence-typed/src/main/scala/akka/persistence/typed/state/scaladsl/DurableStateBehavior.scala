@@ -19,9 +19,7 @@ import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.SnapshotAdapter
 import akka.persistence.typed.state.internal._
 
-/**
- * API May Change
- */
+/** API May Change */
 @ApiMayChange
 object DurableStateBehavior {
 
@@ -87,9 +85,7 @@ object DurableStateBehavior {
 
   }
 
-  /**
-   * The last sequence number that was persisted, can only be called from inside the handlers of a `DurableStateBehavior`
-   */
+  /** The last sequence number that was persisted, can only be called from inside the handlers of a `DurableStateBehavior` */
   def lastSequenceNumber(context: ActorContext[_]): Long = {
     @tailrec
     def extractConcreteBehavior(beh: Behavior[_]): Behavior[_] =
@@ -126,19 +122,13 @@ object DurableStateBehavior {
    */
   def receiveSignal(signalHandler: PartialFunction[(State, Signal), Unit]): DurableStateBehavior[Command, State]
 
-  /**
-   * @return The currently defined signal handler or an empty handler if no custom handler previously defined
-   */
+  /** @return The currently defined signal handler or an empty handler if no custom handler previously defined */
   def signalHandler: PartialFunction[(State, Signal), Unit]
 
-  /**
-   * Change the `DurableStateStore` plugin id that this actor should use.
-   */
+  /** Change the `DurableStateStore` plugin id that this actor should use. */
   def withDurableStateStorePluginId(id: String): DurableStateBehavior[Command, State]
 
-  /**
-   * The tag that can used in persistence query
-   */
+  /** The tag that can used in persistence query */
   def withTag(tag: String): DurableStateBehavior[Command, State]
 
   /**

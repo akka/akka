@@ -4,7 +4,7 @@
 
 package akka.event.slf4j
 
-import org.slf4j.{ MDC, Marker, MarkerFactory, Logger => SLFLogger, LoggerFactory => SLFLoggerFactory }
+import org.slf4j.{ Logger => SLFLogger, LoggerFactory => SLFLoggerFactory, MDC, Marker, MarkerFactory }
 
 import akka.actor._
 import akka.dispatch.RequiresMessageQueue
@@ -12,17 +12,13 @@ import akka.event.{ LogMarker, _ }
 import akka.event.Logging._
 import akka.util.{ unused, Helpers }
 
-/**
- * Base trait for all classes that wants to be able use the SLF4J logging infrastructure.
- */
+/** Base trait for all classes that wants to be able use the SLF4J logging infrastructure. */
 trait SLF4JLogging {
   @transient
   lazy val log = Logger(this.getClass.getName)
 }
 
-/**
- * Logger is a factory for obtaining SLF4J-Loggers
- */
+/** Logger is a factory for obtaining SLF4J-Loggers */
 object Logger {
 
   /**
@@ -41,9 +37,7 @@ object Logger {
     case _                                             => SLFLoggerFactory.getLogger(logClass)
   }
 
-  /**
-   * Returns the SLF4J Root Logger
-   */
+  /** Returns the SLF4J Root Logger */
   def root: SLFLogger = apply(SLFLogger.ROOT_LOGGER_NAME)
 }
 

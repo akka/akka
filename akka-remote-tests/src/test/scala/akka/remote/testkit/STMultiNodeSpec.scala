@@ -11,9 +11,7 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
-/**
- * Hooks up MultiNodeSpec with ScalaTest
- */
+/** Hooks up MultiNodeSpec with ScalaTest */
 trait STMultiNodeSpec extends MultiNodeSpecCallbacks with AnyWordSpecLike with Matchers with BeforeAndAfterAll {
   self: MultiNodeSpec =>
 

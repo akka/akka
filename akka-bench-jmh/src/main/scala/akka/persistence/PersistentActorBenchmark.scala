@@ -111,11 +111,10 @@ class NoPersistPersistentActor(respondAfter: Int) extends PersistentActor {
 
   override def persistenceId: String = self.path.name
 
-  override def receiveCommand = {
-    case n: Int => if (n == respondAfter) sender() ! Evt(n)
+  override def receiveCommand = { case n: Int =>
+    if (n == respondAfter) sender() ! Evt(n)
   }
-  override def receiveRecover = {
-    case _ => // do nothing
+  override def receiveRecover = { case _ => // do nothing
   }
 
 }
@@ -123,14 +122,12 @@ class PersistPersistentActor(respondAfter: Int) extends PersistentActor {
 
   override def persistenceId: String = self.path.name
 
-  override def receiveCommand = {
-    case n: Int =>
-      persist(Evt(n)) { e =>
-        if (e.i == respondAfter) sender() ! e
-      }
+  override def receiveCommand = { case n: Int =>
+    persist(Evt(n)) { e =>
+      if (e.i == respondAfter) sender() ! e
+    }
   }
-  override def receiveRecover = {
-    case _ => // do nothing
+  override def receiveRecover = { case _ => // do nothing
   }
 
 }
@@ -138,14 +135,12 @@ class PersistPersistentActor(respondAfter: Int) extends PersistentActor {
 class PersistAsyncPersistentActor(respondAfter: Int) extends PersistentActor {
   override def persistenceId: String = self.path.name
 
-  override def receiveCommand = {
-    case n: Int =>
-      persistAsync(Evt(n)) { e =>
-        if (e.i == respondAfter) sender() ! e
-      }
+  override def receiveCommand = { case n: Int =>
+    persistAsync(Evt(n)) { e =>
+      if (e.i == respondAfter) sender() ! e
+    }
   }
-  override def receiveRecover = {
-    case _ => // do nothing
+  override def receiveRecover = { case _ => // do nothing
   }
 }
 
@@ -153,13 +148,11 @@ class PersistAsyncQuickReplyPersistentActor(respondAfter: Int) extends Persisten
 
   override def persistenceId: String = self.path.name
 
-  override def receiveCommand = {
-    case n: Int =>
-      val e = Evt(n)
-      if (n == respondAfter) sender() ! e
-      persistAsync(e)(identity)
+  override def receiveCommand = { case n: Int =>
+    val e = Evt(n)
+    if (n == respondAfter) sender() ! e
+    persistAsync(e)(identity)
   }
-  override def receiveRecover = {
-    case _ => // do nothing
+  override def receiveRecover = { case _ => // do nothing
   }
 }

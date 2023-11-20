@@ -23,9 +23,7 @@ object FlowWithContext {
   def create[In, Ctx](): FlowWithContext[In, Ctx, In, Ctx, akka.NotUsed] =
     new FlowWithContext(Flow.create[Pair[In, Ctx]]())
 
-  /**
-   * Creates a FlowWithContext from a regular flow that operates on `Pair<data, context>` elements.
-   */
+  /** Creates a FlowWithContext from a regular flow that operates on `Pair<data, context>` elements. */
   def fromPairs[In, CtxIn, Out, CtxOut, Mat](
       under: Flow[Pair[In, CtxIn], Pair[Out, CtxOut], Mat]): FlowWithContext[In, CtxIn, Out, CtxOut, Mat] =
     new FlowWithContext(under)
@@ -39,7 +37,6 @@ object FlowWithContext {
  * operations.
  *
  * An "empty" flow can be created by calling `FlowWithContext[Ctx, T]`.
- *
  */
 final class FlowWithContext[In, CtxIn, Out, CtxOut, +Mat](
     delegate: javadsl.Flow[Pair[In, CtxIn], Pair[Out, CtxOut], Mat])
@@ -106,9 +103,7 @@ final class FlowWithContext[In, CtxIn, Out, CtxOut, +Mat](
   def mapMaterializedValue[Mat2](f: function.Function[Mat, Mat2]): FlowWithContext[In, CtxIn, Out, CtxOut, Mat2] =
     new FlowWithContext(delegate.mapMaterializedValue[Mat2](f))
 
-  /**
-   * Creates a regular flow of pairs (data, context).
-   */
+  /** Creates a regular flow of pairs (data, context). */
   def asFlow(): Flow[Pair[In, CtxIn], Pair[Out, CtxOut], Mat] @uncheckedVariance =
     delegate
 
@@ -223,9 +218,7 @@ final class FlowWithContext[In, CtxIn, Out, CtxOut, +Mat](
       f: function.Function[Out, _ <: java.lang.Iterable[Out2]]): FlowWithContext[In, CtxIn, Out2, CtxOut, Mat] =
     viaScala(_.mapConcat(elem => Util.immutableSeq(f.apply(elem))))
 
-  /**
-   * Apply the given function to each context element (leaving the data elements unchanged).
-   */
+  /** Apply the given function to each context element (leaving the data elements unchanged). */
   def mapContext[CtxOut2](
       extractContext: function.Function[CtxOut, CtxOut2]): FlowWithContext[In, CtxIn, Out, CtxOut2, Mat] = {
     viaScala(_.mapContext(extractContext.apply))

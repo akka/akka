@@ -11,20 +11,20 @@ object StatefulMap {
   implicit val actorSystem: ActorSystem = ???
 
   def indexed(): Unit = {
-    //#zipWithIndex
+    // #zipWithIndex
     Source(List("A", "B", "C", "D"))
       .statefulMap(() => 0L)((index, elem) => (index + 1, (elem, index)), _ => None)
       .runForeach(println)
-    //prints
-    //(A,0)
-    //(B,1)
-    //(C,2)
-    //(D,3)
-    //#zipWithIndex
+    // prints
+    // (A,0)
+    // (B,1)
+    // (C,2)
+    // (D,3)
+    // #zipWithIndex
   }
 
   def bufferUntilChanged(): Unit = {
-    //#bufferUntilChanged
+    // #bufferUntilChanged
     Source("A" :: "B" :: "B" :: "C" :: "C" :: "C" :: "D" :: Nil)
       .statefulMap(() => List.empty[String])(
         (buffer, element) =>
@@ -35,16 +35,16 @@ object StatefulMap {
         buffer => Some(buffer))
       .filter(_.nonEmpty)
       .runForeach(println)
-    //prints
-    //List(A)
-    //List(B, B)
-    //List(C, C, C)
-    //List(D)
-    //#bufferUntilChanged
+    // prints
+    // List(A)
+    // List(B, B)
+    // List(C, C, C)
+    // List(D)
+    // #bufferUntilChanged
   }
 
   def distinctUntilChanged(): Unit = {
-    //#distinctUntilChanged
+    // #distinctUntilChanged
     Source("A" :: "B" :: "B" :: "C" :: "C" :: "C" :: "D" :: Nil)
       .statefulMap(() => Option.empty[String])(
         (lastElement, elem) =>
@@ -55,20 +55,20 @@ object StatefulMap {
         _ => None)
       .collect { case Some(elem) => elem }
       .runForeach(println)
-    //prints
-    //A
-    //B
-    //C
-    //D
-    //#distinctUntilChanged
+    // prints
+    // A
+    // B
+    // C
+    // D
+    // #distinctUntilChanged
   }
 
   def statefulMapConcatLike(): Unit = {
-    //#statefulMapConcatLike
+    // #statefulMapConcatLike
     Source(1 to 10)
       .statefulMap(() => List.empty[Int])(
         (state, elem) => {
-          //grouped 3 elements into a list
+          // grouped 3 elements into a list
           val newState = elem :: state
           if (newState.size == 3)
             (Nil, newState.reverse)
@@ -78,17 +78,17 @@ object StatefulMap {
         state => Some(state.reverse))
       .mapConcat(identity)
       .runForeach(println)
-    //prints
-    //1
-    //2
-    //3
-    //4
-    //5
-    //6
-    //7
-    //8
-    //9
-    //10
-    //#statefulMapConcatLike
+    // prints
+    // 1
+    // 2
+    // 3
+    // 4
+    // 5
+    // 6
+    // 7
+    // 8
+    // 9
+    // 10
+    // #statefulMapConcatLike
   }
 }

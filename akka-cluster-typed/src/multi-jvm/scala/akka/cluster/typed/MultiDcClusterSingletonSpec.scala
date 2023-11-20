@@ -19,9 +19,12 @@ object MultiDcClusterSingletonSpecConfig extends MultiNodeConfig {
   val second = role("second")
   val third = role("third")
 
-  commonConfig(ConfigFactory.parseString("""
+  commonConfig(
+    ConfigFactory
+      .parseString("""
         akka.loglevel = DEBUG
-      """).withFallback(MultiNodeClusterSpec.clusterConfig))
+      """)
+      .withFallback(MultiNodeClusterSpec.clusterConfig))
 
   nodeConfig(first)(ConfigFactory.parseString("""
       akka.cluster.multi-data-center.self-data-center = "dc1"

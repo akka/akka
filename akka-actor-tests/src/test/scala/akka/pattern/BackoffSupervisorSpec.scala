@@ -93,11 +93,11 @@ class BackoffSupervisorSpec extends AkkaSpec with ImplicitSender with Eventually
         }
       }
       filterException[TestException] {
-        val stoppingStrategy = OneForOneStrategy() {
-          case _: TestException => SupervisorStrategy.Stop
+        val stoppingStrategy = OneForOneStrategy() { case _: TestException =>
+          SupervisorStrategy.Stop
         }
-        val restartingStrategy = OneForOneStrategy() {
-          case _: TestException => SupervisorStrategy.Restart
+        val restartingStrategy = OneForOneStrategy() { case _: TestException =>
+          SupervisorStrategy.Restart
         }
 
         assertCustomStrategy(create(onStopOptions().withSupervisorStrategy(stoppingStrategy)))
@@ -159,11 +159,11 @@ class BackoffSupervisorSpec extends AkkaSpec with ImplicitSender with Eventually
           expectMsg(BackoffSupervisor.RestartCount(0))
         }
 
-        val stoppingStrategy = OneForOneStrategy() {
-          case _: TestException => SupervisorStrategy.Stop
+        val stoppingStrategy = OneForOneStrategy() { case _: TestException =>
+          SupervisorStrategy.Stop
         }
-        val restartingStrategy = OneForOneStrategy() {
-          case _: TestException => SupervisorStrategy.Restart
+        val restartingStrategy = OneForOneStrategy() { case _: TestException =>
+          SupervisorStrategy.Restart
         }
 
         assertManualReset(
@@ -203,9 +203,8 @@ class BackoffSupervisorSpec extends AkkaSpec with ImplicitSender with Eventually
 
     "use provided actor while stopped and withHandlerWhileStopped is specified" in {
       val handler = system.actorOf(Props(new Actor {
-        override def receive: Receive = {
-          case "still there?" =>
-            sender() ! "not here!"
+        override def receive: Receive = { case "still there?" =>
+          sender() ! "not here!"
         }
       }))
       filterException[TestException] {
@@ -253,7 +252,7 @@ class BackoffSupervisorSpec extends AkkaSpec with ImplicitSender with Eventually
         }
 
         EventFilter.warning(pattern = ".*boom.*", occurrences = 1).intercept {
-          supervisor ! "boom" //this will be sent to deadLetters
+          supervisor ! "boom" // this will be sent to deadLetters
           expectNoMessage(500.milliseconds)
         }
       }

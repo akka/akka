@@ -23,9 +23,7 @@ import akka.util.ccompat.JavaConverters._
 
 object SourceWithContext {
 
-  /**
-   * Creates a SourceWithContext from a regular flow that operates on `Pair<data, context>` elements.
-   */
+  /** Creates a SourceWithContext from a regular flow that operates on `Pair<data, context>` elements. */
   def fromPairs[Out, CtxOut, Mat](under: Source[Pair[Out, CtxOut], Mat]): SourceWithContext[Out, CtxOut, Mat] = {
     new SourceWithContext(scaladsl.SourceWithContext.fromTuples(under.asScala.map(_.toScala)))
   }
@@ -214,9 +212,7 @@ final class SourceWithContext[Out, Ctx, +Mat](delegate: scaladsl.SourceWithConte
   def mapConcat[Out2](f: function.Function[Out, _ <: java.lang.Iterable[Out2]]): SourceWithContext[Out2, Ctx, Mat] =
     viaScala(_.mapConcat(elem => Util.immutableSeq(f.apply(elem))))
 
-  /**
-   * Apply the given function to each context element (leaving the data elements unchanged).
-   */
+  /** Apply the given function to each context element (leaving the data elements unchanged). */
   def mapContext[Ctx2](extractContext: function.Function[Ctx, Ctx2]): SourceWithContext[Out, Ctx2, Mat] =
     viaScala(_.mapContext(extractContext.apply))
 

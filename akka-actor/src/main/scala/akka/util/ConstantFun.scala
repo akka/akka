@@ -8,9 +8,7 @@ import akka.annotation.InternalApi
 import akka.japi.{ Pair => JPair }
 import akka.japi.function.{ Function => JFun, Function2 => JFun2 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object ConstantFun {
 
   private[this] val JavaIdentityFunction = new JFun[Any, Any] {

@@ -22,9 +22,8 @@ object ReceiveTimeoutSpec {
   class RestartingParent(probe: ActorRef) extends Actor {
     val restarting = new AtomicBoolean(false)
     val child = context.actorOf(Props(new RestartingChild(probe, restarting)))
-    def receive = {
-      case msg =>
-        child.forward(msg)
+    def receive = { case msg =>
+      child.forward(msg)
     }
   }
   class RestartingChild(probe: ActorRef, restarting: AtomicBoolean) extends Actor {
@@ -55,10 +54,9 @@ object ReceiveTimeoutSpec {
   }
 
   class StoppingSelfActor(probe: ActorRef) extends Actor {
-    override def receive: Receive = {
-      case "Stop" =>
-        context.setReceiveTimeout(200.millis)
-        context.stop(self)
+    override def receive: Receive = { case "Stop" =>
+      context.setReceiveTimeout(200.millis)
+      context.stop(self)
     }
 
     override def postStop(): Unit = {
@@ -78,8 +76,8 @@ class ReceiveTimeoutSpec extends AkkaSpec() {
       val timeoutActor = system.actorOf(Props(new Actor {
         context.setReceiveTimeout(500 milliseconds)
 
-        def receive = {
-          case ReceiveTimeout => timeoutLatch.open()
+        def receive = { case ReceiveTimeout =>
+          timeoutLatch.open()
         }
       }))
 
@@ -132,8 +130,8 @@ class ReceiveTimeoutSpec extends AkkaSpec() {
       val timeoutLatch = TestLatch()
 
       val timeoutActor = system.actorOf(Props(new Actor {
-        def receive = {
-          case ReceiveTimeout => timeoutLatch.open()
+        def receive = { case ReceiveTimeout =>
+          timeoutLatch.open()
         }
       }))
 

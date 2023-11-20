@@ -20,24 +20,16 @@ import akka.annotation.InternalApi
 
 object FishingOutcomes {
 
-  /**
-   * Complete fishing and return all messages up until this
-   */
+  /** Complete fishing and return all messages up until this */
   val complete: FishingOutcome = FishingOutcome.Complete
 
-  /**
-   * Consume this message, collect it into the result, and continue with the next message
-   */
+  /** Consume this message, collect it into the result, and continue with the next message */
   val continue: FishingOutcome = FishingOutcome.Continue
 
-  /**
-   * Consume this message, but do not collect it into the result, and continue with the next message
-   */
+  /** Consume this message, but do not collect it into the result, and continue with the next message */
   val continueAndIgnore: FishingOutcome = FishingOutcome.ContinueAndIgnore
 
-  /**
-   * Fail fishing with a custom error message
-   */
+  /** Fail fishing with a custom error message */
   def fail(message: String): FishingOutcome = FishingOutcome.Fail(message)
 }
 
@@ -62,9 +54,7 @@ object TestProbe {
 
   implicit protected def settings: TestKitSettings
 
-  /**
-   * ActorRef for this TestProbe
-   */
+  /** ActorRef for this TestProbe */
   def ref: ActorRef[M]
 
   /**
@@ -105,14 +95,10 @@ object TestProbe {
    */
   def within[T](min: FiniteDuration, max: FiniteDuration)(f: => T): T
 
-  /**
-   * Same as calling `within(0 seconds, max)(f)`.
-   */
+  /** Same as calling `within(0 seconds, max)(f)`. */
   def within[T](max: FiniteDuration)(f: => T): T
 
-  /**
-   * Same as `expectMessage(remainingOrDefault, obj)`, but using the default timeout as deadline.
-   */
+  /** Same as `expectMessage(remainingOrDefault, obj)`, but using the default timeout as deadline. */
   def expectMessage[T <: M](obj: T): T
 
   /**
@@ -145,19 +131,13 @@ object TestProbe {
    */
   def expectNoMessage(): Unit
 
-  /**
-   * Same as `expectMessageType[T](remainingOrDefault)`, but using the default timeout as deadline.
-   */
+  /** Same as `expectMessageType[T](remainingOrDefault)`, but using the default timeout as deadline. */
   def expectMessageType[T <: M](implicit t: ClassTag[T]): T
 
-  /**
-   * Expect a message of type T to arrive within `max` or fail. `max` is dilated.
-   */
+  /** Expect a message of type T to arrive within `max` or fail. `max` is dilated. */
   def expectMessageType[T <: M](max: FiniteDuration)(implicit t: ClassTag[T]): T
 
-  /**
-   * Receive one message of type `M` within the default timeout as deadline.
-   */
+  /** Receive one message of type `M` within the default timeout as deadline. */
   def receiveMessage(): M
 
   /**
@@ -166,9 +146,7 @@ object TestProbe {
    */
   def receiveMessage(max: FiniteDuration): M
 
-  /**
-   * Same as `receiveMessages(n, remaining)` but using the default timeout as deadline.
-   */
+  /** Same as `receiveMessages(n, remaining)` but using the default timeout as deadline. */
   def receiveMessages(n: Int): immutable.Seq[M]
 
   /**
@@ -198,19 +176,13 @@ object TestProbe {
    */
   def fishForMessage(max: FiniteDuration, hint: String)(fisher: M => FishingOutcome): immutable.Seq[M]
 
-  /**
-   * Same as `fishForMessage` but accepting a partial function and failing for non-matches
-   */
+  /** Same as `fishForMessage` but accepting a partial function and failing for non-matches */
   def fishForMessagePF(max: FiniteDuration, hint: String)(fisher: PartialFunction[M, FishingOutcome]): immutable.Seq[M]
 
-  /**
-   * Same as the other `fishForMessage` but with no hint
-   */
+  /** Same as the other `fishForMessage` but with no hint */
   def fishForMessage(max: FiniteDuration)(fisher: M => FishingOutcome): immutable.Seq[M]
 
-  /**
-   * Same as `fishForMessage` but with no hint, accepting a partial function and failing for non-matches
-   */
+  /** Same as `fishForMessage` but with no hint, accepting a partial function and failing for non-matches */
   def fishForMessagePF(max: FiniteDuration)(fisher: PartialFunction[M, FishingOutcome]): immutable.Seq[M]
 
   /**
@@ -219,9 +191,7 @@ object TestProbe {
    */
   def expectTerminated[U](actorRef: ActorRef[U], max: FiniteDuration): Unit
 
-  /**
-   * Expect the given actor to be stopped or stop within the default timeout.
-   */
+  /** Expect the given actor to be stopped or stop within the default timeout. */
   def expectTerminated[U](actorRef: ActorRef[U]): Unit
 
   /**
@@ -250,14 +220,10 @@ object TestProbe {
    */
   def awaitAssert[A](a: => A): A
 
-  /**
-   * Stops the [[TestProbe.ref]], which is useful when testing watch and termination.
-   */
+  /** Stops the [[TestProbe.ref]], which is useful when testing watch and termination. */
   def stop(): Unit
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi
   private[akka] def asJava: akka.actor.testkit.typed.javadsl.TestProbe[M]
 }

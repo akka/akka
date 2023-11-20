@@ -36,7 +36,7 @@ import akka.util.OptionVal
     val innerMatValue = Promise[M]()
     val logic = new GraphStageLogic(shape) {
 
-      //seems like we must set handlers BEFORE preStart
+      // seems like we must set handlers BEFORE preStart
       setHandlers(in, out, Initializing)
 
       override def preStart(): Unit = {
@@ -46,7 +46,7 @@ import akka.util.OptionVal
           case None =>
             val cb = getAsyncCallback(Initializing.onFuture)
             futureFlow.onComplete(cb.invoke)(ExecutionContexts.parasitic)
-            //in case both ports are closed before future completion
+            // in case both ports are closed before future completion
             setKeepGoing(true)
         }
       }
@@ -66,10 +66,10 @@ import akka.util.OptionVal
           upstreamFailure = OptionVal.Some(ex)
         }
 
-        //will later be propagated to the materialized flow (by examining isClosed(in))
+        // will later be propagated to the materialized flow (by examining isClosed(in))
         override def onUpstreamFinish(): Unit = {}
 
-        //will later be propagated to the materialized flow (by examining isAvailable(out))
+        // will later be propagated to the materialized flow (by examining isAvailable(out))
         override def onPull(): Unit = {}
 
         var downstreamCause = OptionVal.none[Throwable]
@@ -88,7 +88,7 @@ import akka.util.OptionVal
             innerMatValue.failure(new NeverMaterializedException(exception))
             failStage(exception)
           case Success(flow) =>
-            //materialize flow, connect inlet and outlet, feed with potential events and set handlers
+            // materialize flow, connect inlet and outlet, feed with potential events and set handlers
             connect(flow)
             setKeepGoing(false)
         }
@@ -123,13 +123,16 @@ import akka.util.OptionVal
               case OptionVal.Some(cause) => subSink.cancel(cause)
               case _                     => if (isAvailable(out)) subSink.pull()
             }
-            setHandlers(in, out, new InHandler with OutHandler {
-              override def onPull(): Unit = subSink.pull()
-              override def onDownstreamFinish(cause: Throwable): Unit = subSink.cancel(cause)
-              override def onPush(): Unit = subSource.push(grab(in))
-              override def onUpstreamFinish(): Unit = subSource.complete()
-              override def onUpstreamFailure(ex: Throwable): Unit = subSource.fail(ex)
-            })
+            setHandlers(
+              in,
+              out,
+              new InHandler with OutHandler {
+                override def onPull(): Unit = subSink.pull()
+                override def onDownstreamFinish(cause: Throwable): Unit = subSink.cancel(cause)
+                override def onPush(): Unit = subSource.push(grab(in))
+                override def onUpstreamFinish(): Unit = subSource.complete()
+                override def onUpstreamFailure(ex: Throwable): Unit = subSource.fail(ex)
+              })
           } catch {
             case NonFatal(ex) =>
               innerMatValue.failure(new NeverMaterializedException(ex))

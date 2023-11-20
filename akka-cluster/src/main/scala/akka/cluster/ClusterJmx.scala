@@ -13,14 +13,10 @@ import javax.management.StandardMBean
 import akka.actor.AddressFromURIString
 import akka.event.LoggingAdapter
 
-/**
- * Interface for the cluster JMX MBean.
- */
+/** Interface for the cluster JMX MBean. */
 trait ClusterNodeMBean {
 
-  /**
-   * Member status for this node.
-   */
+  /** Member status for this node. */
   def getMemberStatus: String
 
   /**
@@ -101,9 +97,7 @@ trait ClusterNodeMBean {
    */
   def getLeader: String
 
-  /**
-   * Does the cluster consist of only one member?
-   */
+  /** Does the cluster consist of only one member? */
   def isSingleton: Boolean
 
   /**
@@ -132,9 +126,7 @@ trait ClusterNodeMBean {
   def down(address: String): Unit
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[akka] class ClusterJmx(cluster: Cluster, log: LoggingAdapter) {
 
   private val mBeanServer = ManagementFactory.getPlatformMBeanServer
@@ -147,9 +139,7 @@ private[akka] class ClusterJmx(cluster: Cluster, log: LoggingAdapter) {
   private def clusterView = cluster.readView
   import cluster.ClusterLogger._
 
-  /**
-   * Creates the cluster JMX MBean and registers it in the MBean server.
-   */
+  /** Creates the cluster JMX MBean and registers it in the MBean server. */
   def createMBean() = {
     val mbean = new StandardMBean(classOf[ClusterNodeMBean]) with ClusterNodeMBean {
 
@@ -162,7 +152,7 @@ private[akka] class ClusterJmx(cluster: Cluster, log: LoggingAdapter) {
             s"""{
               |      "address": "${m.address}",
               |      "roles": [${if (m.roles.isEmpty) ""
-               else m.roles.toList.sorted.map("\"" + _ + "\"").mkString("\n        ", ",\n        ", "\n      ")}],
+              else m.roles.toList.sorted.map("\"" + _ + "\"").mkString("\n        ", ",\n        ", "\n      ")}],
               |      "status": "${m.status}",
               |      "app-version": "${m.appVersion}"
               |    }""".stripMargin
@@ -177,7 +167,7 @@ private[akka] class ClusterJmx(cluster: Cluster, log: LoggingAdapter) {
               s"""{
               |      "node": "${subject.address}",
               |      "observed-by": [${if (observerAddresses.isEmpty) ""
-                 else observerAddresses.mkString("\n        ", ",\n        ", "\n      ")}]
+                else observerAddresses.mkString("\n        ", ",\n        ", "\n      ")}]
               |    }""".stripMargin
             }
 
@@ -230,9 +220,7 @@ private[akka] class ClusterJmx(cluster: Cluster, log: LoggingAdapter) {
     }
   }
 
-  /**
-   * Unregisters the cluster JMX MBean from MBean server.
-   */
+  /** Unregisters the cluster JMX MBean from MBean server. */
   def unregisterMBean(): Unit = {
     try {
       mBeanServer.unregisterMBean(clusterMBeanName)

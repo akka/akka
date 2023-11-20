@@ -29,7 +29,7 @@ class HeartbeatNodeRingSpec extends AnyWordSpec with Matchers {
       nodes.foreach { n =>
         val receivers = ring.receivers(n)
         receivers.size should ===(3)
-        receivers should not contain (n)
+        receivers should not contain n
       }
     }
 

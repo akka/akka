@@ -42,17 +42,16 @@ object RequestResponseActors {
 
   class UserServiceActor(userDb: Map[Int, User], latch: CountDownLatch, numQueries: Int) extends Actor {
     private var left = numQueries
-    def receive = {
-      case Request(id) =>
-        userDb.get(id) match {
-          case Some(u) => sender() ! u
-          case None    =>
-        }
-        if (left == 0) {
-          latch.countDown()
-          context.stop(self)
-        }
-        left -= 1
+    def receive = { case Request(id) =>
+      userDb.get(id) match {
+        case Some(u) => sender() ! u
+        case None    =>
+      }
+      if (left == 0) {
+        latch.countDown()
+        context.stop(self)
+      }
+      left -= 1
     }
 
   }

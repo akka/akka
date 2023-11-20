@@ -21,10 +21,9 @@ class ReceivePartialSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike 
     "correctly install the receiveMessage handler" in {
       val probe = TestProbe[Command]("probe")
       val behavior =
-        Behaviors.receiveMessagePartial[Command] {
-          case Command2 =>
-            probe.ref ! Command2
-            Behaviors.same
+        Behaviors.receiveMessagePartial[Command] { case Command2 =>
+          probe.ref ! Command2
+          Behaviors.same
         }
       val actor = spawn(behavior)
 
@@ -38,10 +37,9 @@ class ReceivePartialSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike 
     "correctly install the receive handler" in {
       val probe = TestProbe[Command]("probe")
       val behavior =
-        Behaviors.receivePartial[Command] {
-          case (_, Command2) =>
-            probe.ref ! Command2
-            Behaviors.same
+        Behaviors.receivePartial[Command] { case (_, Command2) =>
+          probe.ref ! Command2
+          Behaviors.same
         }
       val actor = spawn(behavior)
 

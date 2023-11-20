@@ -24,9 +24,7 @@ import akka.persistence.typed.ReplicaId
 import akka.persistence.typed.ReplicationId
 import akka.util.ccompat.JavaConverters._
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] final class ReplicatedShardingExtensionImpl(system: ActorSystem[_]) extends ReplicatedShardingExtension {
 
@@ -45,24 +43,23 @@ private[akka] final class ReplicatedShardingExtensionImpl(system: ActorSystem[_]
       settings: ReplicatedEntityProvider[M]): ReplicatedSharding[M] = {
     require(settings.replicas.nonEmpty, "Replicas must not be empty")
     val sharding = ClusterSharding(system)
-    val initializedReplicas = settings.replicas.map {
-      case (replicaSettings, typeName) =>
-        // start up a sharding instance per replica id
-        logger.infoN(
-          "Starting Replicated Event Sourcing sharding for replica [{}] (ShardType: [{}], typeName [{}])",
-          replicaSettings.replicaId.id,
-          replicaSettings.entity.typeKey.name)
-        val regionOrProxy = sharding.init(replicaSettings.entity)
-        (
-          typeName,
-          replicaSettings.replicaId,
-          replicaSettings.entity.typeKey,
-          regionOrProxy,
-          replicaSettings.entity.dataCenter)
+    val initializedReplicas = settings.replicas.map { case (replicaSettings, typeName) =>
+      // start up a sharding instance per replica id
+      logger.infoN(
+        "Starting Replicated Event Sourcing sharding for replica [{}] (ShardType: [{}], typeName [{}])",
+        replicaSettings.replicaId.id,
+        replicaSettings.entity.typeKey.name)
+      val regionOrProxy = sharding.init(replicaSettings.entity)
+      (
+        typeName,
+        replicaSettings.replicaId,
+        replicaSettings.entity.typeKey,
+        regionOrProxy,
+        replicaSettings.entity.dataCenter)
     }
     if (settings.directReplication) {
-      val replicaToRegionOrProxy = initializedReplicas.map {
-        case (_, replicaId, _, regionOrProxy, _) => replicaId -> regionOrProxy
+      val replicaToRegionOrProxy = initializedReplicas.map { case (_, replicaId, _, regionOrProxy, _) =>
+        replicaId -> regionOrProxy
       }.toMap
       val typeNameWithoutReplicaId = settings.replicas.head._2
       logger.infoN("Starting Replicated Event Sourcing Direct Replication")
@@ -71,16 +68,14 @@ private[akka] final class ReplicatedShardingExtensionImpl(system: ActorSystem[_]
         s"directReplication-${counter.incrementAndGet()}")
     }
 
-    val replicaToTypeKey = initializedReplicas.map {
-      case (typeName, id, typeKey, _, dc) => id -> ((typeKey, dc, typeName))
+    val replicaToTypeKey = initializedReplicas.map { case (typeName, id, typeKey, _, dc) =>
+      id -> ((typeKey, dc, typeName))
     }.toMap
     new ReplicatedShardingImpl(sharding, replicaToTypeKey)
   }
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] final class ReplicatedShardingImpl[M](
     sharding: ClusterSharding,
@@ -88,13 +83,12 @@ private[akka] final class ReplicatedShardingImpl[M](
     extends ReplicatedSharding[M] {
 
   override def entityRefsFor(entityId: String): Map[ReplicaId, EntityRef[M]] =
-    replicaTypeKeys.map {
-      case (replicaId, (typeKey, dc, typeName)) =>
-        replicaId -> (dc match {
-          case None => sharding.entityRefFor(typeKey, ReplicationId(typeName, entityId, replicaId).persistenceId.id)
-          case Some(dc) =>
-            sharding.entityRefFor(typeKey, ReplicationId(typeName, entityId, replicaId).persistenceId.id, dc)
-        })
+    replicaTypeKeys.map { case (replicaId, (typeKey, dc, typeName)) =>
+      replicaId -> (dc match {
+        case None => sharding.entityRefFor(typeKey, ReplicationId(typeName, entityId, replicaId).persistenceId.id)
+        case Some(dc) =>
+          sharding.entityRefFor(typeKey, ReplicationId(typeName, entityId, replicaId).persistenceId.id, dc)
+      })
     }
 
   override def getEntityRefsFor(entityId: String): JMap[ReplicaId, akka.cluster.sharding.typed.javadsl.EntityRef[M]] =

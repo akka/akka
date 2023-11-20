@@ -16,8 +16,8 @@ import akka.testkit.TestProbe
 
 object StashCreationBenchmark {
   class StashingActor extends Actor with Stash {
-    def receive = {
-      case msg => sender() ! msg
+    def receive = { case msg =>
+      sender() ! msg
     }
   }
 

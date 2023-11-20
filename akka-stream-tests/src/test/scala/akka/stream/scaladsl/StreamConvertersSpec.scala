@@ -37,9 +37,11 @@ class StreamConvertersSpec extends StreamSpec with DefaultTimeout {
     import scala.compat.java8.FunctionConverters._
 
     def javaStreamInts =
-      IntStream.iterate(1, { (i: Int) =>
-        i + 1
-      }.asJava)
+      IntStream.iterate(
+        1,
+        { (i: Int) =>
+          i + 1
+        }.asJava)
 
     "work with Java collections" in {
       val list = new java.util.LinkedList[Integer]()

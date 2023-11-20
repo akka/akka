@@ -77,14 +77,13 @@ object ActorWithStashSpec {
 
     context.stop(watched)
 
-    def receive = {
-      case Terminated(`watched`) =>
-        if (!stashed) {
-          stash()
-          stashed = true
-          unstashAll()
-        }
-        probe ! "terminated"
+    def receive = { case Terminated(`watched`) =>
+      if (!stashed) {
+        stash()
+        stashed = true
+        unstashAll()
+      }
+      probe ! "terminated"
     }
   }
 

@@ -88,7 +88,7 @@ object MurmurHash {
 
   /** Once all hashes have been incorporated, this performs a final mixing */
   def finalizeHash(hash: Int): Int = {
-    var i = (hash ^ (hash >>> 16))
+    var i = hash ^ (hash >>> 16)
     i *= finalMixer1
     i ^= (i >>> 13)
     i *= finalMixer2

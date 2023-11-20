@@ -113,8 +113,8 @@ object MaxThroughputSpec extends MultiNodeConfig {
   class Receiver(reporter: RateReporter, payloadSize: Int, numSenders: Int) extends Actor {
     private var c = 0L
     private var endMessagesMissing = numSenders
-    private var correspondingSender
-        : ActorRef = null // the Actor which send the Start message will also receive the report
+    private var correspondingSender: ActorRef =
+      null // the Actor which send the Start message will also receive the report
 
     def receive = {
       case msg: Array[Byte] =>
@@ -176,13 +176,12 @@ object MaxThroughputSpec extends MultiNodeConfig {
     val compressionEnabled =
       RARP(context.system).provider.remoteSettings.Artery.Advanced.Compression.Enabled
 
-    def receive = {
-      case Run =>
-        if (compressionEnabled) {
-          target.tell(Warmup(payload), self)
-          context.setReceiveTimeout(1.second)
-          context.become(waitingForCompression)
-        } else runWarmup()
+    def receive = { case Run =>
+      if (compressionEnabled) {
+        target.tell(Warmup(payload), self)
+        context.setReceiveTimeout(1.second)
+        context.become(waitingForCompression)
+      } else runWarmup()
     }
 
     def waitingForCompression: Receive = {
@@ -226,39 +225,40 @@ object MaxThroughputSpec extends MultiNodeConfig {
       case _: Warmup =>
     }
 
-    def active: Receive = {
-      case _ @FlowControl(id, t0) =>
-        val targetCount = pendingFlowControl(id)
-        if (targetCount - 1 == 0) {
-          pendingFlowControl -= id
-          val now = System.nanoTime()
-          val duration = NANOSECONDS.toMillis(now - t0)
-          maxRoundTripMillis = math.max(maxRoundTripMillis, duration)
+    def active: Receive = { case _ @FlowControl(id, t0) =>
+      val targetCount = pendingFlowControl(id)
+      if (targetCount - 1 == 0) {
+        pendingFlowControl -= id
+        val now = System.nanoTime()
+        val duration = NANOSECONDS.toMillis(now - t0)
+        maxRoundTripMillis = math.max(maxRoundTripMillis, duration)
 
-          sendBatch(warmup = false)
-          sendFlowControl(now)
-        } else {
-          // waiting for FlowControl from more targets
-          pendingFlowControl = pendingFlowControl.updated(id, targetCount - 1)
-        }
+        sendBatch(warmup = false)
+        sendFlowControl(now)
+      } else {
+        // waiting for FlowControl from more targets
+        pendingFlowControl = pendingFlowControl.updated(id, targetCount - 1)
+      }
     }
 
     val waitingForEndResult: Receive = {
       case EndResult(totalReceived) =>
         val took = NANOSECONDS.toMillis(System.nanoTime - startTime)
-        val throughput = (totalReceived * 1000.0 / took)
+        val throughput = totalReceived * 1000.0 / took
 
-        reporter.reportResults(s"=== ${reporter.testName} ${self.path.name}: " +
-        f"throughput ${throughput * testSettings.senderReceiverPairs}%,.0f msg/s, " +
-        f"${throughput * payloadSize * testSettings.senderReceiverPairs}%,.0f bytes/s (payload), " +
-        f"${throughput * totalSize(context.system) * testSettings.senderReceiverPairs}%,.0f bytes/s (total" +
-        (if (RARP(context.system).provider.remoteSettings.Artery.Advanced.Compression.Enabled) ",compression" else "") + "), " +
-        (if (testSettings.senderReceiverPairs == 1) s"dropped ${totalMessages - totalReceived}, " else "") +
-        s"max round-trip $maxRoundTripMillis ms, " +
-        s"burst size $burstSize, " +
-        s"payload size $payloadSize, " +
-        s"total size ${totalSize(context.system)}, " +
-        s"$took ms to deliver $totalReceived messages.")
+        reporter.reportResults(
+          s"=== ${reporter.testName} ${self.path.name}: " +
+          f"throughput ${throughput * testSettings.senderReceiverPairs}%,.0f msg/s, " +
+          f"${throughput * payloadSize * testSettings.senderReceiverPairs}%,.0f bytes/s (payload), " +
+          f"${throughput * totalSize(context.system) * testSettings.senderReceiverPairs}%,.0f bytes/s (total" +
+          (if (RARP(context.system).provider.remoteSettings.Artery.Advanced.Compression.Enabled) ",compression"
+           else "") + "), " +
+          (if (testSettings.senderReceiverPairs == 1) s"dropped ${totalMessages - totalReceived}, " else "") +
+          s"max round-trip $maxRoundTripMillis ms, " +
+          s"burst size $burstSize, " +
+          s"payload size $payloadSize, " +
+          s"total size ${totalSize(context.system)}, " +
+          s"$took ms to deliver $totalReceived messages.")
 
         plotRef ! PlotResult().add(testName, throughput * payloadSize * testSettings.senderReceiverPairs / 1024 / 1024)
         context.stop(self)
@@ -469,13 +469,12 @@ abstract class MaxThroughputSpec extends RemotingMultiNodeSpec(MaxThroughputSpec
         snd ! Run
         (snd, terminationProbe, plotProbe)
       }
-      senders.foreach {
-        case (snd, terminationProbe, plotProbe) =>
-          terminationProbe.expectTerminated(snd, barrierTimeout)
-          if (snd == senders.head._1) {
-            val plotResult = plotProbe.expectMsgType[PlotResult]
-            plot = plot.addAll(plotResult)
-          }
+      senders.foreach { case (snd, terminationProbe, plotProbe) =>
+        terminationProbe.expectTerminated(snd, barrierTimeout)
+        if (snd == senders.head._1) {
+          val plotResult = plotProbe.expectMsgType[PlotResult]
+          plot = plot.addAll(plotResult)
+        }
       }
       enterBarrier(testName + "-done")
     }

@@ -59,8 +59,7 @@ class StatusReplySpec extends AkkaSpec with ScalaFutures {
     }
 
     "transform scala.util.Try" in {
-      StatusReply.fromTry(scala.util.Success("woho")) should matchPattern {
-        case StatusReply.Success("woho") =>
+      StatusReply.fromTry(scala.util.Success("woho")) should matchPattern { case StatusReply.Success("woho") =>
       }
       StatusReply.fromTry(scala.util.Failure(TestException("boho"))) should matchPattern {
         case StatusReply.Error(StatusReply.ErrorMessage("boho")) =>

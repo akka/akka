@@ -23,9 +23,11 @@ import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
 import akka.testkit.SocketUtil
 
-class AeronSinkSpec extends AkkaSpec("""
+class AeronSinkSpec
+    extends AkkaSpec("""
     akka.stream.materializer.debug.fuzzing-mode = on
-  """) with ImplicitSender {
+  """)
+    with ImplicitSender {
 
   val driver = MediaDriver.launchEmbedded()
 

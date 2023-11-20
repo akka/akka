@@ -17,9 +17,9 @@ import akka.persistence.typed.state.scaladsl.DurableStateBehavior
 object BlogPostEntityDurableState {
   // commands, state defined here
 
-  //#behavior
+  // #behavior
 
-  //#state
+  // #state
   sealed trait State
 
   case object BlankState extends State
@@ -34,30 +34,30 @@ object BlogPostEntityDurableState {
   final case class PublishedState(content: PostContent) extends State {
     def postId: String = content.postId
   }
-  //#state
+  // #state
 
-  //#commands
+  // #commands
   sealed trait Command
-  //#reply-command
+  // #reply-command
   final case class AddPost(content: PostContent, replyTo: ActorRef[StatusReply[AddPostDone]]) extends Command
   final case class AddPostDone(postId: String)
-  //#reply-command
+  // #reply-command
   final case class GetPost(replyTo: ActorRef[PostContent]) extends Command
   final case class ChangeBody(newBody: String, replyTo: ActorRef[Done]) extends Command
   final case class Publish(replyTo: ActorRef[Done]) extends Command
   final case class PostContent(postId: String, title: String, body: String)
-  //#commands
+  // #commands
 
-  //#behavior
+  // #behavior
   def apply(entityId: String, persistenceId: PersistenceId): Behavior[Command] = {
     Behaviors.setup { context =>
       context.log.info("Starting BlogPostEntityDurableState {}", entityId)
       DurableStateBehavior[Command, State](persistenceId, emptyState = BlankState, commandHandler)
     }
   }
-  //#behavior
+  // #behavior
 
-  //#command-handler
+  // #command-handler
   private val commandHandler: (State, Command) => Effect[State] = { (state, command) =>
     state match {
 
@@ -87,12 +87,12 @@ object BlogPostEntityDurableState {
   }
 
   private def addPost(cmd: AddPost): Effect[State] = {
-    //#reply
+    // #reply
     Effect.persist(DraftState(cmd.content)).thenRun { _ =>
       // After persist is done additional side effects can be performed
       cmd.replyTo ! StatusReply.Success(AddPostDone(cmd.content.postId))
     }
-    //#reply
+    // #reply
   }
 
   private def changeBody(state: DraftState, cmd: ChangeBody): Effect[State] = {
@@ -117,8 +117,8 @@ object BlogPostEntityDurableState {
     replyTo ! state.content
     Effect.none
   }
-  //#command-handler
-  //#behavior
+  // #command-handler
+  // #behavior
 
   // commandHandler defined here
 }

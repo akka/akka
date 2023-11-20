@@ -12,7 +12,6 @@ import akka.actor.Actor
  * It is expected that this will be deprecated/removed in future Akka versions
  *
  *  TODO make private and remove deprecated in 2.7.0
- *
  */
 @deprecated("Overriding the DNS implementation will be removed in future versions of Akka", "2.6.0")
 trait DnsProvider {

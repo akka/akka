@@ -121,8 +121,8 @@ class FSMTimingSpec extends AkkaSpec with ImplicitSender {
 
     "receive and cancel a repeated timer" taggedAs TimingTest in {
       fsm ! TestRepeatedTimer
-      val seq = receiveWhile(2 seconds) {
-        case Tick => Tick
+      val seq = receiveWhile(2 seconds) { case Tick =>
+        Tick
       }
       (seq should have).length(5)
       within(500 millis) {
@@ -208,13 +208,12 @@ object FSMTimingSpec {
       case Event(StateTimeout, _) => goto(Initial)
       case Event(Cancel, _)       => goto(Initial).replying(Cancel)
     }
-    when(TestSingleTimer) {
-      case Event(Tick, _) =>
-        tester ! Tick
-        goto(Initial)
+    when(TestSingleTimer) { case Event(Tick, _) =>
+      tester ! Tick
+      goto(Initial)
     }
-    onTransition {
-      case Initial -> TestSingleTimerResubmit => startSingleTimer("blah", Tick, 500.millis.dilated)
+    onTransition { case Initial -> TestSingleTimerResubmit =>
+      startSingleTimer("blah", Tick, 500.millis.dilated)
     }
     when(TestSingleTimerResubmit) {
       case Event(Tick, _) =>
@@ -240,15 +239,14 @@ object FSMTimingSpec {
         cancelTimer("hallo")
         goto(Initial)
     }
-    when(TestRepeatedTimer) {
-      case Event(Tick, remaining) =>
-        tester ! Tick
-        if (remaining == 0) {
-          cancelTimer("tester")
-          goto(Initial)
-        } else {
-          stay().using(remaining - 1)
-        }
+    when(TestRepeatedTimer) { case Event(Tick, remaining) =>
+      tester ! Tick
+      if (remaining == 0) {
+        cancelTimer("tester")
+        goto(Initial)
+      } else {
+        stay().using(remaining - 1)
+      }
     }
     when(TestCancelStateTimerInNamedTimerMessage) {
       // FSM is suspended after processing this message and resumed 500ms later
@@ -268,10 +266,9 @@ object FSMTimingSpec {
     }
     when(TestUnhandled) {
       case Event(SetHandler, _) =>
-        whenUnhandled {
-          case Event(Tick, _) =>
-            tester ! Unhandled(Tick)
-            stay()
+        whenUnhandled { case Event(Tick, _) =>
+          tester ! Unhandled(Tick)
+          stay()
         }
         stay()
       case Event(Cancel, _) =>
@@ -283,10 +280,9 @@ object FSMTimingSpec {
   class StoppingActor extends Actor with FSM[State, Int] {
     startWith(Initial, 0)
 
-    when(Initial, 200 millis) {
-      case Event(TestStoppingActorStateTimeout, _) =>
-        context.stop(self)
-        stay()
+    when(Initial, 200 millis) { case Event(TestStoppingActorStateTimeout, _) =>
+      context.stop(self)
+      stay()
     }
   }
 

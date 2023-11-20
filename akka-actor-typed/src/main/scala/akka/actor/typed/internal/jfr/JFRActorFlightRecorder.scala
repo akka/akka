@@ -9,17 +9,13 @@ import akka.actor.typed.internal.ActorFlightRecorder
 import akka.actor.typed.internal.DeliveryFlightRecorder
 import akka.annotation.InternalApi
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] final class JFRActorFlightRecorder() extends ActorFlightRecorder {
   override val delivery: DeliveryFlightRecorder = new JFRDeliveryFlightRecorder
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] final class JFRDeliveryFlightRecorder extends DeliveryFlightRecorder {
 
   override def producerCreated(producerId: String, path: ActorPath): Unit =

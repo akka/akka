@@ -32,8 +32,8 @@ object RemoteDeliverySpec {
   final case class Letter(n: Int, route: List[ActorRef]) extends CborSerializable
 
   class Postman extends Actor {
-    def receive = {
-      case Letter(n, route) => route.head ! Letter(n, route.tail)
+    def receive = { case Letter(n, route) =>
+      route.head ! Letter(n, route.tail)
     }
   }
 }

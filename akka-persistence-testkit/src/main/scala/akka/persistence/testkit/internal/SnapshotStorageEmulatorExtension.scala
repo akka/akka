@@ -10,9 +10,7 @@ import akka.annotation.InternalApi
 import akka.persistence.testkit.SnapshotStorage
 import akka.persistence.testkit.scaladsl.SnapshotTestKit
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[testkit] object SnapshotStorageEmulatorExtension extends ExtensionId[SnapshotStorage] with ExtensionIdProvider {
 

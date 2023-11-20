@@ -56,7 +56,7 @@ class GraphMergeSpec extends TwoStreamsSetup {
         subscription.request(1)
         collected :+= probe.expectNext()
       }
-      //test ordering of elements coming from each of nonempty flows
+      // test ordering of elements coming from each of nonempty flows
       collected.filter(_ <= 4) should ===(1 to 4)
       collected.filter(_ >= 5) should ===(5 to 10)
 

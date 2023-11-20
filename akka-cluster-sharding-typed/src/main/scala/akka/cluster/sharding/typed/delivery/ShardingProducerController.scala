@@ -242,9 +242,7 @@ object ShardingProducerController {
     def withProducerControllerSettings(newProducerControllerSettings: ProducerController.Settings): Settings =
       copy(producerControllerSettings = newProducerControllerSettings)
 
-    /**
-     * Private copy method for internal use only.
-     */
+    /** Private copy method for internal use only. */
     private def copy(
         bufferSize: Int = bufferSize,
         internalAskTimeout: FiniteDuration = internalAskTimeout,
@@ -279,9 +277,7 @@ object ShardingProducerController {
     ShardingProducerControllerImpl(producerId, region, durableQueueBehavior, settings)
   }
 
-  /**
-   * Java API
-   */
+  /** Java API */
   def create[A](
       messageClass: Class[A],
       producerId: String,
@@ -290,9 +286,7 @@ object ShardingProducerController {
     apply(producerId, region, durableQueueBehavior.asScala)(ClassTag(messageClass))
   }
 
-  /**
-   * Java API
-   */
+  /** Java API */
   def create[A](
       messageClass: Class[A],
       producerId: String,

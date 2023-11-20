@@ -51,18 +51,16 @@ import akka.util.ByteString
 
 @nowarn("msg=never used")
 class NonResolvingDnsActor(cache: SimpleDnsCache, config: Config) extends Actor {
-  def receive = {
-    case msg =>
-      throw new RuntimeException(s"Unexpected resolve message $msg")
+  def receive = { case msg =>
+    throw new RuntimeException(s"Unexpected resolve message $msg")
   }
 }
 
 @nowarn("msg=never used")
 class NonResolvingDnsManager(ext: akka.io.DnsExt) extends Actor {
 
-  def receive = {
-    case msg =>
-      throw new RuntimeException(s"Unexpected resolve message $msg")
+  def receive = { case msg =>
+    throw new RuntimeException(s"Unexpected resolve message $msg")
   }
 }
 
@@ -89,14 +87,17 @@ class FailingDnsResolver extends DnsProvider {
   override def managerClass = classOf[NonResolvingDnsManager]
 }
 
-class TcpSpec extends StreamSpec("""
+class TcpSpec
+    extends StreamSpec("""
     akka.loglevel = debug
     akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
     akka.io.tcp.trace-logging = true
     akka.stream.materializer.subscription-timeout.timeout = 2s
     akka.stream.materializer.initial-input-buffer-size = 2
     akka.stream.materializer.max-input-buffer-size = 2
-  """) with TcpHelper with WithLogCapturing {
+  """)
+    with TcpHelper
+    with WithLogCapturing {
 
   "Outgoing TCP stream" must {
 
@@ -264,10 +265,12 @@ class TcpSpec extends StreamSpec("""
       tcpWriteProbe.close()
 
       // Need a write on the server side to detect the close event
-      awaitAssert({
-        serverConnection.write(testData)
-        serverConnection.expectClosed(_.isErrorClosed, 500.millis)
-      }, max = 5.seconds)
+      awaitAssert(
+        {
+          serverConnection.write(testData)
+          serverConnection.expectClosed(_.isErrorClosed, 500.millis)
+        },
+        max = 5.seconds)
       serverConnection.expectTerminated()
     }
 
@@ -301,10 +304,12 @@ class TcpSpec extends StreamSpec("""
       tcpReadProbe.tcpReadSubscription.cancel()
 
       // Need a write on the server side to detect the close event
-      awaitAssert({
-        serverConnection.write(testData)
-        serverConnection.expectClosed(_.isErrorClosed, 500.millis)
-      }, max = 5.seconds)
+      awaitAssert(
+        {
+          serverConnection.write(testData)
+          serverConnection.expectClosed(_.isErrorClosed, 500.millis)
+        },
+        max = 5.seconds)
       serverConnection.expectTerminated()
     }
 
@@ -540,9 +545,11 @@ class TcpSpec extends StreamSpec("""
     "handle when connection actor terminates unexpectedly" in {
       val system2 = ActorSystem(
         "TcpSpec-unexpected-system2",
-        ConfigFactory.parseString("""
+        ConfigFactory
+          .parseString("""
           akka.loglevel = DEBUG # issue #21660
-        """).withFallback(system.settings.config))
+        """)
+          .withFallback(system.settings.config))
 
       try {
         implicit val materializer = SystemMaterializer(system2).materializer
@@ -590,9 +597,11 @@ class TcpSpec extends StreamSpec("""
     "provide full exceptions when connection attempt fails because name cannot be resolved" in {
       val systemWithBrokenDns = ActorSystem(
         "TcpSpec-resolution-failure",
-        ConfigFactory.parseString("""
+        ConfigFactory
+          .parseString("""
           akka.io.dns.inet-address.provider-object = akka.stream.io.FailingDnsResolver
-          """).withFallback(system.settings.config))
+          """)
+          .withFallback(system.settings.config))
       try {
         val unknownHostName = "abcdefghijklmnopkuh"
 

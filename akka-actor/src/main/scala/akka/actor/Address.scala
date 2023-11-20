@@ -41,14 +41,10 @@ final case class Address private[akka] (protocol: String, system: String, host: 
     Address(protocol, system, host, port)
   }
 
-  /**
-   * Java API: The hostname if specified or empty optional if not
-   */
+  /** Java API: The hostname if specified or empty optional if not */
   def getHost(): Optional[String] = host.asJava
 
-  /**
-   * Java API: The port if specified or empty optional if not
-   */
+  /** Java API: The port if specified or empty optional if not */
   def getPort(): Optional[Integer] = port.asJava.asInstanceOf[Optional[Integer]]
 
   /**
@@ -89,7 +85,8 @@ final case class Address private[akka] (protocol: String, system: String, host: 
    */
   def hostPort: String = toString.substring(protocol.length + 3)
 
-  /** INTERNAL API
+  /**
+   * INTERNAL API
    * Check if the address is not created through `AddressFromURIString`, if there
    * are any unusual characters in the host string.
    */
@@ -109,20 +106,14 @@ object Address {
   // if underscore and no dot after, then invalid
   val InvalidHostRegex = "_[^.]*$".r
 
-  /**
-   * Constructs a new Address with the specified protocol and system name
-   */
+  /** Constructs a new Address with the specified protocol and system name */
   def apply(protocol: String, system: String) = new Address(protocol, system)
 
-  /**
-   * Constructs a new Address with the specified protocol, system name, host and port
-   */
+  /** Constructs a new Address with the specified protocol, system name, host and port */
   def apply(protocol: String, system: String, host: String, port: Int) =
     new Address(protocol, system, Some(host), Some(port))
 
-  /**
-   * `Address` ordering type class, sorts addresses by protocol, name, host and port.
-   */
+  /** `Address` ordering type class, sorts addresses by protocol, name, host and port. */
   implicit val addressOrdering: Ordering[Address] = Ordering.fromLessThan[Address] { (a, b) =>
     if (a eq b) false
     else if (a.protocol != b.protocol) a.system.compareTo(b.protocol) < 0
@@ -167,9 +158,7 @@ object RelativeActorPath extends PathUtils {
   }
 }
 
-/**
- * This object serves as extractor for Scala and as address parser for Java.
- */
+/** This object serves as extractor for Scala and as address parser for Java. */
 object AddressFromURIString {
   def unapply(addr: String): Option[Address] =
     try unapply(new URI(addr))
@@ -189,23 +178,17 @@ object AddressFromURIString {
           else Address(uri.getScheme, uri.getUserInfo, uri.getHost, uri.getPort))
     }
 
-  /**
-   * Try to construct an Address from the given String or throw a java.net.MalformedURLException.
-   */
+  /** Try to construct an Address from the given String or throw a java.net.MalformedURLException. */
   def apply(addr: String): Address = addr match {
     case AddressFromURIString(address) => address
     case _                             => throw new MalformedURLException(addr)
   }
 
-  /**
-   * Java API: Try to construct an Address from the given String or throw a java.net.MalformedURLException.
-   */
+  /** Java API: Try to construct an Address from the given String or throw a java.net.MalformedURLException. */
   def parse(addr: String): Address = apply(addr)
 }
 
-/**
- * Given an ActorPath it returns the Address and the path elements if the path is well-formed
- */
+/** Given an ActorPath it returns the Address and the path elements if the path is well-formed */
 object ActorPathExtractor extends PathUtils {
   def unapply(addr: String): Option[(Address, immutable.Iterable[String])] =
     try {

@@ -13,9 +13,7 @@ import akka.cluster.sharding.ShardRegion.ShardId
 import akka.cluster.sharding.internal.ClusterShardAllocationMixin.RegionEntry
 import akka.cluster.sharding.internal.ClusterShardAllocationMixin.ShardSuitabilityOrdering
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] object LeastShardAllocationStrategy {
   private val emptyRebalanceResult = Future.successful(Set.empty[ShardId])
 }
@@ -58,11 +56,10 @@ import akka.cluster.sharding.internal.ClusterShardAllocationMixin.ShardSuitabili
         optimalPerRegion: Int,
         sortedEntries: Iterable[RegionEntry]): Set[ShardId] = {
       val selected = Vector.newBuilder[ShardId]
-      sortedEntries.foreach {
-        case RegionEntry(_, _, shardIds) =>
-          if (shardIds.size > optimalPerRegion) {
-            selected ++= shardIds.take(shardIds.size - optimalPerRegion)
-          }
+      sortedEntries.foreach { case RegionEntry(_, _, shardIds) =>
+        if (shardIds.size > optimalPerRegion) {
+          selected ++= shardIds.take(shardIds.size - optimalPerRegion)
+        }
       }
       val result = selected.result()
       result.take(limit(numberOfShards)).toSet
@@ -81,11 +78,10 @@ import akka.cluster.sharding.internal.ClusterShardAllocationMixin.ShardSuitabili
         emptyRebalanceResult
       } else {
         val selected = Vector.newBuilder[ShardId]
-        sortedEntries.foreach {
-          case RegionEntry(_, _, shardIds) =>
-            if (shardIds.size >= optimalPerRegion) {
-              selected += shardIds.head
-            }
+        sortedEntries.foreach { case RegionEntry(_, _, shardIds) =>
+          if (shardIds.size >= optimalPerRegion) {
+            selected += shardIds.head
+          }
         }
         val result = selected.result().take(min(countBelowOptimal, limit(numberOfShards))).toSet
         Future.successful(result)

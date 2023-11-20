@@ -49,14 +49,13 @@ class FlowMapAsyncSpec extends StreamSpec {
       val c = TestSubscriber.manualProbe[Int]()
       implicit val ec = system.dispatcher
       Source(1 to 50)
-        .mapAsync(4)(
-          n =>
-            if (n % 3 == 0) Future.successful(n)
-            else
-              Future {
-                Thread.sleep(ThreadLocalRandom.current().nextInt(1, 10))
-                n
-              })
+        .mapAsync(4)(n =>
+          if (n % 3 == 0) Future.successful(n)
+          else
+            Future {
+              Thread.sleep(ThreadLocalRandom.current().nextInt(1, 10))
+              n
+            })
         .to(Sink.fromSubscriber(c))
         .run()
       val sub = c.expectSubscription()
@@ -98,14 +97,13 @@ class FlowMapAsyncSpec extends StreamSpec {
       val c = TestSubscriber.manualProbe[Int]()
       implicit val ec = system.dispatcher
       Source(1 to 5)
-        .mapAsync(4)(
-          n =>
-            if (n == 3) Future.failed[Int](new TE("err1"))
-            else
-              Future {
-                Await.ready(latch, 10.seconds)
-                n
-              })
+        .mapAsync(4)(n =>
+          if (n == 3) Future.failed[Int](new TE("err1"))
+          else
+            Future {
+              Await.ready(latch, 10.seconds)
+              n
+            })
         .to(Sink.fromSubscriber(c))
         .run()
       val sub = c.expectSubscription()
@@ -437,17 +435,18 @@ class FlowMapAsyncSpec extends StreamSpec {
         val delay = 50000 // nanoseconds
         var count = 0
         @tailrec final override def run(): Unit = {
-          val cont = try {
-            val (promise, enqueued) = queue.take()
-            val wakeup = enqueued + delay
-            while (System.nanoTime() < wakeup) {}
-            counter.decrementAndGet()
-            promise.success(count)
-            count += 1
-            true
-          } catch {
-            case _: InterruptedException => false
-          }
+          val cont =
+            try {
+              val (promise, enqueued) = queue.take()
+              val wakeup = enqueued + delay
+              while (System.nanoTime() < wakeup) {}
+              counter.decrementAndGet()
+              promise.success(count)
+              count += 1
+              true
+            } catch {
+              case _: InterruptedException => false
+            }
           if (cont) run()
         }
       }
@@ -516,13 +515,12 @@ class FlowMapAsyncSpec extends StreamSpec {
       import system.dispatcher
       val failCount = new AtomicInteger(0)
       val result = Source(List(true, false))
-        .mapAsync(1)(
-          elem =>
-            if (elem) throw TE("this has gone too far")
-            else
-              Future {
-                elem
-              })
+        .mapAsync(1)(elem =>
+          if (elem) throw TE("this has gone too far")
+          else
+            Future {
+              elem
+            })
         .addAttributes(supervisionStrategy {
           case TE("this has gone too far") =>
             failCount.incrementAndGet()

@@ -19,9 +19,11 @@ object OutboundControlJunctionSpec {
   case object Control3 extends ControlMessage
 }
 
-class OutboundControlJunctionSpec extends AkkaSpec("""
+class OutboundControlJunctionSpec
+    extends AkkaSpec("""
     akka.stream.materializer.debug.fuzzing-mode = on
-  """) with ImplicitSender {
+  """)
+    with ImplicitSender {
   import OutboundControlJunctionSpec._
 
   val addressA = UniqueAddress(Address("akka", "sysA", "hostA", 1001), 1)

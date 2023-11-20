@@ -21,9 +21,7 @@ import akka.stream.scaladsl
 object JavaFlowSupport {
   import JavaFlowAndRsConverters.Implicits._
 
-  /**
-   * [[akka.stream.scaladsl.Source]] factories operating with `java.util.concurrent.Flow.*` interfaces.
-   */
+  /** [[akka.stream.scaladsl.Source]] factories operating with `java.util.concurrent.Flow.*` interfaces. */
   object Source {
 
     /**
@@ -38,9 +36,9 @@ object JavaFlowSupport {
      *      (which carries the same semantics, however existed before RS's inclusion in Java 9).
      */
     final
-    //#fromPublisher
+    // #fromPublisher
     def fromPublisher[T](publisher: java.util.concurrent.Flow.Publisher[T]): Source[T, NotUsed] =
-      //#fromPublisher
+      // #fromPublisher
       scaladsl.Source.fromPublisher(publisher.asRs)
 
     /**
@@ -50,27 +48,21 @@ object JavaFlowSupport {
      *      (which carries the same semantics, however existed before RS's inclusion in Java 9).
      */
     final
-    //#asSubscriber
+    // #asSubscriber
     def asSubscriber[T]: Source[T, java.util.concurrent.Flow.Subscriber[T]] =
-      //#asSubscriber
+      // #asSubscriber
       scaladsl.Source.asSubscriber[T].mapMaterializedValue(_.asJava)
   }
 
-  /**
-   * [[akka.stream.scaladsl.Flow]] factories operating with `java.util.concurrent.Flow.*` interfaces.
-   */
+  /** [[akka.stream.scaladsl.Flow]] factories operating with `java.util.concurrent.Flow.*` interfaces. */
   object Flow {
 
-    /**
-     * Creates a Flow from a Reactive Streams [[org.reactivestreams.Processor]]
-     */
+    /** Creates a Flow from a Reactive Streams [[org.reactivestreams.Processor]] */
     def fromProcessor[I, O](processorFactory: () => juc.Flow.Processor[I, O]): Flow[I, O, NotUsed] = {
       fromProcessorMat(() => (processorFactory(), NotUsed))
     }
 
-    /**
-     * Creates a Flow from a Reactive Streams [[java.util.concurrent.Flow.Processor]] and returns a materialized value.
-     */
+    /** Creates a Flow from a Reactive Streams [[java.util.concurrent.Flow.Processor]] and returns a materialized value. */
     def fromProcessorMat[I, O, M](processorFactory: () => (juc.Flow.Processor[I, O], M)): Flow[I, O, M] =
       scaladsl.Flow.fromProcessorMat { () =>
         val (processor, mat) = processorFactory()
@@ -98,9 +90,7 @@ object JavaFlowSupport {
       }
   }
 
-  /**
-   * [[akka.stream.scaladsl.Sink]] factories operating with `java.util.concurrent.Flow.*` interfaces.
-   */
+  /** [[akka.stream.scaladsl.Sink]] factories operating with `java.util.concurrent.Flow.*` interfaces. */
   object Sink {
 
     /**
@@ -117,9 +107,7 @@ object JavaFlowSupport {
     final def asPublisher[T](fanout: Boolean): Sink[T, juc.Flow.Publisher[T]] =
       scaladsl.Sink.asPublisher[T](fanout).mapMaterializedValue(_.asJava)
 
-    /**
-     * Helper to create [[Sink]] from [[java.util.concurrent.Flow.Subscriber]].
-     */
+    /** Helper to create [[Sink]] from [[java.util.concurrent.Flow.Subscriber]]. */
     final def fromSubscriber[T](s: juc.Flow.Subscriber[T]): Sink[T, NotUsed] =
       scaladsl.Sink.fromSubscriber(s.asRs)
   }

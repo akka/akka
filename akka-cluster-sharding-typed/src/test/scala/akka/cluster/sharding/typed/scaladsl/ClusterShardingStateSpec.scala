@@ -53,10 +53,10 @@ class ClusterShardingStateSpec
       shardingRef ! IdReplyPlz("id1", replyProbe.ref)
       replyProbe.expectMessage("Hello!")
 
-      //#get-region-state
+      // #get-region-state
       ClusterSharding(system).shardState ! GetShardRegionState(typeKey, probe.ref)
       val state = probe.receiveMessage()
-      //#get-region-state
+      // #get-region-state
       state.shards should be(Set(ShardState(shardExtractor.shardId("id1"), Set("id1"))))
     }
   }

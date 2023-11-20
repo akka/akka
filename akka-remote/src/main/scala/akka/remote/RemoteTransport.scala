@@ -24,9 +24,7 @@ class RemoteTransportException(message: String, cause: Throwable) extends AkkaEx
   def this(msg: String) = this(msg, null)
 }
 
-/**
- * [[RemoteTransportException]] without stack trace.
- */
+/** [[RemoteTransportException]] without stack trace. */
 @SerialVersionUID(1L)
 class RemoteTransportExceptionNoStackTrace(message: String, cause: Throwable)
     extends RemoteTransportException(message, cause)
@@ -44,14 +42,10 @@ class RemoteTransportExceptionNoStackTrace(message: String, cause: Throwable)
  */
 private[akka] abstract class RemoteTransport(val system: ExtendedActorSystem, val provider: RemoteActorRefProvider) {
 
-  /**
-   * Shuts down the remoting
-   */
+  /** Shuts down the remoting */
   def shutdown(): Future[Done]
 
-  /**
-   * Address to be used in RootActorPath of refs generated for this transport.
-   */
+  /** Address to be used in RootActorPath of refs generated for this transport. */
   def addresses: immutable.Set[Address]
 
   /**
@@ -67,14 +61,10 @@ private[akka] abstract class RemoteTransport(val system: ExtendedActorSystem, va
    */
   def localAddressForRemote(remote: Address): Address
 
-  /**
-   * Start up the transport, i.e. enable incoming connections.
-   */
+  /** Start up the transport, i.e. enable incoming connections. */
   def start(): Unit
 
-  /**
-   * Sends the given message to the recipient supplying the sender() if any
-   */
+  /** Sends the given message to the recipient supplying the sender() if any */
   def send(message: Any, senderOption: OptionVal[ActorRef], recipient: RemoteActorRef): Unit
 
   /**
@@ -85,9 +75,7 @@ private[akka] abstract class RemoteTransport(val system: ExtendedActorSystem, va
    */
   def managementCommand(@unused cmd: Any): Future[Boolean] = { Future.successful(false) }
 
-  /**
-   * A Logger that can be used to log issues that may occur
-   */
+  /** A Logger that can be used to log issues that may occur */
   def log: LoggingAdapter
 
   /**

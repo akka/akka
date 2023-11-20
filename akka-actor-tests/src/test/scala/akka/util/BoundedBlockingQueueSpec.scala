@@ -183,7 +183,7 @@ class BoundedBlockingQueueSpec
       // queue.take() must happen first
       Thread.sleep(50) // this is why this test is tagged as TimingTest
       events should contain(awaitNotEmpty)
-      events should not contain (poll)
+      events should not contain poll
     }
 
     "block until the backing queue is non-empty" taggedAs TimingTest in {
@@ -557,7 +557,7 @@ class BoundedBlockingQueueSpec
       val target = mutable.Buffer[String]()
       elems.foreach(queue.put)
       queue.drainTo(target.asJava)
-      elems should contain theSameElementsAs (target)
+      elems should contain theSameElementsAs target
     }
   }
 
@@ -617,7 +617,7 @@ class BoundedBlockingQueueSpec
       queue.retainAll(elems.asJava) should equal(true)
       queue.remainingCapacity() should equal(1)
       queue.toArray() shouldNot contain("Akka")
-      queue.toArray() should contain theSameElementsAs (elems)
+      queue.toArray() should contain theSameElementsAs elems
     }
 
     "return false if no elements were removed" in {
@@ -718,18 +718,14 @@ trait BlockingHelpers {
     action
   }
 
-  /**
-   * Check that a call does not return within a set timespan.
-   */
+  /** Check that a call does not return within a set timespan. */
   def mustBlockFor(timeout: Span)(action: => Unit)(implicit pos: Position): Unit =
     Exception.ignoring(classOf[TestFailedDueToTimeoutException]) {
       failAfter(timeout)(action)
       fail("Expected action to block for at least " + timeout.prettyString + " but it completed.")
     }
 
-  /**
-   * Check that a Future does not complete within a set timespan.
-   */
+  /** Check that a Future does not complete within a set timespan. */
   def mustBlockFor(timeout: Span, action: Future[_])(implicit pos: Position): Unit =
     Exception.ignoring(classOf[TimeoutException]) {
       Await.ready(action, timeout)
@@ -738,9 +734,7 @@ trait BlockingHelpers {
 
 }
 
-/**
- * All events that can be recorded and asserted during a test.
- */
+/** All events that can be recorded and asserted during a test. */
 object QueueTestEvents {
   sealed abstract class QueueEvent
   case class Poll() extends QueueEvent
@@ -760,9 +754,7 @@ object QueueTestEvents {
   val awaitNotFull = AwaitNotFull()
 }
 
-/**
- * Helper for setting up a queue under test with injected lock, conditions and backing queue.
- */
+/** Helper for setting up a queue under test with injected lock, conditions and backing queue. */
 trait QueueSetupHelper {
   import java.util.Date
 
@@ -776,9 +768,7 @@ trait QueueSetupHelper {
       lock: ReentrantLock,
       backingQueue: util.Queue[String])
 
-  /**
-   * Backing queue that records all poll and offer calls in `events`
-   */
+  /** Backing queue that records all poll and offer calls in `events` */
   class TestBackingQueue(events: mutable.Buffer[QueueEvent]) extends util.LinkedList[String] {
 
     override def poll(): String = {
@@ -797,9 +787,7 @@ trait QueueSetupHelper {
     }
   }
 
-  /**
-   * Reentrant lock condition that records when the condition is signaled or `await`ed.
-   */
+  /** Reentrant lock condition that records when the condition is signaled or `await`ed. */
   class TestCondition(
       events: mutable.Buffer[QueueEvent],
       condition: Condition,
@@ -876,9 +864,7 @@ trait QueueSetupHelper {
 
     val backingQueue = new TestBackingQueue(events)
 
-    /**
-     * Class under test with the necessary backing queue, lock and conditions injected.
-     */
+    /** Class under test with the necessary backing queue, lock and conditions injected. */
     class TestBoundedBlockingQueue() extends BoundedBlockingQueue[String](maxCapacity, backingQueue) {
 
       override def createLock(): ReentrantLock = realLock

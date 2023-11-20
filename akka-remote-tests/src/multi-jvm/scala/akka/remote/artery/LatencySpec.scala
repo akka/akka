@@ -29,7 +29,9 @@ object LatencySpec extends MultiNodeConfig {
 
   val barrierTimeout = 5.minutes
 
-  commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString(s"""
+  commonConfig(
+    debugConfig(on = false)
+      .withFallback(ConfigFactory.parseString(s"""
        # for serious measurements you should increase the totalMessagesFactor (30) and repeatCount (3)
        akka.test.LatencySpec.totalMessagesFactor = 1.0
        akka.test.LatencySpec.repeatCount = 1
@@ -61,7 +63,8 @@ object LatencySpec extends MultiNodeConfig {
            }
          }
        }
-       """)).withFallback(RemotingMultiNodeSpec.commonConfig))
+       """))
+      .withFallback(RemotingMultiNodeSpec.commonConfig))
 
   case object Reset extends CborSerializable
 

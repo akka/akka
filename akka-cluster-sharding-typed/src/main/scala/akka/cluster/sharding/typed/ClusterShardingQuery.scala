@@ -12,9 +12,7 @@ import akka.cluster.sharding.ShardRegion.CurrentShardRegionState
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
 import akka.util.JavaDurationConverters
 
-/**
- * Protocol for querying sharding state e.g. A ShardRegion's state
- */
+/** Protocol for querying sharding state e.g. A ShardRegion's state */
 sealed trait ClusterShardingQuery
 
 /**

@@ -29,10 +29,9 @@ object MetricsBasedResizerSpec {
    */
   class TestLatchingActor(implicit timeout: Timeout) extends Actor {
 
-    def receive = {
-      case Latches(first, second) =>
-        first.countDown()
-        Try(Await.ready(second, timeout.duration))
+    def receive = { case Latches(first, second) =>
+      first.countDown()
+      Try(Await.ready(second, timeout.duration))
     }
   }
 
@@ -134,9 +133,8 @@ class MetricsBasedResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultT
 
     "stop an underutilizationStreak when fully utilized" in {
       val resizer = DefaultOptimalSizeExploringResizer()
-      resizer.record = ResizeRecord(
-        underutilizationStreak =
-          Some(UnderUtilizationStreak(start = LocalDateTime.now.minusHours(1), highestUtilization = 1)))
+      resizer.record = ResizeRecord(underutilizationStreak =
+        Some(UnderUtilizationStreak(start = LocalDateTime.now.minusHours(1), highestUtilization = 1)))
 
       val router = TestRouter(routees(2))
       router.sendToAll(await = true)
@@ -159,8 +157,8 @@ class MetricsBasedResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultT
 
     "leave the underutilizationStreak highestUtilization unchanged if current utilization is lower" in {
       val resizer = DefaultOptimalSizeExploringResizer()
-      resizer.record = ResizeRecord(
-        underutilizationStreak = Some(UnderUtilizationStreak(start = LocalDateTime.now, highestUtilization = 2)))
+      resizer.record = ResizeRecord(underutilizationStreak =
+        Some(UnderUtilizationStreak(start = LocalDateTime.now, highestUtilization = 2)))
 
       val router = TestRouter(routees(2))
       router.mockSend(await = true)
@@ -173,8 +171,8 @@ class MetricsBasedResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultT
 
     "update the underutilizationStreak highestUtilization if current utilization is higher" in {
       val resizer = DefaultOptimalSizeExploringResizer()
-      resizer.record = ResizeRecord(
-        underutilizationStreak = Some(UnderUtilizationStreak(start = LocalDateTime.now, highestUtilization = 1)))
+      resizer.record = ResizeRecord(underutilizationStreak =
+        Some(UnderUtilizationStreak(start = LocalDateTime.now, highestUtilization = 1)))
 
       val router = TestRouter(routees(3))
       router.mockSend(await = true, routeeIdx = 0)
@@ -232,12 +230,13 @@ class MetricsBasedResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultT
       val resizer = DefaultOptimalSizeExploringResizer()
       val router = TestRouter(routees(2))
       val msgs1 = router.sendToAll(await = true)
-      val msgs2 = router.sendToAll(await = false) //make sure the routees are still busy after the first batch of messages get processed.
+      val msgs2 = router.sendToAll(await =
+        false) // make sure the routees are still busy after the first batch of messages get processed.
 
       val before = System.nanoTime()
-      resizer.reportMessageCount(router.routees, router.msgs.size) //updates the records
+      resizer.reportMessageCount(router.routees, router.msgs.size) // updates the records
 
-      msgs1.foreach(_.second.open()) //process two messages
+      msgs1.foreach(_.second.open()) // process two messages
 
       // make sure some time passes in-between
       Thread.sleep(300)
@@ -263,12 +262,13 @@ class MetricsBasedResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultT
 
       val router = TestRouter(routees(2))
       val msgs1 = router.sendToAll(await = true)
-      val msgs2 = router.sendToAll(await = false) //make sure the routees are still busy after the first batch of messages get processed.
+      val msgs2 = router.sendToAll(await =
+        false) // make sure the routees are still busy after the first batch of messages get processed.
 
       val before = System.nanoTime()
-      resizer.reportMessageCount(router.routees, router.msgs.size) //updates the records
+      resizer.reportMessageCount(router.routees, router.msgs.size) // updates the records
 
-      msgs1.foreach(_.second.open()) //process two messages
+      msgs1.foreach(_.second.open()) // process two messages
 
       // make sure some time passes in-between
       Thread.sleep(300)
@@ -294,9 +294,8 @@ class MetricsBasedResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultT
     "downsize to close to the highest retention when a streak of underutilization started downsizeAfterUnderutilizedFor" in {
       val resizer = DefaultOptimalSizeExploringResizer(downsizeAfterUnderutilizedFor = 72.hours, downsizeRatio = 0.5)
 
-      resizer.record = ResizeRecord(
-        underutilizationStreak =
-          Some(UnderUtilizationStreak(start = LocalDateTime.now.minusHours(73), highestUtilization = 8)))
+      resizer.record = ResizeRecord(underutilizationStreak =
+        Some(UnderUtilizationStreak(start = LocalDateTime.now.minusHours(73), highestUtilization = 8)))
       resizer.resize(routees(20)) should be(4 - 20)
     }
 

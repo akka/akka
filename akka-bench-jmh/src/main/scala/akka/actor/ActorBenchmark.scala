@@ -37,7 +37,7 @@ class ActorBenchmark {
   @Param(Array("50"))
   var batchSize = 0
 
-  //@Param(Array("akka.actor.ManyToOneArrayMailbox"))
+  // @Param(Array("akka.actor.ManyToOneArrayMailbox"))
   @Param(
     Array(
       "akka.dispatch.SingleConsumerOnlyUnboundedMailbox",

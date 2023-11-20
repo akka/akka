@@ -16,9 +16,7 @@ import akka.discovery.ServiceDiscovery.{ Resolved, ResolvedTarget }
 import akka.event.Logging
 import akka.util.ccompat.JavaConverters._
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private object ConfigServicesParser {
   def parse(config: Config): Map[String, Resolved] = {
@@ -31,22 +29,19 @@ private object ConfigServicesParser {
       }
       .toMap
 
-    byService.map {
-      case (serviceName, full) =>
-        val endpoints = full.getConfigList("endpoints").asScala.toList
-        val resolvedTargets = endpoints.map { c =>
-          val host = c.getString("host")
-          val port = if (c.hasPath("port")) Some(c.getInt("port")) else None
-          ResolvedTarget(host = host, port = port, address = None)
-        }
-        (serviceName, Resolved(serviceName, resolvedTargets))
+    byService.map { case (serviceName, full) =>
+      val endpoints = full.getConfigList("endpoints").asScala.toList
+      val resolvedTargets = endpoints.map { c =>
+        val host = c.getString("host")
+        val port = if (c.hasPath("port")) Some(c.getInt("port")) else None
+        ResolvedTarget(host = host, port = port, address = None)
+      }
+      (serviceName, Resolved(serviceName, resolvedTargets))
     }
   }
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] class ConfigServiceDiscovery(system: ExtendedActorSystem) extends ServiceDiscovery {
 

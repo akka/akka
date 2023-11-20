@@ -8,9 +8,7 @@ import akka.actor.{ ActorRef, Dropped }
 import akka.annotation.InternalApi
 import akka.japi.function.Procedure2
 
-/**
- * A non thread safe mutable message buffer that can be used to buffer messages inside actors.
- */
+/** A non thread safe mutable message buffer that can be used to buffer messages inside actors. */
 final class MessageBuffer private (private var _head: MessageBuffer.Node, private var _tail: MessageBuffer.Node) {
   import MessageBuffer._
 
@@ -57,9 +55,7 @@ final class MessageBuffer private (private var _head: MessageBuffer.Node, privat
     this
   }
 
-  /**
-   * Remove the first element of the message buffer.
-   */
+  /** Remove the first element of the message buffer. */
   def dropHead(): Unit = if (nonEmpty) {
     _head = _head.next
     _size -= 1
@@ -111,9 +107,7 @@ final class MessageBuffer private (private var _head: MessageBuffer.Node, privat
    */
   def forEach(f: Procedure2[Any, ActorRef]): Unit = foreach { case (message, ref) => f(message, ref) }
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi private[akka] def filterNot(p: (Any, ActorRef) => Boolean): Unit = {
     // easiest to collect a new list, and then re-link the nodes
     var result = Vector.empty[Node]
@@ -219,9 +213,7 @@ final class MessageBufferMap[I] {
     } else buffer
   }
 
-  /**
-   * Add an id to the buffer map
-   */
+  /** Add an id to the buffer map */
   def add(id: I): Unit = {
     getOrAddBuffer(id)
   }

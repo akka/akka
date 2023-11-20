@@ -26,74 +26,48 @@ object Effects {
       responseClass: Class[Res]): AskInitiated[Req, Res, T] =
     AskInitiated(target, responseTimeout, responseClass)(null.asInstanceOf[Req], null, null)
 
-  /**
-   * The behavior spawned a named child with the given behavior with no specific props
-   */
+  /** The behavior spawned a named child with the given behavior with no specific props */
   def spawned[T](behavior: Behavior[T], childName: String): Spawned[T] = Spawned(behavior, childName)
 
-  /**
-   * The behavior spawned a named child with the given behavior with no specific props
-   */
+  /** The behavior spawned a named child with the given behavior with no specific props */
   def spawned[T](behavior: Behavior[T], childName: String, ref: ActorRef[T]): Spawned[T] =
     new Spawned(behavior, childName, Props.empty, ref)
 
-  /**
-   * The behavior spawned a named child with the given behavior and specific props
-   */
+  /** The behavior spawned a named child with the given behavior and specific props */
   def spawned[T](behavior: Behavior[T], childName: String, props: Props): Spawned[T] =
     Spawned(behavior, childName, props)
 
-  /**
-   * The behavior spawned a named child with the given behavior and specific props
-   */
+  /** The behavior spawned a named child with the given behavior and specific props */
   def spawned[T](behavior: Behavior[T], childName: String, props: Props, ref: ActorRef[T]): Spawned[T] =
     new Spawned(behavior, childName, props, ref)
 
-  /**
-   * The behavior spawned an anonymous child with the given behavior with no specific props
-   */
+  /** The behavior spawned an anonymous child with the given behavior with no specific props */
   def spawnedAnonymous[T](behavior: Behavior[T]): SpawnedAnonymous[T] = SpawnedAnonymous(behavior)
 
-  /**
-   * The behavior spawned an anonymous child with the given behavior with no specific props
-   */
+  /** The behavior spawned an anonymous child with the given behavior with no specific props */
   def spawnedAnonymous[T](behavior: Behavior[T], ref: ActorRef[T]): SpawnedAnonymous[T] =
     new SpawnedAnonymous(behavior, Props.empty, ref)
 
-  /**
-   * The behavior spawned an anonymous child with the given behavior with specific props
-   */
+  /** The behavior spawned an anonymous child with the given behavior with specific props */
   def spawnedAnonymous[T](behavior: Behavior[T], props: Props): SpawnedAnonymous[T] = SpawnedAnonymous(behavior, props)
 
-  /**
-   * The behavior spawned an anonymous child with the given behavior with specific props
-   */
+  /** The behavior spawned an anonymous child with the given behavior with specific props */
   def spawnedAnonymous[T](behavior: Behavior[T], props: Props, ref: ActorRef[T]): SpawnedAnonymous[T] =
     new SpawnedAnonymous(behavior, props, ref)
 
-  /**
-   * The behavior stopped `childName`
-   */
+  /** The behavior stopped `childName` */
   def stopped(childName: String): Stopped = Stopped(childName)
 
-  /**
-   * The behavior started watching `other`, through `context.watch(other)`
-   */
+  /** The behavior started watching `other`, through `context.watch(other)` */
   def watched[T](other: ActorRef[T]): Watched[T] = Watched(other)
 
-  /**
-   * The behavior started watching `other`, through `context.watchWith(other, message)`
-   */
+  /** The behavior started watching `other`, through `context.watchWith(other, message)` */
   def watchedWith[U, T](other: ActorRef[U], message: T): WatchedWith[U, T] = WatchedWith(other, message)
 
-  /**
-   * The behavior stopped watching `other`, through `context.unwatch(other)`
-   */
+  /** The behavior stopped watching `other`, through `context.unwatch(other)` */
   def unwatched[T](other: ActorRef[T]): Unwatched[T] = Unwatched(other)
 
-  /**
-   * The behavior set a new receive timeout, with `message` as timeout notification
-   */
+  /** The behavior set a new receive timeout, with `message` as timeout notification */
   def receiveTimeoutSet[T](d: FiniteDuration, message: T): ReceiveTimeoutSet[T] = ReceiveTimeoutSet(d, message)
 
   /**
@@ -103,9 +77,7 @@ object Effects {
   def scheduled[U](delay: FiniteDuration, target: ActorRef[U], message: U): Scheduled[U] =
     Scheduled(delay, target, message)
 
-  /**
-   * Used to represent an empty list of effects - in other words, the behavior didn't do anything observable
-   */
+  /** Used to represent an empty list of effects - in other words, the behavior didn't do anything observable */
   def noEffects(): NoEffects = NoEffects
 
 }

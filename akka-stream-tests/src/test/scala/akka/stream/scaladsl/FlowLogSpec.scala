@@ -17,9 +17,11 @@ import akka.stream.Supervision._
 import akka.stream.testkit.{ ScriptedTest, StreamSpec }
 import akka.testkit.TestProbe
 
-class FlowLogSpec extends StreamSpec("""
+class FlowLogSpec
+    extends StreamSpec("""
      akka.loglevel = DEBUG # test verifies logging
-     """) with ScriptedTest {
+     """)
+    with ScriptedTest {
 
   val logProbe = {
     val p = TestProbe()

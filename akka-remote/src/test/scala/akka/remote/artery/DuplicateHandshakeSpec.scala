@@ -19,9 +19,11 @@ import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
 import akka.util.OptionVal
 
-class DuplicateHandshakeSpec extends AkkaSpec("""
+class DuplicateHandshakeSpec
+    extends AkkaSpec("""
       akka.stream.materializer.debug.fuzzing-mode = on
-  """) with ImplicitSender {
+  """)
+    with ImplicitSender {
 
   val pool = new EnvelopeBufferPool(1034 * 1024, 128)
   val serialization = SerializationExtension(system)
@@ -56,7 +58,7 @@ class DuplicateHandshakeSpec extends AkkaSpec("""
         env
       }
       .via(new DuplicateHandshakeReq(numberOfLanes = 3, inboundContext, system.asInstanceOf[ExtendedActorSystem], pool))
-      .map { case env: InboundEnvelope => (env.message -> env.lane) }
+      .map { case env: InboundEnvelope => env.message -> env.lane }
       .toMat(TestSink[Any]())(Keep.both)
       .run()
   }

@@ -48,7 +48,7 @@ class GraphOpsIntegrationSpec extends StreamSpec("""
 
     "support broadcast - merge layouts" in {
       val resultFuture = RunnableGraph
-        .fromGraph(GraphDSL.createGraph(Sink.head[Seq[Int]]) { implicit b => (sink) =>
+        .fromGraph(GraphDSL.createGraph(Sink.head[Seq[Int]]) { implicit b => sink =>
           import GraphDSL.Implicits._
           val bcast = b.add(Broadcast[Int](2))
           val merge = b.add(Merge[Int](2))
@@ -67,7 +67,7 @@ class GraphOpsIntegrationSpec extends StreamSpec("""
     "support balance - merge (parallelization) layouts" in {
       val elements = 0 to 10
       val out = RunnableGraph
-        .fromGraph(GraphDSL.createGraph(Sink.head[Seq[Int]]) { implicit b => (sink) =>
+        .fromGraph(GraphDSL.createGraph(Sink.head[Seq[Int]]) { implicit b => sink =>
           import GraphDSL.Implicits._
           val balance = b.add(Balance[Int](5))
           val merge = b.add(Merge[Int](5))
@@ -139,7 +139,7 @@ class GraphOpsIntegrationSpec extends StreamSpec("""
     "allow adding of flows to sources and sinks to flows" in {
 
       val resultFuture = RunnableGraph
-        .fromGraph(GraphDSL.createGraph(Sink.head[Seq[Int]]) { implicit b => (sink) =>
+        .fromGraph(GraphDSL.createGraph(Sink.head[Seq[Int]]) { implicit b => sink =>
           import GraphDSL.Implicits._
           val bcast = b.add(Broadcast[Int](2))
           val merge = b.add(Merge[Int](2))
@@ -208,13 +208,13 @@ class GraphOpsIntegrationSpec extends StreamSpec("""
     "be possible to use with generated components" in {
       implicit val ex = system.dispatcher
 
-      //#graph-from-list
+      // #graph-from-list
       val sinks = immutable
         .Seq("a", "b", "c")
         .map(prefix => Flow[String].filter(str => str.startsWith(prefix)).toMat(Sink.head[String])(Keep.right))
 
-      val g: RunnableGraph[Seq[Future[String]]] = RunnableGraph.fromGraph(GraphDSL.create(sinks) {
-        implicit b => sinkList =>
+      val g: RunnableGraph[Seq[Future[String]]] =
+        RunnableGraph.fromGraph(GraphDSL.create(sinks) { implicit b => sinkList =>
           import GraphDSL.Implicits._
           val broadcast = b.add(Broadcast[String](sinkList.size))
 
@@ -222,10 +222,10 @@ class GraphOpsIntegrationSpec extends StreamSpec("""
           sinkList.foreach(sink => broadcast ~> sink)
 
           ClosedShape
-      })
+        })
 
       val matList: Seq[Future[String]] = g.run()
-      //#graph-from-list
+      // #graph-from-list
 
       val result: Seq[String] = Await.result(Future.sequence(matList), 3.seconds)
 
@@ -240,8 +240,8 @@ class GraphOpsIntegrationSpec extends StreamSpec("""
 
       val sinks = immutable.Seq(Sink.seq[Int])
 
-      val g: RunnableGraph[Seq[Future[immutable.Seq[Int]]]] = RunnableGraph.fromGraph(GraphDSL.create(sinks) {
-        implicit b => sinkList =>
+      val g: RunnableGraph[Seq[Future[immutable.Seq[Int]]]] =
+        RunnableGraph.fromGraph(GraphDSL.create(sinks) { implicit b => sinkList =>
           import GraphDSL.Implicits._
           val broadcast = b.add(Broadcast[Int](sinkList.size))
 
@@ -249,7 +249,7 @@ class GraphOpsIntegrationSpec extends StreamSpec("""
           sinkList.foreach(sink => broadcast ~> sink)
 
           ClosedShape
-      })
+        })
 
       val matList: Seq[Future[immutable.Seq[Int]]] = g.run()
 

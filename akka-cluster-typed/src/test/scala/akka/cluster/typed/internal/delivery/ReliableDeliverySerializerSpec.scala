@@ -65,16 +65,15 @@ class ReliableDeliverySerializerSpec extends ScalaTestWithActorTestKit with AnyW
         ChunkedMessage(ByteString.fromString("abc"), true, true, 20, ""),
         false,
         "",
-        timestamp)).foreach {
-      case (scenario, item) =>
-        s"resolve serializer for $scenario" in {
-          val serializer = SerializationExtension(classicSystem)
-          serializer.serializerFor(item.getClass).getClass should be(classOf[ReliableDeliverySerializer])
-        }
+        timestamp)).foreach { case (scenario, item) =>
+      s"resolve serializer for $scenario" in {
+        val serializer = SerializationExtension(classicSystem)
+        serializer.serializerFor(item.getClass).getClass should be(classOf[ReliableDeliverySerializer])
+      }
 
-        s"serialize and de-serialize $scenario" in {
-          verifySerialization(item)
-        }
+      s"serialize and de-serialize $scenario" in {
+        verifySerialization(item)
+      }
     }
   }
 

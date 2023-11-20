@@ -44,9 +44,7 @@ object Tcp extends ExtensionId[Tcp] with ExtensionIdProvider {
    */
   final class ServerBinding @InternalApi private[akka] (delegate: scaladsl.Tcp.ServerBinding) {
 
-    /**
-     * The local address of the endpoint bound by the materialization of the `connections` [[Source]].
-     */
+    /** The local address of the endpoint bound by the materialization of the `connections` [[Source]]. */
     def localAddress: InetSocketAddress = delegate.localAddress
 
     /**
@@ -57,25 +55,17 @@ object Tcp extends ExtensionId[Tcp] with ExtensionIdProvider {
      */
     def unbind(): CompletionStage[Unit] = delegate.unbind().toJava
 
-    /**
-     * @return A completion operator that is completed when manually unbound, or failed if the server fails
-     */
+    /** @return A completion operator that is completed when manually unbound, or failed if the server fails */
     def whenUnbound(): CompletionStage[Done] = delegate.whenUnbound.toJava
   }
 
-  /**
-   * Represents an accepted incoming TCP connection.
-   */
+  /** Represents an accepted incoming TCP connection. */
   class IncomingConnection private[akka] (delegate: scaladsl.Tcp.IncomingConnection) {
 
-    /**
-     * The local address this connection is bound to.
-     */
+    /** The local address this connection is bound to. */
     def localAddress: InetSocketAddress = delegate.localAddress
 
-    /**
-     * The remote address this connection is bound to.
-     */
+    /** The remote address this connection is bound to. */
     def remoteAddress: InetSocketAddress = delegate.remoteAddress
 
     /**
@@ -107,19 +97,13 @@ object Tcp extends ExtensionId[Tcp] with ExtensionIdProvider {
     def flow: Flow[ByteString, ByteString, NotUsed] = new Flow(delegate.flow)
   }
 
-  /**
-   * Represents a prospective outgoing TCP connection.
-   */
+  /** Represents a prospective outgoing TCP connection. */
   class OutgoingConnection private[akka] (delegate: scaladsl.Tcp.OutgoingConnection) {
 
-    /**
-     * The remote address this connection is or will be bound to.
-     */
+    /** The remote address this connection is or will be bound to. */
     def remoteAddress: InetSocketAddress = delegate.remoteAddress
 
-    /**
-     * The local address of the endpoint bound by the materialization of the connection materialization.
-     */
+    /** The local address of the endpoint bound by the materialization of the connection materialization. */
     def localAddress: InetSocketAddress = delegate.localAddress
   }
 

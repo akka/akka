@@ -55,9 +55,7 @@ object JacksonObjectMapperProvider extends ExtensionId[JacksonObjectMapperProvid
   override def createExtension(system: ExtendedActorSystem): JacksonObjectMapperProvider =
     new JacksonObjectMapperProvider(system)
 
-  /**
-   * The configuration for a given `bindingName`.
-   */
+  /** The configuration for a given `bindingName`. */
   def configForBinding(bindingName: String, systemConfig: Config): Config = {
     val basePath = "akka.serialization.jackson"
     val baseConf = systemConfig.getConfig("akka.serialization.jackson")
@@ -85,43 +83,43 @@ object JacksonObjectMapperProvider extends ExtensionId[JacksonObjectMapperProvid
     }
 
     val configuredStreamReadFeatures =
-      features(config, "stream-read-features").map {
-        case (enumName, value) => StreamReadFeature.valueOf(enumName) -> value
+      features(config, "stream-read-features").map { case (enumName, value) =>
+        StreamReadFeature.valueOf(enumName) -> value
       }
     val streamReadFeatures =
       objectMapperFactory.overrideConfiguredStreamReadFeatures(bindingName, configuredStreamReadFeatures)
-    streamReadFeatures.foreach {
-      case (feature, value) => jsonFactory.configure(feature.mappedFeature, value)
+    streamReadFeatures.foreach { case (feature, value) =>
+      jsonFactory.configure(feature.mappedFeature, value)
     }
 
     val configuredStreamWriteFeatures =
-      features(config, "stream-write-features").map {
-        case (enumName, value) => StreamWriteFeature.valueOf(enumName) -> value
+      features(config, "stream-write-features").map { case (enumName, value) =>
+        StreamWriteFeature.valueOf(enumName) -> value
       }
     val streamWriteFeatures =
       objectMapperFactory.overrideConfiguredStreamWriteFeatures(bindingName, configuredStreamWriteFeatures)
-    streamWriteFeatures.foreach {
-      case (feature, value) => jsonFactory.configure(feature.mappedFeature, value)
+    streamWriteFeatures.foreach { case (feature, value) =>
+      jsonFactory.configure(feature.mappedFeature, value)
     }
 
     val configuredJsonReadFeatures =
-      features(config, "json-read-features").map {
-        case (enumName, value) => JsonReadFeature.valueOf(enumName) -> value
+      features(config, "json-read-features").map { case (enumName, value) =>
+        JsonReadFeature.valueOf(enumName) -> value
       }
     val jsonReadFeatures =
       objectMapperFactory.overrideConfiguredJsonReadFeatures(bindingName, configuredJsonReadFeatures)
-    jsonReadFeatures.foreach {
-      case (feature, value) => jsonFactory.configure(feature.mappedFeature, value)
+    jsonReadFeatures.foreach { case (feature, value) =>
+      jsonFactory.configure(feature.mappedFeature, value)
     }
 
     val configuredJsonWriteFeatures =
-      features(config, "json-write-features").map {
-        case (enumName, value) => JsonWriteFeature.valueOf(enumName) -> value
+      features(config, "json-write-features").map { case (enumName, value) =>
+        JsonWriteFeature.valueOf(enumName) -> value
       }
     val jsonWriteFeatures =
       objectMapperFactory.overrideConfiguredJsonWriteFeatures(bindingName, configuredJsonWriteFeatures)
-    jsonWriteFeatures.foreach {
-      case (feature, value) => jsonFactory.configure(feature.mappedFeature, value)
+    jsonWriteFeatures.foreach { case (feature, value) =>
+      jsonFactory.configure(feature.mappedFeature, value)
     }
 
     jsonFactory
@@ -135,54 +133,53 @@ object JacksonObjectMapperProvider extends ExtensionId[JacksonObjectMapperProvid
       config: Config): Unit = {
 
     val configuredSerializationFeatures =
-      features(config, "serialization-features").map {
-        case (enumName, value) => SerializationFeature.valueOf(enumName) -> value
+      features(config, "serialization-features").map { case (enumName, value) =>
+        SerializationFeature.valueOf(enumName) -> value
       }
     val serializationFeatures =
       objectMapperFactory.overrideConfiguredSerializationFeatures(bindingName, configuredSerializationFeatures)
-    serializationFeatures.foreach {
-      case (feature, value) => objectMapper.configure(feature, value)
+    serializationFeatures.foreach { case (feature, value) =>
+      objectMapper.configure(feature, value)
     }
 
     val configuredDeserializationFeatures =
-      features(config, "deserialization-features").map {
-        case (enumName, value) => DeserializationFeature.valueOf(enumName) -> value
+      features(config, "deserialization-features").map { case (enumName, value) =>
+        DeserializationFeature.valueOf(enumName) -> value
       }
     val deserializationFeatures =
       objectMapperFactory.overrideConfiguredDeserializationFeatures(bindingName, configuredDeserializationFeatures)
-    deserializationFeatures.foreach {
-      case (feature, value) => objectMapper.configure(feature, value)
+    deserializationFeatures.foreach { case (feature, value) =>
+      objectMapper.configure(feature, value)
     }
 
-    val configuredMapperFeatures = features(config, "mapper-features").map {
-      case (enumName, value) => MapperFeature.valueOf(enumName) -> value
+    val configuredMapperFeatures = features(config, "mapper-features").map { case (enumName, value) =>
+      MapperFeature.valueOf(enumName) -> value
     }
     val mapperFeatures = objectMapperFactory.overrideConfiguredMapperFeatures(bindingName, configuredMapperFeatures)
 
-    mapperFeatures.foreach {
-      case (feature, value) =>
-        // TODO: This is deprecated and should used JsonMapper.Builder, but that would be difficult without
-        // breaking compatibility for custom JacksonObjectMapperProvider that may create a custom instance
-        // of the ObjectMapper
-        objectMapper.configure(feature, value)
+    mapperFeatures.foreach { case (feature, value) =>
+      // TODO: This is deprecated and should used JsonMapper.Builder, but that would be difficult without
+      // breaking compatibility for custom JacksonObjectMapperProvider that may create a custom instance
+      // of the ObjectMapper
+      objectMapper.configure(feature, value)
     }
 
-    val configuredJsonParserFeatures = features(config, "json-parser-features").map {
-      case (enumName, value) => JsonParser.Feature.valueOf(enumName) -> value
+    val configuredJsonParserFeatures = features(config, "json-parser-features").map { case (enumName, value) =>
+      JsonParser.Feature.valueOf(enumName) -> value
     }
     val jsonParserFeatures =
       objectMapperFactory.overrideConfiguredJsonParserFeatures(bindingName, configuredJsonParserFeatures)
-    jsonParserFeatures.foreach {
-      case (feature, value) => objectMapper.configure(feature, value)
+    jsonParserFeatures.foreach { case (feature, value) =>
+      objectMapper.configure(feature, value)
     }
 
-    val configuredJsonGeneratorFeatures = features(config, "json-generator-features").map {
-      case (enumName, value) => JsonGenerator.Feature.valueOf(enumName) -> value
+    val configuredJsonGeneratorFeatures = features(config, "json-generator-features").map { case (enumName, value) =>
+      JsonGenerator.Feature.valueOf(enumName) -> value
     }
     val jsonGeneratorFeatures =
       objectMapperFactory.overrideConfiguredJsonGeneratorFeatures(bindingName, configuredJsonGeneratorFeatures)
-    jsonGeneratorFeatures.foreach {
-      case (feature, value) => objectMapper.configure(feature, value)
+    jsonGeneratorFeatures.foreach { case (feature, value) =>
+      objectMapper.configure(feature, value)
     }
   }
 
@@ -193,14 +190,13 @@ object JacksonObjectMapperProvider extends ExtensionId[JacksonObjectMapperProvid
       config: Config): Unit = {
 
     val configuredVisibility: immutable.Seq[(PropertyAccessor, JsonAutoDetect.Visibility)] =
-      configPairs(config, "visibility").map {
-        case (property, visibility) =>
-          PropertyAccessor.valueOf(property) -> JsonAutoDetect.Visibility.valueOf(visibility)
+      configPairs(config, "visibility").map { case (property, visibility) =>
+        PropertyAccessor.valueOf(property) -> JsonAutoDetect.Visibility.valueOf(visibility)
       }
     val visibility =
       objectMapperFactory.overrideConfiguredVisibility(bindingName, configuredVisibility)
-    visibility.foreach {
-      case (property, visibility) => objectMapper.setVisibility(property, visibility)
+    visibility.foreach { case (property, visibility) =>
+      objectMapper.setVisibility(property, visibility)
     }
 
   }
@@ -299,9 +295,7 @@ object JacksonObjectMapperProvider extends ExtensionId[JacksonObjectMapperProvid
   }
 }
 
-/**
- * Registry of shared `ObjectMapper` instances, each with it's unique `bindingName`.
- */
+/** Registry of shared `ObjectMapper` instances, each with it's unique `bindingName`. */
 final class JacksonObjectMapperProvider(system: ExtendedActorSystem) extends Extension {
   private val objectMappers = new ConcurrentHashMap[String, ObjectMapper]
 

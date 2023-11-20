@@ -24,9 +24,7 @@ private[akka] object MessageSerializer {
 
   class SerializationException(msg: String, cause: Throwable) extends RuntimeException(msg, cause)
 
-  /**
-   * Uses Akka Serialization for the specified ActorSystem to transform the given MessageProtocol to a message
-   */
+  /** Uses Akka Serialization for the specified ActorSystem to transform the given MessageProtocol to a message */
   def deserialize(system: ExtendedActorSystem, messageProtocol: SerializedMessage): AnyRef = {
     SerializationExtension(system)
       .deserialize(

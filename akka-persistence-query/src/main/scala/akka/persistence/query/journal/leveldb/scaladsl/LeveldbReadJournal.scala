@@ -236,7 +236,7 @@ class LeveldbReadJournal(system: ExtendedActorSystem, config: Config)
                   mat))
               .named("eventsByTag-" + URLEncoder.encode(tag, ByteString.UTF_8))
 
-          case NoOffset => eventsByTag(tag, Sequence(0L)) //recursive
+          case NoOffset => eventsByTag(tag, Sequence(0L)) // recursive
           case _ =>
             throw new IllegalArgumentException(
               "LevelDB does not support " + Logging.simpleName(offset.getClass) + " offsets")

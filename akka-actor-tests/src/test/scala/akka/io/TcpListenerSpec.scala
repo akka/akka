@@ -167,11 +167,10 @@ class TcpListenerSpec extends AkkaSpec("""
     def listener = parentRef.underlyingActor.listener
 
     def expectWorkerForCommand: SocketChannel =
-      selectorRouter.expectMsgPF() {
-        case WorkerForCommand(RegisterIncoming(chan), commander, _) =>
-          chan.isOpen should ===(true)
-          commander should ===(listener)
-          chan
+      selectorRouter.expectMsgPF() { case WorkerForCommand(RegisterIncoming(chan), commander, _) =>
+        chan.isOpen should ===(true)
+        commander should ===(listener)
+        chan
       }
 
     private class ListenerParent(pullMode: Boolean) extends Actor with ChannelRegistry {
@@ -185,8 +184,8 @@ class TcpListenerSpec extends AkkaSpec("""
           Bind(handler.ref, endpoint, 100, Nil, pullMode)).withDeploy(Deploy.local),
         name = "test-listener-" + counter.next())
       parent.watch(listener)
-      def receive: Receive = {
-        case msg => parent.ref.forward(msg)
+      def receive: Receive = { case msg =>
+        parent.ref.forward(msg)
       }
       override def supervisorStrategy = SupervisorStrategy.stoppingStrategy
 

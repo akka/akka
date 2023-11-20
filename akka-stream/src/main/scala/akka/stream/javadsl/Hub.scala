@@ -79,9 +79,8 @@ object MergeHub {
       perProducerBufferSize: Int): Source[T, akka.japi.Pair[Sink[T, NotUsed], DrainingControl]] = {
     akka.stream.scaladsl.MergeHub
       .sourceWithDraining[T](perProducerBufferSize)
-      .mapMaterializedValue {
-        case (sink, draining) =>
-          akka.japi.Pair(sink.asJava[T], new DrainingControlImpl(draining): DrainingControl)
+      .mapMaterializedValue { case (sink, draining) =>
+        akka.japi.Pair(sink.asJava[T], new DrainingControlImpl(draining): DrainingControl)
       }
       .asJava
   }
@@ -393,9 +392,7 @@ object PartitionHub {
      */
     def queueSize(consumerId: Long): Int
 
-    /**
-     * Number of attached consumers.
-     */
+    /** Number of attached consumers. */
     def size: Int
   }
 }

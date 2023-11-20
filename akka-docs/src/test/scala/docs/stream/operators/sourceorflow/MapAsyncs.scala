@@ -58,7 +58,8 @@ object CommonMapAsync {
                 }
               val seqNr = countsPerEntity.getOrElse(entityId, 0) + 1
               (countsPerEntity + (entityId -> seqNr), EntityEvent(entityId, seqNr))
-            }, { _ =>
+            },
+            { _ =>
               None
             })
       } else throw new AssertionError("pro forma")
@@ -180,10 +181,9 @@ object MapAsyncPartitioned extends App {
   }
 
   eventsForEntities.zipWithIndex
-    .map {
-      case (event, count) =>
-        println(s"Received event $event at offset $count from message broker")
-        event
+    .map { case (event, count) =>
+      println(s"Received event $event at offset $count from message broker")
+      event
     }
     .mapAsyncPartitioned(parallelism = 10, perPartition = 1)(partitioner) { (event, partition) =>
       println(s"Processing event $event from partition $partition")

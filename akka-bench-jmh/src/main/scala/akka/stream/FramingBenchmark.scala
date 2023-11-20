@@ -28,7 +28,8 @@ import akka.util.ByteString
 @BenchmarkMode(Array(Mode.Throughput))
 class FramingBenchmark {
 
-  val config: Config = ConfigFactory.parseString("""
+  val config: Config = ConfigFactory
+    .parseString("""
       akka {
         log-config-on-start = off
         log-dead-letters-during-shutdown = off
@@ -50,7 +51,8 @@ class FramingBenchmark {
             type = akka.testkit.CallingThreadDispatcherConfigurator
           }
         }
-      }""".stripMargin).withFallback(ConfigFactory.load())
+      }""".stripMargin)
+    .withFallback(ConfigFactory.load())
 
   implicit val system: ActorSystem = ActorSystem("test", config)
 

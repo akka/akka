@@ -43,16 +43,21 @@ object SharedMediaDriverSupport {
       @tailrec def isDriverInactive(i: Int): Boolean = {
         if (i < 0) true
         else {
-          val active = try CommonContext.isDriverActive(new File(aeronDir), 5000, new Consumer[String] {
-            override def accept(msg: String): Unit = {
-              println(msg)
+          val active =
+            try
+              CommonContext.isDriverActive(
+                new File(aeronDir),
+                5000,
+                new Consumer[String] {
+                  override def accept(msg: String): Unit = {
+                    println(msg)
+                  }
+                })
+            catch {
+              case NonFatal(e) =>
+                println("Exception checking isDriverActive: " + e.getMessage)
+                false
             }
-          })
-          catch {
-            case NonFatal(e) =>
-              println("Exception checking isDriverActive: " + e.getMessage)
-              false
-          }
           if (active) false
           else {
             Thread.sleep(500)

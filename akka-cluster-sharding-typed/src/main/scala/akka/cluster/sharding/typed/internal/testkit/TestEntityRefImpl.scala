@@ -23,9 +23,7 @@ import akka.pattern.StatusReply
 import akka.util.JavaDurationConverters._
 import akka.util.Timeout
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] final class TestEntityRefImpl[M](
     override val entityId: String,
     probe: ActorRef[M],

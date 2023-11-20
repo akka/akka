@@ -45,8 +45,8 @@ object MiscMessageSerializerSpec {
         e.getMessage == getMessage && e.getCause == getCause &&
         // on JDK9+ the stacktraces aren't equal, something about how they are constructed
         // they are alike enough to be roughly equal though
-        e.stackTrace.zip(stackTrace).forall {
-          case (t, o) => t.getClassName == o.getClassName && t.getFileName == o.getFileName
+        e.stackTrace.zip(stackTrace).forall { case (t, o) =>
+          t.getClassName == o.getClassName && t.getFileName == o.getFileName
         }
       case _ => false
     }

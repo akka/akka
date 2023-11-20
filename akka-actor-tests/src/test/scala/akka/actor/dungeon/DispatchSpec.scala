@@ -11,15 +11,16 @@ import akka.testkit._
 object DispatchSpec {
   class UnserializableMessageClass
   class EmptyActor extends Actor {
-    override def receive = {
-      case _: UnserializableMessageClass => // OK
+    override def receive = { case _: UnserializableMessageClass => // OK
     }
   }
 }
-class DispatchSpec extends AkkaSpec("""
+class DispatchSpec
+    extends AkkaSpec("""
   akka.actor.serialize-messages = on
   akka.actor.no-serialization-verification-needed-class-prefix = []
-  """) with DefaultTimeout {
+  """)
+    with DefaultTimeout {
   import DispatchSpec._
 
   "The dispatcher" should {

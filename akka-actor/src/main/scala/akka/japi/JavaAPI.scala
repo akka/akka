@@ -93,9 +93,7 @@ object Pair {
 @FunctionalInterface
 trait Creator[T] extends Serializable {
 
-  /**
-   * This method must return a different instance upon every call.
-   */
+  /** This method must return a different instance upon every call. */
   @throws(classOf[Exception])
   def create(): T
 }
@@ -181,14 +179,10 @@ sealed abstract class Option[A] extends java.lang.Iterable[A] {
 
 object Option {
 
-  /**
-   * <code>Option</code> factory that creates <code>Some</code>
-   */
+  /** <code>Option</code> factory that creates <code>Some</code> */
   def some[A](v: A): Option[A] = Some(v)
 
-  /**
-   * <code>Option</code> factory that creates <code>None</code>
-   */
+  /** <code>Option</code> factory that creates <code>None</code> */
   def none[A] = None.asInstanceOf[Option[A]]
 
   /**
@@ -197,9 +191,7 @@ object Option {
    */
   def option[A](v: A): Option[A] = if (v == null) none else some(v)
 
-  /**
-   * Converts a Scala Option to a Java Option
-   */
+  /** Converts a Scala Option to a Java Option */
   def fromScalaOption[T](scalaOption: scala.Option[T]): Option[T] = scalaOption match {
     case scala.Some(r) => some(r)
     case scala.None    => none
@@ -216,9 +208,7 @@ object Option {
     def asScala: scala.Some[A] = scala.Some(v)
   }
 
-  /**
-   * This case object represents non-existent values.
-   */
+  /** This case object represents non-existent values. */
   private case object None extends Option[Nothing] {
     def get: Nothing = throw new NoSuchElementException("None.get")
     def getOrElse[B](defaultValue: B): B = defaultValue
@@ -230,14 +220,10 @@ object Option {
   implicit def scala2JavaOption[A](o: scala.Option[A]): Option[A] = if (o.isDefined) some(o.get) else none
 }
 
-/**
- * This class hold common utilities for Java
- */
+/** This class hold common utilities for Java */
 object Util {
 
-  /**
-   * Returns a ClassTag describing the provided Class.
-   */
+  /** Returns a ClassTag describing the provided Class. */
   def classTag[T](clazz: Class[T]): ClassTag[T] = ClassTag(clazz)
 
   /**
@@ -246,15 +232,11 @@ object Util {
    */
   def immutableSeq(arr: Array[Class[_]]): immutable.Seq[Class[_]] = immutableSeq[Class[_]](arr)
 
-  /**
-   * Turns an array into an immutable Scala sequence (by copying it).
-   */
+  /** Turns an array into an immutable Scala sequence (by copying it). */
   def immutableSeq[T](arr: Array[T]): immutable.Seq[T] =
     if ((arr ne null) && arr.length > 0) arr.toIndexedSeq else Nil
 
-  /**
-   * Turns an [[java.lang.Iterable]] into an immutable Scala sequence (by copying it).
-   */
+  /** Turns an [[java.lang.Iterable]] into an immutable Scala sequence (by copying it). */
   def immutableSeq[T](iterable: java.lang.Iterable[T]): immutable.Seq[T] =
     iterable match {
       case imm: immutable.Seq[_] => imm.asInstanceOf[immutable.Seq[T]]
@@ -278,9 +260,7 @@ object Util {
     l
   }
 
-  /**
-   * Turns an [[java.lang.Iterable]] into an immutable Scala IndexedSeq (by copying it).
-   */
+  /** Turns an [[java.lang.Iterable]] into an immutable Scala IndexedSeq (by copying it). */
   def immutableIndexedSeq[T](iterable: java.lang.Iterable[T]): immutable.IndexedSeq[T] =
     immutableSeq(iterable).toVector
 

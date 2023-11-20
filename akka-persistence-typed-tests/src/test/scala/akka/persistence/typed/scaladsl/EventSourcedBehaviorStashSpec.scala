@@ -32,7 +32,8 @@ import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.RecoveryCompleted
 
 object EventSourcedBehaviorStashSpec {
-  def conf: Config = ConfigFactory.parseString(s"""
+  def conf: Config = ConfigFactory
+    .parseString(s"""
     #akka.loglevel = DEBUG
     #akka.persistence.typed.log-stashing = on
     akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
@@ -43,7 +44,9 @@ object EventSourcedBehaviorStashSpec {
     failure-journal {
       class = "akka.persistence.typed.scaladsl.ChaosJournal"
     }
-    """).withFallback(ConfigFactory.defaultReference()).resolve()
+    """)
+    .withFallback(ConfigFactory.defaultReference())
+    .resolve()
 
   sealed trait Command[ReplyMessage]
   // Unstash and change to active mode
@@ -560,7 +563,8 @@ class EventSourcedBehaviorStashSpec
                     Effect.stash()
                 }
             }
-          }, {
+          },
+          {
             case (_, "start-stashing") => true
             case (_, "unstash")        => false
             case (_, _)                => throw new IllegalArgumentException()

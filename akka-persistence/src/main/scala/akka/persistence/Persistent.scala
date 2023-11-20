@@ -42,10 +42,10 @@ final case class AtomicWrite(payload: immutable.Seq[PersistentRepr]) extends Per
 
   // only check that all persistenceIds are equal when there's more than one in the Seq
   if (payload match {
-        case l: List[PersistentRepr]   => l.tail.nonEmpty // avoids calling .size
-        case v: Vector[PersistentRepr] => v.size > 1
-        case _                         => true // some other collection type, let's just check
-      }) payload.foreach { pr =>
+      case l: List[PersistentRepr]   => l.tail.nonEmpty // avoids calling .size
+      case v: Vector[PersistentRepr] => v.size > 1
+      case _                         => true // some other collection type, let's just check
+    }) payload.foreach { pr =>
     if (pr.persistenceId != payload.head.persistenceId)
       throw new IllegalArgumentException(
         "AtomicWrite must contain messages for the same persistenceId, " +
@@ -70,9 +70,7 @@ final case class AtomicWrite(payload: immutable.Seq[PersistentRepr]) extends Per
  */
 @DoNotInherit trait PersistentRepr extends Message {
 
-  /**
-   * This persistent message's payload (the event).
-   */
+  /** This persistent message's payload (the event). */
   def payload: Any
 
   /**
@@ -82,14 +80,10 @@ final case class AtomicWrite(payload: immutable.Seq[PersistentRepr]) extends Per
    */
   def manifest: String
 
-  /**
-   * Persistent id that journals a persistent message
-   */
+  /** Persistent id that journals a persistent message */
   def persistenceId: String
 
-  /**
-   * This persistent message's sequence number.
-   */
+  /** This persistent message's sequence number. */
   def sequenceNr: Long
 
   /**
@@ -113,14 +107,10 @@ final case class AtomicWrite(payload: immutable.Seq[PersistentRepr]) extends Per
    */
   def writerUuid: String
 
-  /**
-   * Creates a new persistent message with the specified `payload` (event).
-   */
+  /** Creates a new persistent message with the specified `payload` (event). */
   def withPayload(payload: Any): PersistentRepr
 
-  /**
-   * Creates a new persistent message with the specified event adapter `manifest`.
-   */
+  /** Creates a new persistent message with the specified event adapter `manifest`. */
   def withManifest(manifest: String): PersistentRepr
 
   /**
@@ -132,14 +122,10 @@ final case class AtomicWrite(payload: immutable.Seq[PersistentRepr]) extends Per
    */
   def deleted: Boolean // FIXME deprecate, issue #27278
 
-  /**
-   * Not used, can be `null`
-   */
+  /** Not used, can be `null` */
   def sender: ActorRef // FIXME deprecate, issue #27278
 
-  /**
-   * Creates a new copy of this [[PersistentRepr]].
-   */
+  /** Creates a new copy of this [[PersistentRepr]]. */
   def update(
       sequenceNr: Long = sequenceNr,
       persistenceId: String = persistenceId,
@@ -156,9 +142,7 @@ object PersistentRepr {
   /** Plugin API: value of an undefined / identity event adapter. */
   val UndefinedId = 0
 
-  /**
-   * Plugin API.
-   */
+  /** Plugin API. */
   def apply(
       payload: Any,
       sequenceNr: Long = 0L,
@@ -169,21 +153,15 @@ object PersistentRepr {
       writerUuid: String = PersistentRepr.Undefined): PersistentRepr =
     PersistentImpl(payload, sequenceNr, persistenceId, manifest, deleted, sender, writerUuid, 0L, None)
 
-  /**
-   * Java API, Plugin API.
-   */
+  /** Java API, Plugin API. */
   def create = apply _
 
-  /**
-   * extractor of payload and sequenceNr.
-   */
+  /** extractor of payload and sequenceNr. */
   def unapply(persistent: PersistentRepr): Option[(Any, Long)] =
     Some((persistent.payload, persistent.sequenceNr))
 }
 
-/**
- * INTERNAL API.
- */
+/** INTERNAL API. */
 private[persistence] final case class PersistentImpl(
     override val payload: Any,
     override val sequenceNr: Long,

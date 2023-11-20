@@ -18,9 +18,7 @@ object BroadcastRoutingLogic {
   def apply(): BroadcastRoutingLogic = new BroadcastRoutingLogic
 }
 
-/**
- * Broadcasts a message to all its routees.
- */
+/** Broadcasts a message to all its routees. */
 @nowarn("msg=@SerialVersionUID has no effect")
 @SerialVersionUID(1L)
 final class BroadcastRoutingLogic extends RoutingLogic {
@@ -85,14 +83,10 @@ final case class BroadcastPool(
 
   override def nrOfInstances(sys: ActorSystem) = this.nrOfInstances
 
-  /**
-   * Setting the supervisor strategy to be used for the “head” Router actor.
-   */
+  /** Setting the supervisor strategy to be used for the “head” Router actor. */
   def withSupervisorStrategy(strategy: SupervisorStrategy): BroadcastPool = copy(supervisorStrategy = strategy)
 
-  /**
-   * Setting the resizer to be used.
-   */
+  /** Setting the resizer to be used. */
   def withResizer(resizer: Resizer): BroadcastPool = copy(resizer = Some(resizer))
 
   /**

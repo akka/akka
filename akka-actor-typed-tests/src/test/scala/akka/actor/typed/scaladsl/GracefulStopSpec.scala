@@ -22,17 +22,19 @@ final class GracefulStopSpec extends ScalaTestWithActorTestKit with AnyWordSpecL
 
       val behavior =
         Behaviors.setup[akka.NotUsed] { context =>
-          context.spawn[NotUsed](Behaviors.receiveSignal {
-            case (_, PostStop) =>
+          context.spawn[NotUsed](
+            Behaviors.receiveSignal { case (_, PostStop) =>
               probe.ref ! "child-done"
               Behaviors.stopped
-          }, "child1")
+            },
+            "child1")
 
-          context.spawn[NotUsed](Behaviors.receiveSignal {
-            case (_, PostStop) =>
+          context.spawn[NotUsed](
+            Behaviors.receiveSignal { case (_, PostStop) =>
               probe.ref ! "child-done"
               Behaviors.stopped
-          }, "child2")
+            },
+            "child2")
 
           Behaviors.stopped { () =>
             // cleanup function body

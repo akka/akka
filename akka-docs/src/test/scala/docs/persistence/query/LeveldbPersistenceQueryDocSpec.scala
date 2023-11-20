@@ -11,7 +11,7 @@ import akka.persistence.query.journal.leveldb.scaladsl.LeveldbReadJournal
 import akka.stream.scaladsl.Source
 
 object LeveldbPersistenceQueryDocSpec {
-  //#tagger
+  // #tagger
   import akka.persistence.journal.WriteEventAdapter
   import akka.persistence.journal.Tagged
 
@@ -29,7 +29,7 @@ object LeveldbPersistenceQueryDocSpec {
 
     override def manifest(event: Any): String = ""
   }
-  //#tagger
+  // #tagger
 }
 
 class LeveldbPersistenceQueryDocSpec
@@ -37,40 +37,40 @@ class LeveldbPersistenceQueryDocSpec
 
   "LeveldbPersistentQuery" must {
     "demonstrate how get ReadJournal" in {
-      //#get-read-journal
+      // #get-read-journal
       import akka.persistence.query.PersistenceQuery
       import akka.persistence.query.journal.leveldb.scaladsl.LeveldbReadJournal
 
       val queries = PersistenceQuery(system).readJournalFor[LeveldbReadJournal](LeveldbReadJournal.Identifier)
-      //#get-read-journal
+      // #get-read-journal
     }
 
     "demonstrate EventsByPersistenceId" in {
-      //#EventsByPersistenceId
+      // #EventsByPersistenceId
       val queries = PersistenceQuery(system).readJournalFor[LeveldbReadJournal](LeveldbReadJournal.Identifier)
 
       val src: Source[EventEnvelope, NotUsed] =
         queries.eventsByPersistenceId("some-persistence-id", 0L, Long.MaxValue)
 
       val events: Source[Any, NotUsed] = src.map(_.event)
-      //#EventsByPersistenceId
+      // #EventsByPersistenceId
     }
 
     "demonstrate AllPersistenceIds" in {
-      //#AllPersistenceIds
+      // #AllPersistenceIds
       val queries = PersistenceQuery(system).readJournalFor[LeveldbReadJournal](LeveldbReadJournal.Identifier)
 
       val src: Source[String, NotUsed] = queries.persistenceIds()
-      //#AllPersistenceIds
+      // #AllPersistenceIds
     }
 
     "demonstrate EventsByTag" in {
-      //#EventsByTag
+      // #EventsByTag
       val queries = PersistenceQuery(system).readJournalFor[LeveldbReadJournal](LeveldbReadJournal.Identifier)
 
       val src: Source[EventEnvelope, NotUsed] =
         queries.eventsByTag(tag = "green", offset = Sequence(0L))
-      //#EventsByTag
+      // #EventsByTag
     }
 
   }

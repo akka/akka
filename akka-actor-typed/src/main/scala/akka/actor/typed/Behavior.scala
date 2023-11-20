@@ -42,9 +42,7 @@ import akka.util.OptionVal
 @DoNotInherit
 abstract class Behavior[T](private[akka] val _tag: Int) { behavior =>
 
-  /**
-   * INTERNAL API
-   */
+  /** INTERNAL API */
   @InternalApi
   @volatile private[akka] var _internalClassicPropsCache: OptionVal[CachedProps] = OptionVal.None
 
@@ -141,7 +139,6 @@ object Behavior {
      * The `ClassTag` for `Outer` ensures that only messages of this class or a subclass thereof will be
      * intercepted. Other message types (e.g. a private protocol) will bypass
      * the interceptor and be continue to the inner behavior untouched.
-     *
      */
     def transformMessages[Outer: ClassTag](matcher: PartialFunction[Outer, Inner]): Behavior[Outer] =
       BehaviorImpl.transformMessages(behavior, matcher)
@@ -215,31 +212,21 @@ object Behavior {
       throw new IllegalArgumentException(s"cannot use $behavior as initial behavior")
     else behavior
 
-  /**
-   * Returns true if the given behavior is not stopped.
-   */
+  /** Returns true if the given behavior is not stopped. */
   def isAlive[T](behavior: Behavior[T]): Boolean =
     !(behavior._tag == BehaviorTags.StoppedBehavior || behavior._tag == BehaviorTags.FailedBehavior)
 
-  /**
-   * Returns true if the given behavior is the special `unhandled` marker.
-   */
+  /** Returns true if the given behavior is the special `unhandled` marker. */
   def isUnhandled[T](behavior: Behavior[T]): Boolean = behavior eq BehaviorImpl.UnhandledBehavior
 
-  /**
-   * Returns true if the given behavior is deferred.
-   */
+  /** Returns true if the given behavior is deferred. */
   def isDeferred[T](behavior: Behavior[T]): Boolean = behavior._tag == BehaviorTags.DeferredBehavior
 
-  /**
-   * Execute the behavior with the given message.
-   */
+  /** Execute the behavior with the given message. */
   def interpretMessage[T](behavior: Behavior[T], ctx: TypedActorContext[T], msg: T): Behavior[T] =
     interpret(behavior, ctx, msg, isSignal = false)
 
-  /**
-   * Execute the behavior with the given signal.
-   */
+  /** Execute the behavior with the given signal. */
   def interpretSignal[T](behavior: Behavior[T], ctx: TypedActorContext[T], signal: Signal): Behavior[T] = {
     val result = interpret(behavior, ctx, signal, isSignal = true)
     // we need to throw here to allow supervision of deathpact exception

@@ -108,9 +108,7 @@ class DistributedData(system: ActorSystem[_]) extends Extension {
         Props.empty.withDispatcherFromConfig(settings.dispatcher))
     }
 
-  /**
-   * Returns true if this member is not tagged with the role configured for the replicas.
-   */
+  /** Returns true if this member is not tagged with the role configured for the replicas. */
   private def isTerminated: Boolean = dd.DistributedData(system.toClassic).isTerminated
 
 }

@@ -12,9 +12,7 @@ import scala.util.{ Failure, Success, Try }
 
 import com.typesafe.config._
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 private[akka] object CachingConfig {
   val emptyConfig = ConfigFactory.empty()
 

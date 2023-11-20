@@ -65,9 +65,7 @@ private[akka] object EventSourcedBehaviorImpl {
   }
   final case class WriterIdentity(instanceId: Int, writerUuid: String)
 
-  /**
-   * Used by EventSourcedBehaviorTestKit to retrieve the `persistenceId`.
-   */
+  /** Used by EventSourcedBehaviorTestKit to retrieve the `persistenceId`. */
   final case class GetPersistenceId(replyTo: ActorRef[PersistenceId]) extends Signal
 
   /**
@@ -76,14 +74,10 @@ private[akka] object EventSourcedBehaviorImpl {
    */
   final case class GetState[State](replyTo: ActorRef[GetStateReply[State]]) extends InternalProtocol
 
-  /**
-   * Used to send a state being `null` as an Actor message
-   */
+  /** Used to send a state being `null` as an Actor message */
   final case class GetStateReply[State](currentState: State)
 
-  /**
-   * Used to start the replication stream at the correct sequence number
-   */
+  /** Used to start the replication stream at the correct sequence number */
   final case class GetSeenSequenceNr(replica: ReplicaId, replyTo: ActorRef[Long]) extends InternalProtocol
 
 }
@@ -215,7 +209,7 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
                 case res: SnapshotProtocol.Response          => InternalProtocol.SnapshotterResponse(res)
                 case RecoveryPermitter.RecoveryPermitGranted => InternalProtocol.RecoveryPermitGranted
                 case internal: InternalProtocol              => internal // such as RecoveryTickEvent
-                case cmd                                     => InternalProtocol.IncomingCommand(cmd.asInstanceOf[Command])
+                case cmd => InternalProtocol.IncomingCommand(cmd.asInstanceOf[Command])
               }
               target(ctx, innerMsg)
             }
@@ -296,8 +290,8 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
 
   override private[akka] def withReplication(
       context: ReplicationContextImpl): EventSourcedBehavior[Command, Event, State] = {
-    copy(
-      replication = Some(ReplicationSetup(context.replicationId.replicaId, context.replicasAndQueryPlugins, context)))
+    copy(replication =
+      Some(ReplicationSetup(context.replicationId.replicaId, context.replicasAndQueryPlugins, context)))
   }
 
   override def withStashCapacity(size: Int): EventSourcedBehavior[Command, Event, State] =
@@ -375,9 +369,7 @@ private[akka] case object ReplicatedEventAck
 
 final class ReplicatedPublishedEventMetaData(val replicaId: ReplicaId, private[akka] val version: VersionVector)
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalStableApi
 private[akka] final case class PublishedEventImpl(
     persistenceId: PersistenceId,

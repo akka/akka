@@ -124,7 +124,7 @@ class MetricsSelectorSpec extends AnyWordSpec with Matchers {
       capacity(a1) should ===((0.75 + 0.67 + 0.9375) / 3 +- 0.0001)
       capacity(b1) should ===((0.75 + 0.34 + 0.9375) / 3 +- 0.0001)
       capacity(c1) should ===((0.0 + 0.01 + 0.0) / 3 +- 0.0001)
-      capacity(d1) should ===((0.001953125) / 1 +- 0.0001)
+      capacity(d1) should ===(0.001953125 / 1 +- 0.0001)
     }
   }
 

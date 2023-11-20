@@ -15,7 +15,7 @@ class BackoffSupervisorDocSpec {
     val system: ActorSystem = ???
     import scala.concurrent.duration._
 
-    //#backoff-stop
+    // #backoff-stop
     val childProps = Props(classOf[EchoActor])
 
     val supervisor = BackoffSupervisor.props(
@@ -28,14 +28,14 @@ class BackoffSupervisorDocSpec {
       ))
 
     system.actorOf(supervisor, name = "echoSupervisor")
-    //#backoff-stop
+    // #backoff-stop
   }
 
   class BackoffSupervisorDocSpecExampleFail {
     val system: ActorSystem = ???
     import scala.concurrent.duration._
 
-    //#backoff-fail
+    // #backoff-fail
     val childProps = Props(classOf[EchoActor])
 
     val supervisor = BackoffSupervisor.props(
@@ -48,7 +48,7 @@ class BackoffSupervisorDocSpec {
       ))
 
     system.actorOf(supervisor, name = "echoSupervisor")
-    //#backoff-fail
+    // #backoff-fail
   }
 
   class BackoffSupervisorDocSpecExampleStopOptions {
@@ -57,7 +57,7 @@ class BackoffSupervisorDocSpec {
 
     val childProps = Props(classOf[EchoActor])
 
-    //#backoff-custom-stop
+    // #backoff-custom-stop
     val supervisor = BackoffSupervisor.props(
       BackoffOpts
         .onStop(
@@ -70,7 +70,7 @@ class BackoffSupervisorDocSpec {
         .withManualReset // the child must send BackoffSupervisor.Reset to its parent
         .withDefaultStoppingStrategy // Stop at any Exception thrown
     )
-    //#backoff-custom-stop
+    // #backoff-custom-stop
 
     system.actorOf(supervisor, name = "echoSupervisor")
   }
@@ -81,7 +81,7 @@ class BackoffSupervisorDocSpec {
 
     val childProps = Props(classOf[EchoActor])
 
-    //#backoff-custom-fail
+    // #backoff-custom-fail
     val supervisor = BackoffSupervisor.props(
       BackoffOpts
         .onFailure(
@@ -96,7 +96,7 @@ class BackoffSupervisorDocSpec {
           case _: MyException => SupervisorStrategy.Restart
           case _              => SupervisorStrategy.Escalate
         }))
-    //#backoff-custom-fail
+    // #backoff-custom-fail
 
     system.actorOf(supervisor, name = "echoSupervisor")
   }
@@ -112,15 +112,15 @@ class BackoffSupervisorDocSpec {
 
     val childProps = Props(classOf[EchoActor])
 
-    //#backoff-sharded
+    // #backoff-sharded
     val supervisor = BackoffSupervisor.props(
       BackoffOpts
         .onStop(childProps, childName = "myEcho", minBackoff = 3.seconds, maxBackoff = 30.seconds, randomFactor = 0.2)
         .withFinalStopMessage(_ == StopMessage))
-    //#backoff-sharded
+    // #backoff-sharded
 
-    //#backoff-sharded-passivation
+    // #backoff-sharded-passivation
     context.parent ! Passivate(StopMessage)
-    //#backoff-sharded-passivation
+    // #backoff-sharded-passivation
   }
 }

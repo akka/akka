@@ -86,17 +86,14 @@ private final class InitialGroupRouterImpl[T](
       import akka.actor.typed.scaladsl.adapter._
       if (!stash.isFull) stash.stash(msg)
       else
-        context.system.eventStream ! EventStream.Publish(Dropped(
-          msg,
-          s"Stash is full in group router for [$serviceKey]",
-          context.self.toClassic)) // don't fail on full stash
+        context.system.eventStream ! EventStream.Publish(
+          Dropped(msg, s"Stash is full in group router for [$serviceKey]", context.self.toClassic)
+        ) // don't fail on full stash
       this
   }
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[routing] object GroupRouterHelper {
   def routeesToUpdate[T](allRoutees: Set[ActorRef[T]], preferLocalRoutees: Boolean): Set[ActorRef[T]] = {
@@ -107,9 +104,7 @@ private[routing] object GroupRouterHelper {
   }
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 private[akka] final class GroupRouterImpl[T](
     ctx: ActorContext[T],

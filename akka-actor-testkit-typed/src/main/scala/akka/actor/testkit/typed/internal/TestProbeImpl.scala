@@ -56,10 +56,9 @@ private[akka] object TestProbeImpl {
             Behaviors.same
         }
       }
-      .receiveSignal {
-        case (_, t: Terminated) =>
-          terminations.offerLast(t)
-          Behaviors.same
+      .receiveSignal { case (_, t: Terminated) =>
+        terminations.offerLast(t)
+        Behaviors.same
       }
 }
 
@@ -134,8 +133,9 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
     val prevEnd = end
     end = start + maxDiff
 
-    val ret = try f
-    finally end = prevEnd
+    val ret =
+      try f
+      finally end = prevEnd
 
     val diff = now - start
     assert(min <= diff, s"block took ${diff.pretty}, should at least have been $min")
@@ -168,7 +168,7 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
     o match {
       case Some(m) if obj == m => m.asInstanceOf[T]
       case Some(m)             => assertFail(s"expected $obj, found $m$hintOrEmptyString")
-      case None                => assertFail(s"timeout ($max) during expectMessage while waiting for $obj$hintOrEmptyString")
+      case None => assertFail(s"timeout ($max) during expectMessage while waiting for $obj$hintOrEmptyString")
     }
   }
 
@@ -391,9 +391,7 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
     poll(max min interval)
   }
 
-  /**
-   * Obtain current time (`System.nanoTime`) as Duration.
-   */
+  /** Obtain current time (`System.nanoTime`) as Duration. */
   private def now: FiniteDuration = System.nanoTime.nanos
 
   private def assertFail(msg: String): Nothing = throw new AssertionError(msg)

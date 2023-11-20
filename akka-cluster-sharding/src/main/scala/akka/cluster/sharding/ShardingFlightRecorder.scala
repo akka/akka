@@ -7,9 +7,7 @@ import akka.actor.{ ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProv
 import akka.annotation.InternalApi
 import akka.util.FlightRecorderLoader
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
 object ShardingFlightRecorder extends ExtensionId[ShardingFlightRecorder] with ExtensionIdProvider {
 
@@ -22,9 +20,7 @@ object ShardingFlightRecorder extends ExtensionId[ShardingFlightRecorder] with E
       NoOpShardingFlightRecorder)
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi private[akka] trait ShardingFlightRecorder extends Extension {
   def rememberEntityOperation(duration: Long): Unit
   def rememberEntityAdd(entityId: String): Unit
@@ -33,9 +29,7 @@ object ShardingFlightRecorder extends ExtensionId[ShardingFlightRecorder] with E
   def entityPassivateRestart(entityId: String): Unit
 }
 
-/**
- * INTERNAL
- */
+/** INTERNAL */
 @InternalApi
 private[akka] case object NoOpShardingFlightRecorder extends ShardingFlightRecorder {
   override def rememberEntityOperation(duration: Long): Unit = ()

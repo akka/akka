@@ -19,12 +19,12 @@ class TestProbeSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with 
 
   def compileOnlyApiTest(): Unit = {
     val probe = TestProbe[AnyRef]()
-    probe.fishForMessage(shortDuration) {
-      case _ => FishingOutcomes.complete
+    probe.fishForMessage(shortDuration) { case _ =>
+      FishingOutcomes.complete
     }
-    probe.awaitAssert({
+    probe.awaitAssert {
       "result"
-    })
+    }
     probe.expectMessageType[String]
     probe.expectMessage("whoa")
     probe.expectNoMessage()
@@ -105,8 +105,8 @@ class TestProbeSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with 
       probe.ref ! "two"
 
       intercept[AssertionError] {
-        probe.fishForMessagePF(shortDuration) {
-          case "one" => FishingOutcomes.continue
+        probe.fishForMessagePF(shortDuration) { case "one" =>
+          FishingOutcomes.continue
         }
       }
     }
@@ -117,8 +117,8 @@ class TestProbeSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with 
       probe.ref ! "one"
 
       intercept[AssertionError] {
-        probe.fishForMessagePF(shortDuration) {
-          case "one" => FishingOutcomes.continue
+        probe.fishForMessagePF(shortDuration) { case "one" =>
+          FishingOutcomes.continue
         }
       }
     }

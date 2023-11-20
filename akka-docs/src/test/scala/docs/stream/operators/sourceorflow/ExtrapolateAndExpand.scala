@@ -22,7 +22,6 @@ import scala.concurrent.duration._
 import scala.util.Random
 
 /**
- *
  */
 object ExtrapolateAndExpandMain extends App {
   implicit val sys: ActorSystem = ActorSystem("25fps-stream")
@@ -42,10 +41,12 @@ object ExtrapolateAndExpand {
   // #extrapolate
   // if upstream is too slow, produce copies of the last frame but grayed out.
   val rateControl: Flow[Frame, Frame, NotUsed] =
-    Flow[Frame].extrapolate((frame: Frame) => {
-      val grayedOut = frame.withFilter(Gray)
-      Iterator.continually(grayedOut)
-    }, Some(Frame.blackFrame))
+    Flow[Frame].extrapolate(
+      (frame: Frame) => {
+        val grayedOut = frame.withFilter(Gray)
+        Iterator.continually(grayedOut)
+      },
+      Some(Frame.blackFrame))
 
   val videoSource: Source[Frame, NotUsed] = networkSource.via(decode).via(rateControl)
 
@@ -64,7 +65,7 @@ object ExtrapolateAndExpand {
     Flow[Frame].expand((frame: Frame) => {
       val watermarked = frame.withFilter(Watermark)
       val grayedOut = frame.withFilter(Gray)
-      (Iterator.single(watermarked) ++ Iterator.continually(grayedOut))
+      Iterator.single(watermarked) ++ Iterator.continually(grayedOut)
     })
 
   val watermarkedVideoSource: Source[Frame, NotUsed] =

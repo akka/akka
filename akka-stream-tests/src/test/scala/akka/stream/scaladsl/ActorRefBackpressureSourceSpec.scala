@@ -26,7 +26,8 @@ class ActorRefBackpressureSourceSpec extends StreamSpec {
       val probe = TestProbe()
       val (ref, s) = Source
         .actorRefWithBackpressure[Int](
-          AckMsg, { case "ok" => CompletionStrategy.draining }: PartialFunction[Any, CompletionStrategy],
+          AckMsg,
+          { case "ok" => CompletionStrategy.draining }: PartialFunction[Any, CompletionStrategy],
           PartialFunction.empty)
         .toMat(TestSink[Int]())(Keep.both)
         .run()
@@ -79,7 +80,8 @@ class ActorRefBackpressureSourceSpec extends StreamSpec {
       val probe = TestProbe()
       val (ref, s) = Source
         .actorRefWithBackpressure[Int](
-          AckMsg, { case "ok" => CompletionStrategy.draining }: PartialFunction[Any, CompletionStrategy],
+          AckMsg,
+          { case "ok" => CompletionStrategy.draining }: PartialFunction[Any, CompletionStrategy],
           PartialFunction.empty)
         .toMat(TestSink[Int]())(Keep.both)
         .run()
@@ -100,7 +102,8 @@ class ActorRefBackpressureSourceSpec extends StreamSpec {
       val (ref, s) = Source
         .actorRefWithBackpressure[Int](
           AckMsg,
-          PartialFunction.empty, { case Status.Failure(f) => f }: PartialFunction[Any, Throwable])
+          PartialFunction.empty,
+          { case Status.Failure(f) => f }: PartialFunction[Any, Throwable])
         .toMat(TestSink[Int]())(Keep.both)
         .run()
 
@@ -119,7 +122,8 @@ class ActorRefBackpressureSourceSpec extends StreamSpec {
       val probe = TestProbe()
       val (ref, s) = Source
         .actorRefWithBackpressure[Int](
-          AckMsg, { case "ok" => CompletionStrategy.draining }: PartialFunction[Any, CompletionStrategy],
+          AckMsg,
+          { case "ok" => CompletionStrategy.draining }: PartialFunction[Any, CompletionStrategy],
           PartialFunction.empty)
         .toMat(TestSink[Int]())(Keep.both)
         .run()
