@@ -145,11 +145,11 @@ private[akka] object Running {
               setup.context.self.ask[Long](replyTo => GetSeenSequenceNr(replicaId, replyTo)).map { seqNr =>
                 replication
                   .eventsByPersistenceId(pid.persistenceId.id, seqNr + 1, Long.MaxValue)
-                  // from each replica, only get the events that originated there, this prevents most of the event filtering
-                  // the downside is that events can't be received via other replicas in the event of an uneven network partition
                   .filter(event =>
                     event.eventMetadata match {
-                      case Some(replicatedMeta: ReplicatedEventMetadata) => replicatedMeta.originReplica == replicaId
+                      case Some(replicatedMeta: ReplicatedEventMetadata) =>
+                        // skip events originating from self replica (break the cycle)
+                        replicatedMeta.originReplica != replicationSetup.replicaId
                       case _ =>
                         throw new IllegalArgumentException(
                           s"Replication stream from replica ${replicaId} for ${setup.persistenceId} contains event " +
@@ -277,10 +277,11 @@ private[akka] object Running {
         envelope: ReplicatedEventEnvelope[E],
         replication: ReplicationSetup): Behavior[InternalProtocol] = {
       setup.internalLogger.debugN(
-        "Replica {} received replicated event. Replica seqs nrs: {}. Envelope {}",
-        setup.replication,
-        state.seenPerReplica,
-        envelope)
+        "Replica [{}] received replicated event from [{}], origin seq nr [{}]. Replica seq nrs: {}.",
+        replication.replicaId,
+        envelope.event.originReplica,
+        envelope.event.originSequenceNr,
+        state.seenPerReplica)
       envelope.ack ! ReplicatedEventAck
       if (envelope.event.originReplica != replication.replicaId && !alreadySeen(envelope.event)) {
         setup.internalLogger.debug(
@@ -338,12 +339,6 @@ private[akka] object Running {
             event.sequenceNumber,
             originReplicaId)
         event.replyTo.foreach(_ ! Done) // probably won't happen
-        this
-      } else if (!replication.allReplicas.contains(originReplicaId)) {
-        log.warnN(
-          "Received published replicated event from replica [{}], which is unknown. Replicated Event Sourcing must be set up with a list of all replicas (known are [{}]).",
-          originReplicaId,
-          replication.allReplicas.mkString(", "))
         this
       } else {
         val seenSequenceNr = state.seenPerReplica.getOrElse(originReplicaId, 0L)
@@ -449,7 +444,6 @@ private[akka] object Running {
         OptionVal.Some(
           ReplicatedEventMetadata(event.originReplica, event.originSequenceNr, updatedVersion, isConcurrent)))
       val shouldSnapshotAfterPersist = setup.shouldSnapshot(newState2.state, event.event, newState2.seqNr)
-      // FIXME validate this is the correct sequence nr from that replica https://github.com/akka/akka/issues/29259
       val updatedSeen = newState2.seenPerReplica.updated(event.originReplica, event.originSequenceNr)
       persistingEvents(
         newState2.copy(seenPerReplica = updatedSeen, version = updatedVersion),
