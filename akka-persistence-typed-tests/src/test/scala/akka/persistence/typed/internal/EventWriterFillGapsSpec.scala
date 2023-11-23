@@ -30,11 +30,7 @@ class EventWriterFillGapsSpec
     with AnyWordSpecLike
     with LogCapturing {
 
-  val settings = EventWriter.EventWriterSettings(
-    10,
-    5.seconds,
-    fillSequenceNumberGaps = true,
-    latestSequenceNumberCacheCapacity = 100)
+  val settings = EventWriter.EventWriterSettings(10, 5.seconds, latestSequenceNumberCacheCapacity = 100)
   implicit val ec: ExecutionContext = testKit.system.executionContext
 
   "The event writer" should {
@@ -344,7 +340,15 @@ class EventWriterFillGapsSpec
       (1 to 1000).map { pidN =>
         Future {
           for (n <- 1 to 20) {
-            writer ! EventWriter.Write(s"A|pid$pidN", n.toLong, n.toString, false, None, Set.empty, probe.ref)
+            writer ! EventWriter.Write(
+              s"A|pid$pidN",
+              n.toLong,
+              n.toString,
+              isSnapshotEvent = false,
+              fillSequenceNumberGaps = true,
+              None,
+              Set.empty,
+              probe.ref)
           }
         }
       }
@@ -365,7 +369,15 @@ class EventWriterFillGapsSpec
               else false
 
             if (!gap)
-              writer ! EventWriter.Write(s"B|pid$pidN", n.toLong, n.toString, false, None, Set.empty, probe.ref)
+              writer ! EventWriter.Write(
+                s"B|pid$pidN",
+                n.toLong,
+                n.toString,
+                isSnapshotEvent = false,
+                fillSequenceNumberGaps = true,
+                None,
+                Set.empty,
+                probe.ref)
           }
         }
       }
@@ -381,11 +393,19 @@ class EventWriterFillGapsSpec
     val writer = spawn(EventWriter(fakeJournal.ref, settings))
     val clientProbe = createTestProbe[StatusReply[EventWriter.WriteAck]]()
     def sendWrite(seqNr: Long, pid: String = pid1): Unit = {
-      writer ! EventWriter.Write(pid, seqNr, seqNr.toString, false, None, Set.empty, clientProbe.ref)
+      writer ! EventWriter.Write(
+        pid,
+        seqNr,
+        seqNr.toString,
+        isSnapshotEvent = false,
+        fillSequenceNumberGaps = true,
+        None,
+        Set.empty,
+        clientProbe.ref)
     }
     def journalAckWrite(pid: String = pid1, expectedSequenceNumbers: Vector[Long] = Vector.empty): Int = {
       val write = fakeJournal.expectMessageType[JournalProtocol.WriteMessages]
-      write.messages should have size (1)
+      write.messages should have size 1
       val atomicWrite = write.messages.head.asInstanceOf[AtomicWrite]
 
       val seqNrs =
@@ -402,7 +422,7 @@ class EventWriterFillGapsSpec
 
     def journalFailWrite(reason: String, pid: String = pid1): Int = {
       val write = fakeJournal.expectMessageType[JournalProtocol.WriteMessages]
-      write.messages should have size (1)
+      write.messages should have size 1
       val atomicWrite = write.messages.head.asInstanceOf[AtomicWrite]
       atomicWrite.payload.foreach { repr =>
         repr.persistenceId should ===(pid)
