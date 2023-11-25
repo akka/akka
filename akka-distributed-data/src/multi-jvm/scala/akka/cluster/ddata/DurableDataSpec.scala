@@ -272,8 +272,6 @@ abstract class DurableDataSpec(multiNodeConfig: DurableDataSpecConfig)
     val r = newReplicator()
 
     runOn(first) {
-      // FIXME
-      log.debug("sending message with sender: {}", implicitly[ActorRef])
       r ! Update(KeyC, ORSet.empty[String], WriteLocal)(_ :+ myself.name)
       expectMsg(UpdateSuccess(KeyC, None))
     }
