@@ -117,6 +117,20 @@ Java
    response, it is not possible to tie an interaction to some specific context without introducing a new,
    separate, actor (see @ref:[ask](#request-response-with-ask-between-two-actors) or @ref:[per session child actor](#per-session-child-actor))
 
+@@@ div { .group-scala }
+
+### Request response with Scala 3
+
+Scala 3 introduces union types, allowing for ad hoc combinations of types, this can be leveraged for response message
+types instead of the message adapters. The behavior is internally declared as union of its own protocol and any response
+messages it may accept.
+
+The public protocol that the actor accepts by returning `Behavior[Command]` stays the same by use of `.narrow`:
+
+Scala
+:  @@snip [InteractionPatternsSpec.scala](/akka-actor-typed-tests/src/test/scala-3/docs/akka/typed/InteractionPatternsScala3Spec.scala) { #request-response-send }
+
+@@@
 
 ## Adapted Response
 
@@ -164,7 +178,22 @@ The adapter function is running in the receiving actor and can safely access its
    response, it is not possible to tie an interaction to some specific context without introducing a new,
    separate, actor
 
- 
+@@@ div { .group-scala }
+
+### Responses with Scala 3
+
+Scala 3 introduces union types, allowing for ad hoc combinations of types, this can be leveraged for response message
+types instead of the message adapters. The behavior is internally declared as union of its own protocol and any response
+messages it may accept.
+
+The public protocol that the actor accepts by returning `Behavior[Command]` stays the same by use of `.narrow`:
+
+Scala
+:  @@snip [InteractionPatternsSpec.scala](/akka-actor-typed-tests/src/test/scala-3/docs/akka/typed/InteractionPatternsScala3Spec.scala) { #adapted-response }
+
+@@@ 
+
+
 ## Request-Response with ask between two actors
  
 In an interaction where there is a 1:1 mapping between a request and a response we can use `ask` on the @apidoc[akka.actor.typed.*.ActorContext] to interact with another actor.
