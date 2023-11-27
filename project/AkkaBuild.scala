@@ -138,7 +138,8 @@ object AkkaBuild {
       JdkOptions.targetJdkJavacOptions(targetSystemJdk.value),
     Compile / javacOptions ++= (if (allWarnings) Seq("-Xlint:deprecation") else Nil),
     doc / javacOptions := Seq(),
-    scalafmtOnCompile := !CliOptions.runningOnCi.get && !sys.props.contains("akka.no.discipline"),
+    scalafmtOnCompile := !CliOptions.runningOnCi.get && !sys.props.contains("akka.no.discipline") && !scalaVersion.value
+        .startsWith("3."),
     crossVersion := CrossVersion.binary,
     // Adds a `src/main/scala-2.13+` source directory for code shared
     // between Scala 2.13 and Scala 3
@@ -352,4 +353,5 @@ object AkkaBuild {
       commands.foldLeft(initialState)(run)
     }
   })
+
 }
