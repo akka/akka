@@ -87,9 +87,6 @@ jobs:
             -Dmultinode.Xlog:gc \
             -Dmultinode.XX:+AlwaysActAsServerClassMachine \
             -Daeron.dir=/opt/volumes/media-driver \
-            -Dmultinode.Daeron.dir=/opt/volumes/media-driver \
-            -Daeron.term.buffer.length=33554432 \
-            -Dmultinode.Daeron.term.buffer.length=33554432 \
             multiNodeTest
 
       - name: Email on failure
@@ -107,7 +104,7 @@ jobs:
           body: |
             Job ${{ github.job }} in workflow ${{ github.workflow }} of ${{github.repository}} failed!
             https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
-      
+
       - name: Cleanup the environment
         if: ${{ always() }}
         shell: bash {0}
@@ -181,10 +178,6 @@ jobs:
             -Dmultinode.Xmx512M \
             -Dmultinode.Xlog:gc \
             -Dmultinode.XX:+AlwaysActAsServerClassMachine \
-            -Daeron.dir=/opt/volumes/media-driver \
-            -Dmultinode.Daeron.dir=/opt/volumes/media-driver \
-            -Daeron.term.buffer.length=33554432 \
-            -Dmultinode.Daeron.term.buffer.length=33554432 \
             multiNodeTest
 
       - name: Email on failure
@@ -202,7 +195,7 @@ jobs:
           body: |
             Job ${{ github.job }} in workflow ${{ github.workflow }} of ${{github.repository}} failed!
             https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
-      
+
       - name: Cleanup the environment
         if: ${{ always() }}
         shell: bash {0}

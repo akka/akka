@@ -215,8 +215,6 @@ jobs:
           -Dakka.test.tags.exclude=gh-exclude,gh-exclude-aeron,timing \
           -Dakka.test.multi-in-test=false \
           -Dakka.cluster.assert=on \
-          -Daeron.dir=/opt/volumes/media-driver \
-          -Daeron.term.buffer.length=33554432 \
           clean ${{ matrix.command }}
 
       - name: Email on failure

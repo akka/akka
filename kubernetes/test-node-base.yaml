@@ -32,7 +32,7 @@ spec:
         resources:
           requests:
             memory: "3Gi"
-            cpu: "2800m"
+            cpu: "3500m"
           limits:
             memory: "3Gi"
         lifecycle:
@@ -45,8 +45,8 @@ spec:
         imagePullPolicy: Always
         name: multi-test-nodeX
         volumeMounts:
-          - mountPath: /opt/volumes/media-driver
-            name: media-driver
+          - mountPath: /dev/shm
+            name: dshm
         ports:
         - name: web
           containerPort: 80
@@ -70,9 +70,11 @@ spec:
           containerPort: 4711
           protocol: TCP
       volumes:
-        # Needed for Aeron tests: https://github.com/real-logic/aeron/blob/master/README.md#troubleshooting
-        - name: media-driver
-          emptyDir: {}
+        # Needed for Aeron tests, increase /dev/shm
+        - name: dshm
+          emptyDir:
+            medium: Memory
+            sizeLimit: 1Gi
 ---
 apiVersion: v1
 kind: Service
