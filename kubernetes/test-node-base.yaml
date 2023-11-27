@@ -27,7 +27,7 @@ spec:
                         - multi-node-test
                 topologyKey: kubernetes.io/hostname
       containers:
-      - image: openjdk:11
+      - image: docker.io/library/eclipse-temurin:17.0.8.1_1-jre
         command: ["sleep", "infinity"]
         resources:
           requests:
