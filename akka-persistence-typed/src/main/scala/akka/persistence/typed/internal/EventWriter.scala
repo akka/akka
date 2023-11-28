@@ -394,7 +394,7 @@ private[akka] object EventWriter {
                     sequenceNumber)
                   state.copy(
                     waitingForSeqNrLookup = state.waitingForSeqNrLookup :+ ((repr, replyTo)),
-                    fillSequenceNumberGaps = newFillSequenceNumberGaps || state.fillSequenceNumberGaps)
+                    fillSequenceNumberGaps = newFillSequenceNumberGaps)
                 } else if (sequenceNumber == expectedSeqNr) {
                   if (state.idle) {
                     sendToJournal(state.currentTransactionId + 1, Vector(repr))
