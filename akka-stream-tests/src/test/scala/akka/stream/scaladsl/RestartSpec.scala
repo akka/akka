@@ -1068,7 +1068,7 @@ class RestartSpec
           .fromTuples(Source(Seq("a", "b", "c")).statefulMap(() => created.getAndIncrement() * 3)({ (offset, elem) =>
             (offset + 1) -> (elem -> offset)
           }, _ => None))
-          .map { elem: String =>
+          .map { (elem: String) =>
             if (elem == "c") throw TE("failed")
             else elem
           }
@@ -1225,7 +1225,6 @@ class RestartSpec
       val created = new AtomicInteger()
 
       val sourceFactory = { () =>
-        SourceWithContext
         SourceWithContext
           .fromTuples(Source(Seq("a", "b", "c")).statefulMap(() => created.getAndIncrement() * 3)({ (offset, elem) =>
             (offset + 1) -> (elem -> offset)
