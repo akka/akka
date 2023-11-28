@@ -77,7 +77,6 @@ private[akka] object EventWriter {
       EventWriterSettings(
         maxBatchSize = config.getInt("max-batch-size"),
         askTimeout = config.getDuration("ask-timeout").asScala,
-        fillSequenceNumberGaps = config.getBoolean("fill-sequence-number-gaps"),
         latestSequenceNumberCacheCapacity = config.getInt("latest-sequence-number-cache-capacity"))
     }
 
@@ -85,7 +84,6 @@ private[akka] object EventWriter {
   final case class EventWriterSettings(
       maxBatchSize: Int,
       askTimeout: FiniteDuration,
-      fillSequenceNumberGaps: Boolean,
       latestSequenceNumberCacheCapacity: Int)
 
   sealed trait Command
@@ -94,6 +92,7 @@ private[akka] object EventWriter {
       sequenceNumber: SeqNr,
       event: Any,
       isSnapshotEvent: Boolean,
+      fillSequenceNumberGaps: Boolean,
       metadata: Option[Any],
       tags: Set[String],
       replyTo: ActorRef[StatusReply[WriteAck]])
@@ -117,6 +116,7 @@ private[akka] object EventWriter {
       writeErrorHandlingInProgress: Boolean = false,
       currentTransactionId: Int = 0,
       latestSeqNr: SeqNr = -1L,
+      fillSequenceNumberGaps: Boolean,
       usedTimestamp: Long = 0L,
       waitingForSeqNrLookup: Vector[(PersistentRepr, ActorRef[StatusReply[WriteAck]])] = Vector.empty) {
     def idle: Boolean =
@@ -158,7 +158,6 @@ private[akka] object EventWriter {
         var bypassCircuitBreaker = true // otherwise the duplicate key violations will flip the circuit breaker
 
         implicit val askTimeout: Timeout = settings.askTimeout
-        import settings.fillSequenceNumberGaps
 
         def sendToJournal(transactionId: Int, reprs: Vector[PersistentRepr]): Unit = {
           if (context.log.isTraceEnabled)
@@ -180,7 +179,8 @@ private[akka] object EventWriter {
             // more waiting replyTo before we could batch it or scrap the entry
             perPidWriteState = perPidWriteState.updated(pid, newStateForPid)
           } else {
-            if (newStateForPid.waitingForWrite.isEmpty && fillSequenceNumberGaps) {
+            // note that cache eviction is different for fillSequenceNumberGaps and isSnapshotEvent
+            if (newStateForPid.waitingForWrite.isEmpty && newStateForPid.fillSequenceNumberGaps) {
               perPidWriteState = perPidWriteState.updated(pid, newStateForPid)
               evictLeastRecentlyUsedPids()
             } else if (newStateForPid.waitingForWrite.isEmpty) {
@@ -355,6 +355,7 @@ private[akka] object EventWriter {
             repr: PersistentRepr,
             replyTo: ActorRef[StatusReply[WriteAck]],
             isSnapshotEvent: Boolean,
+            fillSequenceNumberGaps: Boolean,
             calledAfterMaxSeqNr: Boolean): Unit = {
           val persistenceId = repr.persistenceId
           val sequenceNumber = repr.sequenceNr
@@ -364,15 +365,26 @@ private[akka] object EventWriter {
                 if ((fillSequenceNumberGaps || isSnapshotEvent) && sequenceNumber != 1L) {
                   val reason = if (isSnapshotEvent) AskMaxSeqNrReason.SnapshotEvent else AskMaxSeqNrReason.FillGaps
                   askMaxSeqNr(persistenceId, reason)
-                  StateForPid(waitingForReply = Map.empty, waitingForSeqNrLookup = Vector((repr, replyTo)))
+                  StateForPid(
+                    waitingForReply = Map.empty,
+                    waitingForSeqNrLookup = Vector((repr, replyTo)),
+                    fillSequenceNumberGaps = fillSequenceNumberGaps)
                 } else {
                   sendToJournal(1, Vector(repr))
-                  StateForPid(Map((repr.sequenceNr, (repr, replyTo))), currentTransactionId = 1)
+                  StateForPid(
+                    Map((repr.sequenceNr, (repr, replyTo))),
+                    currentTransactionId = 1,
+                    fillSequenceNumberGaps = fillSequenceNumberGaps)
                 }
 
               case Some(state) =>
+                // For a given persistenceId the fillSequenceNumberGaps is not supposed to change,
+                // but we keep `true` if it has been set to `true`.
+                // isSnapshotEvent and fillSequenceNumberGaps are handled in very similar way, but there is a
+                // difference in the way latest sequence number is cached (see handleUpdatedStateForPid).
+                val newFillSequenceNumberGaps = fillSequenceNumberGaps || state.fillSequenceNumberGaps
                 val expectedSeqNr =
-                  if (fillSequenceNumberGaps || isSnapshotEvent) state.nextExpectedSeqNr
+                  if (newFillSequenceNumberGaps || isSnapshotEvent) state.nextExpectedSeqNr
                   else repr.sequenceNr
 
                 if (state.seqNrlookupInProgress) {
@@ -380,13 +392,16 @@ private[akka] object EventWriter {
                     "Seq nr lookup in progress for persistence id [{}], adding sequence nr [{}] to pending",
                     persistenceId,
                     sequenceNumber)
-                  state.copy(waitingForSeqNrLookup = state.waitingForSeqNrLookup :+ ((repr, replyTo)))
+                  state.copy(
+                    waitingForSeqNrLookup = state.waitingForSeqNrLookup :+ ((repr, replyTo)),
+                    fillSequenceNumberGaps = newFillSequenceNumberGaps)
                 } else if (sequenceNumber == expectedSeqNr) {
                   if (state.idle) {
                     sendToJournal(state.currentTransactionId + 1, Vector(repr))
                     state.copy(
                       waitingForReply = Map((repr.sequenceNr, (repr, replyTo))),
-                      currentTransactionId = state.currentTransactionId + 1)
+                      currentTransactionId = state.currentTransactionId + 1,
+                      fillSequenceNumberGaps = newFillSequenceNumberGaps)
                   } else {
                     // write in progress for pid, add write to batch and perform once current write completes
                     if (state.waitingForWriteExceedingMaxBatchSize(settings.maxBatchSize)) {
@@ -399,7 +414,9 @@ private[akka] object EventWriter {
                         "Writing event in progress for persistence id [{}], adding sequence nr [{}] to batch",
                         persistenceId,
                         sequenceNumber)
-                      state.copy(waitingForWrite = state.waitingForWrite :+ ((repr, replyTo)))
+                      state.copy(
+                        waitingForWrite = state.waitingForWrite :+ ((repr, replyTo)),
+                        fillSequenceNumberGaps = newFillSequenceNumberGaps)
                     }
                   }
                 } else if (sequenceNumber < expectedSeqNr) {
@@ -408,7 +425,7 @@ private[akka] object EventWriter {
                   state
                 } else { // sequenceNumber > expectedSeqNr
                   require(
-                    fillSequenceNumberGaps || isSnapshotEvent,
+                    newFillSequenceNumberGaps || isSnapshotEvent,
                     s"Unexpected sequence number gap, expected [$expectedSeqNr], received [$sequenceNumber]. " +
                     "Enable akka.persistence.typed.event-writer.fill-sequence-number-gaps config if gaps are " +
                     "expected and should be filled with FilteredPayload.")
@@ -437,7 +454,8 @@ private[akka] object EventWriter {
                         (fillRepr.map(r => r.sequenceNr -> (r -> ignoreRef)) :+ (repr.sequenceNr -> (repr -> replyTo))).toMap
                       state.copy(
                         waitingForReply = newWaitingForReply,
-                        currentTransactionId = state.currentTransactionId + 1)
+                        currentTransactionId = state.currentTransactionId + 1,
+                        fillSequenceNumberGaps = newFillSequenceNumberGaps)
                     } else {
                       if (context.log.isTraceEnabled)
                         context.log.traceN(
@@ -446,7 +464,9 @@ private[akka] object EventWriter {
                           fillRepr.head.sequenceNr,
                           sequenceNumber)
                       val newWaitingForWrite = fillRepr.map(_ -> ignoreRef) :+ (repr -> replyTo)
-                      state.copy(waitingForWrite = state.waitingForWrite ++ newWaitingForWrite)
+                      state.copy(
+                        waitingForWrite = state.waitingForWrite ++ newWaitingForWrite,
+                        fillSequenceNumberGaps = newFillSequenceNumberGaps)
                     }
                   } else {
                     // No pending writes or we haven't just looked up latest sequence nr.
@@ -458,7 +478,9 @@ private[akka] object EventWriter {
                       "Seq nr lookup needed for persistence id [{}], adding sequence nr [{}] to pending",
                       persistenceId,
                       sequenceNumber)
-                    state.copy(waitingForSeqNrLookup = state.waitingForSeqNrLookup :+ ((repr, replyTo)))
+                    state.copy(
+                      waitingForSeqNrLookup = state.waitingForSeqNrLookup :+ ((repr, replyTo)),
+                      fillSequenceNumberGaps = newFillSequenceNumberGaps)
                   }
 
                 }
@@ -467,7 +489,15 @@ private[akka] object EventWriter {
         }
 
         Behaviors.receiveMessage {
-          case Write(persistenceId, sequenceNumber, event, isSnapshotEvent, metadata, tags, replyTo) =>
+          case Write(
+              persistenceId,
+              sequenceNumber,
+              event,
+              isSnapshotEvent,
+              fillSequenceNumberGaps,
+              metadata,
+              tags,
+              replyTo) =>
             val payload = if (tags.isEmpty) event else Tagged(event, tags)
             val repr = PersistentRepr(
               payload,
@@ -482,7 +512,7 @@ private[akka] object EventWriter {
               case _          => repr
             }
 
-            handleWrite(reprWithMeta, replyTo, isSnapshotEvent, calledAfterMaxSeqNr = false)
+            handleWrite(reprWithMeta, replyTo, isSnapshotEvent, fillSequenceNumberGaps, calledAfterMaxSeqNr = false)
             Behaviors.same
 
           case MaxSeqNrForPid(pid, maxSeqNr, AskMaxSeqNrReason.WriteFailure(errorDesc)) =>
@@ -562,6 +592,7 @@ private[akka] object EventWriter {
                       repr,
                       replyTo,
                       isSnapshotEvent = reason == AskMaxSeqNrReason.SnapshotEvent,
+                      fillSequenceNumberGaps = reason == AskMaxSeqNrReason.FillGaps,
                       calledAfterMaxSeqNr = true)
                 }
             }

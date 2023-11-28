@@ -26,11 +26,7 @@ object EventWriterSpec {
 
 class EventWriterSpec extends ScalaTestWithActorTestKit(EventWriterSpec.config) with AnyWordSpecLike with LogCapturing {
 
-  private val settings = EventWriter.EventWriterSettings(
-    10,
-    5.seconds,
-    fillSequenceNumberGaps = false,
-    latestSequenceNumberCacheCapacity = 1000)
+  private val settings = EventWriter.EventWriterSettings(10, 5.seconds, latestSequenceNumberCacheCapacity = 1000)
   implicit val ec: ExecutionContext = testKit.system.executionContext
 
   "The event writer" should {
@@ -151,7 +147,7 @@ class EventWriterSpec extends ScalaTestWithActorTestKit(EventWriterSpec.config) 
       (1 to 1000).map { pidN =>
         Future {
           for (n <- 1 to 20) {
-            writer ! EventWriter.Write(s"A|pid$pidN", n.toLong, n.toString, false, None, Set.empty, probe.ref)
+            writer ! EventWriter.Write(s"A|pid$pidN", n.toLong, n.toString, false, false, None, Set.empty, probe.ref)
           }
         }
       }
@@ -326,7 +322,15 @@ class EventWriterSpec extends ScalaTestWithActorTestKit(EventWriterSpec.config) 
               else false
 
             if (!gap)
-              writer ! EventWriter.Write(s"B|pid$pidN", n.toLong, n.toString, snapshot, None, Set.empty, probe.ref)
+              writer ! EventWriter.Write(
+                s"B|pid$pidN",
+                n.toLong,
+                n.toString,
+                snapshot,
+                false,
+                None,
+                Set.empty,
+                probe.ref)
           }
         }
       }
@@ -343,15 +347,23 @@ class EventWriterSpec extends ScalaTestWithActorTestKit(EventWriterSpec.config) 
     val writer = spawn(EventWriter(fakeJournal.ref, settings))
     val clientProbe = createTestProbe[StatusReply[EventWriter.WriteAck]]()
     def sendWrite(seqNr: Long, pid: String = pid1): Unit = {
-      writer ! EventWriter.Write(pid, seqNr, seqNr.toString, false, None, Set.empty, clientProbe.ref)
+      writer ! EventWriter.Write(pid, seqNr, seqNr.toString, false, false, None, Set.empty, clientProbe.ref)
     }
     def sendSnapshotWrite(seqNr: Long, pid: String = pid1): Unit = {
-      writer ! EventWriter.Write(pid, seqNr, seqNr.toString, isSnapshotEvent = true, None, Set.empty, clientProbe.ref)
+      writer ! EventWriter.Write(
+        pid,
+        seqNr,
+        seqNr.toString,
+        isSnapshotEvent = true,
+        false,
+        None,
+        Set.empty,
+        clientProbe.ref)
     }
 
     def journalAckWrite(pid: String = pid1, expectedSequenceNumbers: Vector[Long] = Vector.empty): Int = {
       val write = fakeJournal.expectMessageType[JournalProtocol.WriteMessages]
-      write.messages should have size (1)
+      write.messages should have size 1
       val atomicWrite = write.messages.head.asInstanceOf[AtomicWrite]
 
       val seqNrs =
