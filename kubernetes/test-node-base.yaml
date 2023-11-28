@@ -31,10 +31,10 @@ spec:
         command: ["sleep", "infinity"]
         resources:
           requests:
-            memory: "3Gi"
+            memory: "10Gi"
             cpu: "3500m"
           limits:
-            memory: "3Gi"
+            memory: "10Gi"
         lifecycle:
           postStart:
             exec:
@@ -74,7 +74,7 @@ spec:
         - name: dshm
           emptyDir:
             medium: Memory
-            sizeLimit: 1Gi
+            sizeLimit: 8Gi
 ---
 apiVersion: v1
 kind: Service
