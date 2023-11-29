@@ -25,8 +25,6 @@ object RestartSourceWithContext {
    */
   def withBackoff[T, C](settings: RestartSettings)(
       sourceFactory: () => SourceWithContext[T, C, _]): SourceWithContext[T, C, NotUsed] = {
-    // we like wrapping so much, we unwrap so that we can rewrap... since the intended usecase is for sources (like
-    // Kafka or whatever) which are a network hop away, this overhead is negligible
     val underlyingFactory = () => sourceFactory().asSource
     SourceWithContext.fromTuples(
       Source.fromGraph(new RestartWithBackoffSource(underlyingFactory, settings, onlyOnFailures = false)))
