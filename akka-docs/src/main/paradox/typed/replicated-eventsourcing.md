@@ -8,9 +8,11 @@ This restriction means that in the event of network partitions, and for a short 
 
 Replicated Event Sourcing enables running multiple replicas of each entity. 
 There is automatic replication of every event persisted to all replicas.
+This makes it possible to implement patterns such as active-active and hot standby.
 
 For instance, a replica can be run per:
 
+* Cloud provider region
 * Data Center 
 * Availability zone or rack
 
@@ -18,6 +20,7 @@ The motivations are:
 
 * Redundancy to tolerate failures in one location and still be operational
 * Serve requests from a location near the user to provide better responsiveness
+* Allow updates to an entity from several locations
 * Balance the load over many servers
 
 However, the event handler must be able to **handle concurrent events** as when replication is enabled
@@ -61,10 +64,7 @@ Since Akka 2.8.0 a gRPC based transport is the recommended way to set up the rep
 The functionality is provided through the Akka Projection gRPC module, see the details about 
 how to use it up in the @extref[Akka Projection gRPC documentation](akka-projection:grpc-replicated-event-sourcing-transport.html)
 
-Complete samples of the gRPC transport set up can be found in the Akka Projection github repository:
-
-* [Replicated shopping cart service in Scala](https://github.com/akka/akka-projection/tree/main/samples/replicated/shopping-cart-service-scala)
-* [Replicated shopping cart service in Java](https://github.com/akka/akka-projection/tree/main/samples/replicated/shopping-cart-service-java)
+Complete samples of the gRPC transport set up can be found in the @extref[Akka Distributed Cluster Guide](akka-distributed-cluster:guide/3-active-active.html).
 
 ### Consuming events via direct access to replica databases
 
