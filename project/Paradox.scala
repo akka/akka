@@ -23,6 +23,8 @@ object Paradox {
         "extref.akka.http.base_url" -> "https://doc.akka.io/docs/akka-http/current/%s",
         "extref.akka-management.base_url" -> "https://doc.akka.io/docs/akka-management/current/%s",
         "extref.akka-projection.base_url" -> "https://doc.akka.io/docs/akka-projection/current/%s",
+        "extref.akka-distributed-cluster.base_url" -> "https://doc.akka.io/docs/akka-distributed-cluster/current/%s",
+        "extref.akka-edge.base_url" -> "https://doc.akka.io/docs/akka-edge/current/%s",
         "extref.platform-guide.base_url" -> "https://developer.lightbend.com/docs/akka-guide/%s",
         "extref.wikipedia.base_url" -> "https://en.wikipedia.org/wiki/%s",
         "extref.github.base_url" -> (GitHub.url(version.value) + "/%s"), // for links to our sources

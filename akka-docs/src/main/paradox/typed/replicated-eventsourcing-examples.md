@@ -13,8 +13,5 @@ The following are more realistic examples of building systems with Replicated Ev
 
 See also the @extref[Akka Projection gRPC documentation](akka-projection:grpc-replicated-event-sourcing-transport.html) with details on setting up the gRPC replication transport.
 
-Additionally, complete samples using the recommended gRPC transport set up can be found in the Akka Projection github repository:
-
-* [Replicated shopping cart service in Scala](https://github.com/akka/akka-projection/tree/main/samples/replicated/shopping-cart-service-scala)
-* [Replicated shopping cart service in Java](https://github.com/akka/akka-projection/tree/main/samples/replicated/shopping-cart-service-java)
+Additionally, complete samples using the recommended gRPC transport set up can be found in the @extref[Akka Distributed Cluster Guide](akka-distributed-cluster:guide/3-active-active.html).
 
