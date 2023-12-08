@@ -1008,7 +1008,7 @@ private[akka] object Running {
         unstashAll()
         behavior
 
-      case callback: Callback[_] =>
+      case callback: Callback[Any] @unchecked =>
         callback.sideEffect(state.state)
         behavior
     }

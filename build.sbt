@@ -295,6 +295,7 @@ lazy val persistenceTypedTests = akkaModule("akka-persistence-typed-tests")
     persistenceTyped,
     persistenceTestkit % "test",
     actorTestkitTyped % "test",
+    streamTestkit % "test",
     persistence % "test->test", // for SteppingInMemJournal
     jackson % "test->test")
   .settings(AkkaBuild.mayChangeSettings)

@@ -4,6 +4,7 @@
 
 package akka.persistence.typed.state.internal
 
+import scala.concurrent.Future
 import scala.util.Failure
 import scala.util.Success
 
@@ -17,7 +18,9 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.InternalApi
 import akka.annotation.InternalStableApi
 import akka.persistence._
+import akka.persistence.state.scaladsl.DurableStateUpdateWithChangeEventStore
 import akka.persistence.state.scaladsl.GetObjectResult
+import akka.util.OptionVal
 import akka.util.unused
 
 /** INTERNAL API */
@@ -40,15 +43,30 @@ private[akka] trait DurableStateStoreInteractions[C, S] {
       ctx: ActorContext[InternalProtocol],
       cmd: Any,
       state: Running.RunningState[S],
-      value: Any): Running.RunningState[S] = {
+      value: Any,
+      changeEvent: OptionVal[Any]): Running.RunningState[S] = {
 
     val newRunningState = state.nextRevision()
     val persistenceId = setup.persistenceId.id
 
     onWriteInitiated(ctx, cmd)
 
-    ctx.pipeToSelf[Done](
-      setup.durableStateStore.upsertObject(persistenceId, newRunningState.revision, value, setup.tag)) {
+    val upsertResult = changeEvent match {
+      case OptionVal.Some(event) =>
+        setup.durableStateStore match {
+          case store: DurableStateUpdateWithChangeEventStore[Any] =>
+            store.upsertObject(persistenceId, newRunningState.revision, value, setup.tag, event)
+          case other =>
+            Future.failed(
+              new IllegalArgumentException(
+                "Change event was defined but the DurableStateStore " +
+                s"[${other.getClass.getName}] doesn't implement [DurableStateUpdateWithChangeEventStore]"))
+        }
+      case _ =>
+        setup.durableStateStore.upsertObject(persistenceId, newRunningState.revision, value, setup.tag)
+    }
+
+    ctx.pipeToSelf[Done](upsertResult) {
       case Success(_)     => InternalProtocol.UpsertSuccess
       case Failure(cause) => InternalProtocol.UpsertFailure(cause)
     }
@@ -59,14 +77,30 @@ private[akka] trait DurableStateStoreInteractions[C, S] {
   protected def internalDelete(
       ctx: ActorContext[InternalProtocol],
       @unused cmd: Any,
-      state: Running.RunningState[S]): Running.RunningState[S] = {
+      state: Running.RunningState[S],
+      changeEvent: OptionVal[Any]): Running.RunningState[S] = {
 
     val newRunningState = state.nextRevision().copy(state = setup.emptyState)
     val persistenceId = setup.persistenceId.id
 
     // TODO Might need to call hook method for Telemetry
 
-    ctx.pipeToSelf[Done](setup.durableStateStore.deleteObject(persistenceId, newRunningState.revision)) {
+    val deleteResult = changeEvent match {
+      case OptionVal.Some(event) =>
+        setup.durableStateStore match {
+          case store: DurableStateUpdateWithChangeEventStore[Any] =>
+            store.deleteObject(persistenceId, newRunningState.revision, event)
+          case other =>
+            Future.failed(
+              new IllegalArgumentException(
+                "Change event was defined but the DurableStateStore " +
+                s"[${other.getClass.getName}] doesn't implement [DurableStateUpdateWithChangeEventStore]"))
+        }
+      case _ =>
+        setup.durableStateStore.deleteObject(persistenceId, newRunningState.revision)
+    }
+
+    ctx.pipeToSelf[Done](deleteResult) {
       case Success(_)     => InternalProtocol.DeleteSuccess
       case Failure(cause) => InternalProtocol.DeleteFailure(cause)
     }

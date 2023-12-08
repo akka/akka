@@ -52,7 +52,8 @@ private[akka] final case class DurableStateBehaviorImpl[Command, State](
     snapshotAdapter: SnapshotAdapter[State] = NoOpSnapshotAdapter.instance[State],
     supervisionStrategy: SupervisorStrategy = SupervisorStrategy.stop,
     override val signalHandler: PartialFunction[(State, Signal), Unit] = PartialFunction.empty,
-    customStashCapacity: Option[Int] = None)
+    customStashCapacity: Option[Int] = None,
+    changeEventHandler: Option[ChangeEventHandler[State, Any]] = None)
     extends DurableStateBehavior[Command, State] {
 
   if (persistenceId eq null)
@@ -106,7 +107,8 @@ private[akka] final case class DurableStateBehaviorImpl[Command, State](
             holdingRecoveryPermit = false,
             settings = settings,
             stashState = stashState,
-            internalLoggerFactory = () => internalLogger())
+            internalLoggerFactory = () => internalLogger(),
+            changeEventHandler)
 
           // needs to accept Any since we also can get messages from outside
           // not part of the user facing Command protocol
@@ -169,6 +171,10 @@ private[akka] final case class DurableStateBehaviorImpl[Command, State](
 
   override def withStashCapacity(size: Int): DurableStateBehavior[Command, State] =
     copy(customStashCapacity = Some(size))
+
+  override def withChangeEventHandler[C](handler: ChangeEventHandler[State, C]): DurableStateBehavior[Command, State] =
+    copy(changeEventHandler = Option(handler.asInstanceOf[ChangeEventHandler[State, Any]]))
+
 }
 
 /** Protocol used internally by the DurableStateBehavior. */

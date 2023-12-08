@@ -19,6 +19,7 @@ import akka.annotation.InternalApi
 import akka.annotation.InternalStableApi
 import akka.persistence.typed.state.internal.DurableStateBehaviorImpl.GetState
 import akka.persistence.typed.state.scaladsl.Effect
+import akka.util.OptionVal
 import akka.util.unused
 
 /**
@@ -120,8 +121,13 @@ private[akka] object Running {
       val stateAfterApply = state.applyState(setup, newState)
       val stateToPersist = adaptState(newState)
 
+      val changeEvent = setup.changeEventHandler match {
+        case None          => OptionVal.None
+        case Some(handler) => OptionVal.Some(handler.updateHandler(state.state, stateAfterApply.state))
+      }
+
       val newState2 =
-        internalUpsert(setup.context, cmd, stateAfterApply, stateToPersist)
+        internalUpsert(setup.context, cmd, stateAfterApply, stateToPersist, changeEvent)
 
       (persistingState(newState2, state, sideEffects), false)
     }
@@ -131,7 +137,12 @@ private[akka] object Running {
         sideEffects: immutable.Seq[SideEffect[S]]): (Behavior[InternalProtocol], Boolean) = {
       _currentRevision = state.revision + 1
 
-      val nextState = internalDelete(setup.context, cmd, state)
+      val changeEvent = setup.changeEventHandler match {
+        case None          => OptionVal.None
+        case Some(handler) => OptionVal.Some(handler.deleteHandler(state.state))
+      }
+
+      val nextState = internalDelete(setup.context, cmd, state, changeEvent)
 
       (persistingState(nextState, state, sideEffects), false)
     }
@@ -373,7 +384,7 @@ private[akka] object Running {
         unstashAll()
         behavior
 
-      case callback: Callback[_] =>
+      case callback: Callback[Any] @unchecked =>
         callback.sideEffect(state.state)
         behavior
     }

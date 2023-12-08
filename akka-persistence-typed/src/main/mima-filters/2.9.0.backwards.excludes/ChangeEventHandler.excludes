@@ -1,0 +1,2 @@
+# addition to @DoNotInherit
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.persistence.typed.state.scaladsl.DurableStateBehavior.withChangeEventHandler")

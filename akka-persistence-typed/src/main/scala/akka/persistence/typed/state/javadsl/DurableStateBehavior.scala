@@ -142,10 +142,20 @@ abstract class DurableStateBehavior[Command, State] private[akka] (
       else
         behaviorWithSignalHandler
 
+    val withChangeEventHandler = this match {
+      case handler: ChangeEventHandler[State, _] @unchecked =>
+        withSignalHandler.withChangeEventHandler(
+          scaladsl.ChangeEventHandler(
+            updateHandler = (previousState, newState) => handler.changeEvent(previousState, newState),
+            deleteHandler = previousState => handler.deleteChangeEvent(previousState)))
+      case _ =>
+        withSignalHandler
+    }
+
     if (stashCapacity.isPresent) {
-      withSignalHandler.withStashCapacity(stashCapacity.get)
+      withChangeEventHandler.withStashCapacity(stashCapacity.get)
     } else {
-      withSignalHandler
+      withChangeEventHandler
     }
   }
 

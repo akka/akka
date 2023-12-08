@@ -16,11 +16,20 @@ import akka.persistence.typed.PersistenceId;
 
 // #behavior
 
+// #changeHandler
+import akka.persistence.typed.state.javadsl.ChangeEventHandler;
+
+// #changeHandler
+
 // #effects
 import akka.Done;
 // #effects
 
 import java.time.Duration;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 public class DurableStatePersistentBehaviorTest {
 
@@ -356,5 +365,92 @@ public class DurableStatePersistentBehaviorTest {
       }
       // #wrapPersistentBehavior
     }
+  }
+
+  interface WithChangeHandler {
+
+    // #changeHandler
+    public class MyPersistentBehavior
+      extends DurableStateBehavior<MyPersistentBehavior.Command, MyPersistentBehavior.State>
+    implements ChangeEventHandler<MyPersistentBehavior.State, MyPersistentBehavior.ChangeEvent>{
+
+      // #changeHandler
+
+      interface Command {}
+
+      public static Behavior<Command> create(PersistenceId persistenceId) {
+        return new MyPersistentBehavior(persistenceId);
+      }
+
+      private MyPersistentBehavior(PersistenceId persistenceId) {
+        super(persistenceId);
+      }
+
+      @Override
+      public State emptyState() {
+        return new State(Collections.emptySet());
+      }
+
+      @Override
+      public CommandHandler<Command, State> commandHandler() {
+        return (state, command) -> {
+          throw new RuntimeException("TODO: process the command & return an Effect");
+        };
+      }
+
+      // #changeHandler
+      public static final class State {
+        private final Set<String> items;
+
+        public State(Collection<String> items) {
+          this.items = Collections.unmodifiableSet(new HashSet<>(items));
+        }
+
+        public Set<String> getItems() {
+          return items;
+        }
+      }
+
+      interface ChangeEvent {}
+
+      public static final class ItemsChanged implements ChangeEvent {
+        private final Set<String> addedItems;
+        private final Set<String> removedItems;
+
+        public ItemsChanged(Collection<String> addedItems, Collection<String> removedItems) {
+          this.addedItems = Collections.unmodifiableSet(new HashSet<>(addedItems));
+          this.removedItems = Collections.unmodifiableSet(new HashSet<>(removedItems));
+        }
+
+        public Set<String> getAddedItems() {
+          return addedItems;
+        }
+
+        public Set<String> getRemovedItems() {
+          return removedItems;
+        }
+      }
+
+
+      @Override
+      public ChangeEvent changeEvent(State previousState, State newState) {
+        Set<String> addedItems = new HashSet<>(newState.getItems());
+        addedItems.removeAll(previousState.getItems());
+        Set<String> removedItems = new HashSet<>(previousState.getItems());
+        removedItems.removeAll(newState.getItems());
+
+        return new ItemsChanged(addedItems, removedItems);
+      }
+
+      @Override
+      public ChangeEvent deleteChangeEvent(State previousState) {
+        return new ItemsChanged(Collections.emptySet(), previousState.getItems());
+      }
+
+      // #changeHandler
+
+
+    }
+    // #changeHandler
   }
 }

@@ -21,8 +21,12 @@ import akka.persistence.query.{
   UpdatedDurableState
 }
 import akka.persistence.query.scaladsl.{ DurableStateStorePagedPersistenceIdsQuery, DurableStateStoreQuery }
+import akka.persistence.query.typed.EventEnvelope
+import akka.persistence.query.typed.scaladsl.CurrentEventsBySliceQuery
 import akka.persistence.query.typed.scaladsl.DurableStateStoreBySliceQuery
-import akka.persistence.state.scaladsl.{ DurableStateUpdateStore, GetObjectResult }
+import akka.persistence.query.typed.scaladsl.EventsBySliceQuery
+import akka.persistence.state.scaladsl.DurableStateUpdateWithChangeEventStore
+import akka.persistence.state.scaladsl.GetObjectResult
 import akka.persistence.typed.PersistenceId
 import akka.stream.OverflowStrategy
 import akka.stream.scaladsl.BroadcastHub
@@ -35,10 +39,12 @@ object PersistenceTestKitDurableStateStore {
 }
 
 class PersistenceTestKitDurableStateStore[A](val system: ExtendedActorSystem)
-    extends DurableStateUpdateStore[A]
+    extends DurableStateUpdateWithChangeEventStore[A]
     with DurableStateStoreQuery[A]
     with DurableStateStoreBySliceQuery[A]
-    with DurableStateStorePagedPersistenceIdsQuery[A] {
+    with DurableStateStorePagedPersistenceIdsQuery[A]
+    with CurrentEventsBySliceQuery
+    with EventsBySliceQuery {
 
   private implicit val sys: ExtendedActorSystem = system
   private val persistence = Persistence(system)
@@ -47,6 +53,13 @@ class PersistenceTestKitDurableStateStore[A](val system: ExtendedActorSystem)
   private val (publisher, changesSource) =
     ActorSource
       .actorRef[Record[A]](PartialFunction.empty, PartialFunction.empty, 256, OverflowStrategy.dropHead)
+      .toMat(BroadcastHub.sink)(Keep.both)
+      .run()
+
+  private var changeEvents = Vector.empty[EventEnvelope[Any]]
+  private val (changeEventPublisher, changeEventSource) =
+    ActorSource
+      .actorRef[EventEnvelope[Any]](PartialFunction.empty, PartialFunction.empty, 256, OverflowStrategy.dropHead)
       .toMat(BroadcastHub.sink)(Keep.both)
       .run()
 
@@ -62,28 +75,74 @@ class PersistenceTestKitDurableStateStore[A](val system: ExtendedActorSystem)
   }
 
   override def upsertObject(persistenceId: String, revision: Long, value: A, tag: String): Future[Done] =
+    internalUpsertObject(persistenceId, revision, value, tag, changeEvent = None)
+
+  override def upsertObject(
+      persistenceId: String,
+      revision: Long,
+      value: A,
+      tag: String,
+      changeEvent: Any): Future[Done] =
+    internalUpsertObject(persistenceId, revision, value, tag, changeEvent = Some(changeEvent))
+
+  private def internalUpsertObject(
+      persistenceId: String,
+      revision: Long,
+      value: A,
+      tag: String,
+      changeEvent: Option[Any]): Future[Done] =
     this.synchronized {
       val globalOffset = lastGlobalOffset.incrementAndGet()
       val record = Record(globalOffset, persistenceId, revision, Some(value), tag)
       store = store + (persistenceId -> record)
       publisher ! record
+
+      storeChangeEvent(persistenceId, revision, changeEvent, globalOffset)
+
       Future.successful(Done)
     }
 
+  private def storeChangeEvent(
+      persistenceId: String,
+      revision: Long,
+      changeEvent: Option[Any],
+      globalOffset: Long): Unit = {
+    changeEvent.foreach { evt =>
+      val env = EventEnvelope[Any](
+        offset = Offset.sequence(globalOffset),
+        persistenceId,
+        sequenceNr = revision,
+        event = evt,
+        timestamp = System.currentTimeMillis(),
+        entityType = PersistenceId.extractEntityType(persistenceId),
+        persistence.sliceForPersistenceId(persistenceId))
+      changeEvents = changeEvents :+ env
+      changeEventPublisher ! env
+    }
+  }
+
   override def deleteObject(persistenceId: String): Future[Done] = Future.successful(Done)
 
-  override def deleteObject(persistenceId: String, revision: Long): Future[Done] = this.synchronized {
-    store.get(persistenceId) match {
-      case Some(record) =>
-        val globalOffset = lastGlobalOffset.incrementAndGet()
-        val updatedRecord = Record[A](globalOffset, persistenceId, revision, None, record.tag)
-        store = store + (persistenceId -> updatedRecord)
-        publisher ! updatedRecord
-      case None => //ignore
-    }
+  override def deleteObject(persistenceId: String, revision: Long): Future[Done] =
+    internalDeleteObject(persistenceId, revision, changeEvent = None)
 
-    Future.successful(Done)
-  }
+  override def deleteObject(persistenceId: String, revision: Long, changeEvent: Any): Future[Done] =
+    internalDeleteObject(persistenceId, revision, changeEvent = Some(changeEvent))
+
+  private def internalDeleteObject(persistenceId: String, revision: Long, changeEvent: Option[Any]): Future[Done] =
+    this.synchronized {
+      store.get(persistenceId) match {
+        case Some(record) =>
+          val globalOffset = lastGlobalOffset.incrementAndGet()
+          val updatedRecord = Record[A](globalOffset, persistenceId, revision, None, record.tag)
+          store = store + (persistenceId -> updatedRecord)
+          publisher ! updatedRecord
+          storeChangeEvent(persistenceId, revision, changeEvent, globalOffset)
+        case None => //ignore
+      }
+
+      Future.successful(Done)
+    }
 
   private def storeContains(persistenceId: String): Boolean = this.synchronized {
     store.contains(persistenceId)
@@ -197,6 +256,56 @@ class PersistenceTestKitDurableStateStore[A](val system: ExtendedActorSystem)
       Source(keys).take(limit)
     }
 
+  /**
+   * For change events.
+   */
+  override def currentEventsBySlices[Event](
+      entityType: String,
+      minSlice: Int,
+      maxSlice: Int,
+      offset: Offset): Source[EventEnvelope[Event], NotUsed] =
+    this.synchronized {
+      val currentGlobalOffset = lastGlobalOffset.get()
+      eventsBySlices(entityType, minSlice, maxSlice, offset)
+        .takeWhile(_.offset.asInstanceOf[Sequence].value < currentGlobalOffset, inclusive = true)
+    }
+
+  /**
+   * For change events.
+   */
+  override def eventsBySlices[Event](
+      entityType: String,
+      minSlice: Int,
+      maxSlice: Int,
+      offset: Offset): Source[EventEnvelope[Event], NotUsed] =
+    this.synchronized {
+      val fromOffset = offset match {
+        case NoOffset             => EarliestOffset
+        case Sequence(fromOffset) => fromOffset
+        case offset =>
+          throw new UnsupportedOperationException(s"$offset not supported in PersistenceTestKitDurableStateStore.")
+      }
+
+      def envOffset(env: EventEnvelope[_]) =
+        env.offset.asInstanceOf[Sequence].value
+
+      def bySliceFromOffset(env: EventEnvelope[_]) = {
+        val slice = persistence.sliceForPersistenceId(env.persistenceId)
+        PersistenceId.extractEntityType(env.persistenceId) == entityType && slice >= minSlice && slice <= maxSlice && envOffset(
+          env) > fromOffset
+      }
+
+      Source(changeEvents.filter(bySliceFromOffset)).concat(changeEventSource).statefulMapConcat { () =>
+        var globalOffsetSeen = EarliestOffset
+
+        { (env: EventEnvelope[Any]) =>
+          if (envOffset(env) > globalOffsetSeen) {
+            globalOffsetSeen = envOffset(env)
+            env.asInstanceOf[EventEnvelope[Event]] :: Nil
+          } else Nil
+        }
+      }
+    }
 }
 
 private final case class Record[A](
