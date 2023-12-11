@@ -15,9 +15,9 @@ object ChangeEventHandler {
    * @param deleteHandler Function that given the previous state creates the change event to be stored
    *                      when the DurableState is deleted.
    */
-  def apply[State, ChangeEvent](
-      updateHandler: (State, State) => ChangeEvent,
-      deleteHandler: State => ChangeEvent): ChangeEventHandler[State, ChangeEvent] =
+  def apply[Command, State, ChangeEvent](
+      updateHandler: (State, State, Command) => ChangeEvent,
+      deleteHandler: (State, Command) => ChangeEvent): ChangeEventHandler[Command, State, ChangeEvent] =
     new ChangeEventHandler(updateHandler, deleteHandler)
 }
 
@@ -25,6 +25,6 @@ object ChangeEventHandler {
  * Define these handlers in the [[DurableStateBehavior#withChangeEventHandler]] to store additional change event when
  * the state is updated. The event can be used in Projections.
  */
-final class ChangeEventHandler[State, ChangeEvent] private (
-    val updateHandler: (State, State) => ChangeEvent,
-    val deleteHandler: State => ChangeEvent)
+final class ChangeEventHandler[Command, State, ChangeEvent] private (
+    val updateHandler: (State, State, Command) => ChangeEvent,
+    val deleteHandler: (State, Command) => ChangeEvent)

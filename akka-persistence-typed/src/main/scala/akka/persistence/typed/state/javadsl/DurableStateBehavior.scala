@@ -143,11 +143,11 @@ abstract class DurableStateBehavior[Command, State] private[akka] (
         behaviorWithSignalHandler
 
     val withChangeEventHandler = this match {
-      case handler: ChangeEventHandler[State, _] @unchecked =>
+      case handler: ChangeEventHandler[Command, State, _] @unchecked =>
         withSignalHandler.withChangeEventHandler(
           scaladsl.ChangeEventHandler(
-            updateHandler = (previousState, newState) => handler.changeEvent(previousState, newState),
-            deleteHandler = previousState => handler.deleteChangeEvent(previousState)))
+            updateHandler = (previousState, newState, command) => handler.changeEvent(previousState, newState, command),
+            deleteHandler = (previousState, command) => handler.deleteChangeEvent(previousState, command)))
       case _ =>
         withSignalHandler
     }

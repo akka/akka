@@ -372,7 +372,7 @@ public class DurableStatePersistentBehaviorTest {
     // #changeHandler
     public class MyPersistentBehavior
       extends DurableStateBehavior<MyPersistentBehavior.Command, MyPersistentBehavior.State>
-    implements ChangeEventHandler<MyPersistentBehavior.State, MyPersistentBehavior.ChangeEvent>{
+    implements ChangeEventHandler<MyPersistentBehavior.Command, MyPersistentBehavior.State, MyPersistentBehavior.ChangeEvent>{
 
       // #changeHandler
 
@@ -433,7 +433,7 @@ public class DurableStatePersistentBehaviorTest {
 
 
       @Override
-      public ChangeEvent changeEvent(State previousState, State newState) {
+      public ChangeEvent changeEvent(State previousState, State newState, MyPersistentBehavior.Command command) {
         Set<String> addedItems = new HashSet<>(newState.getItems());
         addedItems.removeAll(previousState.getItems());
         Set<String> removedItems = new HashSet<>(previousState.getItems());
@@ -443,7 +443,7 @@ public class DurableStatePersistentBehaviorTest {
       }
 
       @Override
-      public ChangeEvent deleteChangeEvent(State previousState) {
+      public ChangeEvent deleteChangeEvent(State previousState, MyPersistentBehavior.Command command) {
         return new ItemsChanged(Collections.emptySet(), previousState.getItems());
       }
 

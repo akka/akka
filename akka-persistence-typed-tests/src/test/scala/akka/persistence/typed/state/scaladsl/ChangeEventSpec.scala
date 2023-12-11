@@ -34,11 +34,12 @@ object ChangeEventSpec {
   final case class Delete(replyTo: ActorRef[Done]) extends Command
 
   def behaviorWithChangeEvent(persistenceId: PersistenceId, probe: ActorRef[String]): Behavior[Command] = {
-    val changeEventHandler = ChangeEventHandler[String, String](updateHandler = { (previousState, newState) =>
-      val chgEvent = newState.replace(previousState, "")
-      probe ! s"update: $previousState, $newState => $chgEvent"
-      chgEvent
-    }, deleteHandler = { previousState =>
+    val changeEventHandler = ChangeEventHandler[Command, String, String](updateHandler = {
+      (previousState, newState, _) =>
+        val chgEvent = newState.replace(previousState, "")
+        probe ! s"update: $previousState, $newState => $chgEvent"
+        chgEvent
+    }, deleteHandler = { (previousState, _) =>
       val chgEvent = "DEL"
       probe ! s"delete: $previousState => $chgEvent"
       chgEvent

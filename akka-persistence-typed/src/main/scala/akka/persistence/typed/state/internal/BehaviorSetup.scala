@@ -41,7 +41,7 @@ private[akka] final class BehaviorSetup[C, S](
     val settings: DurableStateSettings,
     val stashState: StashState,
     private val internalLoggerFactory: () => Logger,
-    val changeEventHandler: Option[ChangeEventHandler[S, Any]]) {
+    val changeEventHandler: Option[ChangeEventHandler[Any, S, Any]]) {
 
   import akka.actor.typed.scaladsl.adapter._
 

@@ -169,6 +169,7 @@ object DurableStateBehavior {
   /**
    * Store additional change event when the state is updated or deleted. The event can be used in Projections.
    */
-  def withChangeEventHandler[C](handler: ChangeEventHandler[State, C]): DurableStateBehavior[Command, State]
+  def withChangeEventHandler[ChangeEvent](
+      handler: ChangeEventHandler[Command, State, ChangeEvent]): DurableStateBehavior[Command, State]
 
 }

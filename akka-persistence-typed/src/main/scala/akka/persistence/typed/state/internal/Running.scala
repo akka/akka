@@ -123,7 +123,7 @@ private[akka] object Running {
 
       val changeEvent = setup.changeEventHandler match {
         case None          => OptionVal.None
-        case Some(handler) => OptionVal.Some(handler.updateHandler(state.state, stateAfterApply.state))
+        case Some(handler) => OptionVal.Some(handler.updateHandler(state.state, stateAfterApply.state, cmd))
       }
 
       val newState2 =
@@ -139,7 +139,7 @@ private[akka] object Running {
 
       val changeEvent = setup.changeEventHandler match {
         case None          => OptionVal.None
-        case Some(handler) => OptionVal.Some(handler.deleteHandler(state.state))
+        case Some(handler) => OptionVal.Some(handler.deleteHandler(state.state, cmd))
       }
 
       val nextState = internalDelete(setup.context, cmd, state, changeEvent)
