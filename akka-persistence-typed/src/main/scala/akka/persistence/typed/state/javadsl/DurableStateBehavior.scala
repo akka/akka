@@ -99,6 +99,13 @@ abstract class DurableStateBehavior[Command, State] private[akka] (
   }
 
   /**
+   * Override this and implement the [[ChangeEventHandler]] to store additional change event
+   * when the state is updated or deleted. The event can be used in Projections.
+   */
+  protected def changeEventHandler(): ChangeEventHandler[Command, State, _] =
+    ChangeEventHandler.undefined[Command, State, Any]
+
+  /**
    * Override and define the `DurableStateStore` plugin id that this actor should use instead of the default.
    */
   def durableStateStorePluginId: String = ""
@@ -142,14 +149,13 @@ abstract class DurableStateBehavior[Command, State] private[akka] (
       else
         behaviorWithSignalHandler
 
-    val withChangeEventHandler = this match {
+    val withChangeEventHandler = changeEventHandler() match {
+      case handler if handler eq ChangeEventHandler.Undefined => withSignalHandler
       case handler: ChangeEventHandler[Command, State, _] @unchecked =>
         withSignalHandler.withChangeEventHandler(
           scaladsl.ChangeEventHandler(
             updateHandler = (previousState, newState, command) => handler.changeEvent(previousState, newState, command),
             deleteHandler = (previousState, command) => handler.deleteChangeEvent(previousState, command)))
-      case _ =>
-        withSignalHandler
     }
 
     if (stashCapacity.isPresent) {
