@@ -387,6 +387,11 @@ private[akka] object Running {
       case callback: Callback[Any] @unchecked =>
         callback.sideEffect(state.state)
         behavior
+
+      case _ =>
+        // case _: Callback[S] should be covered by above case, but needed needed to silence Scala 3 exhaustive match
+        throw new IllegalStateException(
+          s"Unexpected effect [${effect.getClass.getName}]. This is a bug, please report https://github.com/akka/akka/issues")
     }
   }
 
