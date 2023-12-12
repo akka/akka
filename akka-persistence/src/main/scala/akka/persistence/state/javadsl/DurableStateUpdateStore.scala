@@ -12,6 +12,8 @@ import akka.Done
  * API for updating durable state objects.
  *
  * For Scala API see [[akka.persistence.state.scaladsl.DurableStateUpdateStore]].
+ *
+ * See also [[DurableStateUpdateWithChangeEventStore]]
  */
 trait DurableStateUpdateStore[A] extends DurableStateStore[A] {
 

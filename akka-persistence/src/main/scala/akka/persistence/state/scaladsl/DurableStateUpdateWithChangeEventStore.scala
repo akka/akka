@@ -7,13 +7,14 @@ package akka.persistence.state.scaladsl
 import scala.concurrent.Future
 
 import akka.Done
+import akka.annotation.ApiMayChange
 
 /**
- * API for updating durable state objects and storing additional change event.
+ * API May Change: API for updating durable state objects and storing additional change event.
  *
  * For Java API see [[akka.persistence.state.javadsl.DurableStateUpdateWithChangeEventStore]].
  */
-//#plugin-api
+@ApiMayChange
 trait DurableStateUpdateWithChangeEventStore[A] extends DurableStateUpdateStore[A] {
 
   /**
@@ -26,4 +27,3 @@ trait DurableStateUpdateWithChangeEventStore[A] extends DurableStateUpdateStore[
 
   def deleteObject(persistenceId: String, revision: Long, changeEvent: Any): Future[Done]
 }
-//#plugin-api

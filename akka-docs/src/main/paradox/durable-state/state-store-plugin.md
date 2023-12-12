@@ -24,6 +24,16 @@ Scala
 Java
 :  @@snip [MyJavaStateStore.java](/akka-docs/src/main/java/docs/persistence/state/MyJavaStateStore.java) { #state-store-plugin-api }
 
+A durable state store plugin may also extend `DurableStateUpdateWithChangeEventStore` to store additional change event.
+
+`DurableStateUpdateWithChangeEventStore` is an interface and the methods to be implemented are:
+
+Scala
+:  @@snip [MyStateStore.scala](/akka-docs/src/main/scala/docs/persistence/state/MyStateStore.scala) { //#plugin-api-change-event }
+
+Java
+:  @@snip [MyChangeEventJavaStateStore.java](/akka-docs/src/main/java/docs/persistence/state/MyChangeEventJavaStateStore.java) { #state-store-plugin-api }
+
 ## State Store provider
 
 A `DurableStateStoreProvider` needs to be implemented to be able to create the plugin itself:

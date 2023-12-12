@@ -12,8 +12,9 @@ import akka.Done
  * API for updating durable state objects.
  *
  * For Java API see [[akka.persistence.state.javadsl.DurableStateUpdateStore]].
+ *
+ * See also [[DurableStateUpdateWithChangeEventStore]]
  */
-//#plugin-api
 trait DurableStateUpdateStore[A] extends DurableStateStore[A] {
 
   /**
@@ -26,4 +27,3 @@ trait DurableStateUpdateStore[A] extends DurableStateStore[A] {
 
   def deleteObject(persistenceId: String, revision: Long): Future[Done]
 }
-//#plugin-api
