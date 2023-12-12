@@ -18,7 +18,7 @@ object ChangeEventHandler {
    *
    * The `updateHandler` and `deleteHandler` are invoked after the ordinary command handler. Be aware of that
    * if the state is mutable and modified by the command handler the previous state parameter of the `updateHandler`
-   * will also include the modification, since it's the same instance. If that is problem you need to use
+   * will also include the modification, since it's the same instance. If that is a problem you need to use
    * immutable state and create a new state instance when modifying it in the command handler.
    *
    * @param updateHandler Function that given the previous and new state creates the change event to be stored
