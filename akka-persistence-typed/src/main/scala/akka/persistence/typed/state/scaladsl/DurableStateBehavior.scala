@@ -167,8 +167,10 @@ object DurableStateBehavior {
   def withStashCapacity(size: Int): DurableStateBehavior[Command, State]
 
   /**
-   * Store additional change event when the state is updated or deleted. The event can be used in Projections.
+   * API May Change: Store additional change event when the state is updated or deleted.
+   * The event can be used in Projections.
    */
+  @ApiMayChange
   def withChangeEventHandler[ChangeEvent](
       handler: ChangeEventHandler[Command, State, ChangeEvent]): DurableStateBehavior[Command, State]
 

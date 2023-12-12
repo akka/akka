@@ -99,9 +99,10 @@ abstract class DurableStateBehavior[Command, State] private[akka] (
   }
 
   /**
-   * Override this and implement the [[ChangeEventHandler]] to store additional change event
+   * API May Change: Override this and implement the [[ChangeEventHandler]] to store additional change event
    * when the state is updated or deleted. The event can be used in Projections.
    */
+  @ApiMayChange
   protected def changeEventHandler(): ChangeEventHandler[Command, State, _] =
     ChangeEventHandler.undefined[Command, State, Any]
 

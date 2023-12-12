@@ -4,12 +4,14 @@
 
 package akka.persistence.typed.state.javadsl
 
+import akka.annotation.ApiMayChange
 import akka.annotation.InternalApi
 
 /**
- * Implement this interface and use it in [[DurableStateBehavior#withChangeEventHandler]]
+ * API May Change: Implement this interface and use it in [[DurableStateBehavior#withChangeEventHandler]]
  * to store additional change event when the state is updated. The event can be used in Projections.
  */
+@ApiMayChange
 trait ChangeEventHandler[Command, State, ChangeEvent] {
 
   /**

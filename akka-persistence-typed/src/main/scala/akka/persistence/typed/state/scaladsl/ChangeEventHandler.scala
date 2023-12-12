@@ -4,6 +4,12 @@
 
 package akka.persistence.typed.state.scaladsl
 
+import akka.annotation.ApiMayChange
+
+/**
+ * API May Change
+ */
+@ApiMayChange
 object ChangeEventHandler {
 
   /**
@@ -22,9 +28,10 @@ object ChangeEventHandler {
 }
 
 /**
- * Define these handlers in the [[DurableStateBehavior#withChangeEventHandler]] to store additional change event when
- * the state is updated. The event can be used in Projections.
+ * API May Change: Define these handlers in the [[DurableStateBehavior#withChangeEventHandler]] to store
+ * additional change event when the state is updated. The event can be used in Projections.
  */
+@ApiMayChange
 final class ChangeEventHandler[Command, State, ChangeEvent] private (
     val updateHandler: (State, State, Command) => ChangeEvent,
     val deleteHandler: (State, Command) => ChangeEvent)
