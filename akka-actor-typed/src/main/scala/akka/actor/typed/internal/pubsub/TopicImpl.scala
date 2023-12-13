@@ -99,7 +99,8 @@ private[akka] final class TopicImpl[T](topicName: String, context: ActorContext[
 
     case MessagePublished(msg) =>
       context.log.trace("Message of type [{}] published", msg.getClass)
-      localSubscribers.foreach(_ ! msg)
+      if (classTag.runtimeClass.isAssignableFrom(msg.getClass))
+        localSubscribers.foreach(_ ! msg)
       this
 
     case Subscribe(subscriber) =>

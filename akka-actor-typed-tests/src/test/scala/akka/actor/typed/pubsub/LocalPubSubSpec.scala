@@ -143,5 +143,37 @@ class LocalPubSubSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike wit
       }
     }
 
+    "same topic name different message types are different topics" in {
+      val fruitTopic = testKit.spawn(Topic[String]("fruit5"))
+      val numberTopic = testKit.spawn(Topic[Int]("fruit5"))
+
+      try {
+        val probe1 = testKit.createTestProbe[String]()
+
+        fruitTopic ! Topic.Subscribe(probe1.ref)
+        // the subscriber registration of completed
+        val statsProbe = testKit.createTestProbe[Any]()
+        statsProbe.awaitAssert {
+          fruitTopic ! Topic.GetTopicStats(statsProbe.ref)
+          statsProbe.expectMessageType[Topic.TopicStats].localSubscriberCount should ===(1)
+        }
+
+        val probe2 = testKit.createTestProbe[Int]()
+        numberTopic ! Topic.Subscribe(probe2.ref)
+        statsProbe.awaitAssert {
+          numberTopic ! Topic.GetTopicStats(statsProbe.ref)
+          statsProbe.expectMessageType[Topic.TopicStats].localSubscriberCount should ===(1)
+        }
+
+        // both subscribed
+        fruitTopic ! Topic.Publish("dragonfruit")
+        probe1.expectMessage("dragonfruit")
+        probe2.expectNoMessage()
+
+      } finally {
+        testKit.stop(fruitTopic)
+        testKit.stop(numberTopic)
+      }
+    }
   }
 }
