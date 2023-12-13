@@ -31,6 +31,7 @@ private[akka] object AsyncDnsManager {
   private case object CacheCleanup
 
   case object GetCache
+  case class DropFromCache()
 }
 
 /**

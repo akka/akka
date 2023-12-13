@@ -74,10 +74,16 @@ class SimpleDnsCache extends Dns with PeriodicCacheCleanup with NoSerializationV
   }
 
   @tailrec
-  private[io] final def put(key: (String, RequestType), records: Resolved, ttl: CachePolicy): Unit = {
+  private[akka] final def put(key: (String, RequestType), records: Resolved, ttl: CachePolicy): Unit = {
     val c = cacheRef.get()
     if (!cacheRef.compareAndSet(c, c.put(key, records, ttl)))
       put(key, records, ttl)
+  }
+
+  private[akka] final def drop(key: (String, RequestType)): Unit = {
+    val c = cacheRef.get()
+    if (!cacheRef.compareAndSet(c, c.drop(key)))
+      drop(key)
   }
 
   @tailrec
@@ -113,6 +119,10 @@ object SimpleDnsCache {
       }
 
       new Cache[K, V](queue + new ExpiryEntry[K](name, until), cache + (name -> CacheEntry(answer, until)), clock)
+    }
+
+    def drop(name: K): Cache[K, V] = {
+      new Cache(queue.filterNot(_.name == name), cache.filterNot { case (key, _) => key == name }, clock)
     }
 
     def cleanup(): Cache[K, V] = {
