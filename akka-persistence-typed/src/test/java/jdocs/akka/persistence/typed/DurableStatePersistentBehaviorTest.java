@@ -435,7 +435,7 @@ public class DurableStatePersistentBehaviorTest {
       public ChangeEventHandler<Command, State, ChangeEvent> changeEventHandler() {
         return new ChangeEventHandler<>() {
           @Override
-          public ChangeEvent changeEvent(State previousState, State newState, Command command) {
+          public ChangeEvent updateHandler(State previousState, State newState, Command command) {
             Set<String> addedItems = new HashSet<>(newState.getItems());
             addedItems.removeAll(previousState.getItems());
             Set<String> removedItems = new HashSet<>(previousState.getItems());
@@ -445,7 +445,7 @@ public class DurableStatePersistentBehaviorTest {
           }
 
           @Override
-          public ChangeEvent deleteChangeEvent(State previousState, Command command) {
+          public ChangeEvent deleteHandler(State previousState, Command command) {
             return new ItemsChanged(Collections.emptySet(), previousState.getItems());
           }
         };
