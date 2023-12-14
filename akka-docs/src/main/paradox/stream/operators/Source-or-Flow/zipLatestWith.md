@@ -31,4 +31,3 @@ element appears, the zipping function is invoked with a tuple containing the new
 **cancels** when downstream cancels
 
 @@@
-
