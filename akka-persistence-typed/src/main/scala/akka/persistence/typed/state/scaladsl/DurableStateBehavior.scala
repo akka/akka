@@ -165,4 +165,13 @@ object DurableStateBehavior {
    * If not defined, the default `akka.persistence.typed.stash-capacity` will be used.
    */
   def withStashCapacity(size: Int): DurableStateBehavior[Command, State]
+
+  /**
+   * API May Change: Store additional change event when the state is updated or deleted.
+   * The event can be used in Projections.
+   */
+  @ApiMayChange
+  def withChangeEventHandler[ChangeEvent](
+      handler: ChangeEventHandler[Command, State, ChangeEvent]): DurableStateBehavior[Command, State]
+
 }

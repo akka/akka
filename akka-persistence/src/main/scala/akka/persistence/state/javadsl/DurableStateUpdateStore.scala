@@ -12,11 +12,13 @@ import akka.Done
  * API for updating durable state objects.
  *
  * For Scala API see [[akka.persistence.state.scaladsl.DurableStateUpdateStore]].
+ *
+ * See also [[DurableStateUpdateWithChangeEventStore]]
  */
 trait DurableStateUpdateStore[A] extends DurableStateStore[A] {
 
   /**
-   * @param seqNr sequence number for optimistic locking. starts at 1.
+   * @param revision sequence number for optimistic locking. starts at 1.
    */
   def upsertObject(persistenceId: String, revision: Long, value: A, tag: String): CompletionStage[Done]
 
