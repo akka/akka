@@ -221,6 +221,12 @@ private[akka] final class TopicImpl[T](
     case TopicInstancesUpdated(newTopics) =>
       context.log.debug("Topic list updated [{}]", newTopics)
       topicInstances = newTopics
+      if (lastActivityForTtl == Long.MinValue) {
+        ttlAndTimers.foreach {
+          case (ttl, timers, _) =>
+            timers.startTimerWithFixedDelay(TtlTick.asInstanceOf[Command[T]], ttl / 2L)
+        }
+      }
       this
 
     case GetTopicStats(replyTo) =>
