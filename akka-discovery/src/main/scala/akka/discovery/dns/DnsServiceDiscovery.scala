@@ -115,11 +115,9 @@ private[akka] class DnsServiceDiscovery(system: ExtendedActorSystem) extends Ser
     log.debug("Lookup [{}] translated to SRV query [{}] as contains portName and protocol", lookup, srvRequest)
     val mode = Srv
 
-    val query = DnsProtocol.Resolve(srvRequest, mode)
-
     def askResolve(): Future[Resolved] = {
       dns
-        .ask(query)(resolveTimeout)
+        .ask(DnsProtocol.Resolve(srvRequest, mode))(resolveTimeout)
         .map {
           case resolved: DnsProtocol.Resolved =>
             log.debug("{} lookup result: {}", mode, resolved)
