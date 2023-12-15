@@ -12,7 +12,7 @@ import org.scalatest.wordspec.AnyWordSpecLike
 
 import scala.concurrent.duration._
 
-class LocalPubSubSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCapturing {
+class LocalTopicSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCapturing {
 
   "A pub-sub topic running locally" must {
 
