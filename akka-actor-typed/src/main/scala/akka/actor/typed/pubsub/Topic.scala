@@ -120,6 +120,9 @@ object Topic {
 
   /**
    * Scala API: Create a topic actor behavior for the given topic name and message type.
+   *
+   * Note: for many use cases it is more convenient to use the [[PubSub]] registry to have an ActorSystem global
+   * set of re-usable topics instead of manually creating and managing the topic actors.
    */
   def apply[T](topicName: String)(implicit classTag: ClassTag[T]): Behavior[Command[T]] =
     Behaviors.setup[TopicImpl.Command[T]](context => new TopicImpl[T](topicName, context, None)).narrow
@@ -127,6 +130,9 @@ object Topic {
   /**
    * Scala API: Create a topic actor behavior for the given topic name and message type with a TTL
    * making it terminate itself after a time period with no local subscribers and no locally published messages.
+   *
+   * Note: for many use cases it is more convenient to use the [[PubSub]] registry to have an ActorSystem global
+   * set of re-usable topics instead of manually creating and managing the topic actors.
    */
   def apply[T](topicName: String, ttl: FiniteDuration)(implicit classTag: ClassTag[T]): Behavior[Command[T]] =
     Behaviors
@@ -137,6 +143,9 @@ object Topic {
 
   /**
    * Java API: Create a topic actor behavior for the given topic name and message class
+   *
+   * Note: for many use cases it is more convenient to use the [[PubSub]] registry to have an ActorSystem global
+   * set of re-usable topics instead of manually creating and managing the topic actors.
    */
   def create[T](messageClass: Class[T], topicName: String): Behavior[Command[T]] =
     apply[T](topicName)(ClassTag(messageClass))
@@ -144,6 +153,9 @@ object Topic {
   /**
    * Java API: Create a topic actor behavior for the given topic name and message class with a TTL
    * making it terminate itself after a time period with no local subscribers and no locally published messages.
+   *
+   * Note: for many use cases it is more convenient to use the [[PubSub]] registry to have an ActorSystem global
+   * set of re-usable topics instead of manually creating and managing the topic actors.
    */
   def create[T](messageClass: Class[T], topicName: String, ttl: java.time.Duration): Behavior[Command[T]] =
     apply[T](topicName, ttl.toScala)(ClassTag(messageClass))
