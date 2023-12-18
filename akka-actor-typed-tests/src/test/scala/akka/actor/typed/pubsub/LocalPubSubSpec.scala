@@ -9,6 +9,7 @@ import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.internal.pubsub.TopicImpl
 import akka.actor.typed.scaladsl.Behaviors
+import akka.testkit.TimingTest
 import akka.util.WallClock
 import org.scalatest.wordspec.AnyWordSpecLike
 
@@ -179,7 +180,7 @@ class LocalPubSubSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike wit
       }
     }
 
-    "shut down topic after ttl" in {
+    "shut down topic after ttl" taggedAs TimingTest in {
       def createTopic() =
         testKit.spawn(Behaviors.setup[TopicImpl.Command[String]](context =>
           Behaviors.withTimers[TopicImpl.Command[String]](timers =>
@@ -189,7 +190,7 @@ class LocalPubSubSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike wit
       probe.expectTerminated(topic)
     }
 
-    "keep topic with ttl alive with publishing" in {
+    "keep topic with ttl alive with publishing" taggedAs TimingTest in {
       def createTopic() =
         testKit.spawn(Behaviors.setup[TopicImpl.Command[String]](context =>
           Behaviors.withTimers[TopicImpl.Command[String]](timers =>
@@ -215,7 +216,7 @@ class LocalPubSubSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike wit
       probe.expectTerminated(topic)
     }
 
-    "keep topic with ttl alive with subscriber" in {
+    "keep topic with ttl alive with subscriber" taggedAs TimingTest in {
       def createTopic() =
         testKit.spawn(Behaviors.setup[TopicImpl.Command[String]](context =>
           Behaviors.withTimers[TopicImpl.Command[String]](timers =>

@@ -180,10 +180,7 @@ private[akka] final class TopicImpl[T](
           case Some((ttl, _, clock)) =>
             val limit = clock.currentTimeMillis() - ttl.toMillis
             if (lastActivityForTtl < limit) {
-              context.log.debug(
-                "Topic [{}] reached TTL [{}] without activity, terminating",
-                topicName,
-                PrettyPrintableDuration(ttl))
+              context.log.debug("Topic [{}] reached TTL [{}] without activity, terminating", topicName, ttl.pretty)
               Behaviors.stopped
             } else {
               this
