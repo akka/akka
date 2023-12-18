@@ -73,6 +73,10 @@ class SimpleDnsCache extends Dns with PeriodicCacheCleanup with NoSerializationV
     cacheRef.get().get(key)
   }
 
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
   @tailrec
   private[akka] final def put(key: (String, RequestType), records: Resolved, ttl: CachePolicy): Unit = {
     val c = cacheRef.get()
@@ -80,6 +84,10 @@ class SimpleDnsCache extends Dns with PeriodicCacheCleanup with NoSerializationV
       put(key, records, ttl)
   }
 
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
   private[akka] final def drop(key: (String, RequestType)): Unit = {
     val c = cacheRef.get()
     if (!cacheRef.compareAndSet(c, c.drop(key)))
