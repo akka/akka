@@ -134,9 +134,18 @@ object ServiceDiscovery {
  * Akka remoting ports and HTTP ports.
  *
  * @param serviceName must not be 'null' or an empty String
+ * @param discardCache Ask the discovery implementation to drop any cached result and do a new resolution.
+ *                     Optionally supported by implementations.
  */
-final class Lookup(val serviceName: String, val portName: Option[String], val protocol: Option[String])
+final class Lookup(
+    val serviceName: String,
+    val portName: Option[String],
+    val protocol: Option[String],
+    val discardCache: Boolean)
     extends NoSerializationVerificationNeeded {
+
+  def this(serviceName: String, portName: Option[String], protocol: Option[String]) =
+    this(serviceName, portName, protocol, discardCache = false)
 
   require(serviceName != null, "'serviceName' cannot be null")
   require(serviceName.trim.nonEmpty, "'serviceName' cannot be empty")
@@ -154,6 +163,12 @@ final class Lookup(val serviceName: String, val portName: Option[String], val pr
   def withProtocol(value: String): Lookup = copy(protocol = Some(value))
 
   /**
+   * Ask the discovery implementation to drop any cached result and do a new resolution.
+   * Optionally supported by implementations.
+   */
+  def withDiscardCache: Lookup = copy(discardCache = true)
+
+  /**
    * Java API
    */
   def getPortName: Optional[String] =
@@ -168,7 +183,8 @@ final class Lookup(val serviceName: String, val portName: Option[String], val pr
   private def copy(
       serviceName: String = serviceName,
       portName: Option[String] = portName,
-      protocol: Option[String] = protocol): Lookup =
+      protocol: Option[String] = protocol,
+      discardCache: Boolean = discardCache): Lookup =
     new Lookup(serviceName, portName, protocol)
 
   override def toString: String = s"Lookup($serviceName,$portName,$protocol)"
