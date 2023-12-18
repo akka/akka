@@ -105,8 +105,6 @@ jobs:
         uses: coursier/setup-action@v1.3.4
         with:
           jvm: ${{ matrix.jvmName }}
-          # FIXME default index not giving us access to JDK 21 (yet)
-          jvm-index: https://raw.githubusercontent.com/coursier/jvm-index/32d659500e6c65efb9eee91718a0fb0e797ad4ee/index.json
 
       - name: Compile and Test
         # note that this is not running any multi-jvm tests because multi-in-test=false
