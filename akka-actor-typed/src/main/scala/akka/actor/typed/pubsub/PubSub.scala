@@ -24,7 +24,8 @@ import scala.reflect.ClassTag
 
 /**
  * Registry for [[Topic]]s. Keeps one topic actor instance of each requested topic name so that they can be shared
- * between all subscribers in the same actor system.
+ * between all subscribers in the same actor system. Short lived topics can be created with a TTL to make them shutdown
+ * and be cleaned out of the registry after a time period of not seeing any subscribers or publishing activity.
  *
  * Note that manually spawned [[Topic]] actors will not appear in the registry.
  */
