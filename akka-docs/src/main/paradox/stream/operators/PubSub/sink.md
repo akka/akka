@@ -4,6 +4,8 @@ A sink that will publish emitted messages to a @apidoc[akka.actor.typed.pubsub.T
 
 @ref[Actor interop operators](../index.md#actor-interop-operators)
 
+The source can be either the name of a topic or an actor ref for a @apidoc[akka.actor.typed.pubsub.Topic$] manually started.
+
 Note that there is no backpressure from the topic, so care must be taken to not publish messages at a higher rate than that can be handled 
 by subscribers.
 

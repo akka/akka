@@ -260,3 +260,10 @@ Scala
 
 Java
 :   @@snip [HubDocTest.java](/akka-docs/src/test/java/jdocs/stream/HubDocTest.java) { #partition-hub-fastest }
+
+### Subscribing and publishing to typed topics
+
+It is also possible to subscribe and publish to @ref[Distributed Publish Subscribe topics](../typed/distributed-pub-sub.md) from
+separate individual streams using operators in @apidoc[akka.stream.typed.*.PubSub$] in the `akka-stream-typed` module. 
+
+For more details see the operator docs in @ref[PubSub.sink](operators/PubSub/sink.md) and @ref[PubSub.sink](operators/PubSub/source.md) 

@@ -4,7 +4,9 @@ A source that will subscribe to a @apidoc[akka.actor.typed.pubsub.Topic$] and st
 
 @ref[Actor interop operators](../index.md#actor-interop-operators)
 
-The source can be materialized  multiple times, each materialized stream will stream messages published to the topic after the stream has started.
+The source can be either the name of a topic or an actor ref for a @apidoc[akka.actor.typed.pubsub.Topic$] manually started.
+
+The source can be materialized multiple times, each materialized stream will stream messages published to the topic after the stream has started.
 
 Note that it is not possible to propagate the backpressure from the running stream to the pub sub topic,
 if the stream is backpressuring published messages are buffered up to a limit and if the limit is hit

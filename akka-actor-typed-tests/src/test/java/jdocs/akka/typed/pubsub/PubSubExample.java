@@ -9,10 +9,12 @@ import akka.actor.typed.Behavior;
 import akka.actor.typed.javadsl.Behaviors;
 
 // #start-topic
+// #lookup-topic
 import akka.actor.typed.pubsub.Topic;
-
 // #start-topic
 
+import akka.actor.typed.pubsub.PubSub;
+// #lookup-topic
 public class PubSubExample {
 
   static class Message {
@@ -25,6 +27,7 @@ public class PubSubExample {
 
   private Behavior<?> behavior =
       // #start-topic
+
       Behaviors.setup(
           context -> {
             ActorRef<Topic.Command<Message>> topic =
@@ -44,4 +47,16 @@ public class PubSubExample {
 
             return Behaviors.empty();
           });
+
+  private Behavior<?> lookupExample =
+          // #lookup-topic
+
+          Behaviors.setup(
+                  context -> {
+                      ActorRef<Topic.Command<Message>> topic =
+                        PubSub.get(context.getSystem()).topic(Message.class, "my-topic");
+                  // #lookup-topic
+                      return Behaviors.empty();
+                  }
+          );
 }
