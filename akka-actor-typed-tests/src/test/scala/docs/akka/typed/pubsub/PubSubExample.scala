@@ -36,13 +36,15 @@ object PubSubExample {
   }
 
   def extensionExample: Behavior[Any] = {
-    // #lookup-topic
     import akka.actor.typed.pubsub.Topic
+    // #lookup-topic
     import akka.actor.typed.pubsub.PubSub
 
     Behaviors.setup { context =>
       val topic = PubSub(context.system).topic[Message]("my-topic")
       // #lookup-topic
+
+      topic ! Topic.Publish(Message("Hello Subscribers!"))
       Behaviors.empty
     }
   }
