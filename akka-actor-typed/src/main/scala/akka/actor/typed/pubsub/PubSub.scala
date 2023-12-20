@@ -54,7 +54,8 @@ final class PubSub(system: ActorSystem[_]) extends Extension {
 
   private val log = LoggerFactory.getLogger(getClass)
 
-  private val registry = new ConcurrentHashMap[String, (Class[Any], Option[FiniteDuration], ActorRef[Any])]()
+  private val registry =
+    new ConcurrentHashMap[String, (Class[Any], Option[FiniteDuration], ActorRef[Topic.Command[Any]])]()
   private val topicJanitor = system.systemActorOf(PubSub.TopicJanitor(this), "PubSubTopicJanitor")
 
   /**
@@ -65,7 +66,7 @@ final class PubSub(system: ActorSystem[_]) extends Extension {
    * @tparam T the type of messages the topic accepts for publishing and subscribing
    */
   def topic[T](name: String)(implicit classTag: ClassTag[T]): ActorRef[Topic.Command[T]] =
-    topicFor[T](name, None)(classTag)
+    topicFor[T](name, None)
 
   /**
    * Scala API: Spawn an actor with the given topic name or share an existing one if it is already running.
@@ -77,7 +78,7 @@ final class PubSub(system: ActorSystem[_]) extends Extension {
    *            use the same ttl.
    */
   def topic[T](name: String, ttl: FiniteDuration)(implicit classTag: ClassTag[T]): ActorRef[Topic.Command[T]] =
-    topicFor[T](name, Some(ttl))(classTag)
+    topicFor[T](name, Some(ttl))
 
   /**
    * Java API: Spawn an actor with the given topic name or share an existing one if it is already running.
@@ -112,12 +113,10 @@ final class PubSub(system: ActorSystem[_]) extends Extension {
   def getCurrentTopics(): java.util.Set[String] = registry.keySet().stream().collect(Collectors.toSet[String])
 
   private def topicFor[T](name: String, ttl: Option[FiniteDuration])(
-      classTag: ClassTag[T]): ActorRef[Topic.Command[T]] = {
-    val messageClass = classTag.runtimeClass
+      implicit classTag: ClassTag[T]): ActorRef[Topic.Command[T]] = {
+    val messageClass = classTag.runtimeClass.asInstanceOf[Class[Any]]
     val (classInRegistry, ttlInRegistry, actorRefInRegistry) =
-      registry.computeIfAbsent(
-        name,
-        name => (messageClass.asInstanceOf[Class[Any]], ttl, spawnTopic(name, classTag, ttl)))
+      registry.computeIfAbsent(name, name => (messageClass, ttl, spawnTopic(name, ttl)))
     if (classInRegistry != messageClass)
       throw new IllegalArgumentException(
         s"Trying to start topic [$name] with command class [$messageClass], but it is was already started with a " +
@@ -128,17 +127,18 @@ final class PubSub(system: ActorSystem[_]) extends Extension {
         name,
         ttl.map(_.pretty).getOrElse("none"),
         ttlInRegistry.map(_.pretty).getOrElse("none"))
-    actorRefInRegistry.narrow
+    actorRefInRegistry.unsafeUpcast
   }
 
-  private def spawnTopic[T](name: String, classTag: ClassTag[T], ttl: Option[FiniteDuration]): ActorRef[Any] = {
+  private def spawnTopic[T](name: String, ttl: Option[FiniteDuration])(
+      implicit classTag: ClassTag[T]): ActorRef[Topic.Command[T]] = {
     log.debug("Starting topic [{}] for message type [{}]", name, classTag.runtimeClass)
     val actorNameSafe = URLEncoder.encode(name, StandardCharsets.UTF_8)
     val topic = ttl match {
-      case Some(ttl) => Topic(name, ttl)(classTag)
-      case None      => Topic(name)(classTag)
+      case Some(ttl) => Topic(name, ttl)
+      case None      => Topic(name)
     }
-    val startedTopic = system.systemActorOf(topic, s"Topic-$actorNameSafe").unsafeUpcast[Any]
+    val startedTopic = system.systemActorOf(topic, s"Topic-$actorNameSafe")
     topicJanitor ! TopicJanitor.TopicStarted(startedTopic, name)
     startedTopic
   }
