@@ -4,12 +4,16 @@
 
 package akka.actor.typed.pubsub
 
-import scala.concurrent.duration._
-
-import org.scalatest.wordspec.AnyWordSpecLike
-
+import akka.actor.Dropped
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.actor.typed.internal.pubsub.TopicImpl
+import akka.actor.typed.scaladsl.Behaviors
+import akka.testkit.TimingTest
+import akka.util.WallClock
+import org.scalatest.wordspec.AnyWordSpecLike
+
+import scala.concurrent.duration._
 
 class LocalPubSubSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCapturing {
 
@@ -175,5 +179,60 @@ class LocalPubSubSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike wit
         testKit.stop(numberTopic)
       }
     }
+
+    "shut down topic after ttl" taggedAs TimingTest in {
+      def createTopic() =
+        testKit.spawn(Behaviors.setup[TopicImpl.Command[String]](context =>
+          Behaviors.withTimers[TopicImpl.Command[String]](timers =>
+            new TopicImpl[String]("fruit6", context, Some((300.millis, timers, WallClock.AlwaysIncreasingClock))))))
+      val topic = createTopic()
+      val probe = testKit.createTestProbe()
+      probe.expectTerminated(topic)
+    }
+
+    "keep topic with ttl alive with publishing" taggedAs TimingTest in {
+      def createTopic() =
+        testKit.spawn(Behaviors.setup[TopicImpl.Command[String]](context =>
+          Behaviors.withTimers[TopicImpl.Command[String]](timers =>
+            new TopicImpl[String]("fruit7", context, Some((500.millis, timers, WallClock.AlwaysIncreasingClock))))))
+      val deadLetters = testKit.createDeadLetterProbe()
+      val topic = createTopic()
+      // no subscribers, only local publish
+      (0 to 4).foreach { _ =>
+        Thread.sleep(200)
+        topic ! Topic.Publish("durian")
+      }
+      // Verify it isn't dead yet through no dead letters from the topic being dead (but it does drop because no subscribers)
+      deadLetters
+        .receiveMessages(4)
+        .forall(_.message match {
+          case Dropped(_, reason, _, _) => reason == "No topic subscribers known"
+          case _                        => false
+        }) should ===(true)
+
+      // then it ttl-outs
+      Thread.sleep(600)
+      val probe = testKit.createTestProbe()
+      probe.expectTerminated(topic)
+    }
+
+    "keep topic with ttl alive with subscriber" taggedAs TimingTest in {
+      def createTopic() =
+        testKit.spawn(Behaviors.setup[TopicImpl.Command[String]](context =>
+          Behaviors.withTimers[TopicImpl.Command[String]](timers =>
+            new TopicImpl[String]("fruit8", context, Some((300.millis, timers, WallClock.AlwaysIncreasingClock))))))
+      val topic = createTopic()
+      val subscriber = testKit.createTestProbe[String]()
+      topic ! Topic.Subscribe(subscriber.ref)
+      Thread.sleep(500)
+      topic ! Topic.Publish("cherimoya")
+      subscriber.expectMessage("cherimoya")
+      topic ! Topic.Unsubscribe(subscriber.ref)
+      Thread.sleep(500)
+      // now it should have ttl-outed
+      val probe = testKit.createTestProbe()
+      probe.expectTerminated(topic)
+    }
+
   }
 }

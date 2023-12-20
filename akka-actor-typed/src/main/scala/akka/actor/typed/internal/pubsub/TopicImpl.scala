@@ -4,8 +4,6 @@
 
 package akka.actor.typed.internal.pubsub
 
-import scala.reflect.ClassTag
-
 import akka.actor.Dropped
 import akka.actor.InvalidMessageException
 import akka.actor.typed.ActorRef
@@ -15,9 +13,16 @@ import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.receptionist.ServiceKey
 import akka.actor.typed.scaladsl.AbstractBehavior
 import akka.actor.typed.scaladsl.ActorContext
+import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.LoggerOps
+import akka.actor.typed.scaladsl.TimerScheduler
 import akka.actor.typed.scaladsl.adapter._
 import akka.annotation.InternalApi
+import akka.util.PrettyDuration.PrettyPrintableDuration
+import akka.util.WallClock
+
+import scala.concurrent.duration.FiniteDuration
+import scala.reflect.ClassTag
 
 /**
  * INTERNAL API
@@ -47,9 +52,14 @@ private[akka] object TopicImpl {
  * INTERNAL API
  */
 @InternalApi
-private[akka] final class TopicImpl[T](topicName: String, context: ActorContext[TopicImpl.Command[T]])(
+private[akka] final class TopicImpl[T](
+    topicName: String,
+    context: ActorContext[TopicImpl.Command[T]],
+    ttlAndTimers: Option[(FiniteDuration, TimerScheduler[TopicImpl.Command[T]], WallClock)])(
     implicit classTag: ClassTag[T])
     extends AbstractBehavior[TopicImpl.Command[T]](context) {
+
+  private case object TtlTick extends TopicImpl.Command[T]
 
   /*
    * The topic actor keeps a local set of subscribers, whenever that is non-empty it registers itself for
@@ -69,6 +79,8 @@ private[akka] final class TopicImpl[T](topicName: String, context: ActorContext[
 
   private var topicInstances = Set.empty[ActorRef[TopicImpl.Command[T]]]
   private var localSubscribers = Set.empty[ActorRef[T]]
+  // Note: timestamp when last publish or when the subscriber list became empty because of last unsubscribe
+  private var lastActivityForTtl: Long = Long.MinValue
 
   private val receptionist = context.system.receptionist
   private val receptionistAdapter = context.messageAdapter[Receptionist.Listing] {
@@ -95,6 +107,7 @@ private[akka] final class TopicImpl[T](topicName: String, context: ActorContext[
         val pub = MessagePublished(message)
         topicInstances.foreach(_ ! pub)
       }
+      activity()
       this
 
     case MessagePublished(msg) =>
@@ -128,6 +141,7 @@ private[akka] final class TopicImpl[T](topicName: String, context: ActorContext[
         context.log.debug("Last local subscriber [{}] unsubscribed, deregistering from receptionist", subscriber)
         // that was the lost subscriber, deregister from the receptionist
         receptionist ! Receptionist.Deregister(topicServiceKey, context.self)
+        activity()
       } else {
         context.log.debug("Local subscriber [{}] unsubscribed", subscriber)
       }
@@ -147,14 +161,42 @@ private[akka] final class TopicImpl[T](topicName: String, context: ActorContext[
     case TopicInstancesUpdated(newTopics) =>
       context.log.debug("Topic list updated [{}]", newTopics)
       topicInstances = newTopics
+      if (lastActivityForTtl == Long.MinValue) {
+        ttlAndTimers.foreach {
+          case (ttl, timers, _) =>
+            timers.startTimerWithFixedDelay(TtlTick.asInstanceOf[Command[T]], ttl / 2L)
+        }
+      }
       this
 
     case GetTopicStats(replyTo) =>
       replyTo ! TopicStats(localSubscribers.size, topicInstances.size)
       this
 
+    case TtlTick =>
+      if (localSubscribers.isEmpty) {
+        // only ever arrives if ttl is defined
+        ttlAndTimers match {
+          case Some((ttl, _, clock)) =>
+            val limit = clock.currentTimeMillis() - ttl.toMillis
+            if (lastActivityForTtl < limit) {
+              context.log.debug("Topic [{}] reached TTL [{}] without activity, terminating", topicName, ttl.pretty)
+              Behaviors.stopped
+            } else {
+              this
+            }
+          case _ => this
+        }
+      } else this
+
     case other =>
       // can't do exhaustiveness check correctly because of protocol internal/public design
       throw new IllegalArgumentException(s"Unexpected command type ${other.getClass}")
+  }
+
+  private def activity(): Unit = ttlAndTimers match {
+    case Some((_, _, clock)) =>
+      lastActivityForTtl = clock.currentTimeMillis()
+    case _ =>
   }
 }
