@@ -7,10 +7,7 @@ package akka.actor.typed.pubsub
 import akka.actor.Dropped
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
-import akka.actor.typed.internal.pubsub.TopicImpl
-import akka.actor.typed.scaladsl.Behaviors
 import akka.testkit.TimingTest
-import akka.util.WallClock
 import org.scalatest.wordspec.AnyWordSpecLike
 
 import scala.concurrent.duration._
@@ -80,6 +77,15 @@ class LocalPubSubSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike wit
         probe1.expectMessage("apple")
         probe2.expectMessage("apple")
         probe3.expectMessage("apple")
+
+        // since we defer publish until there is a listing from the receptionist,
+        // we can count on being able to publish immediately
+        val fruitTopic3 = testKit.spawn(Topic[String]("fruit2"))
+        fruitTopic3 ! Topic.Publish("kiwi")
+
+        probe1.expectMessage("kiwi")
+        probe2.expectMessage("kiwi")
+        probe3.expectMessage("kiwi")
 
       } finally {
         testKit.stop(fruitTopic1)
@@ -181,20 +187,14 @@ class LocalPubSubSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike wit
     }
 
     "shut down topic after ttl" taggedAs TimingTest in {
-      def createTopic() =
-        testKit.spawn(Behaviors.setup[TopicImpl.Command[String]](context =>
-          Behaviors.withTimers[TopicImpl.Command[String]](timers =>
-            new TopicImpl[String]("fruit6", context, Some((300.millis, timers, WallClock.AlwaysIncreasingClock))))))
+      def createTopic() = testKit.spawn(Topic[String]("fruit6", 300.millis))
       val topic = createTopic()
       val probe = testKit.createTestProbe()
       probe.expectTerminated(topic)
     }
 
     "keep topic with ttl alive with publishing" taggedAs TimingTest in {
-      def createTopic() =
-        testKit.spawn(Behaviors.setup[TopicImpl.Command[String]](context =>
-          Behaviors.withTimers[TopicImpl.Command[String]](timers =>
-            new TopicImpl[String]("fruit7", context, Some((500.millis, timers, WallClock.AlwaysIncreasingClock))))))
+      def createTopic() = testKit.spawn(Topic[String]("fruit7", 500.millis))
       val deadLetters = testKit.createDeadLetterProbe()
       val topic = createTopic()
       // no subscribers, only local publish
@@ -217,10 +217,7 @@ class LocalPubSubSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike wit
     }
 
     "keep topic with ttl alive with subscriber" taggedAs TimingTest in {
-      def createTopic() =
-        testKit.spawn(Behaviors.setup[TopicImpl.Command[String]](context =>
-          Behaviors.withTimers[TopicImpl.Command[String]](timers =>
-            new TopicImpl[String]("fruit8", context, Some((300.millis, timers, WallClock.AlwaysIncreasingClock))))))
+      def createTopic() = testKit.spawn(Topic[String]("fruit8", 300.millis))
       val topic = createTopic()
       val subscriber = testKit.createTestProbe[String]()
       topic ! Topic.Subscribe(subscriber.ref)
