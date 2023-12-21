@@ -169,7 +169,8 @@ class CallingThreadDispatcher(_configurator: MessageDispatcherConfigurator) exte
   protected[akka] override def registerForExecution(
       mbox: Mailbox,
       hasMessageHint: Boolean,
-      hasSystemMessageHint: Boolean): Boolean = false
+      hasSystemMessageHint: Boolean,
+      reschedule: Boolean): Boolean = false
 
   protected[akka] override def shutdownTimeout = 1 second
 

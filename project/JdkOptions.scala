@@ -29,6 +29,8 @@ object JdkOptions extends AutoPlugin {
     if (isJdk17orHigher) {
       // for aeron
       "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED" ::
+      // for reflective access to ForkJoinPool
+      "--add-opens=java.base/java.util.concurrent=ALL-UNNAMED" ::
       // for LevelDB
       "--add-opens=java.base/java.nio=ALL-UNNAMED" :: Nil
     } else Nil

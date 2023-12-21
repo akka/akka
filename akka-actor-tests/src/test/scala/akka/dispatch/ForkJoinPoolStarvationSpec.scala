@@ -14,7 +14,7 @@ object ForkJoinPoolStarvationSpec {
       |actorhang {
       |  task-dispatcher {
       |    mailbox-type = "akka.dispatch.SingleConsumerOnlyUnboundedMailbox"
-      |    throughput = 5
+      |    throughput = 1000
       |    fork-join-executor {
       |      parallelism-factor = 2
       |      parallelism-max = 2

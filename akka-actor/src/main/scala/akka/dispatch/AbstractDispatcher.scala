@@ -149,7 +149,7 @@ abstract class MessageDispatcher(val configurator: MessageDispatcherConfigurator
    */
   final def attach(actor: ActorCell): Unit = {
     register(actor)
-    registerForExecution(actor.mailbox, false, true)
+    registerForExecution(actor.mailbox, false, true, false)
   }
 
   /**
@@ -277,7 +277,7 @@ abstract class MessageDispatcher(val configurator: MessageDispatcherConfigurator
   protected[akka] def resume(actor: ActorCell): Unit = {
     val mbox = actor.mailbox
     if ((mbox.actor eq actor) && (mbox.dispatcher eq this) && mbox.resume())
-      registerForExecution(mbox, false, false)
+      registerForExecution(mbox, false, false, false)
   }
 
   /**
@@ -302,7 +302,8 @@ abstract class MessageDispatcher(val configurator: MessageDispatcherConfigurator
   protected[akka] def registerForExecution(
       mbox: Mailbox,
       hasMessageHint: Boolean,
-      hasSystemMessageHint: Boolean): Boolean
+      hasSystemMessageHint: Boolean,
+      rescheduled: Boolean): Boolean
 
   // TODO check whether this should not actually be a property of the mailbox
   /**

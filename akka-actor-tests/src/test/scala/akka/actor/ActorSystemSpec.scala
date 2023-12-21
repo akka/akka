@@ -90,8 +90,9 @@ object ActorSystemSpec {
       override protected[akka] def registerForExecution(
           mbox: Mailbox,
           hasMessageHint: Boolean,
-          hasSystemMessageHint: Boolean): Boolean = {
-        val ret = super.registerForExecution(mbox, hasMessageHint, hasSystemMessageHint)
+          hasSystemMessageHint: Boolean,
+          reschedule: Boolean): Boolean = {
+        val ret = super.registerForExecution(mbox, hasMessageHint, hasSystemMessageHint, reschedule)
         doneIt.switchOn {
           TestKit.awaitCond(mbox.actor.actor != null, 1.second)
           mbox.actor.actor match {

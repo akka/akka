@@ -4,6 +4,8 @@
 
 package akka.dispatch
 
+import akka.dispatch.ForkJoinExecutorConfigurator.AkkaForkJoinPool
+
 import java.util.Collection
 import java.util.concurrent.{
   ArrayBlockingQueue,
@@ -21,7 +23,6 @@ import java.util.concurrent.{
   TimeUnit
 }
 import java.util.concurrent.atomic.{ AtomicLong, AtomicReference }
-
 import scala.concurrent.{ BlockContext, CanAwait }
 import scala.concurrent.duration.Duration
 
@@ -217,6 +218,10 @@ trait ExecutorServiceDelegate extends ExecutorService {
   def executor: ExecutorService
 
   def execute(command: Runnable) = executor.execute(command)
+  def executeExternal(command: Runnable) =
+    if (executor.isInstanceOf[AkkaForkJoinPool])
+      executor.asInstanceOf[AkkaForkJoinPool].executeExternal(command)
+    else executor.execute(command)
 
   def shutdown(): Unit = { executor.shutdown() }
 

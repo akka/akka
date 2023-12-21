@@ -60,7 +60,7 @@ class Dispatcher(
   protected[akka] def dispatch(receiver: ActorCell, invocation: Envelope): Unit = {
     val mbox = receiver.mailbox
     mbox.enqueue(receiver.self, invocation)
-    registerForExecution(mbox, true, false)
+    registerForExecution(mbox, true, false, false)
   }
 
   /**
@@ -69,7 +69,7 @@ class Dispatcher(
   protected[akka] def systemDispatch(receiver: ActorCell, invocation: SystemMessage): Unit = {
     val mbox = receiver.mailbox
     mbox.systemEnqueue(receiver.self, invocation)
-    registerForExecution(mbox, false, true)
+    registerForExecution(mbox, false, true, false)
   }
 
   /**
@@ -119,11 +119,15 @@ class Dispatcher(
   protected[akka] override def registerForExecution(
       mbox: Mailbox,
       hasMessageHint: Boolean,
-      hasSystemMessageHint: Boolean): Boolean = {
+      hasSystemMessageHint: Boolean,
+      rescheduled: Boolean): Boolean = {
     if (mbox.canBeScheduledForExecution(hasMessageHint, hasSystemMessageHint)) { //This needs to be here to ensure thread safety and no races
       if (mbox.setAsScheduled()) {
         try {
-          executorService.execute(mbox)
+          if (rescheduled)
+            executorService.executeExternal(mbox)
+          else
+            executorService.execute(mbox)
           true
         } catch {
           case _: RejectedExecutionException =>

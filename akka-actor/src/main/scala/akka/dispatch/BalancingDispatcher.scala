@@ -96,7 +96,7 @@ private[akka] class BalancingDispatcher(
 
   override protected[akka] def dispatch(receiver: ActorCell, invocation: Envelope) = {
     messageQueue.enqueue(receiver.self, invocation)
-    if (!registerForExecution(receiver.mailbox, false, false)) teamWork()
+    if (!registerForExecution(receiver.mailbox, false, false, false)) teamWork()
   }
 
   protected def teamWork(): Unit =
@@ -108,7 +108,7 @@ private[akka] class BalancingDispatcher(
               case lm: LoadMetrics => !lm.atFullThrottle()
               case _               => true
             })
-            && !registerForExecution(i.next.mailbox, false, false))
+            && !registerForExecution(i.next.mailbox, false, false, false))
           scheduleOne(i)
 
       scheduleOne()
