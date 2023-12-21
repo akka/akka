@@ -249,6 +249,8 @@ the Projection. The origin replica id is available in the @apidoc[ReplicationCon
 information to the event itself or include it as a tag. The Projection handler can then use this to decide how
 to process the event.
 
+Note that for a multiple data center setup, this will only work out-of-the-box if using a single Akka Cluster and `ReplicatedSharding` for all data centers. Otherwise you will need to implement a means to start the entities in other data centers.
+
 ## Examples
 
 More examples can be found in @ref[Replicated Event Sourcing Examples](./replicated-eventsourcing-examples.md)
