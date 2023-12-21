@@ -250,7 +250,8 @@ private[remote] object Decoder {
       recipientPath: String,
       inboundEnvelope: InboundEnvelope)
 
-  private object Tick
+  private case object Tick
+  private case object EvictActorRefResolveCache
 
   /** Materialized value of [[Encoder]] which allows safely calling into the operator to interfact with compression tables. */
   private[remote] trait InboundCompressionAccess {
@@ -369,7 +370,8 @@ private[remote] class Decoder(
     inEnvelopePool: ObjectPool[ReusableInboundEnvelope])
     extends GraphStageWithMaterializedValue[FlowShape[EnvelopeBuffer, InboundEnvelope], InboundCompressionAccess] {
 
-  import Decoder.Tick
+  import Decoder.{ EvictActorRefResolveCache, Tick }
+
   val in: Inlet[EnvelopeBuffer] = Inlet("Artery.Decoder.in")
   val out: Outlet[InboundEnvelope] = Outlet("Artery.Decoder.out")
   val shape: FlowShape[EnvelopeBuffer, InboundEnvelope] = FlowShape(in, out)
@@ -404,6 +406,9 @@ private[remote] class Decoder(
       override def preStart(): Unit = {
         val tickDelay = 1.seconds
         scheduleWithFixedDelay(Tick, tickDelay, tickDelay)
+
+        val evictDelay = 60.seconds // FIXME config
+        scheduleWithFixedDelay(EvictActorRefResolveCache, evictDelay, evictDelay)
 
         if (settings.Advanced.Compression.ActorRefs.Enabled) {
           val d = settings.Advanced.Compression.ActorRefs.AdvertisementInterval
@@ -585,6 +590,9 @@ private[remote] class Decoder(
               log.debug("Turning on adaptive sampling ({}nth message) of compression hit counting", heavyHitterMask + 1)
             tickMessageCount = messageCount
             tickTimestamp = now
+
+          case EvictActorRefResolveCache =>
+            actorRefResolver.clearRemovedAssociations()
 
           case AdvertiseActorRefsCompressionTable =>
             compressions
