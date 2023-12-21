@@ -12,6 +12,7 @@ import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 
+import akka.actor.Scheduler.AtomicCancellable
 import akka.annotation.InternalApi
 import akka.util.JavaDurationConverters
 
@@ -70,17 +71,16 @@ trait Scheduler {
    * Note: For scheduling within actors `with Timers` should be preferred.
    */
   def scheduleWithFixedDelay(initialDelay: FiniteDuration, delay: FiniteDuration)(runnable: Runnable)(
-      implicit executor: ExecutionContext): Cancellable = {
-    try new AtomicReference[Cancellable](Cancellable.initialNotCancelled) with Cancellable { self =>
-      compareAndSet(
-        Cancellable.initialNotCancelled,
+      implicit executor: ExecutionContext): Cancellable =
+    new AtomicCancellable(Cancellable.initialNotCancelled) {
+      final override protected def scheduleFirst(): Cancellable =
         scheduleOnce(
           initialDelay,
           new Runnable {
             override def run(): Unit = {
               try {
                 runnable.run()
-                if (self.get != null)
+                if (get != null)
                   swap(scheduleOnce(delay, this))
               } catch {
                 // ignore failure to enqueue or terminated target actor
@@ -88,33 +88,8 @@ trait Scheduler {
                 case e: IllegalStateException if e.getCause != null && e.getCause.isInstanceOf[SchedulerException] =>
               }
             }
-          }))
-
-      @tailrec private def swap(c: Cancellable): Unit = {
-        get match {
-          case null => if (c != null) c.cancel()
-          case old  => if (!compareAndSet(old, c)) swap(c)
-        }
-      }
-
-      final def cancel(): Boolean = {
-        @tailrec def tailrecCancel(): Boolean = {
-          get match {
-            case null => false
-            case c =>
-              if (c.cancel()) compareAndSet(c, null)
-              else compareAndSet(c, null) || tailrecCancel()
-          }
-        }
-
-        tailrecCancel()
-      }
-
-      override def isCancelled: Boolean = get == null
-    } catch {
-      case SchedulerException(msg) => throw new IllegalStateException(msg)
+          })
     }
-  }
 
   /**
    * Java API: Schedules a `Runnable` to be run repeatedly with an initial delay and
@@ -561,4 +536,45 @@ object Scheduler {
    * a custom implementation of `Scheduler` must also implement this.
    */
   trait TaskRunOnClose extends Runnable
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
+  private[akka] abstract class AtomicCancellable(initialValue: Cancellable)
+      extends AtomicReference[Cancellable](initialValue)
+      with Cancellable {
+    try {
+      compareAndSet(initialValue, scheduleFirst())
+    } catch {
+      case cause @ SchedulerException(msg) => throw new IllegalStateException(msg, cause)
+    }
+
+    protected def scheduleFirst(): Cancellable
+
+    @tailrec final protected def swap(c: Cancellable): Unit = {
+      get match {
+        case null => if (c != null) c.cancel()
+        case old =>
+          if (!compareAndSet(old, c))
+            swap(c)
+      }
+    }
+
+    final def cancel(): Boolean = {
+      @tailrec def tailrecCancel(): Boolean = {
+        get match {
+          case null => false
+          case c =>
+            if (c.cancel()) compareAndSet(c, null)
+            else compareAndSet(c, null) || tailrecCancel()
+        }
+      }
+
+      tailrecCancel()
+    }
+
+    final override def isCancelled: Boolean = get == null
+
+  }
 }

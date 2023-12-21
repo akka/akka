@@ -16,6 +16,7 @@ import scala.util.control.NonFatal
 
 import com.typesafe.config.Config
 
+import akka.actor.Scheduler.AtomicCancellable
 import akka.dispatch.AbstractNodeQueue
 import akka.event.LoggingAdapter
 import akka.util.Helpers
@@ -102,9 +103,8 @@ class LightArrayRevolverScheduler(config: Config, log: LoggingAdapter, threadFac
   override def schedule(initialDelay: FiniteDuration, delay: FiniteDuration, runnable: Runnable)(
       implicit executor: ExecutionContext): Cancellable = {
     checkMaxDelay(roundUp(delay).toNanos)
-    try new AtomicReference[Cancellable](InitialRepeatMarker) with Cancellable { self =>
-      compareAndSet(
-        InitialRepeatMarker,
+    new AtomicCancellable(InitialRepeatMarker) { self =>
+      final override protected def scheduleFirst(): Cancellable =
         schedule(
           executor,
           new AtomicLong(clock() + initialDelay.toNanos) with Runnable {
@@ -112,38 +112,14 @@ class LightArrayRevolverScheduler(config: Config, log: LoggingAdapter, threadFac
               try {
                 runnable.run()
                 val driftNanos = clock() - getAndAdd(delay.toNanos)
-                if (self.get != null)
+                if (self.get() != null)
                   swap(schedule(executor, this, Duration.fromNanos(Math.max(delay.toNanos - driftNanos, 1))))
               } catch {
                 case _: SchedulerException => // ignore failure to enqueue or terminated target actor
               }
             }
           },
-          roundUp(initialDelay)))
-
-      @tailrec private def swap(c: Cancellable): Unit = {
-        get match {
-          case null => if (c != null) c.cancel()
-          case old  => if (!compareAndSet(old, c)) swap(c)
-        }
-      }
-
-      final def cancel(): Boolean = {
-        @tailrec def tailrecCancel(): Boolean = {
-          get match {
-            case null => false
-            case c =>
-              if (c.cancel()) compareAndSet(c, null)
-              else compareAndSet(c, null) || tailrecCancel()
-          }
-        }
-
-        tailrecCancel()
-      }
-
-      override def isCancelled: Boolean = get == null
-    } catch {
-      case cause @ SchedulerException(msg) => throw new IllegalStateException(msg, cause)
+          roundUp(initialDelay))
     }
   }
 
