@@ -612,6 +612,18 @@ class SourceOrFlow {
     // #groupBy
   }
 
+  void groupByWithAsyncExample() {
+    // #groupByWithAsync
+    Source.range(1, 10)
+            .groupBy(2, i -> i % 2 == 0) // create two sub-streams with odd and even numbers
+            .via(Flow.of(Integer.class).map(elem-> 1).reduce(Integer::sum).async()) // for each sub-stream, sum its elements
+            .mergeSubstreams() // merge back into a stream
+            .runForeach(System.out::println, system);
+    // 25
+    // 30
+    // #groupByWithAsync
+  }
+
   void watchTerminationExample() {
     // #watchTermination
     Source.range(1, 5)
