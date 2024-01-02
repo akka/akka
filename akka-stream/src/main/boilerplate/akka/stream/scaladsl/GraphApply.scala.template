@@ -54,7 +54,7 @@ trait GraphApply {
    *
    * Deprecated: this method signature does not work with Scala 3 type inference, kept for binary compatibility. Use createGraph instead.
    */
-  @deprecated("Use createGraph instead", "2.6.16")
+  @deprecated("Use createGraph instead", "##2.6.##16")
   def create[S <: Shape, Mat, [#M1#]]([#g1: Graph[Shape, M1]#])(combineMat: ([#M1#]) => Mat)(buildBlock: GraphDSL.Builder[Mat] => ([#g1.Shape#]) => S): Graph[S, Mat] = {
     val builder = new GraphDSL.Builder
     val curried = combineMat.curried
