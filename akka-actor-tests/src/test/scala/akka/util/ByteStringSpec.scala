@@ -1407,5 +1407,12 @@ class ByteStringSpec extends AnyWordSpec with Matchers with Checkers {
         }
       }
     }
+
+    // overloading issue #32272
+    "support adding arbitrary sequences of bytes" in {
+      val builder = new ByteStringBuilder()
+      builder ++= Seq[Byte](1, 2, 3)
+      builder.result() shouldEqual ByteString(1, 2, 3)
+    }
   }
 }
