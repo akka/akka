@@ -69,4 +69,26 @@ public class Zip {
     // Pair(4,default)
     // #zipAll-simple
   }
+
+  void zipLatestSample() {
+    final ActorSystem system = ActorSystem.create("zipLatest-example");
+    // #zipLatest-example
+
+    Source<Integer, NotUsed> numbers = Source.from(Arrays.asList(1, 2));
+    Source<String, NotUsed> letters = Source.from(Arrays.asList("a", "b"));
+
+    numbers.zipLatest(letters).runForeach(System.out::println, system);
+    // this will print
+    // Pair(1,a)
+    // Pair(2,a)
+    // Pair(2,b)
+
+    //
+    // NOTE : The output is not always deterministic and also depends on order of elements flowing from the streams.
+    // Sometimes the output could also be :
+    // Pair(1, a)
+    // Pair(1, b)
+    // Pair(2, b)
+    // #zipLatest-example
+  }
 }

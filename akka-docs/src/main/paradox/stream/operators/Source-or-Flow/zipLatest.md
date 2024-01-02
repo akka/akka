@@ -15,7 +15,15 @@ Combines elements from each of multiple sources into @scala[tuples] @java[*Pair*
 Combines elements from each of multiple sources into @scala[tuples] @java[*Pair*] and passes the @scala[tuples] @java[pairs] downstream, picking always the latest element of each.
 
 No element is emitted until at least one element from each Source becomes available.
- 
+
+## Example
+
+Scala
+:   @@snip [StreamConvertersToJava.scala](/akka-docs/src/test/scala/docs/stream/operators/source/Zip.scala) { #zipLatest-example }
+
+Java
+:   @@snip [StreamConvertersToJava.java](/akka-docs/src/test/java/jdocs/stream/operators/source/Zip.java) { #zipLatest-example }
+
 ## Reactive Streams semantics
 
 @@@div { .callout }

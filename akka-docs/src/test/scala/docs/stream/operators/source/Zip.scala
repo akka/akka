@@ -60,4 +60,22 @@ object Zip {
     // (4,default)
     // #zipAll-simple
   }
+
+  def zipLatest(): Unit = {
+    // #zipLatest-example
+    val numbers = Source(1 :: 2 :: Nil)
+    val letters = Source("a" :: "b" :: Nil)
+
+    numbers.zipLatest(letters).runForeach(println)
+    // this will print
+    // (1,a)
+    // (2,a)
+    // (2,b)
+    // NOTE : The output is not always deterministic and also depends on order of elements flowing from the streams.
+    // Sometimes the output could also be :
+    // (1, a)
+    // (1, b)
+    // (2, b)
+    // #zipLatest-example
+  }
 }
