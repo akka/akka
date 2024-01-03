@@ -20,7 +20,7 @@ When that happens, the wrapped @apidoc[Source], if currently running will be can
 This can be triggered simply by the downstream cancelling, or externally by introducing a @apidoc[KillSwitch] right
 after this @apidoc[Source] in the graph.
 
-This uses the same exponential backoff algorithm as @apidoc[Backoff].
+This uses the same exponential backoff algorithm as `Backoff`.
 
 ## Reactive Streams semantics
 

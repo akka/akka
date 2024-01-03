@@ -24,4 +24,4 @@ The restart process is inherently lossy, since there is no coordination between 
 messages. When the wrapped @apidoc[Sink] does cancel, this @apidoc[Sink] will backpressure, however any elements already
 sent may have been lost.
 
-This uses the same exponential backoff algorithm as @apidoc[Backoff].
+This uses the same exponential backoff algorithm as `Backoff`.
