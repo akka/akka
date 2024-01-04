@@ -7,7 +7,7 @@ project which is currently being developed in open preview mode.
 
 @@@
 
-Akka "Typed Actors", now replaced by [Akka Typed](typed/index.md), were an implementation of the [Active Objects](http://en.wikipedia.org/wiki/Active_object) pattern.
+Akka "Typed Actors", now replaced by @ref[Akka Typed](typed/index.md), were an implementation of the [Active Objects](http://en.wikipedia.org/wiki/Active_object) pattern.
 Essentially turning method invocations into asynchronous dispatch instead of synchronous that has been the default way since Smalltalk came out.
 
 Typed Actors consist of 2 "parts", a public interface and an implementation, and if you've done any work in "enterprise" Java, this will be very familiar to you. As with normal Actors you have an external API (the public interface instance) that will delegate method calls asynchronously to

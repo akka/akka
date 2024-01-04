@@ -23,7 +23,7 @@ The restart process is inherently lossy, since there is no coordination between 
 messages. A termination signal from either end of the wrapped @apidoc[Flow] will cause the other end to be terminated,
 and any in transit messages will be lost. During backoff, this @apidoc[Flow] will backpressure.
 
-This uses the same exponential backoff algorithm as @apidoc[Backoff].
+This uses the same exponential backoff algorithm as `Backoff`.
 
 ## Reactive Streams semantics
 
