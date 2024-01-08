@@ -106,7 +106,7 @@ private final class InitialTopicImpl[T](
       else
         context.system.eventStream ! EventStream.Publish(Dropped(
           msg,
-          s"Stash is full in group router for [$topicServiceKey]",
+          s"Stash is full in topic [$topicServiceKey]",
           context.self.toClassic)) // don't fail on full stash
       this
   }
