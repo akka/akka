@@ -1,6 +1,6 @@
 # onErrorComplete
 
-Allows completing the stream when a upstream error occur.
+Allows completing the stream when an upstream error occurs.
 
 @ref[Error handling](../index.md#error-handling)
 
@@ -13,7 +13,7 @@ Allows completing the stream when a upstream error occur.
 
 ## Description
 
-Allows to complete the stream when an upstream error occur.
+Allows to complete the stream when an upstream error occurs.
 
 ## Reactive Streams semantics
 
