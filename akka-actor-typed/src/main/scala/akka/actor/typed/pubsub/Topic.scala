@@ -7,9 +7,7 @@ package akka.actor.typed.pubsub
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.internal.pubsub.TopicImpl
-import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.DoNotInherit
-import akka.util.WallClock
 
 import scala.concurrent.duration.FiniteDuration
 import scala.jdk.DurationConverters.JavaDurationOps
@@ -125,7 +123,7 @@ object Topic {
    * set of re-usable topics instead of manually creating and managing the topic actors.
    */
   def apply[T](topicName: String)(implicit classTag: ClassTag[T]): Behavior[Command[T]] =
-    Behaviors.setup[TopicImpl.Command[T]](context => new TopicImpl[T](topicName, context, None)).narrow
+    TopicImpl[T](topicName, None).narrow
 
   /**
    * Scala API: Create a topic actor behavior for the given topic name and message type with a TTL
@@ -135,11 +133,7 @@ object Topic {
    * set of re-usable topics instead of manually creating and managing the topic actors.
    */
   def apply[T](topicName: String, ttl: FiniteDuration)(implicit classTag: ClassTag[T]): Behavior[Command[T]] =
-    Behaviors
-      .setup[TopicImpl.Command[T]](context =>
-        Behaviors.withTimers[TopicImpl.Command[T]](timers =>
-          new TopicImpl[T](topicName, context, Some((ttl, timers, WallClock.AlwaysIncreasingClock)))))
-      .narrow
+    TopicImpl[T](topicName, Some(ttl)).narrow
 
   /**
    * Java API: Create a topic actor behavior for the given topic name and message class

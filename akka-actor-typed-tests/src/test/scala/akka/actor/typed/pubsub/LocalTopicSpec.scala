@@ -4,10 +4,11 @@
 
 package akka.actor.typed.pubsub
 
+import akka.actor.Dropped
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.internal.pubsub.TopicImpl
-import akka.actor.typed.scaladsl.Behaviors
+import akka.testkit.TimingTest
 import org.scalatest.wordspec.AnyWordSpecLike
 
 import scala.concurrent.duration._
@@ -186,21 +187,17 @@ class LocalTopicSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with
       }
     }
 
-    "shut down topic after ttl" in {
+    "shut down topic after ttl" taggedAs (TimingTest) in {
       def createTopic() =
-        testKit.spawn(Behaviors.setup[TopicImpl.Command[String]](context =>
-          Behaviors.withTimers[TopicImpl.Command[String]](timers =>
-            new TopicImpl[String]("fruit6", context, Some((300.millis, timers, WallClock.AlwaysIncreasingClock))))))
+        testKit.spawn(TopicImpl[String]("fruit6", Some(300.millis)))
       val topic = createTopic()
       val probe = testKit.createTestProbe()
       probe.expectTerminated(topic)
     }
 
-    "keep topic with ttl alive with publishing" in {
+    "keep topic with ttl alive with publishing" taggedAs (TimingTest) in {
       def createTopic() =
-        testKit.spawn(Behaviors.setup[TopicImpl.Command[String]](context =>
-          Behaviors.withTimers[TopicImpl.Command[String]](timers =>
-            new TopicImpl[String]("fruit7", context, Some((500.millis, timers, WallClock.AlwaysIncreasingClock))))))
+        testKit.spawn(TopicImpl[String]("fruit7", Some(500.millis)))
       val deadLetters = testKit.createDeadLetterProbe()
       val topic = createTopic()
       // no subscribers, only local publish
@@ -222,11 +219,9 @@ class LocalTopicSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with
       probe.expectTerminated(topic)
     }
 
-    "keep topic with ttl alive with subscriber" in {
+    "keep topic with ttl alive with subscriber" taggedAs (TimingTest) in {
       def createTopic() =
-        testKit.spawn(Behaviors.setup[TopicImpl.Command[String]](context =>
-          Behaviors.withTimers[TopicImpl.Command[String]](timers =>
-            new TopicImpl[String]("fruit8", context, Some((300.millis, timers, WallClock.AlwaysIncreasingClock))))))
+        testKit.spawn(TopicImpl[String]("fruit8", Some(300.millis)))
       val topic = createTopic()
       val subscriber = testKit.createTestProbe[String]()
       topic ! Topic.Subscribe(subscriber.ref)
