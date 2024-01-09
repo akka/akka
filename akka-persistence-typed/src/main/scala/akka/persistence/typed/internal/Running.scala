@@ -19,8 +19,8 @@ import akka.actor.typed.{ Behavior, Signal }
 import akka.actor.typed.ActorRef
 import akka.actor.typed.eventstream.EventStream
 import akka.actor.typed.internal.PoisonPill
-import akka.actor.typed.scaladsl.{ AbstractBehavior, ActorContext, Behaviors, LoggerOps }
-import akka.annotation.{ InternalApi, InternalStableApi }
+import akka.actor.typed.scaladsl.{ AbstractBehavior, Behaviors, LoggerOps }
+import akka.annotation.InternalApi
 import akka.event.Logging
 import akka.persistence.DeleteMessagesFailure
 import akka.persistence.DeleteMessagesSuccess
@@ -65,7 +65,6 @@ import akka.stream.scaladsl.Source
 import akka.stream.typed.scaladsl.ActorFlow
 import akka.util.OptionVal
 import akka.util.Timeout
-import akka.util.unused
 
 /**
  * INTERNAL API
@@ -436,8 +435,7 @@ private[akka] object Running {
       }
 
       val newState2: RunningState[S] = internalPersist(
-        setup.context,
-        null,
+        OptionVal.none,
         stateAfterApply,
         eventToPersist,
         eventAdapterManifest,
@@ -448,6 +446,7 @@ private[akka] object Running {
       persistingEvents(
         newState2.copy(seenPerReplica = updatedSeen, version = updatedVersion),
         state,
+        command = OptionVal.none,
         numberOfEvents = 1,
         shouldSnapshotAfterPersist,
         shouldPublish = false,
@@ -474,8 +473,7 @@ private[akka] object Running {
           case Some(replication) =>
             val updatedVersion = stateAfterApply.version.updated(replication.replicaId.id, _currentSequenceNumber)
             val r = internalPersist(
-              setup.context,
-              cmd,
+              OptionVal.Some(cmd),
               stateAfterApply,
               eventToPersist,
               eventAdapterManifest,
@@ -494,7 +492,7 @@ private[akka] object Running {
 
             r
           case None =>
-            internalPersist(setup.context, cmd, stateAfterApply, eventToPersist, eventAdapterManifest, OptionVal.None)
+            internalPersist(OptionVal.Some(cmd), stateAfterApply, eventToPersist, eventAdapterManifest, OptionVal.None)
         }
 
         val shouldSnapshotAfterPersist = setup.shouldSnapshot(newState2.state, event, newState2.seqNr)
@@ -502,6 +500,7 @@ private[akka] object Running {
           persistingEvents(
             newState2,
             state,
+            command = OptionVal.Some(cmd),
             numberOfEvents = 1,
             shouldSnapshotAfterPersist,
             shouldPublish = true,
@@ -560,12 +559,13 @@ private[akka] object Running {
           }
 
           val newState2 =
-            internalPersistAll(setup.context, cmd, currentState, eventsToPersist.reverse)
+            internalPersistAll(OptionVal.Some(cmd), currentState, eventsToPersist.reverse)
 
           (
             persistingEvents(
               newState2,
               state,
+              command = OptionVal.Some(cmd),
               events.size,
               shouldSnapshotAfterPersist,
               shouldPublish = true,
@@ -656,19 +656,28 @@ private[akka] object Running {
   def persistingEvents(
       state: RunningState[S],
       visibleState: RunningState[S], // previous state until write success
+      command: OptionVal[Any],
       numberOfEvents: Int,
       shouldSnapshotAfterPersist: SnapshotAfterPersist,
       shouldPublish: Boolean,
       sideEffects: immutable.Seq[SideEffect[S]]): Behavior[InternalProtocol] = {
     setup.setMdcPhase(PersistenceMdc.PersistingEvents)
     recursiveUnstashOne = 0
-    new PersistingEvents(state, visibleState, numberOfEvents, shouldSnapshotAfterPersist, shouldPublish, sideEffects)
+    new PersistingEvents(
+      state,
+      visibleState,
+      command,
+      numberOfEvents,
+      shouldSnapshotAfterPersist,
+      shouldPublish,
+      sideEffects)
   }
 
   /** INTERNAL API */
   @InternalApi private[akka] class PersistingEvents(
       var state: RunningState[S],
       var visibleState: RunningState[S], // previous state until write success
+      command: OptionVal[Any],
       numberOfEvents: Int,
       shouldSnapshotAfterPersist: SnapshotAfterPersist,
       shouldPublish: Boolean,
@@ -737,7 +746,10 @@ private[akka] object Running {
         state = state.updateLastSequenceNr(p)
         eventCounter += 1
 
-        onWriteSuccess(setup.context, p)
+        setup.instrumentation.persistEventWritten(
+          setup.context.self,
+          p.payload.asInstanceOf[AnyRef],
+          command.orNull.asInstanceOf[AnyRef])
 
         if (setup.publishEvents && shouldPublish) {
           val meta = setup.replication.map(replication =>
@@ -748,7 +760,10 @@ private[akka] object Running {
 
         // only once all things are applied we can revert back
         if (eventCounter < numberOfEvents) {
-          onWriteDone(setup.context, p)
+          setup.instrumentation.persistEventDone(
+            setup.context.self,
+            p.payload.asInstanceOf[AnyRef],
+            command.orNull.asInstanceOf[AnyRef])
           this
         } else {
           visibleState = state
@@ -764,7 +779,10 @@ private[akka] object Running {
           }
           if (shouldSnapshotAfterPersist == NoSnapshot || state.state == null || skipRetention()) {
             val newState = applySideEffects(sideEffects, state)
-            onWriteDone(setup.context, p)
+            setup.instrumentation.persistEventDone(
+              setup.context.self,
+              p.payload.asInstanceOf[AnyRef],
+              command.orNull.asInstanceOf[AnyRef])
             tryUnstashOne(newState)
           } else {
             if (shouldSnapshotAfterPersist == SnapshotWithRetention)
@@ -783,13 +801,23 @@ private[akka] object Running {
 
         case WriteMessageRejected(p, cause, id) =>
           if (id == setup.writerIdentity.instanceId) {
-            onWriteRejected(setup.context, cause, p)
+            setup.instrumentation.persistRejected(
+              setup.context.self,
+              cause,
+              p.payload.asInstanceOf[AnyRef],
+              p.sequenceNr,
+              command.orNull.asInstanceOf[AnyRef])
             throw new EventRejectedException(setup.persistenceId, p.sequenceNr, cause)
           } else this
 
         case WriteMessageFailure(p, cause, id) =>
           if (id == setup.writerIdentity.instanceId) {
-            onWriteFailed(setup.context, cause, p)
+            setup.instrumentation.persistFailed(
+              setup.context.self,
+              cause,
+              p.payload.asInstanceOf[AnyRef],
+              p.sequenceNr,
+              command.orNull.asInstanceOf[AnyRef])
             throw new JournalFailureException(setup.persistenceId, p.sequenceNr, p.payload.getClass.getName, cause)
           } else this
 
@@ -1085,18 +1113,4 @@ private[akka] object Running {
     }
   }
 
-  @InternalStableApi
-  private[akka] def onWriteFailed(
-      @unused ctx: ActorContext[_],
-      @unused reason: Throwable,
-      @unused event: PersistentRepr): Unit = ()
-  @InternalStableApi
-  private[akka] def onWriteRejected(
-      @unused ctx: ActorContext[_],
-      @unused reason: Throwable,
-      @unused event: PersistentRepr): Unit = ()
-  @InternalStableApi
-  private[akka] def onWriteSuccess(@unused ctx: ActorContext[_], @unused event: PersistentRepr): Unit = ()
-  @InternalStableApi
-  private[akka] def onWriteDone(@unused ctx: ActorContext[_], @unused event: PersistentRepr): Unit = ()
 }

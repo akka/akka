@@ -23,6 +23,7 @@ import akka.persistence.typed.ReplicaId
 import akka.persistence.typed.SnapshotAdapter
 import akka.persistence.typed.scaladsl.EventSourcedBehavior
 import akka.persistence.typed.scaladsl.RetentionCriteria
+import akka.persistence.typed.telemetry.EventSourcedBehaviorInstrumentation
 import akka.util.OptionVal
 
 /**
@@ -59,7 +60,8 @@ private[akka] final class BehaviorSetup[C, E, S](
     val replication: Option[ReplicationSetup],
     val publishEvents: Boolean,
     private val internalLoggerFactory: () => Logger,
-    private var retentionInProgress: Boolean) {
+    private var retentionInProgress: Boolean,
+    val instrumentation: EventSourcedBehaviorInstrumentation) {
 
   import BehaviorSetup._
   import InternalProtocol.RecoveryTickEvent

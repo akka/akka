@@ -15,11 +15,10 @@ import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.LoggerOps
 import akka.annotation.InternalApi
-import akka.annotation.InternalStableApi
 import akka.persistence._
 import akka.persistence.JournalProtocol.ReplayMessages
 import akka.persistence.SnapshotProtocol.LoadSnapshot
-import akka.util.{ unused, OptionVal }
+import akka.util.OptionVal
 
 /** INTERNAL API */
 @InternalApi
@@ -43,8 +42,7 @@ private[akka] trait JournalInteractions[C, E, S] {
   def setup: BehaviorSetup[C, E, S]
 
   protected def internalPersist(
-      ctx: ActorContext[_],
-      cmd: Any,
+      cmd: OptionVal[Any],
       state: Running.RunningState[S],
       event: EventOrTaggedOrReplicated,
       eventAdapterManifest: String,
@@ -60,9 +58,10 @@ private[akka] trait JournalInteractions[C, E, S] {
       writerUuid = setup.writerIdentity.writerUuid,
       sender = ActorRef.noSender)
 
-    // FIXME check cinnamon is okay with this being null
-    // https://github.com/akka/akka/issues/29262
-    onWriteInitiated(ctx, cmd, repr)
+    setup.instrumentation.persistEventCalled(
+      setup.context.self,
+      repr.payload.asInstanceOf[AnyRef],
+      cmd.orNull.asInstanceOf[AnyRef])
 
     val write = AtomicWrite(metadata match {
         case OptionVal.Some(meta) => repr.withMetadata(meta)
@@ -75,15 +74,8 @@ private[akka] trait JournalInteractions[C, E, S] {
     newRunningState
   }
 
-  @InternalStableApi
-  private[akka] def onWriteInitiated(
-      @unused ctx: ActorContext[_],
-      @unused cmd: Any,
-      @unused repr: PersistentRepr): Unit = ()
-
   protected def internalPersistAll(
-      ctx: ActorContext[_],
-      cmd: Any,
+      cmd: OptionVal[Any],
       state: Running.RunningState[S],
       events: immutable.Seq[EventToPersist]): Running.RunningState[S] = {
     if (events.nonEmpty) {
@@ -105,7 +97,7 @@ private[akka] trait JournalInteractions[C, E, S] {
           }
       }
 
-      onWritesInitiated(ctx, cmd, writes)
+      onWritesInitiated(cmd, writes)
       val write = AtomicWrite(writes)
 
       setup.journal.tell(
@@ -116,11 +108,14 @@ private[akka] trait JournalInteractions[C, E, S] {
     } else state
   }
 
-  @InternalStableApi
-  private[akka] def onWritesInitiated(
-      @unused ctx: ActorContext[_],
-      @unused cmd: Any,
-      @unused repr: immutable.Seq[PersistentRepr]): Unit = ()
+  private def onWritesInitiated(cmd: OptionVal[Any], reprs: immutable.Seq[PersistentRepr]): Unit = {
+    reprs.foreach { repr =>
+      setup.instrumentation.persistEventCalled(
+        setup.context.self,
+        repr.payload.asInstanceOf[AnyRef],
+        cmd.orNull.asInstanceOf[AnyRef])
+    }
+  }
 
   protected def replayEvents(fromSeqNr: Long, toSeqNr: Long): Unit = {
     setup.internalLogger.debug2("Replaying events: from: {}, to: {}", fromSeqNr, toSeqNr)

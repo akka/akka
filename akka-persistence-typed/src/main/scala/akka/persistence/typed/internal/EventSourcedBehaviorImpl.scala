@@ -46,6 +46,7 @@ import akka.persistence.typed.SnapshotSelectionCriteria
 import akka.persistence.typed.scaladsl._
 import akka.persistence.typed.scaladsl.{ Recovery => TypedRecovery }
 import akka.persistence.typed.scaladsl.RetentionCriteria
+import akka.persistence.typed.telemetry.EventSourcedBehaviorInstrumentationProvider
 import akka.util.ConstantFun
 import akka.util.unused
 
@@ -199,7 +200,8 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
             replication = replication,
             publishEvents = publishEvents,
             internalLoggerFactory = () => internalLogger(),
-            retentionInProgress = false)
+            retentionInProgress = false,
+            EventSourcedBehaviorInstrumentationProvider(ctx.system).instrumentation)
 
           // needs to accept Any since we also can get messages from the journal
           // not part of the user facing Command protocol
