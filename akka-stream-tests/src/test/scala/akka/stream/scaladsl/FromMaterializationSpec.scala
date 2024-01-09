@@ -7,6 +7,7 @@ package akka.stream.scaladsl
 import akka.NotUsed
 import akka.stream.Attributes
 import akka.stream.Attributes.Attribute
+import akka.stream.impl.fusing.GraphInterpreter
 import akka.stream.scaladsl.AttributesSpec.{ whateverAttribute, WhateverAttribute }
 import akka.stream.testkit.StreamSpec
 
@@ -31,6 +32,14 @@ class FromMaterializerSpec extends StreamSpec {
       }
 
       source.runWith(Sink.head).futureValue should not be empty
+    }
+
+    "expose interpreter" in {
+      val flow = Flow.fromMaterializer { (_, _) =>
+        Flow.fromSinkAndSource(Sink.ignore, Source.single(GraphInterpreter.currentInterpreter))
+      }
+
+      Source.empty.via(flow).runWith(Sink.head).futureValue should not be null
     }
 
     "propagate materialized value" in {

@@ -301,20 +301,27 @@ import akka.stream.stage._
    */
   def init(subMat: Materializer): Unit = {
     _subFusingMaterializer = if (subMat == null) materializer else subMat
-    var i = 0
-    while (i < logics.length) {
-      val logic = logics(i)
-      logic.interpreter = this
-      try {
-        logic.beforePreStart()
-        logic.preStart()
-      } catch {
-        case NonFatal(e) =>
-          log.error(e, "Error during preStart in [{}]: {}", logic.toString, e.getMessage)
-          logic.failStage(e)
+    val currentInterpreterHolder = _currentInterpreter.get()
+    val previousInterpreter = currentInterpreterHolder(0)
+    currentInterpreterHolder(0) = this
+    try {
+      var i = 0
+      while (i < logics.length) {
+        val logic = logics(i)
+        logic.interpreter = this
+        try {
+          logic.beforePreStart()
+          logic.preStart()
+        } catch {
+          case NonFatal(e) =>
+            log.error(e, "Error during preStart in [{}]: {}", logic.toString, e.getMessage)
+            logic.failStage(e)
+        }
+        afterStageHasRun(logic)
+        i += 1
       }
-      afterStageHasRun(logic)
-      i += 1
+    } finally {
+      currentInterpreterHolder(0) = previousInterpreter
     }
   }
 
