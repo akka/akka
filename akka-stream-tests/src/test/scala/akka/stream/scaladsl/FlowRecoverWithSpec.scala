@@ -52,6 +52,20 @@ class FlowRecoverWithSpec extends StreamSpec {
         .expectComplete()
     }
 
+    "recover with single source" in {
+      Source(1 to 4)
+        .map { a =>
+          if (a == 3) throw ex else a
+        }
+        .recoverWith { case _: Throwable => Source.single(3) }
+        .runWith(TestSink[Int]())
+        .request(2)
+        .expectNextN(1 to 2)
+        .request(1)
+        .expectNext(3)
+        .expectComplete()
+    }
+
     "cancel substream if parent is terminated when there is a handler" in {
       Source(1 to 4)
         .map { a =>

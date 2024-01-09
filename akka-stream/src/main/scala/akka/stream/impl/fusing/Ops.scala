@@ -2158,8 +2158,13 @@ private[akka] object TakeWithin {
             case source: Graph[SourceShape[T] @unchecked, M @unchecked] if TraversalBuilder.isEmptySource(source) =>
               completeStage()
             case other: Graph[SourceShape[T] @unchecked, M @unchecked] =>
-              switchTo(other)
-              attempt += 1
+              TraversalBuilder.getSingleSource(other) match {
+                case OptionVal.Some(singleSource) =>
+                  emit(out, singleSource.elem.asInstanceOf[T], () => completeStage())
+                case _ =>
+                  switchTo(other)
+                  attempt += 1
+              }
             case _ => throw new IllegalStateException() // won't happen, compiler exhaustiveness check pleaser
           }
         } else
