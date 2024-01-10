@@ -14,6 +14,7 @@ import akka.persistence.SnapshotProtocol.LoadSnapshotFailed
 import akka.persistence.SnapshotProtocol.LoadSnapshotResult
 import akka.persistence.typed.{ RecoveryFailed, ReplicaId }
 import akka.persistence.typed.internal.EventSourcedBehaviorImpl.{ GetSeenSequenceNr, GetState }
+import akka.util.OptionVal
 import akka.util.unused
 
 /**
@@ -95,7 +96,7 @@ private[akka] class ReplayingSnapshot[C, E, S](override val setup: BehaviorSetup
    * @param cause failure cause.
    */
   private def onRecoveryFailure(cause: Throwable): Behavior[InternalProtocol] = {
-    setup.instrumentation.recoveryFailed(setup.context.self, cause, null)
+    setup.instrumentation.recoveryFailed(setup.context.self, cause, OptionVal.None)
     onRecoveryFailed(setup.context, cause)
     setup.onSignal(setup.emptyState, RecoveryFailed(cause), catchAndLog = true)
     setup.cancelRecoveryTimer()

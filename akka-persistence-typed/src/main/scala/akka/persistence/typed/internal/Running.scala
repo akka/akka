@@ -58,6 +58,7 @@ import akka.persistence.typed.internal.JournalInteractions.EventToPersist
 import akka.persistence.typed.internal.Running.MaxRecursiveUnstash
 import akka.persistence.typed.internal.Running.WithSeqNrAccessible
 import akka.persistence.typed.scaladsl.Effect
+import akka.persistence.typed.telemetry.EventSourcedBehaviorInstrumentation
 import akka.stream.{ RestartSettings, SystemMaterializer, WatchedActorTerminatedException }
 import akka.stream.scaladsl.{ RestartSource, Sink }
 import akka.stream.scaladsl.Keep
@@ -100,7 +101,8 @@ private[akka] object Running {
       receivedPoisonPill: Boolean,
       version: VersionVector,
       seenPerReplica: Map[ReplicaId, Long],
-      replicationControl: Map[ReplicaId, ReplicationStreamControl]) {
+      replicationControl: Map[ReplicaId, ReplicationStreamControl],
+      instrumentationContext: EventSourcedBehaviorInstrumentation.Context) {
 
     def nextSequenceNr(): RunningState[State] =
       copy(seqNr = seqNr + 1)
@@ -112,6 +114,15 @@ private[akka] object Running {
       val updated = setup.eventHandler(state, event)
       copy(state = updated)
     }
+
+    def updateInstrumentationContext(
+        instrumentationContext: EventSourcedBehaviorInstrumentation.Context): RunningState[State] = {
+      if (instrumentationContext eq this.instrumentationContext) this // avoid instance creation for EmptyContext
+      else copy(instrumentationContext = instrumentationContext)
+    }
+
+    def clearInstrumentationContext: RunningState[State] =
+      updateInstrumentationContext(EventSourcedBehaviorInstrumentation.EmptyContext)
   }
 
   def startReplicationStream[C, E, S](
@@ -447,7 +458,6 @@ private[akka] object Running {
       persistingEvents(
         newState2.copy(seenPerReplica = updatedSeen, version = updatedVersion),
         state,
-        command = OptionVal.none,
         numberOfEvents = 1,
         shouldSnapshotAfterPersist,
         shouldPublish = false,
@@ -501,7 +511,6 @@ private[akka] object Running {
           persistingEvents(
             newState2,
             state,
-            command = OptionVal.Some(cmd),
             numberOfEvents = 1,
             shouldSnapshotAfterPersist,
             shouldPublish = true,
@@ -566,7 +575,6 @@ private[akka] object Running {
             persistingEvents(
               newState2,
               state,
-              command = OptionVal.Some(cmd),
               events.size,
               shouldSnapshotAfterPersist,
               shouldPublish = true,
@@ -657,28 +665,19 @@ private[akka] object Running {
   def persistingEvents(
       state: RunningState[S],
       visibleState: RunningState[S], // previous state until write success
-      command: OptionVal[Any],
       numberOfEvents: Int,
       shouldSnapshotAfterPersist: SnapshotAfterPersist,
       shouldPublish: Boolean,
       sideEffects: immutable.Seq[SideEffect[S]]): Behavior[InternalProtocol] = {
     setup.setMdcPhase(PersistenceMdc.PersistingEvents)
     recursiveUnstashOne = 0
-    new PersistingEvents(
-      state,
-      visibleState,
-      command,
-      numberOfEvents,
-      shouldSnapshotAfterPersist,
-      shouldPublish,
-      sideEffects)
+    new PersistingEvents(state, visibleState, numberOfEvents, shouldSnapshotAfterPersist, shouldPublish, sideEffects)
   }
 
   /** INTERNAL API */
   @InternalApi private[akka] class PersistingEvents(
       var state: RunningState[S],
       var visibleState: RunningState[S], // previous state until write success
-      command: OptionVal[Any],
       numberOfEvents: Int,
       shouldSnapshotAfterPersist: SnapshotAfterPersist,
       shouldPublish: Boolean,
@@ -747,10 +746,9 @@ private[akka] object Running {
         state = state.updateLastSequenceNr(p)
         eventCounter += 1
 
-        setup.instrumentation.persistEventWritten(
-          setup.context.self,
-          p.payload.asInstanceOf[AnyRef],
-          command.orNull.asInstanceOf[AnyRef])
+        val instrumentationContext2 =
+          setup.instrumentation.persistEventWritten(setup.context.self, p.payload, state.instrumentationContext)
+        val state2 = state.updateInstrumentationContext(instrumentationContext2)
         onWriteSuccess(setup.context, p)
 
         if (setup.publishEvents && shouldPublish) {
@@ -762,14 +760,10 @@ private[akka] object Running {
 
         // only once all things are applied we can revert back
         if (eventCounter < numberOfEvents) {
-          setup.instrumentation.persistEventDone(
-            setup.context.self,
-            p.payload.asInstanceOf[AnyRef],
-            command.orNull.asInstanceOf[AnyRef])
           onWriteDone(setup.context, p)
           this
         } else {
-          visibleState = state
+          visibleState = state2
           def skipRetention(): Boolean = {
             // only one retention process at a time
             val inProgress = shouldSnapshotAfterPersist == SnapshotWithRetention && setup.isRetentionInProgress()
@@ -777,22 +771,22 @@ private[akka] object Running {
               setup.internalLogger.info(
                 "Skipping retention at seqNr [{}] because previous retention has not completed yet. " +
                 "Next retention will cover skipped retention.",
-                state.seqNr)
+                state2.seqNr)
             inProgress
           }
-          if (shouldSnapshotAfterPersist == NoSnapshot || state.state == null || skipRetention()) {
-            val newState = applySideEffects(sideEffects, state)
-            setup.instrumentation.persistEventDone(
-              setup.context.self,
-              p.payload.asInstanceOf[AnyRef],
-              command.orNull.asInstanceOf[AnyRef])
+
+          if (shouldSnapshotAfterPersist == NoSnapshot || state2.state == null || skipRetention()) {
+            val behavior = applySideEffects(sideEffects, state2.clearInstrumentationContext)
+            setup.instrumentation.persistEventDone(setup.context.self, instrumentationContext2)
             onWriteDone(setup.context, p)
-            tryUnstashOne(newState)
+            tryUnstashOne(behavior)
           } else {
+            setup.instrumentation.persistEventDone(setup.context.self, instrumentationContext2)
+            onWriteDone(setup.context, p)
             if (shouldSnapshotAfterPersist == SnapshotWithRetention)
-              setup.retentionProgressSaveSnapshotStarted(state.seqNr)
-            internalSaveSnapshot(state)
-            new StoringSnapshot(state, sideEffects, shouldSnapshotAfterPersist)
+              setup.retentionProgressSaveSnapshotStarted(state2.seqNr)
+            internalSaveSnapshot(state2)
+            new StoringSnapshot(state2.clearInstrumentationContext, sideEffects, shouldSnapshotAfterPersist)
           }
         }
       }
@@ -808,9 +802,9 @@ private[akka] object Running {
             setup.instrumentation.persistRejected(
               setup.context.self,
               cause,
-              p.payload.asInstanceOf[AnyRef],
+              p.payload,
               p.sequenceNr,
-              command.orNull.asInstanceOf[AnyRef])
+              state.instrumentationContext)
             onWriteRejected(setup.context, cause, p)
             throw new EventRejectedException(setup.persistenceId, p.sequenceNr, cause)
           } else this
@@ -820,9 +814,9 @@ private[akka] object Running {
             setup.instrumentation.persistFailed(
               setup.context.self,
               cause,
-              p.payload.asInstanceOf[AnyRef],
+              p.payload,
               p.sequenceNr,
-              command.orNull.asInstanceOf[AnyRef])
+              state.instrumentationContext)
             onWriteFailed(setup.context, cause, p)
             throw new JournalFailureException(setup.persistenceId, p.sequenceNr, p.payload.getClass.getName, cause)
           } else this

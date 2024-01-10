@@ -37,7 +37,7 @@ private[akka] object OptionVal {
  * See https://hseeberger.wordpress.com/2013/10/04/name-based-extractors-in-scala-2-11/
  */
 @InternalStableApi
-private[akka] final class OptionVal[+A](val x: A) extends AnyVal {
+final class OptionVal[+A](val x: A) extends AnyVal {
 
   /**
    * Returns true if the option is `OptionVal.None`, false otherwise.
