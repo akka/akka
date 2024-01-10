@@ -6,8 +6,9 @@ package akka.persistence.typed.internal
 
 import akka.actor.typed.Behavior
 import akka.actor.typed.internal.PoisonPill
-import akka.actor.typed.scaladsl.Behaviors
-import akka.annotation.InternalApi
+import akka.actor.typed.scaladsl.{ ActorContext, Behaviors }
+import akka.annotation.{ InternalApi, InternalStableApi }
+import akka.util.unused
 
 /**
  * INTERNAL API
@@ -32,6 +33,8 @@ private[akka] class RequestingRecoveryPermit[C, E, S](override val setup: Behavi
     extends StashManagement[C, E, S]
     with JournalInteractions[C, E, S]
     with SnapshotInteractions[C, E, S] {
+
+  onRequestingRecoveryPermit(setup.context)
 
   def createBehavior(): Behavior[InternalProtocol] = {
     val instCtx =
@@ -68,6 +71,10 @@ private[akka] class RequestingRecoveryPermit[C, E, S](override val setup: Behavi
     }
     stay(receivedPoisonPill = false)
   }
+
+  // FIXME remove instrumentation hook method in 2.10.0
+  @InternalStableApi
+  def onRequestingRecoveryPermit(@unused context: ActorContext[_]): Unit = ()
 
   private def becomeReplaying(receivedPoisonPill: Boolean): Behavior[InternalProtocol] = {
     setup.instrumentation.recoveryStarted(setup.context.self)

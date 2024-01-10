@@ -19,8 +19,8 @@ import akka.actor.typed.{ Behavior, Signal }
 import akka.actor.typed.ActorRef
 import akka.actor.typed.eventstream.EventStream
 import akka.actor.typed.internal.PoisonPill
-import akka.actor.typed.scaladsl.{ AbstractBehavior, Behaviors, LoggerOps }
-import akka.annotation.InternalApi
+import akka.actor.typed.scaladsl.{ AbstractBehavior, ActorContext, Behaviors, LoggerOps }
+import akka.annotation.{ InternalApi, InternalStableApi }
 import akka.event.Logging
 import akka.persistence.DeleteMessagesFailure
 import akka.persistence.DeleteMessagesSuccess
@@ -65,6 +65,7 @@ import akka.stream.scaladsl.Source
 import akka.stream.typed.scaladsl.ActorFlow
 import akka.util.OptionVal
 import akka.util.Timeout
+import akka.util.unused
 
 /**
  * INTERNAL API
@@ -750,6 +751,7 @@ private[akka] object Running {
           setup.context.self,
           p.payload.asInstanceOf[AnyRef],
           command.orNull.asInstanceOf[AnyRef])
+        onWriteSuccess(setup.context, p)
 
         if (setup.publishEvents && shouldPublish) {
           val meta = setup.replication.map(replication =>
@@ -764,6 +766,7 @@ private[akka] object Running {
             setup.context.self,
             p.payload.asInstanceOf[AnyRef],
             command.orNull.asInstanceOf[AnyRef])
+          onWriteDone(setup.context, p)
           this
         } else {
           visibleState = state
@@ -783,6 +786,7 @@ private[akka] object Running {
               setup.context.self,
               p.payload.asInstanceOf[AnyRef],
               command.orNull.asInstanceOf[AnyRef])
+            onWriteDone(setup.context, p)
             tryUnstashOne(newState)
           } else {
             if (shouldSnapshotAfterPersist == SnapshotWithRetention)
@@ -807,6 +811,7 @@ private[akka] object Running {
               p.payload.asInstanceOf[AnyRef],
               p.sequenceNr,
               command.orNull.asInstanceOf[AnyRef])
+            onWriteRejected(setup.context, cause, p)
             throw new EventRejectedException(setup.persistenceId, p.sequenceNr, cause)
           } else this
 
@@ -818,6 +823,7 @@ private[akka] object Running {
               p.payload.asInstanceOf[AnyRef],
               p.sequenceNr,
               command.orNull.asInstanceOf[AnyRef])
+            onWriteFailed(setup.context, cause, p)
             throw new JournalFailureException(setup.persistenceId, p.sequenceNr, p.payload.getClass.getName, cause)
           } else this
 
@@ -1113,4 +1119,22 @@ private[akka] object Running {
     }
   }
 
+  // FIXME remove instrumentation hook method in 2.10.0
+  @InternalStableApi
+  private[akka] def onWriteFailed(
+      @unused ctx: ActorContext[_],
+      @unused reason: Throwable,
+      @unused event: PersistentRepr): Unit = ()
+  // FIXME remove instrumentation hook method in 2.10.0
+  @InternalStableApi
+  private[akka] def onWriteRejected(
+      @unused ctx: ActorContext[_],
+      @unused reason: Throwable,
+      @unused event: PersistentRepr): Unit = ()
+  // FIXME remove instrumentation hook method in 2.10.0
+  @InternalStableApi
+  private[akka] def onWriteSuccess(@unused ctx: ActorContext[_], @unused event: PersistentRepr): Unit = ()
+  // FIXME remove instrumentation hook method in 2.10.0
+  @InternalStableApi
+  private[akka] def onWriteDone(@unused ctx: ActorContext[_], @unused event: PersistentRepr): Unit = ()
 }

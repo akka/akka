@@ -15,10 +15,11 @@ import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.LoggerOps
 import akka.annotation.InternalApi
+import akka.annotation.InternalStableApi
 import akka.persistence._
 import akka.persistence.JournalProtocol.ReplayMessages
 import akka.persistence.SnapshotProtocol.LoadSnapshot
-import akka.util.OptionVal
+import akka.util.{ unused, OptionVal }
 
 /** INTERNAL API */
 @InternalApi
@@ -62,6 +63,7 @@ private[akka] trait JournalInteractions[C, E, S] {
       setup.context.self,
       repr.payload.asInstanceOf[AnyRef],
       cmd.orNull.asInstanceOf[AnyRef])
+    onWriteInitiated(setup.context, cmd.orNull, repr)
 
     val write = AtomicWrite(metadata match {
         case OptionVal.Some(meta) => repr.withMetadata(meta)
@@ -73,6 +75,13 @@ private[akka] trait JournalInteractions[C, E, S] {
 
     newRunningState
   }
+
+  // FIXME remove instrumentation hook method in 2.10.0
+  @InternalStableApi
+  private[akka] def onWriteInitiated(
+      @unused ctx: ActorContext[_],
+      @unused cmd: Any,
+      @unused repr: PersistentRepr): Unit = ()
 
   protected def internalPersistAll(
       cmd: OptionVal[Any],
@@ -98,6 +107,7 @@ private[akka] trait JournalInteractions[C, E, S] {
       }
 
       onWritesInitiated(cmd, writes)
+      onWritesInitiated(setup.context, cmd.orNull, writes)
       val write = AtomicWrite(writes)
 
       setup.journal.tell(
@@ -116,6 +126,13 @@ private[akka] trait JournalInteractions[C, E, S] {
         cmd.orNull.asInstanceOf[AnyRef])
     }
   }
+
+  // FIXME remove instrumentation hook method in 2.10.0
+  @InternalStableApi
+  private[akka] def onWritesInitiated(
+      @unused ctx: ActorContext[_],
+      @unused cmd: Any,
+      @unused repr: immutable.Seq[PersistentRepr]): Unit = ()
 
   protected def replayEvents(fromSeqNr: Long, toSeqNr: Long): Unit = {
     setup.internalLogger.debug2("Replaying events: from: {}, to: {}", fromSeqNr, toSeqNr)

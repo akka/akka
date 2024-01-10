@@ -47,6 +47,8 @@ private[akka] class ReplayingSnapshot[C, E, S](override val setup: BehaviorSetup
 
   import InternalProtocol._
 
+  onRecoveryStart(setup.context)
+
   def createBehavior(receivedPoisonPillInPreviousPhase: Boolean): Behavior[InternalProtocol] = {
     // protect against snapshot stalling forever because of journal overloaded and such
     setup.startRecoveryTimer(snapshot = true)
@@ -94,6 +96,7 @@ private[akka] class ReplayingSnapshot[C, E, S](override val setup: BehaviorSetup
    */
   private def onRecoveryFailure(cause: Throwable): Behavior[InternalProtocol] = {
     setup.instrumentation.recoveryFailed(setup.context.self, cause, null)
+    onRecoveryFailed(setup.context, cause)
     setup.onSignal(setup.emptyState, RecoveryFailed(cause), catchAndLog = true)
     setup.cancelRecoveryTimer()
 
@@ -107,6 +110,10 @@ private[akka] class ReplayingSnapshot[C, E, S](override val setup: BehaviorSetup
     throw new JournalFailureException(msg, cause)
   }
 
+  // FIXME remove instrumentation hook method in 2.10.0
+  @InternalStableApi
+  def onRecoveryStart(@unused context: ActorContext[_]): Unit = ()
+  // FIXME remove instrumentation hook method in 2.10.0
   @InternalStableApi
   def onRecoveryFailed(@unused context: ActorContext[_], @unused reason: Throwable): Unit = ()
 

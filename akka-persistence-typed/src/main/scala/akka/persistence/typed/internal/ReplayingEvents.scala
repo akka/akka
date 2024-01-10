@@ -11,11 +11,13 @@ import scala.util.control.NonFatal
 import akka.actor.typed.internal.PoisonPill
 import akka.actor.typed.internal.UnstashException
 import akka.actor.typed.scaladsl.AbstractBehavior
+import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.LoggerOps
 import akka.actor.typed.Behavior
 import akka.actor.typed.Signal
 import akka.annotation.InternalApi
+import akka.annotation.InternalStableApi
 import akka.event.Logging
 import akka.persistence.JournalProtocol._
 import akka.persistence._
@@ -34,6 +36,7 @@ import akka.persistence.typed.internal.Running.WithSeqNrAccessible
 import akka.persistence.typed.internal.Running.startReplicationStream
 import akka.util.OptionVal
 import akka.util.PrettyDuration._
+import akka.util.unused
 
 /***
  * INTERNAL API
@@ -87,6 +90,18 @@ private[akka] final class ReplayingEvents[C, E, S](
   import ReplayingEvents.ReplayingState
 
   replayEvents(state.seqNr + 1L, state.toSeqNr)
+  onRecoveryStart(setup.context)
+
+  // FIXME remove instrumentation hook method in 2.10.0
+  @InternalStableApi
+  def onRecoveryStart(@unused context: ActorContext[_]): Unit = ()
+  // FIXME remove instrumentation hook method in 2.10.0
+  @InternalStableApi
+  def onRecoveryComplete(@unused context: ActorContext[_]): Unit = ()
+  // FIXME remove instrumentation hook method in 2.10.0
+  @InternalStableApi
+  def onRecoveryFailed(@unused context: ActorContext[_], @unused reason: Throwable, @unused event: Option[Any]): Unit =
+    ()
 
   override def onMessage(msg: InternalProtocol): Behavior[InternalProtocol] = {
     msg match {
@@ -247,6 +262,7 @@ private[akka] final class ReplayingEvents[C, E, S](
       case Some(evt) =>
         setup.instrumentation.recoveryFailed(setup.context.self, cause, evt.asInstanceOf[AnyRef])
     }
+    onRecoveryFailed(setup.context, cause, event)
 
     setup.onSignal(state.state, RecoveryFailed(cause), catchAndLog = true)
     setup.cancelRecoveryTimer()
@@ -274,6 +290,7 @@ private[akka] final class ReplayingEvents[C, E, S](
   private def onRecoveryCompleted(state: ReplayingState[S]): Behavior[InternalProtocol] =
     try {
       setup.instrumentation.recoveryDone(setup.context.self)
+      onRecoveryComplete(setup.context)
       tryReturnRecoveryPermit("replay completed successfully")
       if (setup.internalLogger.isDebugEnabled) {
         setup.internalLogger.debug2(
