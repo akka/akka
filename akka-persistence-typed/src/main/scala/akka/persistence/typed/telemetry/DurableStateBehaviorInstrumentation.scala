@@ -244,7 +244,8 @@ class DurableStateBehaviorInstrumentationProvider(system: ActorSystem[_]) extend
         .get
     } catch {
       case t: Throwable => // Throwable, because instrumentation failure should not cause fatal shutdown
-        Logging(system.classicSystem, getClass).warning(t, "Cannot create instrumentation [{}]", fqcn)
+        Logging(system.classicSystem, classOf[EventSourcedBehaviorInstrumentationProvider])
+          .warning(t, "Cannot create instrumentation [{}]", fqcn)
         EmptyDurableStateBehaviorInstrumentation
     }
   }
