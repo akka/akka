@@ -10,6 +10,7 @@ import akka.actor.ActorRef
 import akka.actor.Props
 import akka.actor.Terminated
 import akka.annotation.{ InternalApi, InternalStableApi }
+import akka.persistence.telemetry.RecoveryPermitterInstrumentationProvider
 import akka.util.MessageBuffer
 
 /**
@@ -42,7 +43,9 @@ import akka.util.MessageBuffer
   private val pendingBuffer = MessageBuffer.empty
   private var maxPendingStats = 0
 
-  def receive = {
+  private val instrumentation = RecoveryPermitterInstrumentationProvider(context.system).instrumentation
+
+  def receive: Actor.Receive = {
     case RequestRecoveryPermit =>
       context.watch(sender())
       if (usedPermits >= maxPermits) {
@@ -81,10 +84,12 @@ import akka.util.MessageBuffer
         usedPermits)
       maxPendingStats = 0
     }
+    instrumentation.recoveryPermitterStatus(self, maxPermits, usedPermits, pendingBuffer.size)
   }
 
   private def recoveryPermitGranted(ref: ActorRef): Unit = {
     usedPermits += 1
+    instrumentation.recoveryPermitterStatus(self, maxPermits, usedPermits, pendingBuffer.size)
     ref ! RecoveryPermitGranted
   }
 
