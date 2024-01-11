@@ -18,6 +18,7 @@ import akka.actor.ExtensionIdProvider
 import akka.annotation.InternalStableApi
 import akka.event.Logging
 import akka.util.ccompat.JavaConverters._
+import akka.util.unused
 
 /**
  * INTERNAL API: Instrumentation SPI for PersistentActor.
@@ -41,7 +42,15 @@ trait RecoveryPermitterInstrumentation {
  * INTERNAL API
  */
 @InternalStableApi
-object EmptyRecoveryPermitterInstrumentation extends RecoveryPermitterInstrumentation {
+object EmptyRecoveryPermitterInstrumentation extends EmptyRecoveryPermitterInstrumentation
+
+/**
+ * INTERNAL API
+ */
+@InternalStableApi
+class EmptyRecoveryPermitterInstrumentation extends RecoveryPermitterInstrumentation {
+
+  def this(@unused system: ActorSystem) = this()
 
   override def recoveryPermitterStatus(
       recoveryPermitter: ActorRef,
@@ -54,7 +63,7 @@ object EmptyRecoveryPermitterInstrumentation extends RecoveryPermitterInstrument
  * INTERNAL API
  */
 @InternalStableApi
-class EnsembleRecoveryPermitterInstrumentation(instrumentations: Seq[RecoveryPermitterInstrumentation])
+class EnsembleRecoveryPermitterInstrumentation(val instrumentations: Seq[RecoveryPermitterInstrumentation])
     extends RecoveryPermitterInstrumentation {
 
   override def recoveryPermitterStatus(

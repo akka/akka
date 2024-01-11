@@ -16,6 +16,7 @@ import akka.actor.typed.ExtensionId
 import akka.annotation.InternalStableApi
 import akka.event.Logging
 import akka.util.OptionVal
+import akka.util.unused
 
 /**
  * INTERNAL API
@@ -129,8 +130,16 @@ trait EventSourcedBehaviorInstrumentation {
  * INTERNAL API
  */
 @InternalStableApi
-object EmptyEventSourcedBehaviorInstrumentation extends EventSourcedBehaviorInstrumentation {
+object EmptyEventSourcedBehaviorInstrumentation extends EmptyEventSourcedBehaviorInstrumentation
+
+/**
+ * INTERNAL API
+ */
+@InternalStableApi
+class EmptyEventSourcedBehaviorInstrumentation extends EventSourcedBehaviorInstrumentation {
   import EventSourcedBehaviorInstrumentation.{ Context, EmptyContext }
+
+  def this(@unused system: ActorSystem[_]) = this()
 
   override def beforeRequestRecoveryPermit(actorRef: ActorRef[_]): Context = EmptyContext
 
@@ -167,7 +176,7 @@ object EmptyEventSourcedBehaviorInstrumentation extends EventSourcedBehaviorInst
  * INTERNAL API
  */
 @InternalStableApi
-class EnsembleEventSourcedBehaviorInstrumentation(instrumentations: Seq[EventSourcedBehaviorInstrumentation])
+class EnsembleEventSourcedBehaviorInstrumentation(val instrumentations: Seq[EventSourcedBehaviorInstrumentation])
     extends EventSourcedBehaviorInstrumentation {
   import EventSourcedBehaviorInstrumentation.Context
 

@@ -436,7 +436,7 @@ private[persistence] trait Eventsourced
 
   private def currentCommand(): OptionVal[Any] =
     context match {
-      case cell: ActorCell => OptionVal.Some(cell.currentMessage)
+      case cell: ActorCell => OptionVal.Some(cell.currentMessage.message)
       case _               => OptionVal.None
     }
 

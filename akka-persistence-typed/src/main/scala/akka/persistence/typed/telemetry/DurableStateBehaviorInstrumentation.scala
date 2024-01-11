@@ -16,6 +16,7 @@ import akka.actor.typed.ExtensionId
 import akka.annotation.InternalStableApi
 import akka.event.Logging
 import akka.util.OptionVal
+import akka.util.unused
 
 /**
  * INTERNAL API
@@ -125,8 +126,16 @@ trait DurableStateBehaviorInstrumentation {
  * INTERNAL API
  */
 @InternalStableApi
-object EmptyDurableStateBehaviorInstrumentation extends DurableStateBehaviorInstrumentation {
+object EmptyDurableStateBehaviorInstrumentation extends EmptyDurableStateBehaviorInstrumentation
+
+/**
+ * INTERNAL API
+ */
+@InternalStableApi
+class EmptyDurableStateBehaviorInstrumentation extends DurableStateBehaviorInstrumentation {
   import DurableStateBehaviorInstrumentation.{ Context, EmptyContext }
+
+  def this(@unused system: ActorSystem[_]) = this()
 
   override def beforeRequestRecoveryPermit(actorRef: ActorRef[_]): Context = EmptyContext
 
@@ -159,7 +168,7 @@ object EmptyDurableStateBehaviorInstrumentation extends DurableStateBehaviorInst
  * INTERNAL API
  */
 @InternalStableApi
-class EnsembleDurableStateBehaviorInstrumentation(instrumentations: Seq[DurableStateBehaviorInstrumentation])
+class EnsembleDurableStateBehaviorInstrumentation(val instrumentations: Seq[DurableStateBehaviorInstrumentation])
     extends DurableStateBehaviorInstrumentation {
   import DurableStateBehaviorInstrumentation.Context
 
@@ -244,7 +253,7 @@ class DurableStateBehaviorInstrumentationProvider(system: ActorSystem[_]) extend
         .get
     } catch {
       case t: Throwable => // Throwable, because instrumentation failure should not cause fatal shutdown
-        Logging(system.classicSystem, classOf[EventSourcedBehaviorInstrumentationProvider])
+        Logging(system.classicSystem, classOf[DurableStateBehaviorInstrumentationProvider])
           .warning(t, "Cannot create instrumentation [{}]", fqcn)
         EmptyDurableStateBehaviorInstrumentation
     }

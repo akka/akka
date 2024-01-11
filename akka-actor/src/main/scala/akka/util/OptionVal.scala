@@ -10,7 +10,7 @@ import akka.annotation.InternalStableApi
  * INTERNAL API
  */
 @InternalStableApi
-private[akka] object OptionVal {
+object OptionVal {
 
   def apply[A](x: A): OptionVal[A] = new OptionVal(x)
 
