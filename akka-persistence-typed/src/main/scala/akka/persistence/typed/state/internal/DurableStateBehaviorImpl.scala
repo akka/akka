@@ -23,6 +23,7 @@ import akka.persistence.state.scaladsl.GetObjectResult
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.SnapshotAdapter
 import akka.persistence.typed.state.scaladsl._
+import akka.persistence.typed.telemetry.DurableStateBehaviorInstrumentationProvider
 import akka.util.unused
 
 @InternalApi
@@ -108,7 +109,8 @@ private[akka] final case class DurableStateBehaviorImpl[Command, State](
             settings = settings,
             stashState = stashState,
             internalLoggerFactory = () => internalLogger(),
-            changeEventHandler)
+            changeEventHandler,
+            DurableStateBehaviorInstrumentationProvider(ctx.system).instrumentation)
 
           // needs to accept Any since we also can get messages from outside
           // not part of the user facing Command protocol

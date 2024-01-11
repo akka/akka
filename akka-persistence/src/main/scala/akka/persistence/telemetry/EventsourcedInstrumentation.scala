@@ -30,7 +30,7 @@ object EventsourcedInstrumentation {
 }
 
 /**
- * INTERNAL API: Instrumentation SPI for EventSourcedBehavior.
+ * INTERNAL API: Instrumentation SPI for PersistentActor.
  */
 @InternalStableApi
 trait EventsourcedInstrumentation {

@@ -49,6 +49,8 @@ private[akka] trait DurableStateStoreInteractions[C, S] {
     val newRunningState = state.nextRevision()
     val persistenceId = setup.persistenceId.id
 
+    val instrumentationContext =
+      setup.instrumentation.persistStateCalled(setup.context.self, value, OptionVal.Some(cmd))
     onWriteInitiated(ctx, cmd)
 
     val upsertResult = changeEvent match {
@@ -71,19 +73,20 @@ private[akka] trait DurableStateStoreInteractions[C, S] {
       case Failure(cause) => InternalProtocol.UpsertFailure(cause)
     }
 
-    newRunningState
+    newRunningState.updateInstrumentationContext(instrumentationContext)
   }
 
   protected def internalDelete(
       ctx: ActorContext[InternalProtocol],
-      @unused cmd: Any,
+      cmd: Any,
       state: Running.RunningState[S],
       changeEvent: OptionVal[Any]): Running.RunningState[S] = {
 
     val newRunningState = state.nextRevision().copy(state = setup.emptyState)
     val persistenceId = setup.persistenceId.id
 
-    // TODO Might need to call hook method for Telemetry
+    val instrumentationContext =
+      setup.instrumentation.deleteStateCalled(setup.context.self, OptionVal.Some(cmd))
 
     val deleteResult = changeEvent match {
       case OptionVal.Some(event) =>
@@ -105,10 +108,9 @@ private[akka] trait DurableStateStoreInteractions[C, S] {
       case Failure(cause) => InternalProtocol.DeleteFailure(cause)
     }
 
-    newRunningState
+    newRunningState.updateInstrumentationContext(instrumentationContext)
   }
 
-  // TODO These hook methods are for Telemetry. What more parameters are needed? persistenceId?
   @InternalStableApi
   private[akka] def onWriteInitiated(@unused ctx: ActorContext[_], @unused cmd: Any): Unit = ()
 

@@ -21,6 +21,7 @@ import akka.persistence.typed.state.RecoveryCompleted
 import akka.persistence.typed.state.RecoveryFailed
 import akka.persistence.typed.state.internal.DurableStateBehaviorImpl.GetState
 import akka.persistence.typed.state.internal.Running.WithRevisionAccessible
+import akka.persistence.typed.telemetry.DurableStateBehaviorInstrumentation
 import akka.util.PrettyDuration._
 import akka.util.unused
 
@@ -112,6 +113,7 @@ private[akka] class Recovering[C, S](
    * @param cause failure cause.
    */
   private def onRecoveryFailure(cause: Throwable): Behavior[InternalProtocol] = {
+    setup.instrumentation.recoveryFailed(setup.context.self, cause)
     onRecoveryFailed(setup.context, cause)
     setup.onSignal(setup.emptyState, RecoveryFailed(cause), catchAndLog = true)
     setup.cancelRecoveryTimer()
@@ -126,10 +128,13 @@ private[akka] class Recovering[C, S](
     throw new DurableStateStoreException(msg, cause)
   }
 
+  // FIXME remove instrumentation hook method in 2.10.0
   @InternalStableApi
   def onRecoveryStart(@unused context: ActorContext[_]): Unit = ()
+  // FIXME remove instrumentation hook method in 2.10.0
   @InternalStableApi
   def onRecoveryComplete(@unused context: ActorContext[_]): Unit = ()
+  // FIXME remove instrumentation hook method in 2.10.0
   @InternalStableApi
   def onRecoveryFailed(@unused context: ActorContext[_], @unused reason: Throwable): Unit = ()
 
@@ -160,6 +165,7 @@ private[akka] class Recovering[C, S](
   private def onRecoveryCompleted(state: RecoveryState[S]): Behavior[InternalProtocol] =
     try {
       recoveryState = state
+      setup.instrumentation.recoveryDone(setup.context.self)
       onRecoveryComplete(setup.context)
       tryReturnRecoveryPermit("recovery completed successfully")
       if (setup.internalLogger.isDebugEnabled) {
@@ -177,7 +183,8 @@ private[akka] class Recovering[C, S](
         val runningState = Running.RunningState[S](
           revision = state.revision,
           state = state.state,
-          receivedPoisonPill = state.receivedPoisonPill)
+          receivedPoisonPill = state.receivedPoisonPill,
+          instrumentationContext = DurableStateBehaviorInstrumentation.EmptyContext)
         val running = new Running(setup.setMdcPhase(PersistenceMdc.RunningCmds))
         tryUnstashOne(new running.HandlingCommands(runningState))
       }
