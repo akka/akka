@@ -21,7 +21,6 @@ import akka.event.{ Logging, LoggingAdapter }
 import akka.persistence.telemetry.EventsourcedInstrumentation
 import akka.persistence.telemetry.EventsourcedInstrumentationProvider
 import akka.util.Helpers.ConfigOps
-import akka.util.OptionVal
 
 /** INTERNAL API */
 @InternalApi
@@ -153,11 +152,7 @@ private[persistence] trait Eventsourced
   private[akka] def onReplaySuccess(): Unit = ()
 
   private def onRecoveryFailureAndInstrumentation(cause: Throwable, event: Option[Any]): Unit = {
-    val eventOpt = event match {
-      case Some(evt) => OptionVal.Some(evt)
-      case _         => OptionVal.None
-    }
-    instrumentation.recoveryFailed(self, cause, eventOpt)
+    instrumentation.recoveryFailed(self, cause, event.orNull)
 
     onRecoveryFailure(cause, event)
   }
@@ -434,10 +429,10 @@ private[persistence] trait Eventsourced
       instrumentationContext = instrumentationContext.updated(seqNr, instCtx)
   }
 
-  private def currentCommand(): OptionVal[Any] =
+  private def currentCommand(): Any =
     context match {
-      case cell: ActorCell => OptionVal.Some(cell.currentMessage.message)
-      case _               => OptionVal.None
+      case cell: ActorCell => cell.currentMessage.message
+      case _               => null
     }
 
   /**

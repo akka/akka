@@ -18,7 +18,6 @@ import akka.actor.ExtensionId
 import akka.actor.ExtensionIdProvider
 import akka.annotation.InternalStableApi
 import akka.event.Logging
-import akka.util.OptionVal
 import akka.util.unused
 
 /**
@@ -72,9 +71,9 @@ trait EventsourcedInstrumentation {
    *
    * @param actorRef  the `ActorRef` for which the recovery has failed.
    * @param throwable the cause of the failure.
-   * @param event     the event that was replayed, if any
+   * @param event     the event that was replayed, if any (otherwise null)
    */
-  def recoveryFailed(actorRef: ActorRef, throwable: Throwable, event: OptionVal[Any]): Unit
+  def recoveryFailed(actorRef: ActorRef, throwable: Throwable, event: Any): Unit
 
   /**
    * Record persist event.
@@ -82,10 +81,10 @@ trait EventsourcedInstrumentation {
    * @param actorRef        the `ActorRef` for which the event will be sent to the journal.
    * @param event           the event that was submitted for persistence. For persist of several events it will be
    *                        called for each event in the batch in the same order.
-   * @param command         actor message (command), if any, for which the event was emitted.
+   * @param command         actor message (command), if any (otherwise null), for which the event was emitted.
    * @return context that will be passed to `persistEventWritten`
    */
-  def persistEventCalled(actorRef: ActorRef, event: Any, command: OptionVal[Any]): Context
+  def persistEventCalled(actorRef: ActorRef, event: Any, command: Any): Context
 
   /**
    * Record event is written but the registered callback has not been called yet
@@ -151,9 +150,9 @@ class EmptyEventsourcedInstrumentation extends EventsourcedInstrumentation {
 
   override def recoveryDone(actorRef: ActorRef): Unit = ()
 
-  override def recoveryFailed(actorRef: ActorRef, throwable: Throwable, event: OptionVal[Any]): Unit = ()
+  override def recoveryFailed(actorRef: ActorRef, throwable: Throwable, event: Any): Unit = ()
 
-  override def persistEventCalled(actorRef: ActorRef, event: Any, command: OptionVal[Any]): Context = EmptyContext
+  override def persistEventCalled(actorRef: ActorRef, event: Any, command: Any): Context = EmptyContext
 
   override def persistEventWritten(actorRef: ActorRef, event: Any, context: Context): Context = EmptyContext
 
@@ -194,10 +193,10 @@ class EnsembleEventsourcedInstrumentation(val instrumentations: Seq[Eventsourced
   override def recoveryDone(actorRef: ActorRef): Unit =
     instrumentations.foreach(_.recoveryDone(actorRef))
 
-  override def recoveryFailed(actorRef: ActorRef, throwable: Throwable, event: OptionVal[Any]): Unit =
+  override def recoveryFailed(actorRef: ActorRef, throwable: Throwable, event: Any): Unit =
     instrumentations.foreach(_.recoveryFailed(actorRef, throwable, event))
 
-  override def persistEventCalled(actorRef: ActorRef, event: Any, command: OptionVal[Any]): Context =
+  override def persistEventCalled(actorRef: ActorRef, event: Any, command: Any): Context =
     instrumentations.map(_.persistEventCalled(actorRef, event, command))
 
   override def persistEventWritten(actorRef: ActorRef, event: Any, context: Context): Context = {

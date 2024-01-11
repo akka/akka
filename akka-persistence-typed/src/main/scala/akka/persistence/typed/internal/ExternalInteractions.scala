@@ -61,7 +61,7 @@ private[akka] trait JournalInteractions[C, E, S] {
       sender = ActorRef.noSender)
 
     val instrumentationContext =
-      setup.instrumentation.persistEventCalled(setup.context.self, repr.payload, cmd)
+      setup.instrumentation.persistEventCalled(setup.context.self, repr.payload, cmd.orNull)
 
     onWriteInitiated(setup.context, cmd.orNull, repr)
 
@@ -123,7 +123,7 @@ private[akka] trait JournalInteractions[C, E, S] {
       reprs: immutable.Seq[PersistentRepr]): EventSourcedBehaviorInstrumentation.Context = {
     var context: EventSourcedBehaviorInstrumentation.Context = EventSourcedBehaviorInstrumentation.EmptyContext
     reprs.foreach { repr =>
-      context = setup.instrumentation.persistEventCalled(setup.context.self, repr.payload, cmd)
+      context = setup.instrumentation.persistEventCalled(setup.context.self, repr.payload, cmd.orNull)
     }
     context
   }

@@ -86,7 +86,7 @@ private[akka] trait DurableStateStoreInteractions[C, S] {
     val persistenceId = setup.persistenceId.id
 
     val instrumentationContext =
-      setup.instrumentation.deleteStateCalled(setup.context.self, OptionVal.Some(cmd))
+      setup.instrumentation.deleteStateCalled(setup.context.self, cmd)
 
     val deleteResult = changeEvent match {
       case OptionVal.Some(event) =>

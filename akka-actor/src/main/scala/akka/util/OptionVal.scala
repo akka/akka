@@ -10,7 +10,7 @@ import akka.annotation.InternalStableApi
  * INTERNAL API
  */
 @InternalStableApi
-object OptionVal {
+private[akka] object OptionVal {
 
   def apply[A](x: A): OptionVal[A] = new OptionVal(x)
 
@@ -37,7 +37,7 @@ object OptionVal {
  * See https://hseeberger.wordpress.com/2013/10/04/name-based-extractors-in-scala-2-11/
  */
 @InternalStableApi
-final class OptionVal[+A](val x: A) extends AnyVal {
+private[akka] final class OptionVal[+A](val x: A) extends AnyVal {
 
   /**
    * Returns true if the option is `OptionVal.None`, false otherwise.

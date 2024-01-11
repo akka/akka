@@ -15,7 +15,6 @@ import akka.actor.typed.Extension
 import akka.actor.typed.ExtensionId
 import akka.annotation.InternalStableApi
 import akka.event.Logging
-import akka.util.OptionVal
 import akka.util.unused
 
 /**
@@ -77,19 +76,19 @@ trait DurableStateBehaviorInstrumentation {
    *
    * @param actorRef        the `ActorRef` for which the state will be sent to the store.
    * @param state           the state that was submitted for persistence.
-   * @param command         actor message (command), if any, for which the state update was emitted.
+   * @param command         actor message (command) for which the state update was emitted.
    * @return context that will be passed to `persistStateWritten`
    */
-  def persistStateCalled(actorRef: ActorRef[_], state: Any, command: OptionVal[Any]): Context
+  def persistStateCalled(actorRef: ActorRef[_], state: Any, command: Any): Context
 
   /**
    * Record delete state.
    *
    * @param actorRef        the `ActorRef` for which the delete state will be sent to the store.
-   * @param command         actor message (command), if any, for which the state update was emitted.
+   * @param command         actor message (command) for which the state update was emitted.
    * @return context that will be passed to `persistStateWritten`
    */
-  def deleteStateCalled(actorRef: ActorRef[_], command: OptionVal[Any]): Context
+  def deleteStateCalled(actorRef: ActorRef[_], command: Any): Context
 
   /**
    * Record state is written but the registered callback has not been called yet
@@ -147,9 +146,9 @@ class EmptyDurableStateBehaviorInstrumentation extends DurableStateBehaviorInstr
 
   override def recoveryFailed(actorRef: ActorRef[_], throwable: Throwable): Unit = ()
 
-  override def persistStateCalled(actorRef: ActorRef[_], state: Any, command: OptionVal[Any]): Context = EmptyContext
+  override def persistStateCalled(actorRef: ActorRef[_], state: Any, command: Any): Context = EmptyContext
 
-  override def deleteStateCalled(actorRef: ActorRef[_], command: OptionVal[Any]): Context = EmptyContext
+  override def deleteStateCalled(actorRef: ActorRef[_], command: Any): Context = EmptyContext
 
   override def persistStateWritten(actorRef: ActorRef[_], state: Any, context: Context): Context = EmptyContext
 
@@ -187,10 +186,10 @@ class EnsembleDurableStateBehaviorInstrumentation(val instrumentations: Seq[Dura
   override def recoveryFailed(actorRef: ActorRef[_], throwable: Throwable): Unit =
     instrumentations.foreach(_.recoveryFailed(actorRef, throwable))
 
-  override def persistStateCalled(actorRef: ActorRef[_], state: Any, command: OptionVal[Any]): Context =
+  override def persistStateCalled(actorRef: ActorRef[_], state: Any, command: Any): Context =
     instrumentations.map(_.persistStateCalled(actorRef, state, command))
 
-  override def deleteStateCalled(actorRef: ActorRef[_], command: OptionVal[Any]): Context =
+  override def deleteStateCalled(actorRef: ActorRef[_], command: Any): Context =
     instrumentations.map(_.deleteStateCalled(actorRef, command))
 
   override def persistStateWritten(actorRef: ActorRef[_], state: Any, context: Context): Context = {
