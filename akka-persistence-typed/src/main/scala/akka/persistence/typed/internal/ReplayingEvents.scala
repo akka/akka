@@ -258,11 +258,12 @@ private[akka] final class ReplayingEvents[C, E, S](
    * @param event the event that was being processed when the exception was thrown
    */
   private def onRecoveryFailure(cause: Throwable, event: Option[Any]): Behavior[InternalProtocol] = {
-    event match {
-      case Some(_: Message) | None =>
-      case Some(evt) =>
-        setup.instrumentation.recoveryFailed(setup.context.self, cause, OptionVal.Some(evt))
-    }
+    val instrumentationEvent =
+      event match {
+        case Some(_: Message) | None => null
+        case Some(evt)               => evt
+      }
+    setup.instrumentation.recoveryFailed(setup.context.self, cause, instrumentationEvent)
     onRecoveryFailed(setup.context, cause, event)
 
     setup.onSignal(state.state, RecoveryFailed(cause), catchAndLog = true)
