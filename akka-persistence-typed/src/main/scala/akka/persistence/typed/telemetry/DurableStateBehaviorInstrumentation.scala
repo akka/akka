@@ -4,8 +4,6 @@
 
 package akka.persistence.typed.telemetry
 
-import java.util
-
 import akka.util.ccompat.JavaConverters._
 import scala.collection.immutable
 
@@ -15,6 +13,7 @@ import akka.actor.typed.Extension
 import akka.actor.typed.ExtensionId
 import akka.annotation.InternalStableApi
 import akka.event.Logging
+import akka.util.TopologicalSort.topologicalSort
 import akka.util.unused
 
 /**
@@ -124,6 +123,15 @@ trait DurableStateBehaviorInstrumentation {
    */
   def persistFailed(actorRef: ActorRef[_], throwable: Throwable, state: Any, revision: Long, context: Context): Unit
 
+  /**
+   * Optional dependencies for this instrumentation.
+   *
+   * Dependency instrumentations will always be ordered before this instrumentation.
+   *
+   * @return list of class names for optional instrumentation dependencies
+   */
+  def dependencies: immutable.Seq[String]
+
 }
 
 /**
@@ -167,6 +175,8 @@ class EmptyDurableStateBehaviorInstrumentation extends DurableStateBehaviorInstr
       state: Any,
       revision: Long,
       context: Context): Unit = ()
+
+  override def dependencies: immutable.Seq[String] = Nil
 
 }
 
@@ -220,6 +230,9 @@ class EnsembleDurableStateBehaviorInstrumentation(val instrumentations: Seq[Dura
       context: Context): Unit =
     instrumentations.foreach(_.persistFailed(actorRef, throwable, state, revision, context))
 
+  override def dependencies: immutable.Seq[String] =
+    instrumentations.flatMap(_.dependencies)
+
 }
 
 /**
@@ -243,13 +256,14 @@ class DurableStateBehaviorInstrumentationProvider(system: ActorSystem[_]) extend
     if (!system.settings.config.hasPath(fqcnConfigPath)) {
       EmptyDurableStateBehaviorInstrumentation
     } else {
-      val fqcns: util.List[String] = system.settings.config.getStringList(fqcnConfigPath)
-
-      fqcns.size() match {
+      val fqcns = system.settings.config.getStringList(fqcnConfigPath).asScala.toVector
+      fqcns.size match {
         case 0 => EmptyDurableStateBehaviorInstrumentation
-        case 1 => create(fqcns.get(0))
+        case 1 => create(fqcns.head)
         case _ =>
-          val instrumentations = fqcns.asScala.map(fqcn => create(fqcn)).toVector
+          val instrumentationsByFqcn = fqcns.iterator.map(fqcn => fqcn -> create(fqcn)).toMap
+          val sortedNames = topologicalSort[String](fqcns, fqcn => instrumentationsByFqcn(fqcn).dependencies.toSet)
+          val instrumentations = sortedNames.map(instrumentationsByFqcn).toVector
           new EnsembleDurableStateBehaviorInstrumentation(instrumentations)
       }
     }

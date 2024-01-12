@@ -4,8 +4,6 @@
 
 package akka.persistence.telemetry
 
-import java.util
-
 import scala.collection.immutable
 
 import akka.actor.ActorRef
@@ -17,6 +15,7 @@ import akka.actor.ExtensionId
 import akka.actor.ExtensionIdProvider
 import akka.annotation.InternalStableApi
 import akka.event.Logging
+import akka.util.TopologicalSort.topologicalSort
 import akka.util.ccompat.JavaConverters._
 import akka.util.unused
 
@@ -36,6 +35,15 @@ trait RecoveryPermitterInstrumentation {
    * @param pendingActors     number of pending actors waiting for a permit.
    */
   def recoveryPermitterStatus(recoveryPermitter: ActorRef, maxPermits: Int, usedPermits: Int, pendingActors: Int): Unit
+
+  /**
+   * Optional dependencies for this instrumentation.
+   *
+   * Dependency instrumentations will always be ordered before this instrumentation.
+   *
+   * @return list of class names for optional instrumentation dependencies
+   */
+  def dependencies: immutable.Seq[String]
 }
 
 /**
@@ -57,6 +65,8 @@ class EmptyRecoveryPermitterInstrumentation extends RecoveryPermitterInstrumenta
       maxPermits: Int,
       usedPermits: Int,
       pendingActors: Int): Unit = ()
+
+  override def dependencies: immutable.Seq[String] = Nil
 }
 
 /**
@@ -72,6 +82,9 @@ class EnsembleRecoveryPermitterInstrumentation(val instrumentations: Seq[Recover
       usedPermits: Int,
       pendingActors: Int): Unit =
     instrumentations.foreach(_.recoveryPermitterStatus(recoveryPermitter, maxPermits, usedPermits, pendingActors))
+
+  override def dependencies: immutable.Seq[String] =
+    instrumentations.flatMap(_.dependencies)
 }
 
 /**
@@ -102,13 +115,14 @@ class RecoveryPermitterInstrumentationProvider(system: ExtendedActorSystem) exte
     if (!system.settings.config.hasPath(fqcnConfigPath)) {
       EmptyRecoveryPermitterInstrumentation
     } else {
-      val fqcns: util.List[String] = system.settings.config.getStringList(fqcnConfigPath)
-
-      fqcns.size() match {
+      val fqcns = system.settings.config.getStringList(fqcnConfigPath).asScala.toVector
+      fqcns.size match {
         case 0 => EmptyRecoveryPermitterInstrumentation
-        case 1 => create(fqcns.get(0))
+        case 1 => create(fqcns.head)
         case _ =>
-          val instrumentations = fqcns.asScala.map(fqcn => create(fqcn)).toVector
+          val instrumentationsByFqcn = fqcns.iterator.map(fqcn => fqcn -> create(fqcn)).toMap
+          val sortedNames = topologicalSort[String](fqcns, fqcn => instrumentationsByFqcn(fqcn).dependencies.toSet)
+          val instrumentations = sortedNames.map(instrumentationsByFqcn).toVector
           new EnsembleRecoveryPermitterInstrumentation(instrumentations)
       }
     }

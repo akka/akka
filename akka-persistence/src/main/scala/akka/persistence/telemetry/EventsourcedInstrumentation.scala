@@ -4,8 +4,6 @@
 
 package akka.persistence.telemetry
 
-import java.util
-
 import akka.util.ccompat.JavaConverters._
 import scala.collection.immutable
 
@@ -18,6 +16,7 @@ import akka.actor.ExtensionId
 import akka.actor.ExtensionIdProvider
 import akka.annotation.InternalStableApi
 import akka.event.Logging
+import akka.util.TopologicalSort.topologicalSort
 import akka.util.unused
 
 /**
@@ -125,6 +124,15 @@ trait EventsourcedInstrumentation {
    * @param context context returned by `persistEventCalled`
    */
   def persistRejected(actorRef: ActorRef, throwable: Throwable, event: Any, seqNr: Long, context: Context): Unit
+
+  /**
+   * Optional dependencies for this instrumentation.
+   *
+   * Dependency instrumentations will always be ordered before this instrumentation.
+   *
+   * @return list of class names for optional instrumentation dependencies
+   */
+  def dependencies: immutable.Seq[String]
 }
 
 /**
@@ -171,6 +179,8 @@ class EmptyEventsourcedInstrumentation extends EventsourcedInstrumentation {
       event: Any,
       seqNr: Long,
       context: Context): Unit = ()
+
+  override def dependencies: immutable.Seq[String] = Nil
 }
 
 /**
@@ -224,6 +234,9 @@ class EnsembleEventsourcedInstrumentation(val instrumentations: Seq[Eventsourced
       seqNr: Long,
       context: Context): Unit =
     instrumentations.foreach(_.persistRejected(actorRef, throwable, event, seqNr, context))
+
+  override def dependencies: immutable.Seq[String] =
+    instrumentations.flatMap(_.dependencies)
 }
 
 /**
@@ -254,13 +267,14 @@ class EventsourcedInstrumentationProvider(system: ExtendedActorSystem) extends E
     if (!system.settings.config.hasPath(fqcnConfigPath)) {
       EmptyEventsourcedInstrumentation
     } else {
-      val fqcns: util.List[String] = system.settings.config.getStringList(fqcnConfigPath)
-
-      fqcns.size() match {
+      val fqcns = system.settings.config.getStringList(fqcnConfigPath).asScala.toVector
+      fqcns.size match {
         case 0 => EmptyEventsourcedInstrumentation
-        case 1 => create(fqcns.get(0))
+        case 1 => create(fqcns.head)
         case _ =>
-          val instrumentations = fqcns.asScala.map(fqcn => create(fqcn)).toVector
+          val instrumentationsByFqcn = fqcns.iterator.map(fqcn => fqcn -> create(fqcn)).toMap
+          val sortedNames = topologicalSort[String](fqcns, fqcn => instrumentationsByFqcn(fqcn).dependencies.toSet)
+          val instrumentations = sortedNames.map(instrumentationsByFqcn).toVector
           new EnsembleEventsourcedInstrumentation(instrumentations)
       }
     }

@@ -4,8 +4,6 @@
 
 package akka.persistence.typed.telemetry
 
-import java.util
-
 import akka.util.ccompat.JavaConverters._
 import scala.collection.immutable
 
@@ -15,6 +13,7 @@ import akka.actor.typed.Extension
 import akka.actor.typed.ExtensionId
 import akka.annotation.InternalStableApi
 import akka.event.Logging
+import akka.util.TopologicalSort.topologicalSort
 import akka.util.unused
 
 /**
@@ -128,6 +127,15 @@ trait EventSourcedBehaviorInstrumentation {
    * @param context context returned by `persistEventCalled`
    */
   def persistRejected(actorRef: ActorRef[_], throwable: Throwable, event: Any, seqNr: Long, context: Context): Unit
+
+  /**
+   * Optional dependencies for this instrumentation.
+   *
+   * Dependency instrumentations will always be ordered before this instrumentation.
+   *
+   * @return list of class names for optional instrumentation dependencies
+   */
+  def dependencies: immutable.Seq[String]
 }
 
 /**
@@ -176,6 +184,8 @@ class EmptyEventSourcedBehaviorInstrumentation extends EventSourcedBehaviorInstr
       event: Any,
       seqNr: Long,
       context: Context): Unit = ()
+
+  override def dependencies: immutable.Seq[String] = Nil
 }
 
 /**
@@ -232,6 +242,9 @@ class EnsembleEventSourcedBehaviorInstrumentation(val instrumentations: Seq[Even
       seqNr: Long,
       context: Context): Unit =
     instrumentations.foreach(_.persistRejected(actorRef, throwable, event, seqNr, context))
+
+  override def dependencies: immutable.Seq[String] =
+    instrumentations.flatMap(_.dependencies)
 }
 
 /**
@@ -255,13 +268,14 @@ class EventSourcedBehaviorInstrumentationProvider(system: ActorSystem[_]) extend
     if (!system.settings.config.hasPath(fqcnConfigPath)) {
       EmptyEventSourcedBehaviorInstrumentation
     } else {
-      val fqcns: util.List[String] = system.settings.config.getStringList(fqcnConfigPath)
-
-      fqcns.size() match {
+      val fqcns = system.settings.config.getStringList(fqcnConfigPath).asScala.toVector
+      fqcns.size match {
         case 0 => EmptyEventSourcedBehaviorInstrumentation
-        case 1 => create(fqcns.get(0))
+        case 1 => create(fqcns.head)
         case _ =>
-          val instrumentations = fqcns.asScala.map(fqcn => create(fqcn)).toVector
+          val instrumentationsByFqcn = fqcns.iterator.map(fqcn => fqcn -> create(fqcn)).toMap
+          val sortedNames = topologicalSort[String](fqcns, fqcn => instrumentationsByFqcn(fqcn).dependencies.toSet)
+          val instrumentations = sortedNames.map(instrumentationsByFqcn).toVector
           new EnsembleEventSourcedBehaviorInstrumentation(instrumentations)
       }
     }
