@@ -27,6 +27,7 @@ import akka.persistence.typed.internal.EventSourcedSettings
 import akka.persistence.typed.internal.InternalProtocol
 import akka.persistence.typed.internal.NoOpSnapshotAdapter
 import akka.persistence.typed.internal.StashState
+import akka.persistence.typed.telemetry.EmptyEventSourcedBehaviorInstrumentation
 import akka.serialization.jackson.CborSerializable
 import akka.util.ConstantFun
 
@@ -77,7 +78,8 @@ class EventSourcedBehaviorWatchSpec
       replication = None,
       publishEvents = false,
       internalLoggerFactory = () => logger,
-      retentionInProgress = false)
+      retentionInProgress = false,
+      EmptyEventSourcedBehaviorInstrumentation)
 
   "A typed persistent parent actor watching a child" must {
 
