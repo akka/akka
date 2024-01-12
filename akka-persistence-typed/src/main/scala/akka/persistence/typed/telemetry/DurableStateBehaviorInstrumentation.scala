@@ -34,6 +34,11 @@ trait DurableStateBehaviorInstrumentation {
   import DurableStateBehaviorInstrumentation.Context
 
   /**
+   * Initialize state for an EventSourcedBehavior actor.
+   */
+  def actorInitialized(actorRef: ActorRef[_]): Unit
+
+  /**
    * Record before a recovery permit is requested.
    *
    * @param actorRef the `ActorRef` for which the recovery permit is about to be requested
@@ -136,6 +141,8 @@ class EmptyDurableStateBehaviorInstrumentation extends DurableStateBehaviorInstr
 
   def this(@unused system: ActorSystem[_]) = this()
 
+  override def actorInitialized(actorRef: ActorRef[_]): Unit = ()
+
   override def beforeRequestRecoveryPermit(actorRef: ActorRef[_]): Context = EmptyContext
 
   override def afterRequestRecoveryPermit(actorRef: ActorRef[_], context: Context): Unit = ()
@@ -170,6 +177,9 @@ class EmptyDurableStateBehaviorInstrumentation extends DurableStateBehaviorInstr
 class EnsembleDurableStateBehaviorInstrumentation(val instrumentations: Seq[DurableStateBehaviorInstrumentation])
     extends DurableStateBehaviorInstrumentation {
   import DurableStateBehaviorInstrumentation.Context
+
+  override def actorInitialized(actorRef: ActorRef[_]): Unit =
+    instrumentations.foreach(_.actorInitialized(actorRef))
 
   override def beforeRequestRecoveryPermit(actorRef: ActorRef[_]): Context =
     instrumentations.map(_.beforeRequestRecoveryPermit(actorRef))

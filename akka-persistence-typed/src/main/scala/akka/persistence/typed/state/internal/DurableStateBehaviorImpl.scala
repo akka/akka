@@ -91,7 +91,9 @@ private[akka] final case class DurableStateBehaviorImpl[Command, State](
       case (_, DurableStateBehaviorImpl.GetPersistenceId(replyTo)) => replyTo ! persistenceId
     }
 
+    val instrumentation = DurableStateBehaviorInstrumentationProvider(ctx.system).instrumentation
     // do this once, even if the actor is restarted
+    instrumentation.actorInitialized(ctx.self)
     initialize(context.asScala)
 
     Behaviors
@@ -110,7 +112,7 @@ private[akka] final case class DurableStateBehaviorImpl[Command, State](
             stashState = stashState,
             internalLoggerFactory = () => internalLogger(),
             changeEventHandler,
-            DurableStateBehaviorInstrumentationProvider(ctx.system).instrumentation)
+            instrumentation)
 
           // needs to accept Any since we also can get messages from outside
           // not part of the user facing Command protocol
@@ -151,6 +153,7 @@ private[akka] final case class DurableStateBehaviorImpl[Command, State](
       .onFailure[DurableStateStoreException](supervisionStrategy)
   }
 
+  // FIXME remove instrumentation hook method in 2.10.0
   @InternalStableApi
   private[akka] def initialize(@unused context: ActorContext[_]): Unit = ()
 

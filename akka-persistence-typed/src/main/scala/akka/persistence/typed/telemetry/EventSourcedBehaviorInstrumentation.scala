@@ -34,6 +34,11 @@ trait EventSourcedBehaviorInstrumentation {
   import EventSourcedBehaviorInstrumentation.Context
 
   /**
+   * Initialize state for an EventSourcedBehavior actor.
+   */
+  def actorInitialized(actorRef: ActorRef[_]): Unit
+
+  /**
    * Record before a recovery permit is requested.
    *
    * @param actorRef the `ActorRef` for which the recovery permit is about to be requested
@@ -140,6 +145,8 @@ class EmptyEventSourcedBehaviorInstrumentation extends EventSourcedBehaviorInstr
 
   def this(@unused system: ActorSystem[_]) = this()
 
+  override def actorInitialized(actorRef: ActorRef[_]): Unit = ()
+
   override def beforeRequestRecoveryPermit(actorRef: ActorRef[_]): Context = EmptyContext
 
   override def afterRequestRecoveryPermit(actorRef: ActorRef[_], context: Context): Unit = ()
@@ -178,6 +185,9 @@ class EmptyEventSourcedBehaviorInstrumentation extends EventSourcedBehaviorInstr
 class EnsembleEventSourcedBehaviorInstrumentation(val instrumentations: Seq[EventSourcedBehaviorInstrumentation])
     extends EventSourcedBehaviorInstrumentation {
   import EventSourcedBehaviorInstrumentation.Context
+
+  override def actorInitialized(actorRef: ActorRef[_]): Unit =
+    instrumentations.foreach(_.actorInitialized(actorRef))
 
   override def beforeRequestRecoveryPermit(actorRef: ActorRef[_]): Context =
     instrumentations.map(_.beforeRequestRecoveryPermit(actorRef))
