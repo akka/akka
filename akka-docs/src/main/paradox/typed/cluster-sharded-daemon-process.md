@@ -90,8 +90,8 @@ end up on the same node.
 
 ## Scalability  
 
-This cluster tool is intended for small numbers of consumers and will not scale well to a large set. In large clusters 
-it is recommended to limit the nodes the sharded daemon process will run on using a role.
+This cluster tool is intended for up to thousands of processes. Running with larger sets of processes might see problems
+with Akka Distributed Data replication or process keepalive messages.
 
 ## Configuration
 
