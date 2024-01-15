@@ -6,7 +6,7 @@ Map elements with the help of a resource that can be opened, transform each elem
 
 ## Signature
 
-@apidoc[Flow.mapWithResource](Flow) { scala="#mapWithResource%5BS%2C%20T%5D%28create%3A%20%28%29%20%3D%3E%20S%29%28f%3A%20%28S%2C%20Out%29%20%3D%3E%20T%2C%20close%3A%20S%20%3D%3E%20Option%5BT%5D%29%3A%20Repr%5BT%5D" java="#mapWithResource(akka.japi.function.Creator,akka.japi.function.Function2,akka.japi.function.Function)" }
+@apidoc[Flow.mapWithResource](Flow) { scala="#mapWithResource%5BS%2C%20T%5D%28create%3A%20%28%29%20%3D%3E%20S%29%28f%3A%20%28S%2C%20Out%29%20%3D%3E%20T%2C%20close%3A%20S%20%3D%3E%20Option%5BT%5D%29%3A%20Repr%5BT%5D" java="#mapWithResource(java.util.function.Supplier,java.util.function.BiFunction,java.util.function.Function)" }
 1. `create`: Open or Create the resource.
 2. `f`: Transform each element inputs with the help of resource.
 3. `close`: Close the resource, invoked on end of stream or if the stream fails, optionally outputting a last element.
