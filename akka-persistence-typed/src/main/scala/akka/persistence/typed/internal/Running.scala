@@ -772,11 +772,10 @@ private[akka] object Running {
 
         // only once all things are applied we can revert back
         if (eventCounter < numberOfEvents) {
+          setup.instrumentation.persistEventDone(setup.context.self, instrumentationContext2)
           onWriteDone(setup.context, p)
           this
         } else {
-          val instrumentationContexts = (visibleState.seqNr + 1 to state2.seqNr).map(state2.getInstrumentationContext)
-
           visibleState = state2
           def skipRetention(): Boolean = {
             // only one retention process at a time
@@ -791,15 +790,11 @@ private[akka] object Running {
 
           if (shouldSnapshotAfterPersist == NoSnapshot || state2.state == null || skipRetention()) {
             val behavior = applySideEffects(sideEffects, state2.clearInstrumentationContext)
-            instrumentationContexts.foreach { instCtx =>
-              setup.instrumentation.persistEventDone(setup.context.self, instCtx)
-            }
+            setup.instrumentation.persistEventDone(setup.context.self, instrumentationContext2)
             onWriteDone(setup.context, p)
             tryUnstashOne(behavior)
           } else {
-            instrumentationContexts.foreach { instCtx =>
-              setup.instrumentation.persistEventDone(setup.context.self, instCtx)
-            }
+            setup.instrumentation.persistEventDone(setup.context.self, instrumentationContext2)
             onWriteDone(setup.context, p)
             if (shouldSnapshotAfterPersist == SnapshotWithRetention)
               setup.retentionProgressSaveSnapshotStarted(state2.seqNr)
