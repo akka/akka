@@ -116,13 +116,13 @@ private[persistence] trait Eventsourced
   }
 
   private val instrumentation = EventsourcedInstrumentationProvider(context.system).instrumentation
-  private var instrumentationContext: Map[Long, EventsourcedInstrumentation.Context] = Map.empty
+  private var instrumentationContexts: Map[Long, EventsourcedInstrumentation.Context] = Map.empty
 
   private def getAndClearInstrumentationContext(seqNr: Long): EventsourcedInstrumentation.Context = {
-    instrumentationContext.get(seqNr) match {
+    instrumentationContexts.get(seqNr) match {
       case None => EventsourcedInstrumentation.EmptyContext
       case Some(ctx) =>
-        instrumentationContext -= seqNr
+        instrumentationContexts -= seqNr
         ctx
     }
   }
@@ -426,7 +426,7 @@ private[persistence] trait Eventsourced
 
     val instCtx = instrumentation.persistEventCalled(self, event, currentCommand())
     if (instCtx != EventsourcedInstrumentation.EmptyContext)
-      instrumentationContext = instrumentationContext.updated(seqNr, instCtx)
+      instrumentationContexts = instrumentationContexts.updated(seqNr, instCtx)
   }
 
   private def currentCommand(): Any =
@@ -460,7 +460,7 @@ private[persistence] trait Eventsourced
       reprs.foreach { repr =>
         val instCtx = instrumentation.persistEventCalled(self, repr.payload, currentCommand())
         if (instCtx != EventsourcedInstrumentation.EmptyContext)
-          instrumentationContext = instrumentationContext.updated(repr.sequenceNr, instCtx)
+          instrumentationContexts = instrumentationContexts.updated(repr.sequenceNr, instCtx)
       }
     }
   }
@@ -490,7 +490,7 @@ private[persistence] trait Eventsourced
 
     val instCtx = instrumentation.persistEventCalled(self, event, currentCommand())
     if (instCtx != EventsourcedInstrumentation.EmptyContext)
-      instrumentationContext = instrumentationContext.updated(seqNr, instCtx)
+      instrumentationContexts = instrumentationContexts.updated(seqNr, instCtx)
   }
 
   /**
@@ -517,7 +517,7 @@ private[persistence] trait Eventsourced
       reprs.foreach { repr =>
         val instCtx = instrumentation.persistEventCalled(self, repr.payload, currentCommand())
         if (instCtx != EventsourcedInstrumentation.EmptyContext)
-          instrumentationContext = instrumentationContext.updated(repr.sequenceNr, instCtx)
+          instrumentationContexts = instrumentationContexts.updated(repr.sequenceNr, instCtx)
       }
     }
   }

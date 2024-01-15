@@ -34,7 +34,6 @@ import akka.persistence.typed.internal.EventSourcedBehaviorImpl.GetState
 import akka.persistence.typed.internal.ReplayingEvents.ReplayingState
 import akka.persistence.typed.internal.Running.WithSeqNrAccessible
 import akka.persistence.typed.internal.Running.startReplicationStream
-import akka.persistence.typed.telemetry.EventSourcedBehaviorInstrumentation
 import akka.util.OptionVal
 import akka.util.PrettyDuration._
 import akka.util.unused
@@ -313,7 +312,7 @@ private[akka] final class ReplayingEvents[C, E, S](
           state.version,
           seenPerReplica = state.seenSeqNrPerReplica,
           replicationControl = Map.empty,
-          instrumentationContext = EventSourcedBehaviorInstrumentation.EmptyContext)
+          instrumentationContexts = Map.empty)
         val running = new Running(setup.setMdcPhase(PersistenceMdc.RunningCmds))
         val initialRunningState = setup.replication match {
           case Some(replication)

@@ -102,7 +102,7 @@ private[akka] object Running {
       version: VersionVector,
       seenPerReplica: Map[ReplicaId, Long],
       replicationControl: Map[ReplicaId, ReplicationStreamControl],
-      instrumentationContext: EventSourcedBehaviorInstrumentation.Context) {
+      instrumentationContexts: Map[Long, EventSourcedBehaviorInstrumentation.Context]) {
 
     def nextSequenceNr(): RunningState[State] =
       copy(seqNr = seqNr + 1)
@@ -115,14 +115,23 @@ private[akka] object Running {
       copy(state = updated)
     }
 
+    def getInstrumentationContext(seqNr: Long): EventSourcedBehaviorInstrumentation.Context =
+      instrumentationContexts.get(seqNr) match {
+        case Some(ctx) => ctx
+        case None      => EventSourcedBehaviorInstrumentation.EmptyContext
+      }
+
     def updateInstrumentationContext(
+        seqNr: Long,
         instrumentationContext: EventSourcedBehaviorInstrumentation.Context): RunningState[State] = {
-      if (instrumentationContext eq this.instrumentationContext) this // avoid instance creation for EmptyContext
-      else copy(instrumentationContext = instrumentationContext)
+      if (instrumentationContext eq EventSourcedBehaviorInstrumentation.EmptyContext)
+        this // avoid instance creation for EmptyContext
+      else copy(instrumentationContexts = instrumentationContexts.updated(seqNr, instrumentationContext))
     }
 
     def clearInstrumentationContext: RunningState[State] =
-      updateInstrumentationContext(EventSourcedBehaviorInstrumentation.EmptyContext)
+      if (instrumentationContexts.isEmpty) this
+      else copy(instrumentationContexts = Map.empty)
   }
 
   def startReplicationStream[C, E, S](
@@ -747,8 +756,11 @@ private[akka] object Running {
         eventCounter += 1
 
         val instrumentationContext2 =
-          setup.instrumentation.persistEventWritten(setup.context.self, p.payload, state.instrumentationContext)
-        val state2 = state.updateInstrumentationContext(instrumentationContext2)
+          setup.instrumentation.persistEventWritten(
+            setup.context.self,
+            p.payload,
+            state.getInstrumentationContext(p.sequenceNr))
+        val state2 = state.updateInstrumentationContext(p.sequenceNr, instrumentationContext2)
         onWriteSuccess(setup.context, p)
 
         if (setup.publishEvents && shouldPublish) {
@@ -763,6 +775,8 @@ private[akka] object Running {
           onWriteDone(setup.context, p)
           this
         } else {
+          val instrumentationContexts = (visibleState.seqNr + 1 to state2.seqNr).map(state2.getInstrumentationContext)
+
           visibleState = state2
           def skipRetention(): Boolean = {
             // only one retention process at a time
@@ -777,11 +791,15 @@ private[akka] object Running {
 
           if (shouldSnapshotAfterPersist == NoSnapshot || state2.state == null || skipRetention()) {
             val behavior = applySideEffects(sideEffects, state2.clearInstrumentationContext)
-            setup.instrumentation.persistEventDone(setup.context.self, instrumentationContext2)
+            instrumentationContexts.foreach { instCtx =>
+              setup.instrumentation.persistEventDone(setup.context.self, instCtx)
+            }
             onWriteDone(setup.context, p)
             tryUnstashOne(behavior)
           } else {
-            setup.instrumentation.persistEventDone(setup.context.self, instrumentationContext2)
+            instrumentationContexts.foreach { instCtx =>
+              setup.instrumentation.persistEventDone(setup.context.self, instCtx)
+            }
             onWriteDone(setup.context, p)
             if (shouldSnapshotAfterPersist == SnapshotWithRetention)
               setup.retentionProgressSaveSnapshotStarted(state2.seqNr)
@@ -804,7 +822,7 @@ private[akka] object Running {
               cause,
               p.payload,
               p.sequenceNr,
-              state.instrumentationContext)
+              state.getInstrumentationContext(p.sequenceNr))
             onWriteRejected(setup.context, cause, p)
             throw new EventRejectedException(setup.persistenceId, p.sequenceNr, cause)
           } else this
@@ -816,7 +834,7 @@ private[akka] object Running {
               cause,
               p.payload,
               p.sequenceNr,
-              state.instrumentationContext)
+              state.getInstrumentationContext(p.sequenceNr))
             onWriteFailed(setup.context, cause, p)
             throw new JournalFailureException(setup.persistenceId, p.sequenceNr, p.payload.getClass.getName, cause)
           } else this

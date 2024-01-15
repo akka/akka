@@ -19,7 +19,6 @@ import akka.annotation.InternalStableApi
 import akka.persistence._
 import akka.persistence.JournalProtocol.ReplayMessages
 import akka.persistence.SnapshotProtocol.LoadSnapshot
-import akka.persistence.typed.telemetry.EventSourcedBehaviorInstrumentation
 import akka.util.{ unused, OptionVal }
 
 /** INTERNAL API */
@@ -73,7 +72,7 @@ private[akka] trait JournalInteractions[C, E, S] {
     setup.journal
       .tell(JournalProtocol.WriteMessages(write, setup.selfClassic, setup.writerIdentity.instanceId), setup.selfClassic)
 
-    newRunningState.updateInstrumentationContext(instrumentationContext)
+    newRunningState.updateInstrumentationContext(repr.sequenceNr, instrumentationContext)
   }
 
   // FIXME remove instrumentation hook method in 2.10.0
@@ -100,13 +99,14 @@ private[akka] trait JournalInteractions[C, E, S] {
             manifest = eventAdapterManifest,
             writerUuid = setup.writerIdentity.writerUuid,
             sender = ActorRef.noSender)
+          val instCtx = setup.instrumentation.persistEventCalled(setup.context.self, repr.payload, cmd.orNull)
+          newState = newState.updateInstrumentationContext(repr.sequenceNr, instCtx)
           metadata match {
             case Some(metadata) => repr.withMetadata(metadata)
             case None           => repr
           }
       }
 
-      val instrumentationContext = onWritesInitiated(cmd, writes)
       onWritesInitiated(setup.context, cmd.orNull, writes)
       val write = AtomicWrite(writes)
 
@@ -114,18 +114,8 @@ private[akka] trait JournalInteractions[C, E, S] {
         JournalProtocol.WriteMessages(write :: Nil, setup.selfClassic, setup.writerIdentity.instanceId),
         setup.selfClassic)
 
-      newState.updateInstrumentationContext(instrumentationContext)
+      newState
     } else state
-  }
-
-  private def onWritesInitiated(
-      cmd: OptionVal[Any],
-      reprs: immutable.Seq[PersistentRepr]): EventSourcedBehaviorInstrumentation.Context = {
-    var context: EventSourcedBehaviorInstrumentation.Context = EventSourcedBehaviorInstrumentation.EmptyContext
-    reprs.foreach { repr =>
-      context = setup.instrumentation.persistEventCalled(setup.context.self, repr.payload, cmd.orNull)
-    }
-    context
   }
 
   // FIXME remove instrumentation hook method in 2.10.0

@@ -98,8 +98,7 @@ trait EventSourcedBehaviorInstrumentation {
   def persistEventWritten(actorRef: ActorRef[_], event: Any, context: Context): Context
 
   /**
-   * Record event is written and the registered callback is called. When more than one event is
-   * persisted this will only be called once when the last event has been completed.
+   * Record event is written and the registered callback is called.
    *
    * @param actorRef     the `ActorRef` for which the event has been successfully persisted.
    * @param context context returned by `persistEventWritten`
