@@ -90,7 +90,7 @@ end up on the same node.
 
 ## Scalability  
 
-This cluster tool is intended for up to thousands of processes. Running with larger sets of processes might see problems
+This cluster tool is intended for up to thousands of processes. Running with larger sets of processes might cause problems
 with Akka Distributed Data replication or process keepalive messages.
 
 ## Configuration
