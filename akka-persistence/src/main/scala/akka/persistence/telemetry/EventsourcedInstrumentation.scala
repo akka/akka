@@ -194,8 +194,12 @@ class EnsembleEventsourcedInstrumentation(val instrumentations: Seq[Eventsourced
   override def beforeRequestRecoveryPermit(actorRef: ActorRef): Context =
     instrumentations.map(_.beforeRequestRecoveryPermit(actorRef))
 
-  override def afterRequestRecoveryPermit(actorRef: ActorRef, context: Context): Unit =
-    instrumentations.foreach(_.afterRequestRecoveryPermit(actorRef, context))
+  override def afterRequestRecoveryPermit(actorRef: ActorRef, context: Context): Unit = {
+    val contexts = context.asInstanceOf[Seq[Context]]
+    contexts.zip(instrumentations).foreach {
+      case (ctx, instrumentation) => instrumentation.afterRequestRecoveryPermit(actorRef, ctx)
+    }
+  }
 
   override def recoveryStarted(actorRef: ActorRef): Unit =
     instrumentations.foreach(_.recoveryStarted(actorRef))
@@ -216,24 +220,36 @@ class EnsembleEventsourcedInstrumentation(val instrumentations: Seq[Eventsourced
     }
   }
 
-  override def persistEventDone(actorRef: ActorRef, context: Context): Unit =
-    instrumentations.foreach(_.persistEventDone(actorRef, context))
+  override def persistEventDone(actorRef: ActorRef, context: Context): Unit = {
+    val contexts = context.asInstanceOf[Seq[Context]]
+    contexts.zip(instrumentations).foreach {
+      case (ctx, instrumentation) => instrumentation.persistEventDone(actorRef, ctx)
+    }
+  }
 
   override def persistFailed(
       actorRef: ActorRef,
       throwable: Throwable,
       event: Any,
       seqNr: Long,
-      context: Context): Unit =
-    instrumentations.foreach(_.persistFailed(actorRef, throwable, event, seqNr, context))
+      context: Context): Unit = {
+    val contexts = context.asInstanceOf[Seq[Context]]
+    contexts.zip(instrumentations).foreach {
+      case (ctx, instrumentation) => instrumentation.persistFailed(actorRef, throwable, event, seqNr, ctx)
+    }
+  }
 
   override def persistRejected(
       actorRef: ActorRef,
       throwable: Throwable,
       event: Any,
       seqNr: Long,
-      context: Context): Unit =
-    instrumentations.foreach(_.persistRejected(actorRef, throwable, event, seqNr, context))
+      context: Context): Unit = {
+    val contexts = context.asInstanceOf[Seq[Context]]
+    contexts.zip(instrumentations).foreach {
+      case (ctx, instrumentation) => instrumentation.persistRejected(actorRef, throwable, event, seqNr, ctx)
+    }
+  }
 
   override def dependencies: immutable.Seq[String] =
     instrumentations.flatMap(_.dependencies)

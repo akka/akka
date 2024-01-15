@@ -194,8 +194,12 @@ class EnsembleDurableStateBehaviorInstrumentation(val instrumentations: Seq[Dura
   override def beforeRequestRecoveryPermit(actorRef: ActorRef[_]): Context =
     instrumentations.map(_.beforeRequestRecoveryPermit(actorRef))
 
-  override def afterRequestRecoveryPermit(actorRef: ActorRef[_], context: Context): Unit =
-    instrumentations.foreach(_.afterRequestRecoveryPermit(actorRef, context))
+  override def afterRequestRecoveryPermit(actorRef: ActorRef[_], context: Context): Unit = {
+    val contexts = context.asInstanceOf[Seq[Context]]
+    contexts.zip(instrumentations).foreach {
+      case (ctx, instrumentation) => instrumentation.afterRequestRecoveryPermit(actorRef, ctx)
+    }
+  }
 
   override def recoveryStarted(actorRef: ActorRef[_]): Unit =
     instrumentations.foreach(_.recoveryStarted(actorRef))
@@ -219,16 +223,25 @@ class EnsembleDurableStateBehaviorInstrumentation(val instrumentations: Seq[Dura
     }
   }
 
-  override def persistStateDone(actorRef: ActorRef[_], context: Context): Unit =
-    instrumentations.foreach(_.persistStateDone(actorRef, context))
+  override def persistStateDone(actorRef: ActorRef[_], context: Context): Unit = {
+    val contexts = context.asInstanceOf[Seq[Context]]
+    contexts.zip(instrumentations).foreach {
+      case (ctx, instrumentation) => instrumentation.persistStateDone(actorRef, ctx)
+    }
+  }
 
   override def persistFailed(
       actorRef: ActorRef[_],
       throwable: Throwable,
       state: Any,
       revision: Long,
-      context: Context): Unit =
+      context: Context): Unit = {
     instrumentations.foreach(_.persistFailed(actorRef, throwable, state, revision, context))
+    val contexts = context.asInstanceOf[Seq[Context]]
+    contexts.zip(instrumentations).foreach {
+      case (ctx, instrumentation) => instrumentation.persistFailed(actorRef, throwable, state, revision, ctx)
+    }
+  }
 
   override def dependencies: immutable.Seq[String] =
     instrumentations.flatMap(_.dependencies)
