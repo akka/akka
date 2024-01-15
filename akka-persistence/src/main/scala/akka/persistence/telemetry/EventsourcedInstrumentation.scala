@@ -187,8 +187,7 @@ class EmptyEventsourcedInstrumentation extends EventsourcedInstrumentation {
  * INTERNAL API
  */
 @InternalStableApi
-class EnsembleEventsourcedInstrumentation(val instrumentations: Seq[EventsourcedInstrumentation])
-    extends EventsourcedInstrumentation {
+class EventsourcedEnsemble(val instrumentations: Seq[EventsourcedInstrumentation]) extends EventsourcedInstrumentation {
   import EventsourcedInstrumentation.Context
 
   override def beforeRequestRecoveryPermit(actorRef: ActorRef): Context =
@@ -291,7 +290,7 @@ class EventsourcedInstrumentationProvider(system: ExtendedActorSystem) extends E
           val instrumentationsByFqcn = fqcns.iterator.map(fqcn => fqcn -> create(fqcn)).toMap
           val sortedNames = topologicalSort[String](fqcns, fqcn => instrumentationsByFqcn(fqcn).dependencies.toSet)
           val instrumentations = sortedNames.map(instrumentationsByFqcn).toVector
-          new EnsembleEventsourcedInstrumentation(instrumentations)
+          new EventsourcedEnsemble(instrumentations)
       }
     }
   }

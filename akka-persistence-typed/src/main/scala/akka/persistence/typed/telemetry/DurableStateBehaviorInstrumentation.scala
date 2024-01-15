@@ -184,7 +184,7 @@ class EmptyDurableStateBehaviorInstrumentation extends DurableStateBehaviorInstr
  * INTERNAL API
  */
 @InternalStableApi
-class EnsembleDurableStateBehaviorInstrumentation(val instrumentations: Seq[DurableStateBehaviorInstrumentation])
+class DurableStateBehaviorEnsemble(val instrumentations: Seq[DurableStateBehaviorInstrumentation])
     extends DurableStateBehaviorInstrumentation {
   import DurableStateBehaviorInstrumentation.Context
 
@@ -277,7 +277,7 @@ class DurableStateBehaviorInstrumentationProvider(system: ActorSystem[_]) extend
           val instrumentationsByFqcn = fqcns.iterator.map(fqcn => fqcn -> create(fqcn)).toMap
           val sortedNames = topologicalSort[String](fqcns, fqcn => instrumentationsByFqcn(fqcn).dependencies.toSet)
           val instrumentations = sortedNames.map(instrumentationsByFqcn).toVector
-          new EnsembleDurableStateBehaviorInstrumentation(instrumentations)
+          new DurableStateBehaviorEnsemble(instrumentations)
       }
     }
   }

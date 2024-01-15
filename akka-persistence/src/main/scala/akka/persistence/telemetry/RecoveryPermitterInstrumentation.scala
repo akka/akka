@@ -73,7 +73,7 @@ class EmptyRecoveryPermitterInstrumentation extends RecoveryPermitterInstrumenta
  * INTERNAL API
  */
 @InternalStableApi
-class EnsembleRecoveryPermitterInstrumentation(val instrumentations: Seq[RecoveryPermitterInstrumentation])
+class RecoveryPermitterEnsemble(val instrumentations: Seq[RecoveryPermitterInstrumentation])
     extends RecoveryPermitterInstrumentation {
 
   override def recoveryPermitterStatus(
@@ -123,7 +123,7 @@ class RecoveryPermitterInstrumentationProvider(system: ExtendedActorSystem) exte
           val instrumentationsByFqcn = fqcns.iterator.map(fqcn => fqcn -> create(fqcn)).toMap
           val sortedNames = topologicalSort[String](fqcns, fqcn => instrumentationsByFqcn(fqcn).dependencies.toSet)
           val instrumentations = sortedNames.map(instrumentationsByFqcn).toVector
-          new EnsembleRecoveryPermitterInstrumentation(instrumentations)
+          new RecoveryPermitterEnsemble(instrumentations)
       }
     }
   }

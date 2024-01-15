@@ -192,7 +192,7 @@ class EmptyEventSourcedBehaviorInstrumentation extends EventSourcedBehaviorInstr
  * INTERNAL API
  */
 @InternalStableApi
-class EnsembleEventSourcedBehaviorInstrumentation(val instrumentations: Seq[EventSourcedBehaviorInstrumentation])
+class EventSourcedBehaviorEnsemble(val instrumentations: Seq[EventSourcedBehaviorInstrumentation])
     extends EventSourcedBehaviorInstrumentation {
   import EventSourcedBehaviorInstrumentation.Context
 
@@ -292,7 +292,7 @@ class EventSourcedBehaviorInstrumentationProvider(system: ActorSystem[_]) extend
           val instrumentationsByFqcn = fqcns.iterator.map(fqcn => fqcn -> create(fqcn)).toMap
           val sortedNames = topologicalSort[String](fqcns, fqcn => instrumentationsByFqcn(fqcn).dependencies.toSet)
           val instrumentations = sortedNames.map(instrumentationsByFqcn).toVector
-          new EnsembleEventSourcedBehaviorInstrumentation(instrumentations)
+          new EventSourcedBehaviorEnsemble(instrumentations)
       }
     }
   }
