@@ -16,6 +16,7 @@ import akka.actor.ExtensionId
 import akka.actor.ExtensionIdProvider
 import akka.annotation.InternalStableApi
 import akka.event.Logging
+import akka.util.OptionVal
 import akka.util.TopologicalSort.topologicalSort
 import akka.util.unused
 
@@ -183,12 +184,24 @@ class EmptyEventsourcedInstrumentation extends EventsourcedInstrumentation {
   override def dependencies: immutable.Seq[String] = Nil
 }
 
+trait LinkedContext {
+  def nextContext: LinkedContext
+  def setNextContext(context: LinkedContext): Unit
+}
+
+final case class WrappedLinkedContext(wrapped: AnyRef) extends LinkedContext {
+  private var _next: LinkedContext = null
+  override def nextContext: LinkedContext = _next
+  def setNextContext(context: LinkedContext): Unit =
+    _next = context
+}
+
 /**
  * INTERNAL API
  */
 @InternalStableApi
-class EventsourcedEnsemble(val instrumentations: Seq[EventsourcedInstrumentation]) extends EventsourcedInstrumentation {
-  import EventsourcedInstrumentation.Context
+class EventsourcedEnsemble(val instrumentations: Array[EventsourcedInstrumentation]) extends EventsourcedInstrumentation {
+  import EventsourcedInstrumentation.{Context, EmptyContext}
 
   override def beforeRequestRecoveryPermit(actorRef: ActorRef): Context =
     instrumentations.map(_.beforeRequestRecoveryPermit(actorRef))
@@ -209,20 +222,87 @@ class EventsourcedEnsemble(val instrumentations: Seq[EventsourcedInstrumentation
   override def recoveryFailed(actorRef: ActorRef, throwable: Throwable, event: Any): Unit =
     instrumentations.foreach(_.recoveryFailed(actorRef, throwable, event))
 
-  override def persistEventCalled(actorRef: ActorRef, event: Any, command: Any): Context =
-    instrumentations.map(_.persistEventCalled(actorRef, event, command))
+  override def persistEventCalled(actorRef: ActorRef, event: Any, command: Any): Context = {
+    var i = 0
+    var firstContext: LinkedContext = null
+    var previousContext: LinkedContext = null
+    while (i < instrumentations.length) {
+      val ctx = instrumentations(i).persistEventCalled(actorRef, event, command)
+      if (i == 0) {
+        ctx match {
+          case linked: LinkedContext =>
+            firstContext = linked
+            previousContext = linked
+          case _ => // not LinkedContext or EmptyContext
+            firstContext = new WrappedLinkedContext(ctx)
+            previousContext = firstContext
+        }
+      } else {
+        ctx match {
+          case linked: LinkedContext =>
+            previousContext.setNextContext(linked)
+            previousContext = linked
+          case _ => // not LinkedContext or EmptyContext
+            val wrapped = new WrappedLinkedContext(ctx)
+            previousContext.setNextContext(wrapped)
+            previousContext = wrapped
+        }
+      }
+
+      i += 1
+    }
+    firstContext
+  }
 
   override def persistEventWritten(actorRef: ActorRef, event: Any, context: Context): Context = {
-    val contexts = context.asInstanceOf[Seq[Context]]
-    contexts.zip(instrumentations).map {
-      case (ctx, instrumentation) => instrumentation.persistEventWritten(actorRef, event, ctx)
+    var i = 0
+    var linkedContext = context.asInstanceOf[LinkedContext]
+    var firstContext: LinkedContext = null
+    var previousContext: LinkedContext = null
+    while (i < instrumentations.length) {
+      val ctx = linkedContext match {
+        case WrappedLinkedContext(wrapped) => wrapped
+        case _ => linkedContext
+      }
+      linkedContext = linkedContext.nextContext
+      val newContext = instrumentations(i).persistEventWritten(actorRef, event, ctx)
+      if (i == 0) {
+        newContext match {
+          case linked: LinkedContext =>
+            firstContext = linked
+            previousContext = linked
+          case _ => // not LinkedContext or EmptyContext
+            firstContext = new WrappedLinkedContext(newContext)
+            previousContext = firstContext
+        }
+      } else {
+        newContext match {
+          case linked: LinkedContext =>
+            previousContext.setNextContext(linked)
+            previousContext = linked
+          case _ => // not LinkedContext or EmptyContext
+            val wrapped = new WrappedLinkedContext(newContext)
+            previousContext.setNextContext(wrapped)
+            previousContext = wrapped
+        }
+      }
+
+      i += 1
     }
+    firstContext
   }
 
   override def persistEventDone(actorRef: ActorRef, context: Context): Unit = {
-    val contexts = context.asInstanceOf[Seq[Context]]
-    contexts.zip(instrumentations).foreach {
-      case (ctx, instrumentation) => instrumentation.persistEventDone(actorRef, ctx)
+    var i = 0
+    var linkedContext = context.asInstanceOf[LinkedContext]
+    while (i < instrumentations.length) {
+      val ctx = linkedContext match {
+        case WrappedLinkedContext(wrapped) => wrapped
+        case _ => linkedContext
+      }
+      instrumentations(i).persistEventDone(actorRef, ctx)
+      linkedContext = linkedContext.nextContext
+      i += 1
     }
   }
 
@@ -290,7 +370,7 @@ class EventsourcedInstrumentationProvider(system: ExtendedActorSystem) extends E
           val instrumentationsByFqcn = fqcns.iterator.map(fqcn => fqcn -> create(fqcn)).toMap
           val sortedNames = topologicalSort[String](fqcns, fqcn => instrumentationsByFqcn(fqcn).dependencies.toSet)
           val instrumentations = sortedNames.map(instrumentationsByFqcn).toVector
-          new EventsourcedEnsemble(instrumentations)
+          new EventsourcedEnsemble(instrumentations.toArray)
       }
     }
   }
