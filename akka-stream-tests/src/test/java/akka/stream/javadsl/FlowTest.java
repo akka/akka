@@ -885,7 +885,7 @@ public class FlowTest extends StreamTest {
     Source.from(input)
         .via(Flow.of(FlowSpec.Fruit.class).collectType(FlowSpec.Apple.class))
         .runForeach((apple) -> probe.getRef().tell(apple, ActorRef.noSender()), system);
-    probe.expectMsgAnyClassOf(FlowSpec.Apple.class);
+    probe.<FlowSpec.Apple>expectMsgAnyClassOf(FlowSpec.Apple.class);
   }
 
   @Test

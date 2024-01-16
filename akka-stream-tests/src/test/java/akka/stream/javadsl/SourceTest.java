@@ -583,7 +583,7 @@ public class SourceTest extends StreamTest {
               probe.getRef().tell(elem, ActorRef.noSender());
             },
             system);
-    probe.expectMsgAnyClassOf(FlowSpec.Apple.class);
+    probe.<FlowSpec.Apple>expectMsgAnyClassOf(FlowSpec.Apple.class);
   }
 
   @Test
