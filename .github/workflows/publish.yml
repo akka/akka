@@ -8,6 +8,7 @@ on:
       # in some cases
       - test-publish-snapshots
     tags: ["*"]
+  workflow_dispatch:
 
 permissions:
   contents: read
