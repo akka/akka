@@ -26,9 +26,10 @@ object Graal extends AutoPlugin {
       Seq(Test / javaOptions := {
         val moduleToCollectTo = name.value.replace("-tests", "")
         val akkaRepoRoot = baseDirectory.value.getParentFile
+        val callerFilterFile = s"$akkaRepoRoot/.graal-caller-filter.json"
         val metadataDirPath =
           s"$akkaRepoRoot/$moduleToCollectTo/src/main/resources/META-INF/native-image/${organization.value}/$moduleToCollectTo"
-        (s"-agentlib:native-image-agent=config-merge-dir=$metadataDirPath" +: (Test / javaOptions).value)
+        (s"-agentlib:native-image-agent=caller-filter-file=$callerFilterFile,config-merge-dir=$metadataDirPath" +: (Test / javaOptions).value)
       })
     } else Seq.empty
 
