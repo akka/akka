@@ -36,6 +36,17 @@ Scala
 Java
 :   @@snip [GroupBy.java](/akka-docs/src/test/java/jdocs/stream/operators/SourceOrFlow.java) { #groupBy }
 
+Note: groupBy operator is used to partition the stream based on an identifier which is not same as using async boundary in the stream which is used for running the same stream concurrently. If a stream can be exclusively partitioned, it can be executed efficiently, by maximizing the parallel processing using groupBy operator.
+
+Example with async boundary that introduces running concurrently :
+
+Scala
+:   @@snip [GroupBy.scala](/akka-docs/src/test/scala/docs/stream/operators/sourceorflow/GroupBy.scala) { #groupByWithAsync }
+
+Java
+:   @@snip [GroupBy.java](/akka-docs/src/test/java/jdocs/stream/operators/SourceOrFlow.java) { #groupByWithAsync }
+
+
 ## Reactive Streams semantics
 
 @@@div { .callout }
