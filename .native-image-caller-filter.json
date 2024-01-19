@@ -1,0 +1,10 @@
+{ "rules": [
+  {"includeClasses": "com.typesafe.akka.**"}
+],
+  "regexRules": [
+    {"includeClasses": ".*"},
+    {"excludeClasses": ".*NativeImageMetadataMain"},
+    {"excludeClasses": ".*Spec"},
+    {"excludeClasses": ".*Test"}
+  ]
+}

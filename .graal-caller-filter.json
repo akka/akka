@@ -1,5 +1,0 @@
-{ "rules": [
-  {"includeClasses": "com.typesafe.akka.**"},
-  {"excludeClasses": "com.oracle.svm.tutorial.HostedHelper"}
-]
-}
