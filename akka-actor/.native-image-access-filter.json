@@ -1,0 +1,13 @@
+{ "rules": [
+  {"excludeClasses": "**"},
+  {"includeClasses": "akka.**"},
+  {"excludeClasses": "akka.testkit.**"},
+  {"excludeClasses": "akka.event.slf4j.**"}
+], "regexRules": [
+  {"excludeClasses": ".*Spec.*"},
+  {"excludeClasses": ".*Test.*"},
+  {"excludeClasses":  "akka.serialization.ConstructorSerializer.*"},
+  {"excludeClasses":  "akka.serialization.NoopSerializer.*"}
+
+]
+}

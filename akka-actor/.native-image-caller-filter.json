@@ -1,0 +1,11 @@
+{ "rules": [
+  {"excludeClasses": "**"},
+  {"includeClasses": "akka.**"},
+  {"excludeClasses": "akka.testkit.**"}
+],
+  "regexRules": [
+    {"excludeClasses": ".*Spec"},
+    {"excludeClasses": ".*Spec\\$.*"},
+    {"excludeClasses": ".*Test"}
+  ]
+}

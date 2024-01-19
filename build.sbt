@@ -1,9 +1,10 @@
 import akka.Dependencies.{ allScalaVersions, fortifySCAVersion, scalaFortifyVersion }
+import akka.NativeImageMetadata
 import akka.{ AutomaticModuleName, CopyrightHeaderForBuild, Paradox }
 import com.geirsson.CiReleasePlugin
 
 import scala.language.postfixOps
-import scala.sys.process._
+import scala.sys.process.*
 
 scalaVersion := allScalaVersions.head
 
@@ -106,7 +107,7 @@ lazy val actor = akkaModule("akka-actor")
 lazy val actorTests = akkaModule("akka-actor-tests")
   .dependsOn(testkit % "compile->compile;test->test", actor)
   .settings(Dependencies.actorTests)
-  .enablePlugins(NoPublish)
+  .enablePlugins(NoPublish, NativeImageMetadata)
   .disablePlugins(MimaPlugin)
 
 lazy val akkaScalaNightly = akkaModule("akka-scala-nightly")

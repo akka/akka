@@ -18,7 +18,7 @@ object NativeImageMetadata extends AutoPlugin {
     throw new IllegalArgumentException("Can only collect native image metadata in a GraalVM JDK")
   }
 
-  override def trigger = AllRequirements
+  override def trigger = NoTrigger
 
   override def requires = JvmPlugin
 
@@ -31,10 +31,11 @@ object NativeImageMetadata extends AutoPlugin {
         Test / javaOptions := {
           val moduleToCollectTo = name.value.replace("-tests", "")
           val akkaRepoRoot = baseDirectory.value.getParentFile
-          val callerFilterFile = s"$akkaRepoRoot/.native-image-caller-filter.json"
+          val callerFilterFile = s"$akkaRepoRoot/$moduleToCollectTo/.native-image-caller-filter.json"
+          val accessFilterFile = s"$akkaRepoRoot/$moduleToCollectTo/.native-image-access-filter.json"
           val metadataDirPath =
             s"$akkaRepoRoot/$moduleToCollectTo/src/main/resources/META-INF/native-image/${organization.value}/$moduleToCollectTo"
-          (s"-agentlib:native-image-agent=caller-filter-file=$callerFilterFile,config-merge-dir=$metadataDirPath" +: (Test / javaOptions).value)
+          (s"-agentlib:native-image-agent=access-filter-file=$accessFilterFile,caller-filter-file=$callerFilterFile,config-merge-dir=$metadataDirPath" +: (Test / javaOptions).value)
         },
         Test / run / fork := true)
 
