@@ -71,6 +71,7 @@ trait Scheduler {
    */
   def scheduleWithFixedDelay(initialDelay: FiniteDuration, delay: FiniteDuration)(runnable: Runnable)(
       implicit executor: ExecutionContext): Cancellable = {
+    if (delay.length <= 0L) throw new IllegalArgumentException(s"Scheduling must use a positive delay (was $delay)")
     try new AtomicReference[Cancellable](Cancellable.initialNotCancelled) with Cancellable { self =>
       compareAndSet(
         Cancellable.initialNotCancelled,
@@ -238,8 +239,11 @@ trait Scheduler {
    */
   @nowarn("msg=deprecated")
   final def scheduleAtFixedRate(initialDelay: FiniteDuration, interval: FiniteDuration)(runnable: Runnable)(
-      implicit executor: ExecutionContext): Cancellable =
+      implicit executor: ExecutionContext): Cancellable = {
+    if (interval.length <= 0L)
+      throw new IllegalArgumentException(s"Scheduling must use a positive interval (was $interval)")
     schedule(initialDelay, interval, runnable)(executor)
+  }
 
   /**
    * Java API: Schedules a `Runnable` to be run repeatedly with an initial delay and
