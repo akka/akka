@@ -8,8 +8,10 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 
+import scala.annotation.nowarn
 import scala.concurrent.duration.DurationInt
 
+@nowarn("msg=never used")
 object PubSubExample {
 
   case class Message(text: String)
