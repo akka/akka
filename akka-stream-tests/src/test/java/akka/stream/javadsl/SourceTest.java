@@ -758,6 +758,21 @@ public class SourceTest extends StreamTest {
   }
 
   @Test
+  public void mustBeAbleToUseMapWithResource() {
+    Source.from(Arrays.asList("1", "2", "3"))
+        .mapWithResource(
+            () -> "resource",
+            (resource, elem) -> elem,
+            (resource) -> {
+              return Optional.of("end");
+            })
+        .runWith(TestSink.create(system), system)
+        .request(4)
+        .expectNext("1", "2", "3", "end")
+        .expectComplete();
+  }
+
+  @Test
   public void mustBeAbleToUseIntersperse() throws Exception {
     final TestKit probe = new TestKit(system);
     final Source<String, NotUsed> source =
