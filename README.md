@@ -1,4 +1,4 @@
-Akka [![Latest version](https://index.scala-lang.org/akka/akka/akka-actor/latest.svg)](https://index.scala-lang.org/akka/akka/akka-actor)
+Akka
 ====
 
 We believe that writing correct concurrent & distributed, resilient and elastic applications is too hard.
@@ -19,6 +19,11 @@ Reference Documentation
 
 The reference documentation is available at [doc.akka.io](https://doc.akka.io),
 for [Scala](https://doc.akka.io/docs/akka/current/scala.html) and [Java](https://doc.akka.io/docs/akka/current/java.html).
+
+Current versions of all Akka libraries
+--------------------------------------
+
+The current versions of all Akka libraries are listed on the [Akka Dependencies](https://doc.akka.io/docs/akka-dependencies/current/) page. Releases of the Akka core libraries in this repository are listed on the [GitHub releases](https://github.com/akka/akka/releases) page.
 
 Community
 ---------
@@ -51,4 +56,4 @@ or in the akka/dev chat if a more real time communication would be of benefit.
 License
 -------
 
-Akka is licensed under the Business Source License 1.1, see LICENSE.
+Akka is licensed under the Business Source License 1.1, see [LICENSE](./LICENSE).
