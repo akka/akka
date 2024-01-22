@@ -26,22 +26,25 @@ Additionally, add the dependency as below.
   version=AkkaVersion
 }
 
-## The Topic Actor
+## The Topic Registry
 
-Distributed publish subscribe is achieved by representing each pub sub topic with an actor, @apidoc[akka.actor.typed.pubsub.Topic](akka.actor.typed.pubsub.Topic$). 
+Distributed publish subscribe is achieved by representing each pub sub topic with an actor, @apidoc[akka.actor.typed.pubsub.Topic](akka.actor.typed.pubsub.Topic$).
 
-The topic actor needs to run on each node where subscribers will live or that wants to publish messages to the topic.
- 
-The identity of the topic is a tuple of the type of messages that can be published and a string topic name but it is recommended
-to not define multiple topics with different types and the same topic name.
+The topic actor needs to run on each node where subscribers will live or that wants to publish messages to the topic. 
+
+Topics can be looked up in the @apidoc[PubSub](akka.actor.typed.pubsub.PubSub$) registry, this way the same topic will be represented by the same actor for a whole
+actor system. If the topic has not yet been started.
 
 Scala
-:  @@snip [PubSubExample.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/pubsub/PubSubExample.scala) { #start-topic }
+:  @@snip [PubSubExample.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/pubsub/PubSubExample.scala) { #lookup-topic }
 
 Java
-:  @@snip [PubSubExample.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/pubsub/PubSubExample.java) { #start-topic }
+:  @@snip [PubSubExample.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/pubsub/PubSubExample.java) { #lookup-topic }
 
-Local actors can then subscribe to the topic (and unsubscribe from it):
+The identity of the topic is the topic name and if it already has been started with a different type of message this will
+lead to an exception.
+
+Local actors can then subscribe to the topic (and unsubscribe from it) via messages defined in @apidoc[Topic](akka.actor.typed.pubsub.Topic$):
 
 Scala
 :  @@snip [PubSubExample.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/pubsub/PubSubExample.scala) { #subscribe }
@@ -56,6 +59,34 @@ Scala
 
 Java
 :  @@snip [PubSubExample.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/pubsub/PubSubExample.java) { #publish }
+
+Messages published only be delivered to other nodes if the topic is started and there are any local subscribers registered 
+with the topic there. The message is deduplicated so that even if there are multiple subscribers on a node, the message
+is only passed over the network to that node once.
+
+It is possible to define a TTL (time to live) for the local topic actor, if it has no local subscribers or messages 
+passing through for the given time period it stopped and removed from the registry:
+
+Scala
+:  @@snip [PubSubExample.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/pubsub/PubSubExample.scala) { #ttl }
+
+Java
+:  @@snip [PubSubExample.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/pubsub/PubSubExample.java) { #ttl }
+
+
+## The Topic Actor
+
+The topic actor can also be started and managed manually. This means that multiple actors for the same topic can be
+started on the same node. Messages published to a topic on other cluster nodes will be sent between the nodes once per
+active topic actor that has any local subscribers:
+
+Scala
+:  @@snip [PubSubExample.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/pubsub/PubSubExample.scala) { #start-topic }
+
+Java
+:  @@snip [PubSubExample.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/pubsub/PubSubExample.java) { #start-topic }
+
+
 
 ## Pub Sub Scalability
 

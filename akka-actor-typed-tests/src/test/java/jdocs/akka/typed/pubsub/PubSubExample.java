@@ -8,10 +8,15 @@ import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.javadsl.Behaviors;
 
+// #lookup-topic
+import akka.actor.typed.pubsub.PubSub;
 // #start-topic
 import akka.actor.typed.pubsub.Topic;
 
+import java.time.Duration;
+
 // #start-topic
+// #lookup-topic
 
 public class PubSubExample {
 
@@ -30,6 +35,25 @@ public class PubSubExample {
             ActorRef<Topic.Command<Message>> topic =
                 context.spawn(Topic.create(Message.class, "my-topic"), "MyTopic");
             // #start-topic
+
+            return Behaviors.empty();
+          });
+
+  private Behavior<?> registry =
+      // #lookup-topic
+      Behaviors.setup(
+          context -> {
+            PubSub pubSub = PubSub.get(context.getSystem());
+
+            ActorRef<Topic.Command<Message>> topic =
+                pubSub.topic(Message.class, "my-topic");
+            // #lookup-topic
+
+            // #ttl
+            ActorRef<Topic.Command<Message>> topicWithTtl =
+                pubSub.topic(Message.class, "my-ttl-topic", Duration.ofMinutes(3));
+            // #ttl
+
 
             ActorRef<Message> subscriberActor = null;
             // #subscribe
