@@ -33,7 +33,7 @@ Distributed publish subscribe is achieved by representing each pub sub topic wit
 The topic actor needs to run on each node where subscribers will live or that wants to publish messages to the topic. 
 
 Topics can be looked up in the @apidoc[PubSub](akka.actor.typed.pubsub.PubSub$) registry, this way the same topic will be represented by the same actor for a whole
-actor system. If the topic has not yet been started.
+actor system. If the topic has not yet been started it is started and returned, if it already is running, the existing `ActorRef` is returned.
 
 Scala
 :  @@snip [PubSubExample.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/pubsub/PubSubExample.scala) { #lookup-topic }
