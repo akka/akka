@@ -68,8 +68,7 @@ For minor or major releases:
 ### Afterwards
 
 - [ ] Update `MiMa.latestPatchOf` and PR that change (`project/MiMa.scala`)
-- [ ] Update version for [Lightbend Supported Modules](https://developer.lightbend.com/docs/lightbend-platform/introduction/getting-help/build-dependencies.html) in [private project](https://github.com/lightbend/lightbend-technology-intro-doc/blob/master/docs/modules/getting-help/examples/build.sbt)
-- [ ] Update [akka-dependencies bom](https://github.com/lightbend/akka-dependencies)
+- [ ] Update [akka-dependencies bom](https://github.com/lightbend/akka-dependencies) and version for [Akka module versions](https://doc.akka.io/docs/akka-dependencies/current/) in [akka-dependencies repo](https://github.com/akka/akka-dependencies)
 - [ ] Update [Akka Guide samples](https://github.com/akka/akka-guide)
 - [ ] Update [akka-samples](https://github.com/akka/akka-samples)
 - [ ] Update quickstarts:
