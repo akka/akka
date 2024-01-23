@@ -119,7 +119,7 @@ final class PubSub(system: ActorSystem[_]) extends Extension {
         name => (messageClass.asInstanceOf[Class[Any]], ttl, spawnTopic(name, classTag, ttl)))
     if (classInRegistry != messageClass)
       throw new IllegalArgumentException(
-        s"Trying to start topic [$name] with command class [$messageClass], but it is was already started with a " +
+        s"Trying to start topic [$name] with command class [$messageClass], but it was already started with a " +
         s"different command class [$classInRegistry]. Use unique topic names for all your topics.")
     if (ttlInRegistry != ttl)
       log.warn(
