@@ -7,12 +7,13 @@ package akka.actor.typed.pubsub
 import akka.actor.Dropped
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.actor.typed.internal.pubsub.TopicImpl
 import akka.testkit.TimingTest
 import org.scalatest.wordspec.AnyWordSpecLike
 
 import scala.concurrent.duration._
 
-class LocalPubSubSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCapturing {
+class LocalTopicSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCapturing {
 
   "A pub-sub topic running locally" must {
 
@@ -186,15 +187,17 @@ class LocalPubSubSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike wit
       }
     }
 
-    "shut down topic after ttl" taggedAs TimingTest in {
-      def createTopic() = testKit.spawn(Topic[String]("fruit6", 300.millis))
+    "shut down topic after ttl" taggedAs (TimingTest) in {
+      def createTopic() =
+        testKit.spawn(TopicImpl[String]("fruit6", Some(300.millis)))
       val topic = createTopic()
       val probe = testKit.createTestProbe()
       probe.expectTerminated(topic)
     }
 
-    "keep topic with ttl alive with publishing" taggedAs TimingTest in {
-      def createTopic() = testKit.spawn(Topic[String]("fruit7", 500.millis))
+    "keep topic with ttl alive with publishing" taggedAs (TimingTest) in {
+      def createTopic() =
+        testKit.spawn(TopicImpl[String]("fruit7", Some(500.millis)))
       val deadLetters = testKit.createDeadLetterProbe()
       val topic = createTopic()
       // no subscribers, only local publish
@@ -216,8 +219,9 @@ class LocalPubSubSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike wit
       probe.expectTerminated(topic)
     }
 
-    "keep topic with ttl alive with subscriber" taggedAs TimingTest in {
-      def createTopic() = testKit.spawn(Topic[String]("fruit8", 300.millis))
+    "keep topic with ttl alive with subscriber" taggedAs (TimingTest) in {
+      def createTopic() =
+        testKit.spawn(TopicImpl[String]("fruit8", Some(300.millis)))
       val topic = createTopic()
       val subscriber = testKit.createTestProbe[String]()
       topic ! Topic.Subscribe(subscriber.ref)
