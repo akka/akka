@@ -6,8 +6,17 @@ own jmh module)
 
 You can run them like:
 
-   project akka-bench-jmh
-   jmh:run -i 3 -wi 3 -f 1 .*ActorCreationBenchmark
+```shell
+sbt shell
+akka > project akka-bench-jmh
+sbt:akka-bench-jmh> jmh:run -i 3 -wi 3 -f 1 .*ActorCreationBenchmark
+```
+
+or execute in one-line command
+
+```shell
+sbt akka-bench-jmh/jmh:run -i 3 -wi 3 -f 1 .*ActorCreationBenchmark
+```
 
 Use 'jmh:run -h' to get an overview of the available options.
 
