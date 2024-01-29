@@ -19,6 +19,7 @@ import akka.annotation.InternalApi
 import akka.annotation.InternalStableApi
 import akka.persistence.typed.state.internal.DurableStateBehaviorImpl.GetState
 import akka.persistence.typed.state.scaladsl.Effect
+import akka.persistence.typed.telemetry.DurableStateBehaviorInstrumentation
 import akka.util.OptionVal
 import akka.util.unused
 
@@ -48,7 +49,11 @@ private[akka] object Running {
     def currentRevision: Long
   }
 
-  final case class RunningState[State](revision: Long, state: State, receivedPoisonPill: Boolean) {
+  final case class RunningState[State](
+      revision: Long,
+      state: State,
+      receivedPoisonPill: Boolean,
+      instrumentationContext: DurableStateBehaviorInstrumentation.Context) {
 
     def nextRevision(): RunningState[State] =
       copy(revision = revision + 1)
@@ -56,6 +61,15 @@ private[akka] object Running {
     def applyState[C, E](@unused setup: BehaviorSetup[C, State], updated: State): RunningState[State] = {
       copy(state = updated)
     }
+
+    def updateInstrumentationContext(
+        instrumentationContext: DurableStateBehaviorInstrumentation.Context): RunningState[State] = {
+      if (instrumentationContext eq this.instrumentationContext) this // avoid instance creation for EmptyContext
+      else copy(instrumentationContext = instrumentationContext)
+    }
+
+    def clearInstrumentationContext: RunningState[State] =
+      updateInstrumentationContext(DurableStateBehaviorInstrumentation.EmptyContext)
   }
 }
 
@@ -266,14 +280,24 @@ private[akka] object Running {
           .debug("Received UpsertSuccess response after: {} nanos", System.nanoTime() - persistStartTime)
       }
 
+      val instrumentationContext2 =
+        setup.instrumentation.persistStateWritten(setup.context.self, state.state, state.instrumentationContext)
+      val state2 = state.updateInstrumentationContext(instrumentationContext2)
       onWriteSuccess(setup.context)
 
-      visibleState = state
-      val newState = applySideEffects(sideEffects, state)
-      tryUnstashOne(newState)
+      visibleState = state2
+      val behavior = applySideEffects(sideEffects, state2.clearInstrumentationContext)
+      setup.instrumentation.persistStateDone(setup.context.self, instrumentationContext2)
+      tryUnstashOne(behavior)
     }
 
     final def onUpsertFailed(cause: Throwable): Behavior[InternalProtocol] = {
+      setup.instrumentation.persistFailed(
+        setup.context.self,
+        cause,
+        state.state,
+        state.revision,
+        state.instrumentationContext)
       onWriteFailed(setup.context, cause)
       throw new DurableStateStoreException(setup.persistenceId, currentRevision, cause)
     }
@@ -284,15 +308,23 @@ private[akka] object Running {
           .debug("Received DeleteSuccess response after: {} nanos", System.nanoTime() - persistStartTime)
       }
 
-      // TODO Might need to call hook method for Telemetry
+      val instrumentationContext2 =
+        setup.instrumentation.persistStateWritten(setup.context.self, state.state, state.instrumentationContext)
+      val state2 = state.updateInstrumentationContext(instrumentationContext2)
 
-      visibleState = state
-      val newState = applySideEffects(sideEffects, state)
-      tryUnstashOne(newState)
+      visibleState = state2
+      val behavior = applySideEffects(sideEffects, state2.clearInstrumentationContext)
+      setup.instrumentation.persistStateDone(setup.context.self, instrumentationContext2)
+      tryUnstashOne(behavior)
     }
 
     final def onDeleteFailed(cause: Throwable): Behavior[InternalProtocol] = {
-      // TODO Might need to call hook method for Telemetry
+      setup.instrumentation.persistFailed(
+        setup.context.self,
+        cause,
+        state.state,
+        state.revision,
+        state.instrumentationContext)
       throw new DurableStateStoreException(setup.persistenceId, currentRevision, cause)
     }
 
@@ -395,8 +427,10 @@ private[akka] object Running {
     }
   }
 
+  // FIXME remove instrumentation hook method in 2.10.0
   @InternalStableApi
   private[akka] def onWriteFailed(@unused ctx: ActorContext[_], @unused reason: Throwable): Unit = ()
+  // FIXME remove instrumentation hook method in 2.10.0
   @InternalStableApi
   private[akka] def onWriteSuccess(@unused ctx: ActorContext[_]): Unit = ()
 

@@ -92,10 +92,13 @@ private[akka] final class ReplayingEvents[C, E, S](
   replayEvents(state.seqNr + 1L, state.toSeqNr)
   onRecoveryStart(setup.context)
 
+  // FIXME remove instrumentation hook method in 2.10.0
   @InternalStableApi
   def onRecoveryStart(@unused context: ActorContext[_]): Unit = ()
+  // FIXME remove instrumentation hook method in 2.10.0
   @InternalStableApi
   def onRecoveryComplete(@unused context: ActorContext[_]): Unit = ()
+  // FIXME remove instrumentation hook method in 2.10.0
   @InternalStableApi
   def onRecoveryFailed(@unused context: ActorContext[_], @unused reason: Throwable, @unused event: Option[Any]): Unit =
     ()
@@ -254,7 +257,14 @@ private[akka] final class ReplayingEvents[C, E, S](
    * @param event the event that was being processed when the exception was thrown
    */
   private def onRecoveryFailure(cause: Throwable, event: Option[Any]): Behavior[InternalProtocol] = {
+    val instrumentationEvent =
+      event match {
+        case Some(_: Message) | None => null
+        case Some(evt)               => evt
+      }
+    setup.instrumentation.recoveryFailed(setup.context.self, cause, instrumentationEvent)
     onRecoveryFailed(setup.context, cause, event)
+
     setup.onSignal(state.state, RecoveryFailed(cause), catchAndLog = true)
     setup.cancelRecoveryTimer()
     tryReturnRecoveryPermit("on replay failure: " + cause.getMessage)
@@ -280,6 +290,7 @@ private[akka] final class ReplayingEvents[C, E, S](
 
   private def onRecoveryCompleted(state: ReplayingState[S]): Behavior[InternalProtocol] =
     try {
+      setup.instrumentation.recoveryDone(setup.context.self)
       onRecoveryComplete(setup.context)
       tryReturnRecoveryPermit("replay completed successfully")
       if (setup.internalLogger.isDebugEnabled) {
@@ -300,7 +311,8 @@ private[akka] final class ReplayingEvents[C, E, S](
           receivedPoisonPill = state.receivedPoisonPill,
           state.version,
           seenPerReplica = state.seenSeqNrPerReplica,
-          replicationControl = Map.empty)
+          replicationControl = Map.empty,
+          instrumentationContexts = Map.empty)
         val running = new Running(setup.setMdcPhase(PersistenceMdc.RunningCmds))
         val initialRunningState = setup.replication match {
           case Some(replication)

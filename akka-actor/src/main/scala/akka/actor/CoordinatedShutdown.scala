@@ -28,6 +28,7 @@ import akka.dispatch.ExecutionContexts
 import akka.event.Logging
 import akka.pattern.after
 import akka.util.OptionVal
+import akka.util.TopologicalSort
 
 object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with ExtensionIdProvider {
 
@@ -325,32 +326,13 @@ object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with Extensi
    * INTERNAL API: https://en.wikipedia.org/wiki/Topological_sorting
    */
   private[akka] def topologicalSort(phases: Map[String, Phase]): List[String] = {
-    var result = List.empty[String]
-    var unmarked = phases.keySet ++ phases.values.flatMap(_.dependsOn) // in case phase is not defined as key
-    var tempMark = Set.empty[String] // for detecting cycles
-
-    while (unmarked.nonEmpty) {
-      depthFirstSearch(unmarked.head)
-    }
-
-    def depthFirstSearch(u: String): Unit = {
-      if (tempMark(u))
-        throw new IllegalArgumentException(
-          "Cycle detected in graph of phases. It must be a DAG. " +
-          s"phase [$u] depends transitively on itself. All dependencies: $phases")
-      if (unmarked(u)) {
-        tempMark += u
-        phases.get(u) match {
-          case Some(p) => p.dependsOn.foreach(depthFirstSearch)
-          case None    =>
-        }
-        unmarked -= u // permanent mark
-        tempMark -= u
-        result = u :: result
-      }
-    }
-
-    result.reverse
+    val all = (phases.keySet ++ phases.values.flatMap(_.dependsOn)).toList // in case phase is not defined as key
+    TopologicalSort
+      .topologicalSort[String](all, phases.get(_) match {
+        case Some(phase) => phase.dependsOn
+        case None        => Set.empty
+      })
+      .toList
   }
 
 }

@@ -18,6 +18,8 @@ import akka.actor.{ Actor, ActorCell, DeadLetter, StashOverflowException }
 import akka.annotation.{ InternalApi, InternalStableApi }
 import akka.dispatch.Envelope
 import akka.event.{ Logging, LoggingAdapter }
+import akka.persistence.telemetry.EventsourcedInstrumentation
+import akka.persistence.telemetry.EventsourcedInstrumentationProvider
 import akka.util.Helpers.ConfigOps
 
 /** INTERNAL API */
@@ -113,6 +115,18 @@ private[persistence] trait Eventsourced
     case _                      => true
   }
 
+  private val instrumentation = EventsourcedInstrumentationProvider(context.system).instrumentation
+  private var instrumentationContexts: Map[Long, EventsourcedInstrumentation.Context] = Map.empty
+
+  private def getAndClearInstrumentationContext(seqNr: Long): EventsourcedInstrumentation.Context = {
+    instrumentationContexts.get(seqNr) match {
+      case None => EventsourcedInstrumentation.EmptyContext
+      case Some(ctx) =>
+        instrumentationContexts -= seqNr
+        ctx
+    }
+  }
+
   /**
    * Returns `persistenceId`.
    */
@@ -136,6 +150,12 @@ private[persistence] trait Eventsourced
    */
   @InternalStableApi
   private[akka] def onReplaySuccess(): Unit = ()
+
+  private def onRecoveryFailureAndInstrumentation(cause: Throwable, event: Option[Any]): Unit = {
+    instrumentation.recoveryFailed(self, cause, event.orNull)
+
+    onRecoveryFailure(cause, event)
+  }
 
   /**
    * Called whenever a message replay fails. By default it logs the error.
@@ -229,6 +249,7 @@ private[persistence] trait Eventsourced
 
   @InternalStableApi
   private def startRecovery(recovery: Recovery): Unit = {
+    instrumentation.recoveryStarted(self)
     val timeout = {
       val journalPluginConfig = this match {
         case c: RuntimePluginConfig => c.journalPluginConfig
@@ -257,7 +278,9 @@ private[persistence] trait Eventsourced
   }
 
   private def requestRecoveryPermit(): Unit = {
+    val instCtx = instrumentation.beforeRequestRecoveryPermit(self)
     extension.recoveryPermitter.tell(RecoveryPermitter.RequestRecoveryPermit, self)
+    instrumentation.afterRequestRecoveryPermit(self, instCtx)
     changeState(waitingRecoveryPermit(recovery))
   }
 
@@ -391,15 +414,26 @@ private[persistence] trait Eventsourced
         "Cannot persist during replay. Events can be persisted when receiving RecoveryCompleted or later.")
     pendingStashingPersistInvocations += 1
     pendingInvocations.addLast(StashingHandlerInvocation(event, handler.asInstanceOf[Any => Unit]))
+    val seqNr = nextSequenceNr()
     batchAtomicWrite(
       AtomicWrite(
         PersistentRepr(
           event,
           persistenceId = persistenceId,
-          sequenceNr = nextSequenceNr(),
+          sequenceNr = seqNr,
           writerUuid = writerUuid,
           sender = sender())))
+
+    val instCtx = instrumentation.persistEventCalled(self, event, currentCommand())
+    if (instCtx != EventsourcedInstrumentation.EmptyContext)
+      instrumentationContexts = instrumentationContexts.updated(seqNr, instCtx)
   }
+
+  private def currentCommand(): Any =
+    context match {
+      case cell: ActorCell => cell.currentMessage.message
+      case _               => null
+    }
 
   /**
    * Internal API
@@ -414,15 +448,20 @@ private[persistence] trait Eventsourced
         pendingStashingPersistInvocations += 1
         pendingInvocations.addLast(StashingHandlerInvocation(event, handler.asInstanceOf[Any => Unit]))
       }
-      batchAtomicWrite(
-        AtomicWrite(
-          events.map(
-            PersistentRepr.apply(
-              _,
-              persistenceId = persistenceId,
-              sequenceNr = nextSequenceNr(),
-              writerUuid = writerUuid,
-              sender = sender()))))
+      val reprs = events.map(
+        PersistentRepr.apply(
+          _,
+          persistenceId = persistenceId,
+          sequenceNr = nextSequenceNr(),
+          writerUuid = writerUuid,
+          sender = sender()))
+      batchAtomicWrite(AtomicWrite(reprs))
+
+      reprs.foreach { repr =>
+        val instCtx = instrumentation.persistEventCalled(self, repr.payload, currentCommand())
+        if (instCtx != EventsourcedInstrumentation.EmptyContext)
+          instrumentationContexts = instrumentationContexts.updated(repr.sequenceNr, instCtx)
+      }
     }
   }
 
@@ -440,13 +479,18 @@ private[persistence] trait Eventsourced
       throw new IllegalStateException(
         "Cannot persist during replay. Events can be persisted when receiving RecoveryCompleted or later.")
     pendingInvocations.addLast(AsyncHandlerInvocation(event, handler.asInstanceOf[Any => Unit]))
+    val seqNr = nextSequenceNr()
     eventBatch ::= AtomicWrite(
       PersistentRepr(
         event,
         persistenceId = persistenceId,
-        sequenceNr = nextSequenceNr(),
+        sequenceNr = seqNr,
         writerUuid = writerUuid,
         sender = sender()))
+
+    val instCtx = instrumentation.persistEventCalled(self, event, currentCommand())
+    if (instCtx != EventsourcedInstrumentation.EmptyContext)
+      instrumentationContexts = instrumentationContexts.updated(seqNr, instCtx)
   }
 
   /**
@@ -461,14 +505,20 @@ private[persistence] trait Eventsourced
       events.foreach { event =>
         pendingInvocations.addLast(AsyncHandlerInvocation(event, handler.asInstanceOf[Any => Unit]))
       }
-      eventBatch ::= AtomicWrite(
-        events.map(
-          PersistentRepr(
-            _,
-            persistenceId = persistenceId,
-            sequenceNr = nextSequenceNr(),
-            writerUuid = writerUuid,
-            sender = sender())))
+      val reprs = events.map(
+        PersistentRepr(
+          _,
+          persistenceId = persistenceId,
+          sequenceNr = nextSequenceNr(),
+          writerUuid = writerUuid,
+          sender = sender()))
+      eventBatch ::= AtomicWrite(reprs)
+
+      reprs.foreach { repr =>
+        val instCtx = instrumentation.persistEventCalled(self, repr.payload, currentCommand())
+        if (instCtx != EventsourcedInstrumentation.EmptyContext)
+          instrumentationContexts = instrumentationContexts.updated(repr.sequenceNr, instCtx)
+      }
     }
   }
 
@@ -628,7 +678,7 @@ private[persistence] trait Eventsourced
       val _receiveRecover = try receiveRecover
       catch {
         case NonFatal(e) =>
-          try onRecoveryFailure(e, Some(e))
+          try onRecoveryFailureAndInstrumentation(e, Some(e))
           finally context.stop(self)
           returnRecoveryPermit()
           Actor.emptyBehavior
@@ -663,7 +713,7 @@ private[persistence] trait Eventsourced
                 Eventsourced.super.aroundReceive(recoveryBehavior, offer)
               } catch {
                 case NonFatal(t) =>
-                  try onRecoveryFailure(t, None)
+                  try onRecoveryFailureAndInstrumentation(t, None)
                   finally context.stop(self)
                   returnRecoveryPermit()
               }
@@ -697,13 +747,13 @@ private[persistence] trait Eventsourced
             loadSnapshotResult(snapshot = None, recovery.toSequenceNr)
           } else {
             timeoutCancellable.cancel()
-            try onRecoveryFailure(cause, event = None)
+            try onRecoveryFailureAndInstrumentation(cause, event = None)
             finally context.stop(self)
             returnRecoveryPermit()
           }
 
         case RecoveryTick(true) =>
-          try onRecoveryFailure(
+          try onRecoveryFailureAndInstrumentation(
             new RecoveryTimedOut(s"Recovery timed out, didn't get snapshot within $timeout"),
             event = None)
           finally context.stop(self)
@@ -758,12 +808,13 @@ private[persistence] trait Eventsourced
             } catch {
               case NonFatal(t) =>
                 timeoutCancellable.cancel()
-                try onRecoveryFailure(t, Some(p.payload))
+                try onRecoveryFailureAndInstrumentation(t, Some(p.payload))
                 finally context.stop(self)
                 returnRecoveryPermit()
             }
           case RecoverySuccess(highestJournalSeqNr) =>
             timeoutCancellable.cancel()
+            instrumentation.recoveryDone(self)
             onReplaySuccess() // callback for subclass implementation
             val highestSeqNr = Math.max(highestJournalSeqNr, lastSequenceNr)
             sequenceNr = highestSeqNr
@@ -775,12 +826,12 @@ private[persistence] trait Eventsourced
             returnRecoveryPermit()
           case ReplayMessagesFailure(cause) =>
             timeoutCancellable.cancel()
-            try onRecoveryFailure(cause, event = None)
+            try onRecoveryFailureAndInstrumentation(cause, event = None)
             finally context.stop(self)
             returnRecoveryPermit()
           case RecoveryTick(false) if !eventSeenInInterval =>
             timeoutCancellable.cancel()
-            try onRecoveryFailure(
+            try onRecoveryFailureAndInstrumentation(
               new RecoveryTimedOut(
                 s"Recovery timed out, didn't get event within $timeout, highest sequence number seen $lastSequenceNr"),
               event = None)
@@ -852,10 +903,14 @@ private[persistence] trait Eventsourced
         // instanceId mismatch can happen for persistAsync and defer in case of actor restart
         // while message is in flight, in that case we ignore the call to the handler
         if (id == instanceId) {
+          val instrumentationContext2 =
+            instrumentation.persistEventWritten(self, p.payload, getAndClearInstrumentationContext(p.sequenceNr))
           updateLastSequenceNr(p)
           try {
             writeEventSucceeded(p)
             onWriteMessageComplete(err = false)
+            instrumentation.persistEventDone(self, instrumentationContext2)
+
           } catch {
             case NonFatal(e) => onWriteMessageComplete(err = true); throw e
           }
@@ -864,6 +919,12 @@ private[persistence] trait Eventsourced
         // instanceId mismatch can happen for persistAsync and defer in case of actor restart
         // while message is in flight, in that case the handler has already been discarded
         if (id == instanceId) {
+          instrumentation.persistRejected(
+            self,
+            cause,
+            p.payload,
+            p.sequenceNr,
+            getAndClearInstrumentationContext(p.sequenceNr))
           updateLastSequenceNr(p)
           onWriteMessageComplete(err = false)
           writeEventRejected(p, cause)
@@ -872,6 +933,12 @@ private[persistence] trait Eventsourced
         // instanceId mismatch can happen for persistAsync and defer in case of actor restart
         // while message is in flight, in that case the handler has already been discarded
         if (id == instanceId) {
+          instrumentation.persistFailed(
+            self,
+            cause,
+            p.payload,
+            p.sequenceNr,
+            getAndClearInstrumentationContext(p.sequenceNr))
           onWriteMessageComplete(err = false)
           try writeEventFailed(p, cause)
           finally context.stop(self)
@@ -902,6 +969,7 @@ private[persistence] trait Eventsourced
     }
 
     def onWriteMessageComplete(err: Boolean): Unit
+
   }
 
   /**

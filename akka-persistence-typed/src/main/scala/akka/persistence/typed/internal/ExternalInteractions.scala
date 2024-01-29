@@ -43,8 +43,7 @@ private[akka] trait JournalInteractions[C, E, S] {
   def setup: BehaviorSetup[C, E, S]
 
   protected def internalPersist(
-      ctx: ActorContext[_],
-      cmd: Any,
+      cmd: OptionVal[Any],
       state: Running.RunningState[S],
       event: EventOrTaggedOrReplicated,
       eventAdapterManifest: String,
@@ -60,9 +59,10 @@ private[akka] trait JournalInteractions[C, E, S] {
       writerUuid = setup.writerIdentity.writerUuid,
       sender = ActorRef.noSender)
 
-    // FIXME check cinnamon is okay with this being null
-    // https://github.com/akka/akka/issues/29262
-    onWriteInitiated(ctx, cmd, repr)
+    val instrumentationContext =
+      setup.instrumentation.persistEventCalled(setup.context.self, repr.payload, cmd.orNull)
+
+    onWriteInitiated(setup.context, cmd.orNull, repr)
 
     val write = AtomicWrite(metadata match {
         case OptionVal.Some(meta) => repr.withMetadata(meta)
@@ -72,9 +72,10 @@ private[akka] trait JournalInteractions[C, E, S] {
     setup.journal
       .tell(JournalProtocol.WriteMessages(write, setup.selfClassic, setup.writerIdentity.instanceId), setup.selfClassic)
 
-    newRunningState
+    newRunningState.updateInstrumentationContext(repr.sequenceNr, instrumentationContext)
   }
 
+  // FIXME remove instrumentation hook method in 2.10.0
   @InternalStableApi
   private[akka] def onWriteInitiated(
       @unused ctx: ActorContext[_],
@@ -82,8 +83,7 @@ private[akka] trait JournalInteractions[C, E, S] {
       @unused repr: PersistentRepr): Unit = ()
 
   protected def internalPersistAll(
-      ctx: ActorContext[_],
-      cmd: Any,
+      cmd: OptionVal[Any],
       state: Running.RunningState[S],
       events: immutable.Seq[EventToPersist]): Running.RunningState[S] = {
     if (events.nonEmpty) {
@@ -99,13 +99,15 @@ private[akka] trait JournalInteractions[C, E, S] {
             manifest = eventAdapterManifest,
             writerUuid = setup.writerIdentity.writerUuid,
             sender = ActorRef.noSender)
+          val instCtx = setup.instrumentation.persistEventCalled(setup.context.self, repr.payload, cmd.orNull)
+          newState = newState.updateInstrumentationContext(repr.sequenceNr, instCtx)
           metadata match {
             case Some(metadata) => repr.withMetadata(metadata)
             case None           => repr
           }
       }
 
-      onWritesInitiated(ctx, cmd, writes)
+      onWritesInitiated(setup.context, cmd.orNull, writes)
       val write = AtomicWrite(writes)
 
       setup.journal.tell(
@@ -116,6 +118,7 @@ private[akka] trait JournalInteractions[C, E, S] {
     } else state
   }
 
+  // FIXME remove instrumentation hook method in 2.10.0
   @InternalStableApi
   private[akka] def onWritesInitiated(
       @unused ctx: ActorContext[_],

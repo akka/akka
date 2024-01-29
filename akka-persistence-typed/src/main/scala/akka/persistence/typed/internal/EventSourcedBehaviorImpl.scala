@@ -46,6 +46,7 @@ import akka.persistence.typed.SnapshotSelectionCriteria
 import akka.persistence.typed.scaladsl._
 import akka.persistence.typed.scaladsl.{ Recovery => TypedRecovery }
 import akka.persistence.typed.scaladsl.RetentionCriteria
+import akka.persistence.typed.telemetry.EventSourcedBehaviorInstrumentationProvider
 import akka.util.ConstantFun
 import akka.util.unused
 
@@ -173,7 +174,9 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
       case (_, EventSourcedBehaviorImpl.GetPersistenceId(replyTo)) => replyTo ! persistenceId
     }
 
+    val instrumentation = EventSourcedBehaviorInstrumentationProvider(ctx.system).instrumentation
     // do this once, even if the actor is restarted
+    instrumentation.actorInitialized(ctx.self)
     initialize(context.asScala)
 
     Behaviors
@@ -199,7 +202,8 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
             replication = replication,
             publishEvents = publishEvents,
             internalLoggerFactory = () => internalLogger(),
-            retentionInProgress = false)
+            retentionInProgress = false,
+            instrumentation)
 
           // needs to accept Any since we also can get messages from the journal
           // not part of the user facing Command protocol
@@ -242,6 +246,7 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
       .onFailure[JournalFailureException](supervisionStrategy)
   }
 
+  // FIXME remove instrumentation hook method in 2.10.0
   @InternalStableApi
   private[akka] def initialize(@unused context: ActorContext[_]): Unit = ()
 

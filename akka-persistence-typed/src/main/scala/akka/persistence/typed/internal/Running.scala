@@ -58,6 +58,7 @@ import akka.persistence.typed.internal.JournalInteractions.EventToPersist
 import akka.persistence.typed.internal.Running.MaxRecursiveUnstash
 import akka.persistence.typed.internal.Running.WithSeqNrAccessible
 import akka.persistence.typed.scaladsl.Effect
+import akka.persistence.typed.telemetry.EventSourcedBehaviorInstrumentation
 import akka.stream.{ RestartSettings, SystemMaterializer, WatchedActorTerminatedException }
 import akka.stream.scaladsl.{ RestartSource, Sink }
 import akka.stream.scaladsl.Keep
@@ -100,7 +101,8 @@ private[akka] object Running {
       receivedPoisonPill: Boolean,
       version: VersionVector,
       seenPerReplica: Map[ReplicaId, Long],
-      replicationControl: Map[ReplicaId, ReplicationStreamControl]) {
+      replicationControl: Map[ReplicaId, ReplicationStreamControl],
+      instrumentationContexts: Map[Long, EventSourcedBehaviorInstrumentation.Context]) {
 
     def nextSequenceNr(): RunningState[State] =
       copy(seqNr = seqNr + 1)
@@ -112,6 +114,24 @@ private[akka] object Running {
       val updated = setup.eventHandler(state, event)
       copy(state = updated)
     }
+
+    def getInstrumentationContext(seqNr: Long): EventSourcedBehaviorInstrumentation.Context =
+      instrumentationContexts.get(seqNr) match {
+        case Some(ctx) => ctx
+        case None      => EventSourcedBehaviorInstrumentation.EmptyContext
+      }
+
+    def updateInstrumentationContext(
+        seqNr: Long,
+        instrumentationContext: EventSourcedBehaviorInstrumentation.Context): RunningState[State] = {
+      if (instrumentationContext eq EventSourcedBehaviorInstrumentation.EmptyContext)
+        this // avoid instance creation for EmptyContext
+      else copy(instrumentationContexts = instrumentationContexts.updated(seqNr, instrumentationContext))
+    }
+
+    def clearInstrumentationContext: RunningState[State] =
+      if (instrumentationContexts.isEmpty) this
+      else copy(instrumentationContexts = Map.empty)
   }
 
   def startReplicationStream[C, E, S](
@@ -436,8 +456,7 @@ private[akka] object Running {
       }
 
       val newState2: RunningState[S] = internalPersist(
-        setup.context,
-        null,
+        OptionVal.none,
         stateAfterApply,
         eventToPersist,
         eventAdapterManifest,
@@ -474,8 +493,7 @@ private[akka] object Running {
           case Some(replication) =>
             val updatedVersion = stateAfterApply.version.updated(replication.replicaId.id, _currentSequenceNumber)
             val r = internalPersist(
-              setup.context,
-              cmd,
+              OptionVal.Some(cmd),
               stateAfterApply,
               eventToPersist,
               eventAdapterManifest,
@@ -494,7 +512,7 @@ private[akka] object Running {
 
             r
           case None =>
-            internalPersist(setup.context, cmd, stateAfterApply, eventToPersist, eventAdapterManifest, OptionVal.None)
+            internalPersist(OptionVal.Some(cmd), stateAfterApply, eventToPersist, eventAdapterManifest, OptionVal.None)
         }
 
         val shouldSnapshotAfterPersist = setup.shouldSnapshot(newState2.state, event, newState2.seqNr)
@@ -560,7 +578,7 @@ private[akka] object Running {
           }
 
           val newState2 =
-            internalPersistAll(setup.context, cmd, currentState, eventsToPersist.reverse)
+            internalPersistAll(OptionVal.Some(cmd), currentState, eventsToPersist.reverse)
 
           (
             persistingEvents(
@@ -737,6 +755,12 @@ private[akka] object Running {
         state = state.updateLastSequenceNr(p)
         eventCounter += 1
 
+        val instrumentationContext2 =
+          setup.instrumentation.persistEventWritten(
+            setup.context.self,
+            p.payload,
+            state.getInstrumentationContext(p.sequenceNr))
+        val state2 = state.updateInstrumentationContext(p.sequenceNr, instrumentationContext2)
         onWriteSuccess(setup.context, p)
 
         if (setup.publishEvents && shouldPublish) {
@@ -748,10 +772,11 @@ private[akka] object Running {
 
         // only once all things are applied we can revert back
         if (eventCounter < numberOfEvents) {
+          setup.instrumentation.persistEventDone(setup.context.self, instrumentationContext2)
           onWriteDone(setup.context, p)
           this
         } else {
-          visibleState = state
+          visibleState = state2
           def skipRetention(): Boolean = {
             // only one retention process at a time
             val inProgress = shouldSnapshotAfterPersist == SnapshotWithRetention && setup.isRetentionInProgress()
@@ -759,18 +784,22 @@ private[akka] object Running {
               setup.internalLogger.info(
                 "Skipping retention at seqNr [{}] because previous retention has not completed yet. " +
                 "Next retention will cover skipped retention.",
-                state.seqNr)
+                state2.seqNr)
             inProgress
           }
-          if (shouldSnapshotAfterPersist == NoSnapshot || state.state == null || skipRetention()) {
-            val newState = applySideEffects(sideEffects, state)
+
+          if (shouldSnapshotAfterPersist == NoSnapshot || state2.state == null || skipRetention()) {
+            val behavior = applySideEffects(sideEffects, state2.clearInstrumentationContext)
+            setup.instrumentation.persistEventDone(setup.context.self, instrumentationContext2)
             onWriteDone(setup.context, p)
-            tryUnstashOne(newState)
+            tryUnstashOne(behavior)
           } else {
+            setup.instrumentation.persistEventDone(setup.context.self, instrumentationContext2)
+            onWriteDone(setup.context, p)
             if (shouldSnapshotAfterPersist == SnapshotWithRetention)
-              setup.retentionProgressSaveSnapshotStarted(state.seqNr)
-            internalSaveSnapshot(state)
-            new StoringSnapshot(state, sideEffects, shouldSnapshotAfterPersist)
+              setup.retentionProgressSaveSnapshotStarted(state2.seqNr)
+            internalSaveSnapshot(state2)
+            new StoringSnapshot(state2.clearInstrumentationContext, sideEffects, shouldSnapshotAfterPersist)
           }
         }
       }
@@ -783,12 +812,24 @@ private[akka] object Running {
 
         case WriteMessageRejected(p, cause, id) =>
           if (id == setup.writerIdentity.instanceId) {
+            setup.instrumentation.persistRejected(
+              setup.context.self,
+              cause,
+              p.payload,
+              p.sequenceNr,
+              state.getInstrumentationContext(p.sequenceNr))
             onWriteRejected(setup.context, cause, p)
             throw new EventRejectedException(setup.persistenceId, p.sequenceNr, cause)
           } else this
 
         case WriteMessageFailure(p, cause, id) =>
           if (id == setup.writerIdentity.instanceId) {
+            setup.instrumentation.persistFailed(
+              setup.context.self,
+              cause,
+              p.payload,
+              p.sequenceNr,
+              state.getInstrumentationContext(p.sequenceNr))
             onWriteFailed(setup.context, cause, p)
             throw new JournalFailureException(setup.persistenceId, p.sequenceNr, p.payload.getClass.getName, cause)
           } else this
@@ -1085,18 +1126,22 @@ private[akka] object Running {
     }
   }
 
+  // FIXME remove instrumentation hook method in 2.10.0
   @InternalStableApi
   private[akka] def onWriteFailed(
       @unused ctx: ActorContext[_],
       @unused reason: Throwable,
       @unused event: PersistentRepr): Unit = ()
+  // FIXME remove instrumentation hook method in 2.10.0
   @InternalStableApi
   private[akka] def onWriteRejected(
       @unused ctx: ActorContext[_],
       @unused reason: Throwable,
       @unused event: PersistentRepr): Unit = ()
+  // FIXME remove instrumentation hook method in 2.10.0
   @InternalStableApi
   private[akka] def onWriteSuccess(@unused ctx: ActorContext[_], @unused event: PersistentRepr): Unit = ()
+  // FIXME remove instrumentation hook method in 2.10.0
   @InternalStableApi
   private[akka] def onWriteDone(@unused ctx: ActorContext[_], @unused event: PersistentRepr): Unit = ()
 }

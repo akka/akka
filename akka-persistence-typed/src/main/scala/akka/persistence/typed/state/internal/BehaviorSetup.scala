@@ -23,6 +23,7 @@ import akka.persistence.typed.SnapshotAdapter
 import akka.persistence.typed.state.internal.InternalProtocol.RecoveryTimeout
 import akka.persistence.typed.state.scaladsl.ChangeEventHandler
 import akka.persistence.typed.state.scaladsl.DurableStateBehavior
+import akka.persistence.typed.telemetry.DurableStateBehaviorInstrumentation
 import akka.util.OptionVal
 
 /**
@@ -41,7 +42,8 @@ private[akka] final class BehaviorSetup[C, S](
     val settings: DurableStateSettings,
     val stashState: StashState,
     private val internalLoggerFactory: () => Logger,
-    val changeEventHandler: Option[ChangeEventHandler[Any, S, Any]]) {
+    val changeEventHandler: Option[ChangeEventHandler[Any, S, Any]],
+    val instrumentation: DurableStateBehaviorInstrumentation) {
 
   import akka.actor.typed.scaladsl.adapter._
 
