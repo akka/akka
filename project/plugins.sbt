@@ -17,4 +17,4 @@ addSbtPlugin("com.github.sbt" % "sbt-pull-request-validator" % "2.0.0")
 addSbtPlugin("net.bzzt" % "sbt-reproducible-builds" % "0.31")
 
 addSbtPlugin("com.github.sbt" % "sbt-ci-release" % "1.5.12")
-addSbtPlugin("com.lightbend.sbt" % "sbt-publish-rsync" % "0.2")
+addSbtPlugin("com.lightbend.sbt" % "sbt-publish-rsync" % "0.3")
