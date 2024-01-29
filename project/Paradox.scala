@@ -30,11 +30,11 @@ object Paradox {
         "extref.github.base_url" -> (GitHub.url(version.value) + "/%s"), // for links to our sources
         "extref.samples.base_url" -> "https://developer.lightbend.com/start/?group=akka&amp;project=%s",
         "extref.ecs.base_url" -> "https://example.lightbend.com/v1/download/%s",
-        "scaladoc.akka.base_url" -> "https://doc.akka.io/api/akka/2.8",
+        "scaladoc.akka.base_url" -> s"https://doc.akka.io/api/akka/${version.value}",
         "scaladoc.akka.http.base_url" -> "https://doc.akka.io/api/akka-http/current",
         "javadoc.java.base_url" -> "https://docs.oracle.com/en/java/javase/11/docs/api/java.base/",
         "javadoc.java.link_style" -> "direct",
-        "javadoc.akka.base_url" -> "https://doc.akka.io/japi/akka/2.8",
+        "javadoc.akka.base_url" -> s"https://doc.akka.io/japi/akka/${version.value}",
         "javadoc.akka.link_style" -> "direct",
         "javadoc.akka.http.base_url" -> "https://doc.akka.io/japi/akka-http/current",
         "javadoc.akka.http.link_style" -> "frames",
