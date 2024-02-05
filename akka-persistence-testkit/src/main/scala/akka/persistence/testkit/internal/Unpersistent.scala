@@ -125,7 +125,7 @@ private[akka] object Unpersistent {
           case unexpected                            => throw new IllegalStateException(s"Unexpected retention criteria: $unexpected")
         }
 
-        snapshotFromRetention || snapshotWhen(state, evt, sequenceNr)
+        snapshotFromRetention || snapshotWhen.predicate(state, evt, sequenceNr)
       }
 
       @tailrec

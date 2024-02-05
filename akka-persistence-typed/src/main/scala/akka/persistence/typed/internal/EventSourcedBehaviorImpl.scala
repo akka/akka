@@ -101,7 +101,7 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
     tagger: (State, Event) => Set[String] = (_: State, _: Event) => Set.empty[String],
     eventAdapter: EventAdapter[Event, Any] = NoOpEventAdapter.instance[Event],
     snapshotAdapter: SnapshotAdapter[State] = NoOpSnapshotAdapter.instance[State],
-    snapshotWhen: (State, Event, Long) => Boolean = ConstantFun.scalaAnyThreeToFalse,
+    snapshotWhen: SnapshotWhenPredicate[State, Event] = SnapshotWhenPredicate.noSnapshot[State, Event],
     recovery: Recovery = Recovery(),
     retention: RetentionCriteria = RetentionCriteria.disabled,
     supervisionStrategy: SupervisorStrategy = SupervisorStrategy.stop,
@@ -270,7 +270,13 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
   }
 
   override def snapshotWhen(predicate: (State, Event, Long) => Boolean): EventSourcedBehavior[Command, Event, State] =
-    copy(snapshotWhen = predicate)
+    snapshotWhen(predicate, deleteEventsOnSnapshot = false)
+
+  override def snapshotWhen(
+      predicate: (State, Event, Long) => Boolean,
+      deleteEventsOnSnapshot: Boolean): EventSourcedBehavior[Command, Event, State] = {
+    copy(snapshotWhen = SnapshotWhenPredicate(predicate, deleteEventsOnSnapshot))
+  }
 
   override def withRetention(criteria: RetentionCriteria): EventSourcedBehavior[Command, Event, State] =
     copy(retention = criteria)

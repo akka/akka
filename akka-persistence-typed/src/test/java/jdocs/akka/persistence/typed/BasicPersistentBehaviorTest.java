@@ -516,6 +516,13 @@ public class BasicPersistentBehaviorTest {
       }
       // #snapshottingPredicate
 
+      // #snapshottingPredicateDeleteEvents
+      @Override // override deleteEventsOnSnapshot in EventSourcedBehavior
+      public boolean deleteEventsOnSnapshot() {
+        return true;
+      }
+      // #snapshottingPredicateDeleteEvents
+
       // #retentionCriteria
       @Override // override retentionCriteria in EventSourcedBehavior
       public RetentionCriteria retentionCriteria() {
