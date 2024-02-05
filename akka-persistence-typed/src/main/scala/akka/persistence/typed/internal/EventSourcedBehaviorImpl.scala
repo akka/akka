@@ -47,7 +47,6 @@ import akka.persistence.typed.scaladsl._
 import akka.persistence.typed.scaladsl.{ Recovery => TypedRecovery }
 import akka.persistence.typed.scaladsl.RetentionCriteria
 import akka.persistence.typed.telemetry.EventSourcedBehaviorInstrumentationProvider
-import akka.util.ConstantFun
 import akka.util.unused
 
 @InternalApi
