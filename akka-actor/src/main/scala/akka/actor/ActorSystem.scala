@@ -1071,7 +1071,7 @@ private[akka] class ActorSystemImpl(
     _initialized = true
 
     if (settings.LogDeadLetters > 0)
-      logDeadLetterListener = Some(systemActorOf(Props[DeadLetterListener](), "deadLetterListener"))
+      logDeadLetterListener = Some(systemActorOf(Props(new DeadLetterListener), "deadLetterListener"))
     eventStream.startUnsubscriber()
     ManifestInfo(this).checkSameVersion("Akka", allModules, logWarning = true)
     if (!terminating)

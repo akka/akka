@@ -289,7 +289,9 @@ private[cluster] final class ClusterCoreSupervisor(joinConfigCompatChecker: Join
 
   def createChildren(): Unit = {
     val publisher =
-      context.actorOf(Props[ClusterDomainEventPublisher]().withDispatcher(context.props.dispatcher), name = "publisher")
+      context.actorOf(
+        Props(new ClusterDomainEventPublisher).withDispatcher(context.props.dispatcher),
+        name = "publisher")
     coreDaemon = Some(
       context.watch(context.actorOf(
         Props(classOf[ClusterCoreDaemon], publisher, joinConfigCompatChecker).withDispatcher(context.props.dispatcher),
