@@ -37,6 +37,8 @@ object Dependencies {
 
   val reactiveStreamsVersion = "1.0.4"
 
+  val graalVmNativeImageVersion = "23.1.2"
+
   val scalaTestVersion = "3.2.17"
 
   val scalaTestScalaCheckVersion = "1-17"
@@ -162,6 +164,7 @@ object Dependencies {
 
       val protobufRuntime = "com.google.protobuf" % "protobuf-java" % protobufJavaVersion % "optional;provided"
 
+      val graalVmNativeImage = "org.graalvm.sdk" % "nativeimage" % graalVmNativeImageVersion % "optional;provided" // UPL-1.0 https://opensource.org/license/upl/
     }
 
   }
@@ -170,7 +173,7 @@ object Dependencies {
   // TODO check if `l ++=` everywhere expensive?
   val l = libraryDependencies
 
-  val actor = l ++= Seq(config, java8Compat)
+  val actor = l ++= Seq(config, java8Compat, Provided.graalVmNativeImage)
 
   val actorTyped = l ++= Seq(slf4jApi)
 
