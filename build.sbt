@@ -331,6 +331,7 @@ lazy val protobufV3 = akkaModule("akka-protobuf-v3")
 lazy val pki =
   akkaModule("akka-pki")
     .dependsOn(actor) // this dependency only exists for "@ApiMayChange"
+    .dependsOn(testkit % "test->test")
     .settings(Dependencies.pki)
     .settings(AutomaticModuleName.settings("akka.pki"))
 

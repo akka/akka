@@ -1,0 +1,12 @@
+[ {
+  "name" : "akka.cluster.metrics.ClusterMetricsExtension$",
+  "fields" : [ {
+    "name" : "MODULE$"
+  } ]
+}, {
+  "name" : "akka.cluster.metrics.protobuf.MessageSerializer",
+  "methods" : [ {
+    "name" : "<init>",
+    "parameterTypes" : [ "akka.actor.ExtendedActorSystem" ]
+  } ]
+} ]

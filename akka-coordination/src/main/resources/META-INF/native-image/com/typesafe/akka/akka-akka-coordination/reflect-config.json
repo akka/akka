@@ -1,0 +1,11 @@
+[ {
+  "name" : "akka.coordination.lease.javadsl.LeaseProvider$",
+  "fields" : [ {
+    "name" : "MODULE$"
+  } ]
+}, {
+  "name" : "akka.coordination.lease.scaladsl.LeaseProvider$",
+  "fields" : [ {
+    "name" : "MODULE$"
+  } ]
+} ]

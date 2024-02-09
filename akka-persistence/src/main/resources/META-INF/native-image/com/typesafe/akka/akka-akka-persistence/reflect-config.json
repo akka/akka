@@ -1,0 +1,54 @@
+[ {
+  "name" : "akka.persistence.Persistence$",
+  "fields" : [ {
+    "name" : "MODULE$"
+  } ]
+}, {
+  "name" : "akka.persistence.Persistence$PluginHolderExtensionId",
+  "fields" : [ {
+    "name" : "MODULE$"
+  } ]
+}, {
+  "name" : "akka.persistence.PersistencePlugin$$anon$1",
+  "fields" : [ {
+    "name" : "MODULE$"
+  } ]
+}, {
+  "name" : "akka.persistence.journal.PersistencePluginProxyExtension$",
+  "fields" : [ {
+    "name" : "MODULE$"
+  } ]
+}, {
+  "name" : "akka.persistence.state.DurableStateStoreRegistry$",
+  "fields" : [ {
+    "name" : "MODULE$"
+  } ]
+}, {
+  "name" : "akka.persistence.telemetry.EventsourcedInstrumentationProvider$",
+  "fields" : [ {
+    "name" : "MODULE$"
+  } ]
+}, {
+  "name" : "akka.persistence.telemetry.RecoveryPermitterInstrumentationProvider$",
+  "fields" : [ {
+    "name" : "MODULE$"
+  } ]
+}, {
+  "name" : "akka.persistence.serialization.MessageSerializer",
+  "methods" : [ {
+    "name" : "<init>",
+    "parameterTypes" : [ "akka.actor.ExtendedActorSystem" ]
+  } ]
+}, {
+  "name" : "akka.persistence.serialization.PayloadSerializer",
+  "methods" : [ {
+    "name" : "<init>",
+    "parameterTypes" : [ "akka.actor.ExtendedActorSystem" ]
+  } ]
+}, {
+  "name" : "akka.persistence.serialization.SnapshotSerializer",
+  "methods" : [ {
+    "name" : "<init>",
+    "parameterTypes" : [ "akka.actor.ExtendedActorSystem" ]
+  } ]
+} ]

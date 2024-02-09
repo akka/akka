@@ -1,0 +1,18 @@
+[ {
+  "name" : "akka.cluster.Cluster$",
+  "fields" : [ {
+    "name" : "MODULE$"
+  } ]
+}, {
+  "name" : "akka.cluster.protobuf.ClusterMessageSerializer",
+  "methods" : [ {
+    "name" : "<init>",
+    "parameterTypes" : [ "akka.actor.ExtendedActorSystem" ]
+  } ]
+}, {
+  "name" : "akka.cluster.Cluster$$anon$1",
+  "methods" : [ {
+    "name" : "<init>",
+    "parameterTypes" : [ "com.typesafe.config.Config", "akka.event.LoggingAdapter", "java.util.concurrent.ThreadFactory" ]
+  } ]
+} ]

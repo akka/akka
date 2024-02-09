@@ -1,0 +1,7 @@
+[ {
+  "name" : "akka.persistence.typed.serialization.ReplicatedEventSourcingSerializer",
+  "methods" : [ {
+    "name" : "<init>",
+    "parameterTypes" : [ "akka.actor.ExtendedActorSystem" ]
+  } ]
+} ]
