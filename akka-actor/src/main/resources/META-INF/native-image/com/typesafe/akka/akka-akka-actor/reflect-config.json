@@ -17,6 +17,20 @@
     "name" : "_lookupDoNotCallMeDirectly"
   } ]
 }, {
+  "name" : "akka.pattern.CircuitBreaker",
+  "fields" : [ {
+    "name" : "_currentResetTimeoutDoNotCallMeDirectly"
+  }, {
+    "name" : "_currentStateDoNotCallMeDirectly"
+  } ]
+}, {
+  "name" : "akka.pattern.PromiseActorRef",
+  "fields" : [ {
+    "name" : "_stateDoNotCallMeDirectly"
+  }, {
+    "name" : "_watchedByDoNotCallMeDirectly"
+  } ]
+}, {
   "name" : "akka.actor.LocalActorRefProvider$Guardian",
   "methods" : [ {
     "name" : "<init>",
@@ -28,6 +42,36 @@
   "methods" : [ {
     "name" : "<init>",
     "parameterTypes" : [ "akka.actor.SupervisorStrategy", "akka.actor.ActorRef" ]
+  } ],
+  "queryAllDeclaredConstructors" : true
+}, {
+  "name" : "akka.event.Logging$DefaultLogger",
+  "methods" : [ {
+    "name" : "<init>"
+  } ]
+}, {
+  "name" : "akka.event.DefaultLoggingFilter",
+  "methods" : [ {
+    "name" : "<init>",
+    "parameterTypes" : [ "akka.actor.ActorSystem$Settings", "akka.event.EventStream" ]
+  } ]
+}, {
+  "name" : "akka.io.InetAddressDnsProvider",
+  "methods" : [ {
+    "name" : "<init>"
+  } ]
+}, {
+  "name" : "akka.io.InetAddressDnsResolver",
+  "methods" : [ {
+    "name" : "<init>",
+    "parameterTypes" : [ "akka.io.SimpleDnsCache", "com.typesafe.config.Config" ]
+  } ],
+  "queryAllDeclaredConstructors" : true
+}, {
+  "name" : "akka.io.SimpleDnsManager",
+  "methods" : [ {
+    "name" : "<init>",
+    "parameterTypes" : [ "akka.io.DnsExt" ]
   } ],
   "queryAllDeclaredConstructors" : true
 }, {

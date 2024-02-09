@@ -17,6 +17,7 @@ object NativeImageMetadataSpec {
   val metadataDir = NativeImageUtils.metadataDirFor("akka-actor")
 
   val additionalEntries = Seq(
+    // dungeon or dungeon worthy unsafe trixery
     ReflectConfigEntry(
       classOf[akka.actor.ActorCell].getName,
       fields = Seq(
@@ -27,7 +28,14 @@ object NativeImageMetadataSpec {
     ReflectConfigEntry(
       classOf[akka.actor.RepointableRef].getName,
       fields = Seq(ReflectField("_cellDoNotCallMeDirectly"), ReflectField("_lookupDoNotCallMeDirectly"))),
-    // FIXME replace reflective props and drop these
+    ReflectConfigEntry(
+      classOf[akka.pattern.CircuitBreaker].getName,
+      fields =
+        Seq(ReflectField("_currentResetTimeoutDoNotCallMeDirectly"), ReflectField("_currentStateDoNotCallMeDirectly"))),
+    ReflectConfigEntry(
+      classOf[akka.pattern.PromiseActorRef].getName,
+      fields = Seq(ReflectField("_stateDoNotCallMeDirectly"), ReflectField("_watchedByDoNotCallMeDirectly"))),
+    // loaded via config
     ReflectConfigEntry(
       "akka.actor.LocalActorRefProvider$Guardian",
       queryAllDeclaredConstructors = true,
@@ -35,7 +43,34 @@ object NativeImageMetadataSpec {
     ReflectConfigEntry(
       "akka.actor.LocalActorRefProvider$SystemGuardian",
       queryAllDeclaredConstructors = true,
-      methods = Seq(ReflectMethod(Constructor, Seq("akka.actor.SupervisorStrategy", "akka.actor.ActorRef")))))
+      methods = Seq(ReflectMethod(Constructor, Seq("akka.actor.SupervisorStrategy", "akka.actor.ActorRef")))),
+    // logging infra
+    ReflectConfigEntry(
+      classOf[akka.event.Logging.DefaultLogger].getName,
+      methods = Seq(ReflectMethod(NativeImageUtils.Constructor))),
+    ReflectConfigEntry(
+      classOf[akka.event.DefaultLoggingFilter].getName,
+      methods = Seq(
+        ReflectMethod(
+          NativeImageUtils.Constructor,
+          parameterTypes = Seq("akka.actor.ActorSystem$Settings", "akka.event.EventStream")))),
+    // akka io stuff
+    ReflectConfigEntry(
+      classOf[akka.io.InetAddressDnsProvider].getName,
+      methods = Seq(ReflectMethod(NativeImageUtils.Constructor))),
+    // pluggable through deprecated InetAddressDnsProvider
+    ReflectConfigEntry(
+      classOf[akka.io.InetAddressDnsResolver].getName,
+      methods = Seq(
+        ReflectMethod(
+          NativeImageUtils.Constructor,
+          parameterTypes = Seq("akka.io.SimpleDnsCache", "com.typesafe.config.Config"))),
+      queryAllDeclaredConstructors = true),
+    // pluggable through deprecated InetAddressDnsProvider
+    ReflectConfigEntry(
+      classOf[akka.io.SimpleDnsManager].getName,
+      methods = Seq(ReflectMethod(NativeImageUtils.Constructor, parameterTypes = Seq("akka.io.DnsExt"))),
+      queryAllDeclaredConstructors = true))
 
   val modulePackages = Seq(
     "akka.actor",

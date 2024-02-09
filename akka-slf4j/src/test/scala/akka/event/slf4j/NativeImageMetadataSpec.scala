@@ -5,6 +5,8 @@
 package akka.event.slf4j
 
 import akka.testkit.NativeImageUtils
+import akka.testkit.NativeImageUtils.ReflectConfigEntry
+import akka.testkit.NativeImageUtils.ReflectMethod
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -12,7 +14,16 @@ object NativeImageMetadataSpec {
 
   val metadataDir = NativeImageUtils.metadataDirFor("akka-slf4j")
 
-  val additionalEntries = Seq()
+  val additionalEntries = Seq(
+    ReflectConfigEntry(
+      classOf[akka.event.slf4j.Slf4jLogger].getName,
+      methods = Seq(ReflectMethod(NativeImageUtils.Constructor))),
+    ReflectConfigEntry(
+      classOf[akka.event.slf4j.Slf4jLoggingFilter].getName,
+      methods = Seq(
+        ReflectMethod(
+          NativeImageUtils.Constructor,
+          parameterTypes = Seq("akka.actor.ActorSystem$Settings", "akka.event.EventStream")))))
 
   val modulePackages = Seq("akka.event.slf4j")
 
