@@ -1,0 +1,54 @@
+name: Native Image Tests
+
+on:
+  schedule:
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  native-image-tests:
+    name: Run Native Image Tests
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        # https://github.com/actions/checkout/releases
+        # v4.1.1
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+        with:
+          fetch-depth: 0
+
+      - name: Checkout GitHub merge
+        if: github.event.pull_request
+        run: |-
+          git fetch origin pull/${{ github.event.pull_request.number }}/merge:scratch
+          git checkout scratch
+
+      - name: Cache Coursier cache
+        # https://github.com/coursier/cache-action/releases
+        # v6.4.4
+        uses: coursier/cache-action@a0e7cd24be81bc84f0d7461e02bd1a96980553d7
+
+      - name: Set up JDK 11
+        # https://github.com/coursier/setup-action/releases
+        # v1.3.4
+        uses: coursier/setup-action@48280172a2c999022e42527711d6b28e4945e6f0
+        with:
+          jvm: temurin:1.11
+
+      - name: Gather version
+        run: |-
+          echo `git describe --tags | sed -e "s/v\(.*\)-\([0-9][0-9]*\).*/\\1-\\2-/"``git rev-parse HEAD | head -c8`-SNAPSHOT > ~/.version
+          cat ~/.version
+
+      - name: Publish artifacts locally
+        run: |-
+          sbt "publishLocal; publishM2"
+
+      - name: Local drone control sample Scala native image build
+        run: |-
+          cd native-image-tests/local-scala
+          sbt nativeImage -Dakka.version=`cat ~/.version`
+          # FIXME we need something more, actually running it as well to detect errors
