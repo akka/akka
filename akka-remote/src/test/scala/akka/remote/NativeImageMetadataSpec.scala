@@ -5,6 +5,7 @@
 package akka.remote
 
 import akka.actor.ActorSystem
+import akka.actor.DynamicAccess
 import akka.event.EventStream
 import akka.testkit.NativeImageUtils
 import akka.testkit.NativeImageUtils.Constructor
@@ -31,7 +32,17 @@ object NativeImageMetadataSpec {
     ReflectConfigEntry(
       "akka.remote.DeadlineFailureDetector",
       methods =
-        Seq(ReflectMethod(Constructor, parameterTypes = Seq(classOf[Config].getName, classOf[EventStream].getName)))))
+        Seq(ReflectMethod(Constructor, parameterTypes = Seq(classOf[Config].getName, classOf[EventStream].getName)))),
+    ReflectConfigEntry(
+      classOf[RemoteActorRefProvider].getName,
+      methods = Seq(
+        ReflectMethod(
+          Constructor,
+          Seq(
+            classOf[java.lang.String].getName,
+            classOf[ActorSystem.Settings].getName,
+            classOf[EventStream].getName,
+            classOf[DynamicAccess].getName)))))
 
   val modulePackages = Seq("akka.remote")
 

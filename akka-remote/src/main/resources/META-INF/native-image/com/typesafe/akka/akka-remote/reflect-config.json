@@ -17,6 +17,12 @@
     "parameterTypes" : [ "com.typesafe.config.Config", "akka.event.EventStream" ]
   } ]
 }, {
+  "name" : "akka.remote.RemoteActorRefProvider",
+  "methods" : [ {
+    "name" : "<init>",
+    "parameterTypes" : [ "java.lang.String", "akka.actor.ActorSystem$Settings", "akka.event.EventStream", "akka.actor.DynamicAccess" ]
+  } ]
+}, {
   "name" : "akka.remote.AddressUidExtension$",
   "fields" : [ {
     "name" : "MODULE$"
