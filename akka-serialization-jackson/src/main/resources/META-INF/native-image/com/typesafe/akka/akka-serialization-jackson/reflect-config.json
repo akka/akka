@@ -1,0 +1,53 @@
+[ {
+  "name" : "akka.serialization.jackson.AkkaJacksonModule",
+  "methods" : [ {
+    "name" : "<init>"
+  } ]
+}, {
+  "name" : "akka.serialization.jackson.AkkaTypedJacksonModule",
+  "methods" : [ {
+    "name" : "<init>"
+  } ]
+}, {
+  "name" : "akka.serialization.jackson.AkkaStreamJacksonModule",
+  "methods" : [ {
+    "name" : "<init>"
+  } ]
+}, {
+  "name" : "com.fasterxml.jackson.module.paramnames.ParameterNamesModule",
+  "methods" : [ {
+    "name" : "<init>"
+  } ]
+}, {
+  "name" : "com.fasterxml.jackson.datatype.jdk8.Jdk8Module",
+  "methods" : [ {
+    "name" : "<init>"
+  } ]
+}, {
+  "name" : "com.fasterxml.jackson.datatype.jsr310.JavaTimeModule",
+  "methods" : [ {
+    "name" : "<init>"
+  } ]
+}, {
+  "name" : "com.fasterxml.jackson.module.scala.DefaultScalaModule",
+  "methods" : [ {
+    "name" : "<init>"
+  } ]
+}, {
+  "name" : "akka.serialization.jackson.JacksonObjectMapperProvider$",
+  "fields" : [ {
+    "name" : "MODULE$"
+  } ]
+}, {
+  "name" : "akka.serialization.jackson.JacksonCborSerializer",
+  "methods" : [ {
+    "name" : "<init>",
+    "parameterTypes" : [ "akka.actor.ExtendedActorSystem", "java.lang.String" ]
+  } ]
+}, {
+  "name" : "akka.serialization.jackson.JacksonJsonSerializer",
+  "methods" : [ {
+    "name" : "<init>",
+    "parameterTypes" : [ "akka.actor.ExtendedActorSystem", "java.lang.String" ]
+  } ]
+} ]
