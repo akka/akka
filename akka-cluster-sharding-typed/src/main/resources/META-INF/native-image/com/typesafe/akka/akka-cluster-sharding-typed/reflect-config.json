@@ -1,12 +1,12 @@
 [ {
-  "name" : "akka.cluster.sharding.typed.internal.JoinConfigCompatCheckerClusterSharding",
-  "methods" : [ {
-    "name" : "<init>"
-  } ]
-}, {
   "name" : "akka.cluster.sharding.typed.internal.ShardingSerializer",
   "methods" : [ {
     "name" : "<init>",
     "parameterTypes" : [ "akka.actor.ExtendedActorSystem" ]
+  } ]
+}, {
+  "name" : "akka.cluster.sharding.typed.internal.JoinConfigCompatCheckerClusterSharding",
+  "methods" : [ {
+    "name" : "<init>"
   } ]
 } ]

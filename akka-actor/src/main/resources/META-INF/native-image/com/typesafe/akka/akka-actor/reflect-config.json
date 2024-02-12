@@ -220,6 +220,12 @@
   } ],
   "queryAllDeclaredConstructors" : true
 }, {
+  "name" : "akka.routing.RoutedActorCell$RouterActorCreator",
+  "methods" : [ {
+    "name" : "<init>",
+    "parameterTypes" : [ "akka.routing.RouterConfig" ]
+  } ]
+}, {
   "name" : "akka.dispatch.BoundedControlAwareMailbox",
   "methods" : [ {
     "name" : "<init>",

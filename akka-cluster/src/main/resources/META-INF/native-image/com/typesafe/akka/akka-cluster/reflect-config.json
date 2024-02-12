@@ -1,9 +1,4 @@
 [ {
-  "name" : "akka.cluster.JoinConfigCompatCheckCluster",
-  "methods" : [ {
-    "name" : "<init>"
-  } ]
-}, {
   "name" : "akka.cluster.sbr.SplitBrainResolverProvider",
   "methods" : [ {
     "name" : "<init>",
@@ -36,4 +31,14 @@
   "name" : "akka.cluster.routing.ClusterRouterGroup"
 }, {
   "name" : "akka.cluster.routing.ClusterRouterPool"
+}, {
+  "name" : "akka.cluster.JoinConfigCompatCheckCluster",
+  "methods" : [ {
+    "name" : "<init>"
+  } ]
+}, {
+  "name" : "akka.cluster.JoinConfigCompatChecker$$anon$1",
+  "methods" : [ {
+    "name" : "<init>"
+  } ]
 } ]

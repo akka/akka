@@ -22,15 +22,15 @@ object NativeImageMetadataSpec {
   val additionalEntries = Seq(
     // akka.remote.watch-failure-detector.implementation-class (and then also in akka-cluster)
     ReflectConfigEntry(
-      "akka.remote.PhiAccrualFailureDetector",
+      classOf[PhiAccrualFailureDetector].getName,
       methods = Seq(ReflectMethod(Constructor, Seq(classOf[Config].getName, classOf[EventStream].getName)))),
     // ssl-engine-provider
     ReflectConfigEntry(
-      "akka.remote.artery.tcp.ConfigSSLEngineProvider",
+      classOf[akka.remote.artery.tcp.ConfigSSLEngineProvider].getName,
       methods = Seq(ReflectMethod(Constructor, Seq(classOf[ActorSystem].getName)))),
     // used by akka-cluster but defined here
     ReflectConfigEntry(
-      "akka.remote.DeadlineFailureDetector",
+      classOf[akka.remote.DeadlineFailureDetector].getName,
       methods =
         Seq(ReflectMethod(Constructor, parameterTypes = Seq(classOf[Config].getName, classOf[EventStream].getName)))),
     ReflectConfigEntry(

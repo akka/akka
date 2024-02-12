@@ -20,10 +20,6 @@ object NativeImageMetadataSpec {
   val metadataDir = NativeImageUtils.metadataDirFor("akka-cluster")
 
   val additionalEntries = Seq(
-    // akka.cluster.configuration-compatibility-check.checkers.akka-cluster
-    ReflectConfigEntry(
-      classOf[JoinConfigCompatCheckCluster].getName,
-      methods = Seq(ReflectMethod(Constructor, Seq.empty))),
     // akka.cluster.downing-provider-class
     ReflectConfigEntry(
       classOf[SplitBrainResolverProvider].getName,

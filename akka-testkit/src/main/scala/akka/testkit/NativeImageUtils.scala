@@ -4,6 +4,7 @@
 
 package akka.testkit
 
+import akka.actor.DynamicAccess
 import akka.actor.ExtendedActorSystem
 import akka.actor.ExtensionId
 import akka.actor.Scheduler
@@ -130,11 +131,6 @@ object NativeImageUtils {
         // FIXME what about Java, should we look for module field explicitly to decide?
         Some(ReflectConfigEntry(extensionClass.getName, fields = Seq(ModuleField)))
     }
-    // FIXME we could have separate/extensible to define this in typed only, but felt convenient for now
-    val typedExtensions = concreteClassesToJsonAdt(scanResult.getClassesImplementing("akka.actor.typed.ExtensionId")) {
-      extensionClass =>
-        Some(ReflectConfigEntry(extensionClass.getName, fields = Seq(ModuleField)))
-    }
 
     // serializer loading uses the first constructor found out of these signatures
     val possibleSerializerConstructorParamLists = Seq(
@@ -191,7 +187,7 @@ object NativeImageUtils {
                 definedConstructor.getParameterInfo.toSeq.map(_.getTypeSignatureOrTypeDescriptor.toString)
               if (paramTypes == Seq(classOf[Config].getName) || paramTypes == Seq(
                     classOf[Config].getName,
-                    "akka.actor.DynamicAccess")) {
+                    classOf[DynamicAccess].getName)) {
                 Some(ReflectMethod(Constructor, parameterTypes = paramTypes))
               } else None
           }
@@ -222,8 +218,20 @@ object NativeImageUtils {
                   Seq(classOf[akka.actor.ActorSystem.Settings].getName, classOf[akka.event.EventStream].getName)))))
       }
 
+    // FIXME we could have separate/extensible to define these in the modules they belong, but convenient here for now
+    //       without having to list the upstream additions in each module
+    val configCheckers =
+      concreteClassesToJsonAdt(scanResult.getSubclasses("akka.cluster.JoinConfigCompatChecker")) { checker =>
+        Some(ReflectConfigEntry(checker.getName, methods = Seq(ReflectMethod(Constructor))))
+      }
+
+    val typedExtensions = concreteClassesToJsonAdt(scanResult.getClassesImplementing("akka.actor.typed.ExtensionId")) {
+      extensionClass =>
+        Some(ReflectConfigEntry(extensionClass.getName, fields = Seq(ModuleField)))
+    }
+
     val allConfig = additionalEntries ++ mailBoxTypes ++ extensions ++ serializers ++ schedulers ++
-      classicRouterConfigs ++ loggingFilters ++ typedExtensions
+      classicRouterConfigs ++ loggingFilters ++ configCheckers ++ typedExtensions
 
     val mapper =
       JsonMapper.builder().addModule(DefaultScalaModule).configure(SerializationFeature.INDENT_OUTPUT, true).build()

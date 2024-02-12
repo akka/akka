@@ -5,11 +5,6 @@
     "parameterTypes" : [ "akka.actor.ActorSystem" ]
   } ]
 }, {
-  "name" : "akka.cluster.sharding.JoinConfigCompatCheckSharding",
-  "methods" : [ {
-    "name" : "<init>"
-  } ]
-}, {
   "name" : "akka.cluster.sharding.ClusterSharding$",
   "fields" : [ {
     "name" : "MODULE$"
@@ -29,5 +24,10 @@
   "methods" : [ {
     "name" : "<init>",
     "parameterTypes" : [ "akka.actor.ExtendedActorSystem" ]
+  } ]
+}, {
+  "name" : "akka.cluster.sharding.JoinConfigCompatCheckSharding",
+  "methods" : [ {
+    "name" : "<init>"
   } ]
 } ]

@@ -20,11 +20,7 @@ object NativeImageMetadataSpec {
     // akka.management.health-checks.readiness-checks.sharding
     ReflectConfigEntry(
       "akka.cluster.sharding.ClusterShardingHealthCheck",
-      methods = Seq(ReflectMethod(Constructor, parameterTypes = Seq(classOf[ActorSystem].getName)))),
-    // akka.cluster.configuration-compatibility-check.checkers.akka-cluster-sharding
-    ReflectConfigEntry(
-      "akka.cluster.sharding.JoinConfigCompatCheckSharding",
-      methods = Seq(ReflectMethod(Constructor, parameterTypes = Seq.empty))))
+      methods = Seq(ReflectMethod(Constructor, parameterTypes = Seq(classOf[ActorSystem].getName)))))
 
   val modulePackages = Seq("akka.cluster.sharding")
 

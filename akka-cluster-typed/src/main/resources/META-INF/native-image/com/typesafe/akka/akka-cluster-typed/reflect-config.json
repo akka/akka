@@ -10,4 +10,9 @@
     "name" : "<init>",
     "parameterTypes" : [ "akka.actor.ExtendedActorSystem" ]
   } ]
+}, {
+  "name" : "akka.cluster.typed.internal.receptionist.ClusterReceptionistConfigCompatChecker",
+  "methods" : [ {
+    "name" : "<init>"
+  } ]
 } ]

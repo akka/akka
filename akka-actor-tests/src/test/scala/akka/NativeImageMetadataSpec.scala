@@ -9,6 +9,7 @@ import akka.actor.DynamicAccess
 import akka.actor.LocalActorRefProvider
 import akka.actor.Props
 import akka.event.EventStream
+import akka.routing.RouterConfig
 import akka.testkit.NativeImageUtils
 import akka.testkit.NativeImageUtils.Constructor
 import akka.testkit.NativeImageUtils.ReflectConfigEntry
@@ -156,7 +157,11 @@ object NativeImageMetadataSpec {
     ReflectConfigEntry(
       "akka.io.dns.internal.AsyncDnsManager",
       methods = Seq(ReflectMethod(NativeImageUtils.Constructor, parameterTypes = Seq("akka.io.DnsExt"))),
-      queryAllDeclaredConstructors = true))
+      queryAllDeclaredConstructors = true),
+    // Internal Routing infra
+    ReflectConfigEntry(
+      classOf[akka.routing.RoutedActorCell.RouterActorCreator].getName,
+      methods = Seq(ReflectMethod(NativeImageUtils.Constructor, parameterTypes = Seq(classOf[RouterConfig].getName)))))
 
   val modulePackages = Seq(
     "akka.actor",
