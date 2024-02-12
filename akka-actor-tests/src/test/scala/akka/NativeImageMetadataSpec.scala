@@ -4,7 +4,11 @@
 
 package akka
 
+import akka.actor.ActorSystem
+import akka.actor.DynamicAccess
+import akka.actor.LocalActorRefProvider
 import akka.actor.Props
+import akka.event.EventStream
 import akka.testkit.NativeImageUtils
 import akka.testkit.NativeImageUtils.Constructor
 import akka.testkit.NativeImageUtils.ReflectConfigEntry
@@ -83,6 +87,16 @@ object NativeImageMetadataSpec {
       "akka.actor.LocalActorRefProvider$SystemGuardian",
       queryAllDeclaredConstructors = true,
       methods = Seq(ReflectMethod(Constructor, Seq("akka.actor.SupervisorStrategy", "akka.actor.ActorRef")))),
+    ReflectConfigEntry(
+      classOf[LocalActorRefProvider].getName,
+      methods = Seq(
+        ReflectMethod(
+          Constructor,
+          Seq(
+            classOf[java.lang.String].getName,
+            classOf[ActorSystem.Settings].getName,
+            classOf[EventStream].getName,
+            classOf[DynamicAccess].getName)))),
     // left as reflection based to not break akka-remote remote deploy test
     ReflectConfigEntry(classOf[Props.EmptyActor].getName, methods = Seq(ReflectMethod(Constructor))),
     // affinity pool pluggable things

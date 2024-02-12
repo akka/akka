@@ -140,6 +140,12 @@
   } ],
   "queryAllDeclaredConstructors" : true
 }, {
+  "name" : "akka.actor.LocalActorRefProvider",
+  "methods" : [ {
+    "name" : "<init>",
+    "parameterTypes" : [ "java.lang.String", "akka.actor.ActorSystem$Settings", "akka.event.EventStream", "akka.actor.DynamicAccess" ]
+  } ]
+}, {
   "name" : "akka.actor.Props$EmptyActor",
   "methods" : [ {
     "name" : "<init>"
