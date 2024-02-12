@@ -4,22 +4,21 @@
 
 package akka.internal.graal
 
-import akka.actor.ActorSystem.Settings
-import akka.actor.setup.ActorSystemSetup
-import akka.serialization.Serialization
-import akka.util.ccompat.JavaConverters._
-import com.typesafe.config.ConfigFactory
+import akka.actor.ExtensionId
+import akka.actor.Scheduler
+import akka.dispatch.MailboxType
+import akka.event.LoggingFilter
+import akka.routing.RouterConfig
 import org.graalvm.nativeimage.hosted.Feature
 import org.graalvm.nativeimage.hosted.RuntimeClassInitialization
 import org.graalvm.nativeimage.hosted.RuntimeReflection
 import org.graalvm.nativeimage.hosted.RuntimeResourceAccess
 
-import scala.util.control.NonFatal
-
 /**
  * Automatic configuration of Akka for native images.
  */
-class AkkaFeature extends Feature {
+class AkkaFeature extends Feature with FeatureUtils {
+  // Note: Scala stdlib must not be used here
 
   override def beforeAnalysis(access: Feature.BeforeAnalysisAccess): Unit =
     try {
@@ -29,113 +28,111 @@ class AkkaFeature extends Feature {
       RuntimeResourceAccess.addResource(classLoader.getUnnamedModule, "reference.conf")
       RuntimeResourceAccess.addResource(classLoader.getUnnamedModule, "application.conf")
 
-      val config = ConfigFactory.load(classLoader)
-      // FIXME this might just be the ExtensionId though is that enough?
-      config
-        .getStringList("akka.library-extensions")
-        .asScala
-        .foreach(libraryExtension => registerForReflectiveInstantiation(access, libraryExtension))
-      config
-        .getStringList("akka.extensions")
-        .asScala
-        .foreach(extension => registerForReflectiveInstantiation(access, extension))
-
-      // serializers
-      new Serialization.Settings(config).Serializers.valuesIterator.foreach(serializerName =>
-        registerForReflectiveInstantiation(access, serializerName))
-
-      val settings = new Settings(access.getApplicationClassLoader, config, "DummyName", ActorSystemSetup.empty)
-
-      registerForReflectiveInstantiation(access, settings.ProviderClass)
-      registerForReflectiveInstantiation(access, settings.SchedulerClass)
-      registerForReflectiveInstantiation(access, settings.SupervisorStrategyClass)
-
-      settings.Loggers.foreach(logger => registerForReflectiveInstantiation(access, logger))
-      if (settings.Loggers.contains("akka.slf4j.Slf4jLogger")) {
-        RuntimeClassInitialization.initializeAtBuildTime("org.slf4j.LoggerFactory", "org.slf4j.impl.StaticLoggerBinder")
-      }
-      registerForReflectiveInstantiation(access, settings.LoggingFilter)
-
-      // executor/dispatcher stuff
-
-      // affinity-pool-executor
-      // FIXME optimally we'd do it only if used
-      registerForReflectiveInstantiation(
-        access,
-        config.getString("akka.actor.default-dispatcher.affinity-pool-executor.rejection-handler"))
-      registerForReflectiveInstantiation(
-        access,
-        config.getString("akka.actor.default-dispatcher.affinity-pool-executor.queue-selector"))
-
-      // FIXME optimally we would pick only mailbox types used? (you can also select at runtime though?)
-      val mailboxTypeKeys = Seq(
-        "akka.actor.default-mailbox.mailbox-type",
-        "akka.actor.mailbox.unbounded-queue-based.mailbox-type",
-        "akka.actor.mailbox.bounded-queue-based.mailbox-type",
-        "akka.actor.mailbox.unbounded-deque-based.mailbox-type",
-        "akka.actor.mailbox.bounded-deque-based.mailbox-type",
-        "akka.actor.mailbox.unbounded-control-aware-queue-based.mailbox-type",
-        "akka.actor.mailbox.bounded-control-aware-queue-based.mailbox-type",
-        "akka.actor.mailbox.logger-queue.mailbox-type")
-      mailboxTypeKeys.foreach(key => registerForReflectiveInstantiation(access, config.getString(key)))
-
-      // FIXME classic router types (optimally only if used)
+      registerDungeonReflection(access)
+      registerPluggableCoreTypes(access)
+      registerActorsForReflectiveConstruction(access)
+      registerLoggersForReflectiveConstruction(access)
+      registerSerializers(access)
+      registerExtensions(access)
+      registerSchedulers(access)
+      registerRouters(access)
       // FIXME configured custom dispatchers? how would we find all custom dispatcher configs used?
 
-      // FIXME dispatchers used by extensions, only used if extension is, can we pick up usage from graal and opt in somehow?
-      //       actually - might not be needed mostly known upfront and mapping is in code?
-      // FIXME a ton of props via reflection, should we replace those with factory construction?
-
-      // dungeon stuff
-      // FIXME do we need these? (taken from the projection sample project)
-      registerForReflectiveFieldAccess(
-        access,
-        "akka.actor.ActorCell",
-        Seq(
-          "akka$actor$dungeon$Children$$_childrenRefsDoNotCallMeDirectly",
-          "akka$actor$dungeon$Children$$_functionRefsDoNotCallMeDirectly",
-          "akka$actor$dungeon$Children$$_nextNameDoNotCallMeDirectly",
-          "akka$actor$dungeon$Dispatch$$_mailboxDoNotCallMeDirectly"))
-
-      registerForReflectiveFieldAccess(access, "akka.dispatch.Dispatcher", Seq("executorServiceDelegate"))
-
-      registerForReflectiveFieldAccess(
-        access,
-        "akka.dispatch.Mailbox",
-        Seq("_statusDoNotCallMeDirectly", "_systemQueueDoNotCallMeDirectly"))
-
-      registerForReflectiveFieldAccess(
-        access,
-        "akka.dispatch.MessageDispatcher",
-        Seq("_inhabitantsDoNotCallMeDirectly", "_shutdownScheduleDoNotCallMeDirectly"))
-
     } catch {
-      case NonFatal(ex) =>
-        println("[ERROR] akka-actor Graal Feature threw exception:")
+      case ex: Throwable =>
+        log("[ERROR] akka-actor Graal Feature threw exception:")
         ex.printStackTrace()
+        throw ex
     }
 
-  // FIXME probably break these out into something re-usable for other modules
-  private def registerForReflectiveInstantiation(access: Feature.FeatureAccess, className: String): Unit = {
-    val clazz = access.findClassByName(className)
-    if (clazz ne null) {
-      RuntimeReflection.register(clazz)
-      RuntimeReflection.register(clazz.getDeclaredConstructors: _*)
-    } else {
-      throw new IllegalArgumentException(s"Class not found [$className]")
-    }
+  private def registerRouters(access: Feature.BeforeAnalysisAccess): Unit = {
+    registerSubclassesForReflectiveConstruction(access, "router", classOf[RouterConfig])
   }
 
-  private def registerForReflectiveFieldAccess(
-      access: Feature.FeatureAccess,
-      className: String,
-      fieldNames: Seq[String]): Unit = {
-    val clazz = access.findClassByName(className)
-    if (clazz ne null) {
-      RuntimeReflection.register(clazz)
-      fieldNames.foreach(fieldName => RuntimeReflection.register(clazz.getDeclaredField(fieldName)))
-    } else {
-      throw new IllegalArgumentException(s"Class not found [$className]")
+  private def registerSchedulers(access: Feature.BeforeAnalysisAccess): Unit = {
+    // scheduler is pluggable
+    registerSubclassesForReflectiveConstruction(access, "scheduler", classOf[Scheduler])
+  }
+
+  private def registerPluggableCoreTypes(access: Feature.BeforeAnalysisAccess): Unit = {
+    registerSubclassesForReflectiveConstruction(access, "mailbox type", classOf[MailboxType])
+
+    // affinity pool pluggable things
+    registerSubclassesForReflectiveConstruction(
+      access,
+      "affinity pool rejection handler factory",
+      classOf[akka.dispatch.affinity.RejectionHandlerFactory])
+    registerSubclassesForReflectiveConstruction(
+      access,
+      "affinity pool queue selector",
+      classOf[akka.dispatch.affinity.QueueSelectorFactory])
+
+    // FIXME dns plugability deprecated, remove when dropped
+    registerClassForReflectiveConstruction(access, "akka.io.InetAddressDnsProvider")
+    registerClassForReflectiveConstruction(access, "akka.io.dns.internal.AsyncDnsProvider")
+    registerClassForReflectiveConstruction(access, "akka.io.InetAddressDnsResolver")
+    registerClassForReflectiveConstruction(access, "akka.io.dns.internal.AsyncDnsResolver")
+    registerClassForReflectiveConstruction(access, "akka.io.SimpleDnsManager")
+    registerClassForReflectiveConstruction(access, "akka.io.dns.internal.AsyncDnsManager")
+  }
+
+  private def registerDungeonReflection(access: Feature.BeforeAnalysisAccess): Unit = {
+    registerForReflectiveFieldAccess(
+      access,
+      "akka.actor.ActorCell",
+      // FIXME: This is Scala stdlib (Seq) but ok for some reason??
+      Seq(
+        "akka$actor$dungeon$Children$$_childrenRefsDoNotCallMeDirectly",
+        "akka$actor$dungeon$Children$$_functionRefsDoNotCallMeDirectly",
+        "akka$actor$dungeon$Children$$_nextNameDoNotCallMeDirectly",
+        "akka$actor$dungeon$Dispatch$$_mailboxDoNotCallMeDirectly"))
+    registerForReflectiveFieldAccess(access, "akka.dispatch.Dispatcher", Seq("executorServiceDelegate"))
+    registerForReflectiveFieldAccess(
+      access,
+      "akka.dispatch.Mailbox",
+      Seq("_statusDoNotCallMeDirectly", "_systemQueueDoNotCallMeDirectly"))
+    registerForReflectiveFieldAccess(
+      access,
+      "akka.dispatch.MessageDispatcher",
+      Seq("_inhabitantsDoNotCallMeDirectly", "_shutdownScheduleDoNotCallMeDirectly"))
+    registerForReflectiveFieldAccess(access, "akka.actor.LightArrayRevolverScheduler$TaskHolder", Seq("task"))
+  }
+
+  private def registerExtensions(access: Feature.BeforeAnalysisAccess): Unit = {
+    val extensionClass = access.findClassByName(classOf[ExtensionId[_]].getName)
+    access.registerSubtypeReachabilityHandler(
+      (_, subtype) =>
+        if (subtype != null && !subtype.isInterface) {
+          log("Automatically registering extension for reflective access: " + subtype.getName)
+          RuntimeReflection.register(subtype)
+          // FIXME do we need something for Java extensions?
+          try {
+            RuntimeReflection.register(subtype.getField("MODULE$"))
+          } catch {
+            case _: NoSuchFieldException => // not a scala extension
+          }
+
+        },
+      extensionClass)
+  }
+
+  private def registerActorsForReflectiveConstruction(access: Feature.BeforeAnalysisAccess): Unit = {
+    // To allow for reflective Props construction
+    registerSubclassesForReflectiveConstruction(access, "actor", classOf[akka.actor.Actor])
+  }
+
+  private def registerSerializers(access: Feature.BeforeAnalysisAccess): Unit = {
+    // pluggable through config
+    registerSubclassesForReflectiveConstruction(access, "serializer", classOf[akka.serialization.Serializer])
+  }
+
+  private def registerLoggersForReflectiveConstruction(access: Feature.BeforeAnalysisAccess): Unit = {
+    // loggers themselves are just actors reflectively instantiated
+    registerSubclassesForReflectiveConstruction(access, "logging filter", classOf[LoggingFilter])
+
+    // FIXME condition on akka-slf4j being available? or move into a feature in the akka-sl4fj module?
+    if (false) { // settings.Loggers.contains("akka.slf4j.Slf4jLogger")
+      RuntimeClassInitialization.initializeAtBuildTime("org.slf4j.LoggerFactory", "org.slf4j.impl.StaticLoggerBinder")
     }
   }
 

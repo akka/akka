@@ -175,7 +175,7 @@ object Dependencies {
 
   val actor = l ++= Seq(config, java8Compat, Provided.graalVmNativeImage)
 
-  val actorTyped = l ++= Seq(slf4jApi)
+  val actorTyped = l ++= Seq(slf4jApi, Provided.graalVmNativeImage)
 
   val discovery = l ++= Seq(TestDependencies.junit, TestDependencies.scalatest)
 
