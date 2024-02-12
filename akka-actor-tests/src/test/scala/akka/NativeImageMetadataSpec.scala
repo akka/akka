@@ -18,6 +18,7 @@ object NativeImageMetadataSpec {
 
   val additionalEntries = Seq(
     // dungeon or dungeon worthy unsafe trixery
+    // FIXME these are mostly "static" trixery, I wonder if graal can't figure them out itself without explicit listing
     ReflectConfigEntry(
       classOf[akka.actor.ActorCell].getName,
       fields = Seq(
