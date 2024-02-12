@@ -5,6 +5,9 @@
 package akka.cluster
 
 import akka.actor.ActorSystem
+import akka.actor.DynamicAccess
+import akka.cluster.sbr.SplitBrainResolverProvider
+import akka.event.EventStream
 import akka.testkit.NativeImageUtils
 import akka.testkit.NativeImageUtils.Constructor
 import akka.testkit.NativeImageUtils.ReflectConfigEntry
@@ -19,12 +22,22 @@ object NativeImageMetadataSpec {
   val additionalEntries = Seq(
     // akka.cluster.configuration-compatibility-check.checkers.akka-cluster
     ReflectConfigEntry(
-      "akka.cluster.JoinConfigCompatCheckCluster",
+      classOf[JoinConfigCompatCheckCluster].getName,
       methods = Seq(ReflectMethod(Constructor, Seq.empty))),
     // akka.cluster.downing-provider-class
     ReflectConfigEntry(
-      "akka.cluster.sbr.SplitBrainResolverProvider",
-      methods = Seq(ReflectMethod(Constructor, Seq(classOf[ActorSystem].getName)))))
+      classOf[SplitBrainResolverProvider].getName,
+      methods = Seq(ReflectMethod(Constructor, Seq(classOf[ActorSystem].getName)))),
+    ReflectConfigEntry(
+      classOf[ClusterActorRefProvider].getName,
+      methods = Seq(
+        ReflectMethod(
+          Constructor,
+          Seq(
+            classOf[java.lang.String].getName,
+            classOf[ActorSystem.Settings].getName,
+            classOf[EventStream].getName,
+            classOf[DynamicAccess].getName)))))
 
   val modulePackages = Seq("akka.cluster")
 

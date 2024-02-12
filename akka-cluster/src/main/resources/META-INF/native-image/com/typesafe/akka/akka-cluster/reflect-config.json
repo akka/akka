@@ -10,6 +10,12 @@
     "parameterTypes" : [ "akka.actor.ActorSystem" ]
   } ]
 }, {
+  "name" : "akka.cluster.ClusterActorRefProvider",
+  "methods" : [ {
+    "name" : "<init>",
+    "parameterTypes" : [ "java.lang.String", "akka.actor.ActorSystem$Settings", "akka.event.EventStream", "akka.actor.DynamicAccess" ]
+  } ]
+}, {
   "name" : "akka.cluster.Cluster$",
   "fields" : [ {
     "name" : "MODULE$"
