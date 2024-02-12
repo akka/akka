@@ -12,7 +12,9 @@ object NativeImageMetadataSpec {
 
   val metadataDir = NativeImageUtils.metadataDirFor("akka-persistence-query")
 
-  val additionalEntries = Seq()
+  val additionalEntries = Seq(
+    // a few queries referenced but you always reference the type in your app so graal will find it?
+  )
 
   val modulePackages = Seq("akka.persistence.query")
 
