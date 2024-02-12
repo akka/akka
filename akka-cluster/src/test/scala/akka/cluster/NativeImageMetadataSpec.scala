@@ -4,7 +4,11 @@
 
 package akka.cluster
 
+import akka.actor.ActorSystem
 import akka.testkit.NativeImageUtils
+import akka.testkit.NativeImageUtils.Constructor
+import akka.testkit.NativeImageUtils.ReflectConfigEntry
+import akka.testkit.NativeImageUtils.ReflectMethod
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -12,7 +16,15 @@ object NativeImageMetadataSpec {
 
   val metadataDir = NativeImageUtils.metadataDirFor("akka-cluster")
 
-  val additionalEntries = Seq()
+  val additionalEntries = Seq(
+    // akka.cluster.configuration-compatibility-check.checkers.akka-cluster
+    ReflectConfigEntry(
+      "akka.cluster.JoinConfigCompatCheckCluster",
+      methods = Seq(ReflectMethod(Constructor, Seq.empty))),
+    // akka.cluster.downing-provider-class
+    ReflectConfigEntry(
+      "akka.cluster.sbr.SplitBrainResolverProvider",
+      methods = Seq(ReflectMethod(Constructor, Seq(classOf[ActorSystem].getName)))))
 
   val modulePackages = Seq("akka.cluster")
 

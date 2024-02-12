@@ -1,4 +1,15 @@
 [ {
+  "name" : "akka.cluster.JoinConfigCompatCheckCluster",
+  "methods" : [ {
+    "name" : "<init>"
+  } ]
+}, {
+  "name" : "akka.cluster.sbr.SplitBrainResolverProvider",
+  "methods" : [ {
+    "name" : "<init>",
+    "parameterTypes" : [ "akka.actor.ActorSystem" ]
+  } ]
+}, {
   "name" : "akka.cluster.Cluster$",
   "fields" : [ {
     "name" : "MODULE$"
@@ -15,4 +26,8 @@
     "name" : "<init>",
     "parameterTypes" : [ "com.typesafe.config.Config", "akka.event.LoggingAdapter", "java.util.concurrent.ThreadFactory" ]
   } ]
+}, {
+  "name" : "akka.cluster.routing.ClusterRouterGroup"
+}, {
+  "name" : "akka.cluster.routing.ClusterRouterPool"
 } ]
