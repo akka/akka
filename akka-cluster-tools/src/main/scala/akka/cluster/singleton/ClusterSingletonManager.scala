@@ -634,7 +634,7 @@ class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, se
   when(Start) {
     case Event(StartOldestChangedBuffer, _) =>
       oldestChangedBuffer =
-        context.actorOf(Props(classOf[OldestChangedBuffer], role).withDispatcher(context.props.dispatcher))
+        context.actorOf(Props(new OldestChangedBuffer(role)).withDispatcher(context.props.dispatcher))
       getNextOldestChanged()
       stay()
 

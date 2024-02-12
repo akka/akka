@@ -245,7 +245,7 @@ private[cluster] final class ClusterDaemon(joinConfigCompatChecker: JoinConfigCo
   def createChildren(): Unit = {
     coreSupervisor = Some(
       context.actorOf(
-        Props(classOf[ClusterCoreSupervisor], joinConfigCompatChecker).withDispatcher(context.props.dispatcher),
+        Props(new ClusterCoreSupervisor(joinConfigCompatChecker)).withDispatcher(context.props.dispatcher),
         name = "core"))
     context.actorOf(
       ClusterHeartbeatReceiver.props(() => Cluster(context.system)).withDispatcher(context.props.dispatcher),
@@ -258,9 +258,9 @@ private[cluster] final class ClusterDaemon(joinConfigCompatChecker: JoinConfigCo
         createChildren()
       coreSupervisor.foreach(_.forward(msg))
     case AddOnMemberUpListener(code) =>
-      context.actorOf(Props(classOf[OnMemberStatusChangedListener], code, Up).withDeploy(Deploy.local))
+      context.actorOf(Props(new OnMemberStatusChangedListener(code, Up)).withDeploy(Deploy.local))
     case AddOnMemberRemovedListener(code) =>
-      context.actorOf(Props(classOf[OnMemberStatusChangedListener], code, Removed).withDeploy(Deploy.local))
+      context.actorOf(Props(new OnMemberStatusChangedListener(code, Removed)).withDeploy(Deploy.local))
     case CoordinatedShutdownLeave.LeaveReq =>
       val ref = context.actorOf(CoordinatedShutdownLeave.props().withDispatcher(context.props.dispatcher))
       // forward the ask request
@@ -289,11 +289,14 @@ private[cluster] final class ClusterCoreSupervisor(joinConfigCompatChecker: Join
 
   def createChildren(): Unit = {
     val publisher =
-      context.actorOf(Props[ClusterDomainEventPublisher]().withDispatcher(context.props.dispatcher), name = "publisher")
+      context.actorOf(
+        Props(new ClusterDomainEventPublisher).withDispatcher(context.props.dispatcher),
+        name = "publisher")
     coreDaemon = Some(
-      context.watch(context.actorOf(
-        Props(classOf[ClusterCoreDaemon], publisher, joinConfigCompatChecker).withDispatcher(context.props.dispatcher),
-        name = "daemon")))
+      context.watch(
+        context.actorOf(
+          Props(new ClusterCoreDaemon(publisher, joinConfigCompatChecker)).withDispatcher(context.props.dispatcher),
+          name = "daemon")))
   }
 
   override val supervisorStrategy =
@@ -711,12 +714,12 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
         if (newSeedNodes.head == selfAddress) {
           Some(
             context.actorOf(
-              Props(classOf[FirstSeedNodeProcess], newSeedNodes, joinConfigCompatChecker).withDispatcher(UseDispatcher),
+              Props(new FirstSeedNodeProcess(newSeedNodes, joinConfigCompatChecker)).withDispatcher(UseDispatcher),
               name = "firstSeedNodeProcess-" + seedNodeProcessCounter))
         } else {
           Some(
             context.actorOf(
-              Props(classOf[JoinSeedNodeProcess], newSeedNodes, joinConfigCompatChecker).withDispatcher(UseDispatcher),
+              Props(new JoinSeedNodeProcess(newSeedNodes, joinConfigCompatChecker)).withDispatcher(UseDispatcher),
               name = "joinSeedNodeProcess-" + seedNodeProcessCounter))
         }
       }

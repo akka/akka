@@ -448,7 +448,7 @@ object DistributedPubSubMediator {
       }
 
       def newGroupActor(encGroup: String): ActorRef = {
-        val g = context.actorOf(Props(classOf[Group], emptyTimeToLive, routingLogic), name = encGroup)
+        val g = context.actorOf(Props(new Group(emptyTimeToLive, routingLogic)), name = encGroup)
         context.watch(g)
         context.parent ! RegisterTopic(g)
         g
@@ -916,7 +916,7 @@ class DistributedPubSubMediator(settings: DistributedPubSubSettings)
   }
 
   def newTopicActor(encTopic: String): ActorRef = {
-    val t = context.actorOf(Props(classOf[Topic], removedTimeToLive, routingLogic), name = encTopic)
+    val t = context.actorOf(Props(new Topic(removedTimeToLive, routingLogic)), name = encTopic)
     registerTopic(t)
     t
   }

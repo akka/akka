@@ -93,7 +93,7 @@ object RemoveInternalClusterShardingData {
       else journalPluginId
     if (resolvedJournalPluginId == "akka.persistence.journal.leveldb-shared") {
       @nowarn("msg=deprecated")
-      val store = system.actorOf(Props[SharedLeveldbStore](), "store")
+      val store = system.actorOf(Props(new SharedLeveldbStore), "store")
       SharedLeveldbJournal.setStore(store, system)
     }
 

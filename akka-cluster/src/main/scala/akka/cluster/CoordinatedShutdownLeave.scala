@@ -15,7 +15,7 @@ import akka.cluster.MemberStatus._
  * INTERNAL API
  */
 private[akka] object CoordinatedShutdownLeave {
-  def props(): Props = Props[CoordinatedShutdownLeave]()
+  def props(): Props = Props(new CoordinatedShutdownLeave)
 
   case object LeaveReq
 }

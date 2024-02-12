@@ -236,7 +236,7 @@ import akka.pattern.{ BackoffOpts, BackoffSupervisor }
     context.actorOf(
       BackoffSupervisor.props(
         BackoffOpts.onFailure(
-          Props(classOf[TcpDnsClient], tcp, ns, self),
+          Props(new TcpDnsClient(tcp, ns, self)),
           childName = "tcpDnsClient",
           minBackoff = 10.millis,
           maxBackoff = 20.seconds,

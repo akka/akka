@@ -217,7 +217,7 @@ private[akka] class RemoteActorRefProvider(
     actorRefResolveThreadLocalCache = ActorRefResolveThreadLocalCache(system)
 
     remotingTerminator = system.systemActorOf(
-      remoteSettings.configureDispatcher(Props(classOf[RemotingTerminator], local.systemGuardian)),
+      remoteSettings.configureDispatcher(Props(new RemotingTerminator(local.systemGuardian))),
       "remoting-terminator")
 
     if (remoteSettings.Artery.Enabled && remoteSettings.Artery.Transport == AeronUpd) {
@@ -303,7 +303,7 @@ private[akka] class RemoteActorRefProvider(
 
   protected def createRemoteDeploymentWatcher(system: ActorSystemImpl): ActorRef =
     system.systemActorOf(
-      remoteSettings.configureDispatcher(Props[RemoteDeploymentWatcher]()),
+      remoteSettings.configureDispatcher(Props(new RemoteDeploymentWatcher)),
       "remote-deployment-watcher")
 
   /** Can be overridden when using RemoteActorRefProvider as a superclass rather than directly */

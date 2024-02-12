@@ -185,7 +185,7 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
     val guardianName: String =
       system.settings.config.getString("akka.cluster.sharding.guardian-name")
     val dispatcher = system.settings.config.getString("akka.cluster.sharding.use-dispatcher")
-    system.systemActorOf(Props[ClusterShardingGuardian]().withDispatcher(dispatcher), guardianName)
+    system.systemActorOf(Props(new ClusterShardingGuardian).withDispatcher(dispatcher), guardianName)
   }
 
   /**
