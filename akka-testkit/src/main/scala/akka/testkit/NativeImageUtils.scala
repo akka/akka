@@ -17,6 +17,7 @@ import com.fasterxml.jackson.module.scala.DefaultScalaModule
 import io.github.classgraph.ClassGraph
 import io.github.classgraph.ClassInfo
 import io.github.classgraph.ClassInfoList
+import io.github.classgraph.MethodInfo
 
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
@@ -60,7 +61,7 @@ object NativeImageUtils {
       else throw new RuntimeException("Couldn't figure out akka repo root directory")
     }
 
-    repoRoot.resolve(s"$akkaModule/src/main/resources/META-INF/native-image/com/typesafe/akka/akka-$akkaModule")
+    repoRoot.resolve(s"$akkaModule/src/main/resources/META-INF/native-image/com/typesafe/akka/$akkaModule")
   }
 
   /**
@@ -162,7 +163,37 @@ object NativeImageUtils {
                 Seq("com.typesafe.config.Config", "akka.event.LoggingAdapter", "java.util.concurrent.ThreadFactory")))))
     }
 
-    val allConfig = additionalEntries ++ extensions ++ serializers ++ schedulers ++ typedExtensions
+    val classicRouterConfigs =
+      concreteClassesToJsonAdt(scanResult.getClassesImplementing(classOf[akka.routing.RouterConfig])) { router =>
+        val definedConstructors = router.getMethodInfo(Constructor)
+        // we support config + dynamic access or just config
+        val reflectConstructors =
+          definedConstructors.stream().collect(Collectors.toList[MethodInfo]).asScala.toVector.flatMap {
+            definedConstructor =>
+              val paramTypes =
+                definedConstructor.getParameterInfo.toSeq.map(_.getTypeSignatureOrTypeDescriptor.toString)
+              if (paramTypes == Seq("com.typesafe.config.Config") || paramTypes == Seq(
+                    "com.typesafe.config.Config",
+                    "akka.actor.DynamicAccess")) {
+                Some(ReflectMethod(Constructor, parameterTypes = paramTypes))
+              } else None
+          }
+        Some(ReflectConfigEntry(router.getName, methods = reflectConstructors))
+      }
+
+    val mailBoxTypes = concreteClassesToJsonAdt(scanResult.getClassesImplementing(classOf[akka.dispatch.MailboxType])) {
+      mailboxType =>
+        Some(
+          ReflectConfigEntry(
+            mailboxType.getName,
+            methods = Seq(
+              ReflectMethod(
+                Constructor,
+                parameterTypes = Seq("akka.actor.ActorSystem$Settings", "com.typesafe.config.Config")))))
+
+    }
+
+    val allConfig = additionalEntries ++ mailBoxTypes ++ extensions ++ serializers ++ schedulers ++ classicRouterConfigs ++ typedExtensions
     val mapper =
       JsonMapper.builder().addModule(DefaultScalaModule).configure(SerializationFeature.INDENT_OUTPUT, true).build()
     mapper.writeValueAsString(allConfig)

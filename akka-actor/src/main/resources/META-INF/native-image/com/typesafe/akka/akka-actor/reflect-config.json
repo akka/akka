@@ -17,6 +17,25 @@
     "name" : "_lookupDoNotCallMeDirectly"
   } ]
 }, {
+  "name" : "akka.pattern.CircuitBreaker",
+  "fields" : [ {
+    "name" : "_currentResetTimeoutDoNotCallMeDirectly"
+  }, {
+    "name" : "_currentStateDoNotCallMeDirectly"
+  } ]
+}, {
+  "name" : "akka.pattern.PromiseActorRef",
+  "fields" : [ {
+    "name" : "_stateDoNotCallMeDirectly"
+  }, {
+    "name" : "_watchedByDoNotCallMeDirectly"
+  } ]
+}, {
+  "name" : "akka.actor.LightArrayRevolverScheduler$TaskHolder",
+  "fields" : [ {
+    "name" : "task"
+  } ]
+}, {
   "name" : "akka.actor.LocalActorRefProvider$Guardian",
   "methods" : [ {
     "name" : "<init>",
@@ -30,6 +49,153 @@
     "parameterTypes" : [ "akka.actor.SupervisorStrategy", "akka.actor.ActorRef" ]
   } ],
   "queryAllDeclaredConstructors" : true
+}, {
+  "name" : "akka.dispatch.affinity.ThrowOnOverflowRejectionHandler",
+  "methods" : [ {
+    "name" : "<init>"
+  } ]
+}, {
+  "name" : "akka.dispatch.affinity.FairDistributionHashCache",
+  "methods" : [ {
+    "name" : "<init>",
+    "parameterTypes" : [ "com.typesafe.config.Config" ]
+  } ]
+}, {
+  "name" : "akka.event.Logging$DefaultLogger",
+  "methods" : [ {
+    "name" : "<init>"
+  } ]
+}, {
+  "name" : "akka.event.DefaultLoggingFilter",
+  "methods" : [ {
+    "name" : "<init>",
+    "parameterTypes" : [ "akka.actor.ActorSystem$Settings", "akka.event.EventStream" ]
+  } ]
+}, {
+  "name" : "akka.io.InetAddressDnsProvider",
+  "methods" : [ {
+    "name" : "<init>"
+  } ]
+}, {
+  "name" : "akka.io.SimpleDnsManager",
+  "methods" : [ {
+    "name" : "<init>",
+    "parameterTypes" : [ "akka.io.DnsExt" ]
+  } ],
+  "queryAllDeclaredConstructors" : true
+}, {
+  "name" : "akka.io.dns.internal.AsyncDnsProvider",
+  "methods" : [ {
+    "name" : "<init>",
+    "parameterTypes" : [ "akka.io.DnsExt" ]
+  } ],
+  "queryAllDeclaredConstructors" : true
+}, {
+  "name" : "akka.io.InetAddressDnsResolver",
+  "methods" : [ {
+    "name" : "<init>",
+    "parameterTypes" : [ "akka.io.SimpleDnsCache", "com.typesafe.config.Config" ]
+  } ],
+  "queryAllDeclaredConstructors" : true
+}, {
+  "name" : "akka.io.dns.internal.AsyncDnsResolver",
+  "methods" : [ {
+    "name" : "<init>",
+    "parameterTypes" : [ "akka.io.SimpleDnsCache", "com.typesafe.config.Config", "scala.Function2<akka.actor.ActorRefFactory,scala.collection.immutable.List<java.net.InetSocketAddress>,scala.collection.immutable.List<akka.actor.ActorRef>>" ]
+  } ],
+  "queryAllDeclaredConstructors" : true
+}, {
+  "name" : "akka.io.SimpleDnsManager",
+  "methods" : [ {
+    "name" : "<init>",
+    "parameterTypes" : [ "akka.io.DnsExt" ]
+  } ],
+  "queryAllDeclaredConstructors" : true
+}, {
+  "name" : "akka.io.dns.internal.AsyncDnsManager",
+  "methods" : [ {
+    "name" : "<init>",
+    "parameterTypes" : [ "akka.io.DnsExt" ]
+  } ],
+  "queryAllDeclaredConstructors" : true
+}, {
+  "name" : "akka.dispatch.BoundedControlAwareMailbox",
+  "methods" : [ {
+    "name" : "<init>",
+    "parameterTypes" : [ "akka.actor.ActorSystem$Settings", "com.typesafe.config.Config" ]
+  } ]
+}, {
+  "name" : "akka.dispatch.BoundedDequeBasedMailbox",
+  "methods" : [ {
+    "name" : "<init>",
+    "parameterTypes" : [ "akka.actor.ActorSystem$Settings", "com.typesafe.config.Config" ]
+  } ]
+}, {
+  "name" : "akka.dispatch.BoundedMailbox",
+  "methods" : [ {
+    "name" : "<init>",
+    "parameterTypes" : [ "akka.actor.ActorSystem$Settings", "com.typesafe.config.Config" ]
+  } ]
+}, {
+  "name" : "akka.dispatch.BoundedPriorityMailbox",
+  "methods" : [ {
+    "name" : "<init>",
+    "parameterTypes" : [ "akka.actor.ActorSystem$Settings", "com.typesafe.config.Config" ]
+  } ]
+}, {
+  "name" : "akka.dispatch.BoundedStablePriorityMailbox",
+  "methods" : [ {
+    "name" : "<init>",
+    "parameterTypes" : [ "akka.actor.ActorSystem$Settings", "com.typesafe.config.Config" ]
+  } ]
+}, {
+  "name" : "akka.dispatch.NonBlockingBoundedMailbox",
+  "methods" : [ {
+    "name" : "<init>",
+    "parameterTypes" : [ "akka.actor.ActorSystem$Settings", "com.typesafe.config.Config" ]
+  } ]
+}, {
+  "name" : "akka.dispatch.SingleConsumerOnlyUnboundedMailbox",
+  "methods" : [ {
+    "name" : "<init>",
+    "parameterTypes" : [ "akka.actor.ActorSystem$Settings", "com.typesafe.config.Config" ]
+  } ]
+}, {
+  "name" : "akka.dispatch.UnboundedControlAwareMailbox",
+  "methods" : [ {
+    "name" : "<init>",
+    "parameterTypes" : [ "akka.actor.ActorSystem$Settings", "com.typesafe.config.Config" ]
+  } ]
+}, {
+  "name" : "akka.dispatch.UnboundedDequeBasedMailbox",
+  "methods" : [ {
+    "name" : "<init>",
+    "parameterTypes" : [ "akka.actor.ActorSystem$Settings", "com.typesafe.config.Config" ]
+  } ]
+}, {
+  "name" : "akka.dispatch.UnboundedMailbox",
+  "methods" : [ {
+    "name" : "<init>",
+    "parameterTypes" : [ "akka.actor.ActorSystem$Settings", "com.typesafe.config.Config" ]
+  } ]
+}, {
+  "name" : "akka.dispatch.UnboundedPriorityMailbox",
+  "methods" : [ {
+    "name" : "<init>",
+    "parameterTypes" : [ "akka.actor.ActorSystem$Settings", "com.typesafe.config.Config" ]
+  } ]
+}, {
+  "name" : "akka.dispatch.UnboundedStablePriorityMailbox",
+  "methods" : [ {
+    "name" : "<init>",
+    "parameterTypes" : [ "akka.actor.ActorSystem$Settings", "com.typesafe.config.Config" ]
+  } ]
+}, {
+  "name" : "akka.event.LoggerMailboxType",
+  "methods" : [ {
+    "name" : "<init>",
+    "parameterTypes" : [ "akka.actor.ActorSystem$Settings", "com.typesafe.config.Config" ]
+  } ]
 }, {
   "name" : "akka.actor.CoordinatedShutdown$",
   "fields" : [ {
@@ -148,5 +314,95 @@
   "methods" : [ {
     "name" : "<init>",
     "parameterTypes" : [ "com.typesafe.config.Config", "akka.event.LoggingAdapter", "java.util.concurrent.ThreadFactory" ]
+  } ]
+}, {
+  "name" : "akka.routing.BalancingPool",
+  "methods" : [ {
+    "name" : "<init>",
+    "parameterTypes" : [ "com.typesafe.config.Config" ]
+  } ]
+}, {
+  "name" : "akka.routing.BroadcastGroup",
+  "methods" : [ {
+    "name" : "<init>",
+    "parameterTypes" : [ "com.typesafe.config.Config" ]
+  } ]
+}, {
+  "name" : "akka.routing.BroadcastPool",
+  "methods" : [ {
+    "name" : "<init>",
+    "parameterTypes" : [ "com.typesafe.config.Config" ]
+  } ]
+}, {
+  "name" : "akka.routing.ConsistentHashingGroup",
+  "methods" : [ {
+    "name" : "<init>",
+    "parameterTypes" : [ "com.typesafe.config.Config" ]
+  } ]
+}, {
+  "name" : "akka.routing.ConsistentHashingPool",
+  "methods" : [ {
+    "name" : "<init>",
+    "parameterTypes" : [ "com.typesafe.config.Config" ]
+  } ]
+}, {
+  "name" : "akka.routing.FromConfig"
+}, {
+  "name" : "akka.routing.FromConfig$"
+}, {
+  "name" : "akka.routing.NoRouter$"
+}, {
+  "name" : "akka.routing.RandomGroup",
+  "methods" : [ {
+    "name" : "<init>",
+    "parameterTypes" : [ "com.typesafe.config.Config" ]
+  } ]
+}, {
+  "name" : "akka.routing.RandomPool",
+  "methods" : [ {
+    "name" : "<init>",
+    "parameterTypes" : [ "com.typesafe.config.Config" ]
+  } ]
+}, {
+  "name" : "akka.routing.RoundRobinGroup",
+  "methods" : [ {
+    "name" : "<init>",
+    "parameterTypes" : [ "com.typesafe.config.Config" ]
+  } ]
+}, {
+  "name" : "akka.routing.RoundRobinPool",
+  "methods" : [ {
+    "name" : "<init>",
+    "parameterTypes" : [ "com.typesafe.config.Config" ]
+  } ]
+}, {
+  "name" : "akka.routing.ScatterGatherFirstCompletedGroup",
+  "methods" : [ {
+    "name" : "<init>",
+    "parameterTypes" : [ "com.typesafe.config.Config" ]
+  } ]
+}, {
+  "name" : "akka.routing.ScatterGatherFirstCompletedPool",
+  "methods" : [ {
+    "name" : "<init>",
+    "parameterTypes" : [ "com.typesafe.config.Config" ]
+  } ]
+}, {
+  "name" : "akka.routing.SmallestMailboxPool",
+  "methods" : [ {
+    "name" : "<init>",
+    "parameterTypes" : [ "com.typesafe.config.Config" ]
+  } ]
+}, {
+  "name" : "akka.routing.TailChoppingGroup",
+  "methods" : [ {
+    "name" : "<init>",
+    "parameterTypes" : [ "com.typesafe.config.Config" ]
+  } ]
+}, {
+  "name" : "akka.routing.TailChoppingPool",
+  "methods" : [ {
+    "name" : "<init>",
+    "parameterTypes" : [ "com.typesafe.config.Config" ]
   } ]
 } ]

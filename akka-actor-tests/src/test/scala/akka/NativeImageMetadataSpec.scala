@@ -35,6 +35,7 @@ object NativeImageMetadataSpec {
     ReflectConfigEntry(
       classOf[akka.pattern.PromiseActorRef].getName,
       fields = Seq(ReflectField("_stateDoNotCallMeDirectly"), ReflectField("_watchedByDoNotCallMeDirectly"))),
+    ReflectConfigEntry("akka.actor.LightArrayRevolverScheduler$TaskHolder", fields = Seq(ReflectField("task"))),
     // loaded via config
     ReflectConfigEntry(
       "akka.actor.LocalActorRefProvider$Guardian",
@@ -44,6 +45,13 @@ object NativeImageMetadataSpec {
       "akka.actor.LocalActorRefProvider$SystemGuardian",
       queryAllDeclaredConstructors = true,
       methods = Seq(ReflectMethod(Constructor, Seq("akka.actor.SupervisorStrategy", "akka.actor.ActorRef")))),
+    // affinity pool pluggable things
+    ReflectConfigEntry(
+      "akka.dispatch.affinity.ThrowOnOverflowRejectionHandler",
+      methods = Seq(ReflectMethod(Constructor, Seq.empty))),
+    ReflectConfigEntry(
+      "akka.dispatch.affinity.FairDistributionHashCache",
+      methods = Seq(ReflectMethod(Constructor, Seq("com.typesafe.config.Config")))),
     // logging infra
     ReflectConfigEntry(
       classOf[akka.event.Logging.DefaultLogger].getName,
@@ -58,7 +66,17 @@ object NativeImageMetadataSpec {
     ReflectConfigEntry(
       classOf[akka.io.InetAddressDnsProvider].getName,
       methods = Seq(ReflectMethod(NativeImageUtils.Constructor))),
+    // FIXME remove these DNS related entries when removing the deprecated pluggable DNS setup and switch to non-reflective construction
     // pluggable through deprecated InetAddressDnsProvider
+    ReflectConfigEntry(
+      classOf[akka.io.SimpleDnsManager].getName,
+      methods = Seq(ReflectMethod(NativeImageUtils.Constructor, parameterTypes = Seq("akka.io.DnsExt"))),
+      queryAllDeclaredConstructors = true),
+    ReflectConfigEntry(
+      classOf[akka.io.dns.internal.AsyncDnsProvider].getName,
+      methods = Seq(ReflectMethod(NativeImageUtils.Constructor, parameterTypes = Seq("akka.io.DnsExt"))),
+      queryAllDeclaredConstructors = true),
+    // pluggable through deprecated InetAddressDnsProvider.actorClass
     ReflectConfigEntry(
       classOf[akka.io.InetAddressDnsResolver].getName,
       methods = Seq(
@@ -66,9 +84,23 @@ object NativeImageMetadataSpec {
           NativeImageUtils.Constructor,
           parameterTypes = Seq("akka.io.SimpleDnsCache", "com.typesafe.config.Config"))),
       queryAllDeclaredConstructors = true),
-    // pluggable through deprecated InetAddressDnsProvider
+    ReflectConfigEntry(
+      "akka.io.dns.internal.AsyncDnsResolver",
+      methods = Seq(
+        ReflectMethod(
+          NativeImageUtils.Constructor,
+          parameterTypes = Seq(
+            "akka.io.SimpleDnsCache",
+            "com.typesafe.config.Config",
+            "scala.Function2<akka.actor.ActorRefFactory,scala.collection.immutable.List<java.net.InetSocketAddress>,scala.collection.immutable.List<akka.actor.ActorRef>>"))),
+      queryAllDeclaredConstructors = true),
+    // pluggable through deprecated InetAddressDnsProvider.managerClass
     ReflectConfigEntry(
       classOf[akka.io.SimpleDnsManager].getName,
+      methods = Seq(ReflectMethod(NativeImageUtils.Constructor, parameterTypes = Seq("akka.io.DnsExt"))),
+      queryAllDeclaredConstructors = true),
+    ReflectConfigEntry(
+      "akka.io.dns.internal.AsyncDnsManager",
       methods = Seq(ReflectMethod(NativeImageUtils.Constructor, parameterTypes = Seq("akka.io.DnsExt"))),
       queryAllDeclaredConstructors = true))
 
