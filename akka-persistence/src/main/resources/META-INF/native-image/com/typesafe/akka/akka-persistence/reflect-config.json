@@ -1,4 +1,49 @@
 [ {
+  "name" : "akka.persistence.ThrowExceptionConfigurator",
+  "methods" : [ {
+    "name" : "<init>"
+  } ]
+}, {
+  "name" : "akka.persistence.DiscardConfigurator",
+  "methods" : [ {
+    "name" : "<init>"
+  } ]
+}, {
+  "name" : "akka.persistence.snapshot.NoSnapshotStore",
+  "methods" : [ {
+    "name" : "<init>"
+  } ]
+}, {
+  "name" : "akka.persistence.journal.inmem.InmemJournal",
+  "methods" : [ {
+    "name" : "<init>",
+    "parameterTypes" : [ "com.typesafe.config.Config" ]
+  } ]
+}, {
+  "name" : "akka.persistence.snapshot.local.LocalSnapshotStore",
+  "methods" : [ {
+    "name" : "<init>",
+    "parameterTypes" : [ "com.typesafe.config.Config" ]
+  } ]
+}, {
+  "name" : "akka.persistence.journal.leveldb.LeveldbStore",
+  "methods" : [ {
+    "name" : "<init>",
+    "parameterTypes" : [ "com.typesafe.config.Config" ]
+  } ]
+}, {
+  "name" : "akka.persistence.journal.leveldb.SharedLeveldbJournal",
+  "methods" : [ {
+    "name" : "<init>",
+    "parameterTypes" : [ "com.typesafe.config.Config" ]
+  } ]
+}, {
+  "name" : "akka.persistence.journal.PersistencePluginProxy",
+  "methods" : [ {
+    "name" : "<init>",
+    "parameterTypes" : [ "com.typesafe.config.Config" ]
+  } ]
+}, {
   "name" : "akka.persistence.Persistence$",
   "fields" : [ {
     "name" : "MODULE$"
