@@ -5,6 +5,10 @@
 package akka.cluster.metrics
 
 import akka.testkit.NativeImageUtils
+import akka.testkit.NativeImageUtils.Constructor
+import akka.testkit.NativeImageUtils.ReflectConfigEntry
+import akka.testkit.NativeImageUtils.ReflectMethod
+import com.typesafe.config.Config
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -12,7 +16,11 @@ object NativeImageMetadataSpec {
 
   val metadataDir = NativeImageUtils.metadataDirFor("akka-cluster-metrics")
 
-  val additionalEntries = Seq()
+  val additionalEntries = Seq(
+    // akka.cluster.metrics.supervisor.strategy.provider
+    ReflectConfigEntry(
+      "akka.cluster.metrics.ClusterMetricsStrategy",
+      methods = Seq(ReflectMethod(Constructor, parameterTypes = Seq(classOf[Config].getName)))))
 
   val modulePackages = Seq("akka.cluster.metrics")
 

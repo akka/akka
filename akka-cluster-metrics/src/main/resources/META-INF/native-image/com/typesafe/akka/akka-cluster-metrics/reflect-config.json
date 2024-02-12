@@ -1,0 +1,30 @@
+[ {
+  "name" : "akka.cluster.metrics.ClusterMetricsStrategy",
+  "methods" : [ {
+    "name" : "<init>",
+    "parameterTypes" : [ "com.typesafe.config.Config" ]
+  } ]
+}, {
+  "name" : "akka.cluster.metrics.ClusterMetricsExtension$",
+  "fields" : [ {
+    "name" : "MODULE$"
+  } ]
+}, {
+  "name" : "akka.cluster.metrics.protobuf.MessageSerializer",
+  "methods" : [ {
+    "name" : "<init>",
+    "parameterTypes" : [ "akka.actor.ExtendedActorSystem" ]
+  } ]
+}, {
+  "name" : "akka.cluster.metrics.AdaptiveLoadBalancingGroup",
+  "methods" : [ {
+    "name" : "<init>",
+    "parameterTypes" : [ "com.typesafe.config.Config", "akka.actor.DynamicAccess" ]
+  } ]
+}, {
+  "name" : "akka.cluster.metrics.AdaptiveLoadBalancingPool",
+  "methods" : [ {
+    "name" : "<init>",
+    "parameterTypes" : [ "com.typesafe.config.Config", "akka.actor.DynamicAccess" ]
+  } ]
+} ]
