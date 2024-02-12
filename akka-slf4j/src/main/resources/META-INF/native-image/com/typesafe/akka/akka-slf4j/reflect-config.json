@@ -1,0 +1,12 @@
+[ {
+  "name" : "akka.event.slf4j.Slf4jLogger",
+  "methods" : [ {
+    "name" : "<init>"
+  } ]
+}, {
+  "name" : "akka.event.slf4j.Slf4jLoggingFilter",
+  "methods" : [ {
+    "name" : "<init>",
+    "parameterTypes" : [ "akka.actor.ActorSystem$Settings", "akka.event.EventStream" ]
+  } ]
+} ]

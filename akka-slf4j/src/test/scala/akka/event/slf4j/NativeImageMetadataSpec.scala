@@ -17,13 +17,7 @@ object NativeImageMetadataSpec {
   val additionalEntries = Seq(
     ReflectConfigEntry(
       classOf[akka.event.slf4j.Slf4jLogger].getName,
-      methods = Seq(ReflectMethod(NativeImageUtils.Constructor))),
-    ReflectConfigEntry(
-      classOf[akka.event.slf4j.Slf4jLoggingFilter].getName,
-      methods = Seq(
-        ReflectMethod(
-          NativeImageUtils.Constructor,
-          parameterTypes = Seq("akka.actor.ActorSystem$Settings", "akka.event.EventStream")))))
+      methods = Seq(ReflectMethod(NativeImageUtils.Constructor))))
 
   val modulePackages = Seq("akka.event.slf4j")
 

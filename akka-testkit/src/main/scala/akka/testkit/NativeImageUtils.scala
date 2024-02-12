@@ -4,9 +4,11 @@
 
 package akka.testkit
 
+import akka.actor.ExtendedActorSystem
 import akka.actor.ExtensionId
 import akka.actor.Scheduler
 import akka.annotation.InternalApi
+import akka.event.LoggingAdapter
 import akka.serialization.Serializer
 import akka.util.ccompat.JavaConverters._
 import com.fasterxml.jackson.annotation.JsonInclude
@@ -14,6 +16,7 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.databind.json.JsonMapper
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
+import com.typesafe.config.Config
 import io.github.classgraph.ClassGraph
 import io.github.classgraph.ClassInfo
 import io.github.classgraph.ClassInfoList
@@ -106,7 +109,6 @@ object NativeImageUtils {
       .acceptPackages(packageNames: _*)
       .scan()
 
-    // FIXME mailbox types
     // FIXME dispatcher types?
 
     // extensions are actually the ExtensionIds accessed reflectively
@@ -123,13 +125,13 @@ object NativeImageUtils {
 
     // serializer loading uses the first constructor found out of these signatures
     val possibleSerializerConstructorParamLists = Seq(
-      Seq("akka.actor.ExtendedActorSystem"),
-      Seq("akka.actor.ActorSystem"),
-      Seq("akka.actor.ClassicActorSystemProvider"),
+      Seq(classOf[ExtendedActorSystem].getName),
+      Seq(classOf[akka.actor.ActorSystem].getName),
+      Seq(classOf[akka.actor.ClassicActorSystemProvider].getName),
       Seq(),
-      Seq("akka.actor.ExtendedActorSystem", "java.lang.String"),
-      Seq("akka.actor.ActorSystem", "java.lang.String"),
-      Seq("akka.actor.ClassicActorSystemProvider", "java.lang.String"))
+      Seq(classOf[akka.actor.ExtendedActorSystem].getName, classOf[java.lang.String].getName),
+      Seq(classOf[akka.actor.ActorSystem].getName, classOf[java.lang.String].getName),
+      Seq(classOf[akka.actor.ClassicActorSystemProvider].getName, classOf[java.lang.String].getName))
 
     val serializers = concreteClassesToJsonAdt(scanResult.getClassesImplementing(classOf[Serializer])) {
       serializerClass =>
@@ -159,8 +161,10 @@ object NativeImageUtils {
           methods = Seq(
             ReflectMethod(
               Constructor,
-              parameterTypes =
-                Seq("com.typesafe.config.Config", "akka.event.LoggingAdapter", "java.util.concurrent.ThreadFactory")))))
+              parameterTypes = Seq(
+                classOf[Config].getName,
+                classOf[LoggingAdapter].getName,
+                classOf[java.util.concurrent.ThreadFactory].getName)))))
     }
 
     val classicRouterConfigs =
@@ -172,8 +176,8 @@ object NativeImageUtils {
             definedConstructor =>
               val paramTypes =
                 definedConstructor.getParameterInfo.toSeq.map(_.getTypeSignatureOrTypeDescriptor.toString)
-              if (paramTypes == Seq("com.typesafe.config.Config") || paramTypes == Seq(
-                    "com.typesafe.config.Config",
+              if (paramTypes == Seq(classOf[Config].getName) || paramTypes == Seq(
+                    classOf[Config].getName,
                     "akka.actor.DynamicAccess")) {
                 Some(ReflectMethod(Constructor, parameterTypes = paramTypes))
               } else None
@@ -189,11 +193,25 @@ object NativeImageUtils {
             methods = Seq(
               ReflectMethod(
                 Constructor,
-                parameterTypes = Seq("akka.actor.ActorSystem$Settings", "com.typesafe.config.Config")))))
+                parameterTypes = Seq(classOf[akka.actor.ActorSystem.Settings].getName, classOf[Config].getName)))))
 
     }
 
-    val allConfig = additionalEntries ++ mailBoxTypes ++ extensions ++ serializers ++ schedulers ++ classicRouterConfigs ++ typedExtensions
+    val loggingFilters =
+      concreteClassesToJsonAdt(scanResult.getClassesImplementing(classOf[akka.event.LoggingFilter])) { filter =>
+        Some(
+          ReflectConfigEntry(
+            filter.getName,
+            methods = Seq(
+              ReflectMethod(
+                Constructor,
+                parameterTypes =
+                  Seq(classOf[akka.actor.ActorSystem.Settings].getName, classOf[akka.event.EventStream].getName)))))
+      }
+
+    val allConfig = additionalEntries ++ mailBoxTypes ++ extensions ++ serializers ++ schedulers ++
+      classicRouterConfigs ++ loggingFilters ++ typedExtensions
+
     val mapper =
       JsonMapper.builder().addModule(DefaultScalaModule).configure(SerializationFeature.INDENT_OUTPUT, true).build()
     mapper.writeValueAsString(allConfig)
