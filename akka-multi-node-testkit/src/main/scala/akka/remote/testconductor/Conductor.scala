@@ -80,7 +80,7 @@ trait Conductor { this: TestConductorExt =>
       name: RoleName,
       controllerPort: InetSocketAddress): Future[InetSocketAddress] = {
     if (_controller ne null) throw new RuntimeException("TestConductorServer was already started")
-    _controller = system.systemActorOf(Props(classOf[Controller], participants, controllerPort), "controller")
+    _controller = system.systemActorOf(Props(new Controller(participants, controllerPort)), "controller")
     import Settings.BarrierTimeout
     import system.dispatcher
     (controller ? GetSockAddr).mapTo[InetSocketAddress].flatMap {
@@ -450,7 +450,7 @@ private[akka] class Controller(private var initialParticipants: Int, controllerP
     SupervisorStrategy.Restart
   }
 
-  val barrier = context.actorOf(Props[BarrierCoordinator](), "barriers")
+  val barrier = context.actorOf(Props(new BarrierCoordinator), "barriers")
   var nodes = Map[RoleName, NodeInfo]()
 
   // map keeping unanswered queries for node addresses (enqueued upon GetAddress, serviced upon NodeInfo)
@@ -464,7 +464,7 @@ private[akka] class Controller(private var initialParticipants: Int, controllerP
         case _                    => throw new RuntimeException() // compiler exhaustiveness check pleaser
       }
       val name = ip + ":" + port + "-server" + generation.next()
-      sender() ! context.actorOf(Props(classOf[ServerFSM], self, channel).withDeploy(Deploy.local), name)
+      sender() ! context.actorOf(Props(new ServerFSM(self, channel)).withDeploy(Deploy.local), name)
     case c @ NodeInfo(name, address, fsm) =>
       barrier.forward(c)
       if (nodes contains name) {

@@ -102,7 +102,7 @@ object TestActor {
   }
 
   // make creator serializable, for VerifySerializabilitySpec
-  def props(queue: BlockingDeque[Message]): Props = Props(classOf[TestActor], queue)
+  def props(queue: BlockingDeque[Message]): Props = Props(new TestActor(queue))
 }
 
 class TestActor(queue: BlockingDeque[TestActor.Message]) extends Actor {

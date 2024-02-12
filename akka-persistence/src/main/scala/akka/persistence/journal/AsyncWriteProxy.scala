@@ -75,8 +75,7 @@ private[persistence] trait AsyncWriteProxy extends AsyncWriteJournal with Stash 
       case Some(s) =>
         val replayCompletionPromise = Promise[Unit]()
         val mediator = context.actorOf(
-          Props(classOf[ReplayMediator], replayCallback, replayCompletionPromise, timeout.duration)
-            .withDeploy(Deploy.local))
+          Props(new ReplayMediator(replayCallback, replayCompletionPromise, timeout.duration)).withDeploy(Deploy.local))
         s.tell(ReplayMessages(persistenceId, fromSequenceNr, toSequenceNr, max), mediator)
         replayCompletionPromise.future
       case None => storeNotInitialized

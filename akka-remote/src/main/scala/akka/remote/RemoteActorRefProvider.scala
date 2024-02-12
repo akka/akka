@@ -217,7 +217,7 @@ private[akka] class RemoteActorRefProvider(
     actorRefResolveThreadLocalCache = ActorRefResolveThreadLocalCache(system)
 
     remotingTerminator = system.systemActorOf(
-      remoteSettings.configureDispatcher(Props(classOf[RemotingTerminator], local.systemGuardian)),
+      remoteSettings.configureDispatcher(Props(new RemotingTerminator(local.systemGuardian))),
       "remoting-terminator")
 
     if (remoteSettings.Artery.Enabled && remoteSettings.Artery.Transport == AeronUpd) {

@@ -40,8 +40,8 @@ object TestActors {
     }
   }
 
-  val echoActorProps = Props[EchoActor]()
-  val blackholeProps = Props[BlackholeActor]()
-  def forwardActorProps(ref: ActorRef) = Props(classOf[ForwardActor], ref)
+  val echoActorProps = Props(new EchoActor)
+  val blackholeProps = Props(new BlackholeActor)
+  def forwardActorProps(ref: ActorRef) = Props(new ForwardActor(ref))
 
 }

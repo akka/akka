@@ -89,6 +89,6 @@ private[akka] object ActorClassificationUnsubscriber {
   }
 
   private def props(busName: String, unsubscribe: ActorRef => Unit, debug: Boolean) =
-    Props(classOf[ActorClassificationUnsubscriber], busName, unsubscribe, debug)
+    Props(new ActorClassificationUnsubscriber(busName, unsubscribe, debug))
 
 }

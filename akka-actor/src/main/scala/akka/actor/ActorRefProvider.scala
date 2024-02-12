@@ -531,7 +531,7 @@ private[akka] class LocalActorRefProvider private[akka] (
   override lazy val rootGuardian: LocalActorRef =
     new LocalActorRef(
       system,
-      Props(classOf[LocalActorRefProvider.Guardian], rootGuardianStrategy),
+      Props(new LocalActorRefProvider.Guardian(rootGuardianStrategy)),
       internalDispatcher,
       defaultMailbox,
       theOneWhoWalksTheBubblesOfSpaceTime,
@@ -563,7 +563,7 @@ private[akka] class LocalActorRefProvider private[akka] (
       }
     val ref = new LocalActorRef(
       system,
-      system.guardianProps.getOrElse(Props(classOf[LocalActorRefProvider.Guardian], guardianStrategy)),
+      system.guardianProps.getOrElse(Props(new LocalActorRefProvider.Guardian(guardianStrategy))),
       dispatcher,
       system.guardianProps match {
         case Some(props) => system.mailboxes.lookup(props.mailbox)
@@ -581,7 +581,7 @@ private[akka] class LocalActorRefProvider private[akka] (
     cell.reserveChild("system")
     val ref = new LocalActorRef(
       system,
-      Props(classOf[LocalActorRefProvider.SystemGuardian], systemGuardianStrategy, guardian),
+      Props(new LocalActorRefProvider.SystemGuardian(systemGuardianStrategy, guardian)),
       internalDispatcher,
       defaultMailbox,
       rootGuardian,

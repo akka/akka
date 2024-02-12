@@ -66,7 +66,7 @@ object Player {
 
   }
 
-  def waiterProps = Props[Waiter]()
+  def waiterProps = Props(new Waiter)
 }
 
 /**
@@ -99,7 +99,7 @@ trait Player { this: TestConductorExt =>
     import Settings.BarrierTimeout
 
     if (_client ne null) throw new IllegalStateException("TestConductorClient already started")
-    _client = system.systemActorOf(Props(classOf[ClientFSM], name, controllerAddr), "TestConductorClient")
+    _client = system.systemActorOf(Props(new ClientFSM(name, controllerAddr)), "TestConductorClient")
     val a = system.systemActorOf(Player.waiterProps, "TestConductorWaiter")
     (a ? client).mapTo(classTag[Done])
   }
