@@ -39,17 +39,30 @@ object NativeImageUtils {
   val Constructor = "<init>"
   val ModuleField = ReflectField("MODULE$")
 
+  // represents https://www.graalvm.org/docs/reference-manual/native-image/assets/reflect-config-schema-v1.0.0.json
   @JsonInclude(Include.NON_DEFAULT)
   final case class ReflectConfigEntry(
       name: String, // FQCN
-      fields: Seq[ReflectField] = Seq.empty,
       methods: Seq[ReflectMethod] = Seq.empty,
-      queryAllDeclaredConstructors: Boolean = false,
-      queryAllPublicConstructors: Boolean = false,
-      queryAllDeclaredMethods: Boolean = false,
-      queryAllPublicMethods: Boolean = false,
+      queriedMethods: Seq[ReflectMethod] = Seq.empty,
+      fields: Seq[ReflectField] = Seq.empty,
       allDeclaredClasses: Boolean = false,
+      allDeclaredMethods: Boolean = false,
+      allDeclaredFields: Boolean = false,
+      allDeclaredConstructors: Boolean = false,
       allPublicClasses: Boolean = false,
+      allPublicMethods: Boolean = false,
+      allPublicFields: Boolean = false,
+      allPublicConstructors: Boolean = false,
+      allRecordComponents: Boolean = false,
+      allNestMembers: Boolean = false,
+      allSigners: Boolean = false,
+      allPermittedSubclasses: Boolean = false,
+      queryAllDeclaredMethods: Boolean = false,
+      queryAllDeclaredConstructors: Boolean = false,
+      queryAllPublicMethods: Boolean = false,
+      queryAllPublicConstructors: Boolean = false,
+      unsafeAllocate: Boolean = false,
       condition: Option[Condition] = None)
 
   @JsonInclude(Include.NON_DEFAULT)

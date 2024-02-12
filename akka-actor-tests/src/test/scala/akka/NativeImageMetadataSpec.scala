@@ -4,6 +4,7 @@
 
 package akka
 
+import akka.actor.Props
 import akka.testkit.NativeImageUtils
 import akka.testkit.NativeImageUtils.Constructor
 import akka.testkit.NativeImageUtils.ReflectConfigEntry
@@ -18,6 +19,42 @@ object NativeImageMetadataSpec {
 
   val additionalEntries = Seq(
     // dungeon or dungeon worthy unsafe trixery
+    // FIXME ugh, maybe we could reflect generate it instead of manually listing?
+    ReflectConfigEntry(
+      classOf[sun.misc.Unsafe].getName,
+      methods = Seq(
+        ReflectMethod("arrayBaseOff", parameterTypes = Seq("java.lang.Class")),
+        ReflectMethod("arrayIndexScale", parameterTypes = Seq("java.lang.Class")),
+        ReflectMethod("copyMemory", parameterTypes = Seq("long", "long", "long")),
+        ReflectMethod(
+          "copyMemory",
+          parameterTypes = Seq("java.lang.Object", "long", "java.lang.Object", "long", "long")),
+        ReflectMethod("getAndAddLong", parameterTypes = Seq("java.lang.Object", "long", "long")),
+        ReflectMethod("getAndSetObject", parameterTypes = Seq("java.lang.Object", "long", "java.lang.Object")),
+        ReflectMethod("getBoolean", parameterTypes = Seq("java.lang.Object", "long")),
+        ReflectMethod("getByte", parameterTypes = Seq("long")),
+        ReflectMethod("getByte", parameterTypes = Seq("java.lang.Object", "long")),
+        ReflectMethod("getDouble", parameterTypes = Seq("java.lang.Object", "long")),
+        ReflectMethod("getFloat", parameterTypes = Seq("java.lang.Object", "long")),
+        ReflectMethod("getInt", parameterTypes = Seq("long")),
+        ReflectMethod("getInt", parameterTypes = Seq("java.lang.Object", "long")),
+        ReflectMethod("getLong", parameterTypes = Seq("long")),
+        ReflectMethod("getLong", parameterTypes = Seq("java.lang.Object", "long")),
+        ReflectMethod("getObject", parameterTypes = Seq("java.lang.Object", "long")),
+        ReflectMethod("invokeCleaner", parameterTypes = Seq("java.nio.ByteBuffer")),
+        ReflectMethod("objectFieldOffset", parameterTypes = Seq("java.lang.reflect.Field")),
+        ReflectMethod("putBoolean", parameterTypes = Seq("java.lang.Object", "long", "boolean")),
+        ReflectMethod("putByte", parameterTypes = Seq("long", "byte")),
+        ReflectMethod("putByte", parameterTypes = Seq("java.lang.Object", "long", "byte")),
+        ReflectMethod("putDouble", parameterTypes = Seq("java.lang.Object", "long", "double")),
+        ReflectMethod("putFloat", parameterTypes = Seq("java.lang.Object", "long", "float")),
+        ReflectMethod("putInt", parameterTypes = Seq("long", "int")),
+        ReflectMethod("putInt", parameterTypes = Seq("java.lang.Object", "long", "int")),
+        ReflectMethod("putLong", parameterTypes = Seq("long", "long")),
+        ReflectMethod("putLong", parameterTypes = Seq("java.lang.Object", "long", "long")),
+        ReflectMethod("putObject", parameterTypes = Seq("java.lang.Object", "long", "java.lang.Object")),
+        ReflectMethod("storeFence", parameterTypes = Seq())),
+      allDeclaredFields = true),
     // FIXME these are mostly "static" trixery, I wonder if graal can't figure them out itself without explicit listing
     ReflectConfigEntry(
       classOf[akka.actor.ActorCell].getName,
@@ -46,6 +83,8 @@ object NativeImageMetadataSpec {
       "akka.actor.LocalActorRefProvider$SystemGuardian",
       queryAllDeclaredConstructors = true,
       methods = Seq(ReflectMethod(Constructor, Seq("akka.actor.SupervisorStrategy", "akka.actor.ActorRef")))),
+    // left as reflection based to not break akka-remote remote deploy test
+    ReflectConfigEntry(classOf[Props.EmptyActor].getName, methods = Seq(ReflectMethod(Constructor))),
     // affinity pool pluggable things
     ReflectConfigEntry(
       "akka.dispatch.affinity.ThrowOnOverflowRejectionHandler",

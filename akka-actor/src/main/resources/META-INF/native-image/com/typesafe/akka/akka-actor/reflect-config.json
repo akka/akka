@@ -1,4 +1,94 @@
 [ {
+  "name" : "sun.misc.Unsafe",
+  "methods" : [ {
+    "name" : "arrayBaseOff",
+    "parameterTypes" : [ "java.lang.Class" ]
+  }, {
+    "name" : "arrayIndexScale",
+    "parameterTypes" : [ "java.lang.Class" ]
+  }, {
+    "name" : "copyMemory",
+    "parameterTypes" : [ "long", "long", "long" ]
+  }, {
+    "name" : "copyMemory",
+    "parameterTypes" : [ "java.lang.Object", "long", "java.lang.Object", "long", "long" ]
+  }, {
+    "name" : "getAndAddLong",
+    "parameterTypes" : [ "java.lang.Object", "long", "long" ]
+  }, {
+    "name" : "getAndSetObject",
+    "parameterTypes" : [ "java.lang.Object", "long", "java.lang.Object" ]
+  }, {
+    "name" : "getBoolean",
+    "parameterTypes" : [ "java.lang.Object", "long" ]
+  }, {
+    "name" : "getByte",
+    "parameterTypes" : [ "long" ]
+  }, {
+    "name" : "getByte",
+    "parameterTypes" : [ "java.lang.Object", "long" ]
+  }, {
+    "name" : "getDouble",
+    "parameterTypes" : [ "java.lang.Object", "long" ]
+  }, {
+    "name" : "getFloat",
+    "parameterTypes" : [ "java.lang.Object", "long" ]
+  }, {
+    "name" : "getInt",
+    "parameterTypes" : [ "long" ]
+  }, {
+    "name" : "getInt",
+    "parameterTypes" : [ "java.lang.Object", "long" ]
+  }, {
+    "name" : "getLong",
+    "parameterTypes" : [ "long" ]
+  }, {
+    "name" : "getLong",
+    "parameterTypes" : [ "java.lang.Object", "long" ]
+  }, {
+    "name" : "getObject",
+    "parameterTypes" : [ "java.lang.Object", "long" ]
+  }, {
+    "name" : "invokeCleaner",
+    "parameterTypes" : [ "java.nio.ByteBuffer" ]
+  }, {
+    "name" : "objectFieldOffset",
+    "parameterTypes" : [ "java.lang.reflect.Field" ]
+  }, {
+    "name" : "putBoolean",
+    "parameterTypes" : [ "java.lang.Object", "long", "boolean" ]
+  }, {
+    "name" : "putByte",
+    "parameterTypes" : [ "long", "byte" ]
+  }, {
+    "name" : "putByte",
+    "parameterTypes" : [ "java.lang.Object", "long", "byte" ]
+  }, {
+    "name" : "putDouble",
+    "parameterTypes" : [ "java.lang.Object", "long", "double" ]
+  }, {
+    "name" : "putFloat",
+    "parameterTypes" : [ "java.lang.Object", "long", "float" ]
+  }, {
+    "name" : "putInt",
+    "parameterTypes" : [ "long", "int" ]
+  }, {
+    "name" : "putInt",
+    "parameterTypes" : [ "java.lang.Object", "long", "int" ]
+  }, {
+    "name" : "putLong",
+    "parameterTypes" : [ "long", "long" ]
+  }, {
+    "name" : "putLong",
+    "parameterTypes" : [ "java.lang.Object", "long", "long" ]
+  }, {
+    "name" : "putObject",
+    "parameterTypes" : [ "java.lang.Object", "long", "java.lang.Object" ]
+  }, {
+    "name" : "storeFence"
+  } ],
+  "allDeclaredFields" : true
+}, {
   "name" : "akka.actor.ActorCell",
   "fields" : [ {
     "name" : "akka$actor$dungeon$Children$$_childrenRefsDoNotCallMeDirectly"
@@ -49,6 +139,11 @@
     "parameterTypes" : [ "akka.actor.SupervisorStrategy", "akka.actor.ActorRef" ]
   } ],
   "queryAllDeclaredConstructors" : true
+}, {
+  "name" : "akka.actor.Props$EmptyActor",
+  "methods" : [ {
+    "name" : "<init>"
+  } ]
 }, {
   "name" : "akka.dispatch.affinity.ThrowOnOverflowRejectionHandler",
   "methods" : [ {
@@ -404,5 +499,23 @@
   "methods" : [ {
     "name" : "<init>",
     "parameterTypes" : [ "com.typesafe.config.Config" ]
+  } ]
+}, {
+  "name" : "akka.event.DefaultLoggingFilter",
+  "methods" : [ {
+    "name" : "<init>",
+    "parameterTypes" : [ "akka.actor.ActorSystem$Settings", "akka.event.EventStream" ]
+  } ]
+}, {
+  "name" : "akka.event.LoggingFilterWithMarkerWrapper",
+  "methods" : [ {
+    "name" : "<init>",
+    "parameterTypes" : [ "akka.actor.ActorSystem$Settings", "akka.event.EventStream" ]
+  } ]
+}, {
+  "name" : "akka.event.jul.JavaLoggingFilter",
+  "methods" : [ {
+    "name" : "<init>",
+    "parameterTypes" : [ "akka.actor.ActorSystem$Settings", "akka.event.EventStream" ]
   } ]
 } ]
