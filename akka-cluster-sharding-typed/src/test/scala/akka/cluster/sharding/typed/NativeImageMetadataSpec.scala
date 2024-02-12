@@ -5,6 +5,9 @@
 package akka.cluster.sharding.typed
 
 import akka.testkit.NativeImageUtils
+import akka.testkit.NativeImageUtils.Constructor
+import akka.testkit.NativeImageUtils.ReflectConfigEntry
+import akka.testkit.NativeImageUtils.ReflectMethod
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -12,7 +15,11 @@ object NativeImageMetadataSpec {
 
   val metadataDir = NativeImageUtils.metadataDirFor("akka-cluster-sharding-typed")
 
-  val additionalEntries = Seq()
+  val additionalEntries = Seq(
+    // akka.cluster.configuration-compatibility-check.checkers.akka-cluster-sharding-hash-extractor
+    ReflectConfigEntry(
+      "akka.cluster.sharding.typed.internal.JoinConfigCompatCheckerClusterSharding",
+      methods = Seq(ReflectMethod(Constructor, parameterTypes = Seq.empty))))
 
   val modulePackages = Seq("akka.cluster.sharding.typed")
 
