@@ -1,4 +1,15 @@
 [ {
+  "name" : "akka.cluster.sharding.ClusterShardingHealthCheck",
+  "methods" : [ {
+    "name" : "<init>",
+    "parameterTypes" : [ "akka.actor.ActorSystem" ]
+  } ]
+}, {
+  "name" : "akka.cluster.sharding.JoinConfigCompatCheckSharding",
+  "methods" : [ {
+    "name" : "<init>"
+  } ]
+}, {
   "name" : "akka.cluster.sharding.ClusterSharding$",
   "fields" : [ {
     "name" : "MODULE$"
