@@ -9,4 +9,19 @@
   "methods" : [ {
     "name" : "<init>"
   } ]
+}, {
+  "name" : "akka.cluster.sharding.typed.ReplicatedShardingExtension$",
+  "fields" : [ {
+    "name" : "MODULE$"
+  } ]
+}, {
+  "name" : "akka.cluster.sharding.typed.scaladsl.ClusterSharding$",
+  "fields" : [ {
+    "name" : "MODULE$"
+  } ]
+}, {
+  "name" : "akka.cluster.sharding.typed.scaladsl.ShardedDaemonProcess$",
+  "fields" : [ {
+    "name" : "MODULE$"
+  } ]
 } ]

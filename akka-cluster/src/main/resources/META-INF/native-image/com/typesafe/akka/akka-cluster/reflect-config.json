@@ -11,6 +11,12 @@
     "parameterTypes" : [ "java.lang.String", "akka.actor.ActorSystem$Settings", "akka.event.EventStream", "akka.actor.DynamicAccess" ]
   } ]
 }, {
+  "name" : "akka.cluster.NoDowning",
+  "methods" : [ {
+    "name" : "<init>",
+    "parameterTypes" : [ "akka.actor.ActorSystem" ]
+  } ]
+}, {
   "name" : "akka.cluster.Cluster$",
   "fields" : [ {
     "name" : "MODULE$"

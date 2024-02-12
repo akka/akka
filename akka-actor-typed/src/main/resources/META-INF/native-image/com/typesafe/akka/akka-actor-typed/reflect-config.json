@@ -4,6 +4,11 @@
     "name" : "MODULE$"
   } ]
 }, {
+  "name" : "akka.actor.typed.internal.receptionist.LocalReceptionist$",
+  "fields" : [ {
+    "name" : "MODULE$"
+  } ]
+}, {
   "name" : "akka.actor.typed.internal.adapter.ActorSystemAdapter$AdapterExtension$",
   "fields" : [ {
     "name" : "MODULE$"
@@ -29,5 +34,30 @@
   "methods" : [ {
     "name" : "<init>",
     "parameterTypes" : [ "akka.actor.ExtendedActorSystem" ]
+  } ]
+}, {
+  "name" : "akka.actor.typed.ActorRefResolver$",
+  "fields" : [ {
+    "name" : "MODULE$"
+  } ]
+}, {
+  "name" : "akka.actor.typed.internal.ActorFlightRecorder$",
+  "fields" : [ {
+    "name" : "MODULE$"
+  } ]
+}, {
+  "name" : "akka.actor.typed.internal.EventStreamExtension$",
+  "fields" : [ {
+    "name" : "MODULE$"
+  } ]
+}, {
+  "name" : "akka.actor.typed.pubsub.PubSub$",
+  "fields" : [ {
+    "name" : "MODULE$"
+  } ]
+}, {
+  "name" : "akka.actor.typed.receptionist.Receptionist$",
+  "fields" : [ {
+    "name" : "MODULE$"
   } ]
 } ]

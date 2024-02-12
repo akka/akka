@@ -5,6 +5,7 @@
 package akka.actor.typed
 
 import akka.testkit.NativeImageUtils
+import akka.testkit.NativeImageUtils.ModuleField
 import akka.testkit.NativeImageUtils.ReflectConfigEntry
 import akka.testkit.NativeImageUtils.ReflectField
 import org.scalatest.matchers.should.Matchers
@@ -17,7 +18,11 @@ object NativeImageMetadataSpec {
   val additionalEntries = Seq(
     ReflectConfigEntry(
       "akka.actor.typed.internal.adapter.ActorSystemAdapter$LoadTypedExtensions$",
-      fields = Seq(ReflectField("MODULE$"))))
+      fields = Seq(ReflectField("MODULE$"))),
+    // trixery around auto-selecting local or cluster receptionist impl
+    ReflectConfigEntry(
+      classOf[akka.actor.typed.internal.receptionist.LocalReceptionist.type].getName,
+      fields = Seq(ModuleField)))
 
   val modulePackages = Seq("akka.actor.typed")
 

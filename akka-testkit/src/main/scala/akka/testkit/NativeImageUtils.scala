@@ -128,8 +128,13 @@ object NativeImageUtils {
     // extensions are actually the ExtensionIds accessed reflectively
     val extensions = concreteClassesToJsonAdt(scanResult.getClassesImplementing(classOf[ExtensionId[_]])) {
       extensionClass =>
-        // FIXME what about Java, should we look for module field explicitly to decide?
-        Some(ReflectConfigEntry(extensionClass.getName, fields = Seq(ModuleField)))
+        if (extensionClass.hasMethod("getInstance")) {
+          // Java extension
+          Some(ReflectConfigEntry(extensionClass.getName, methods = Seq(ReflectMethod("getInstance"))))
+        } else {
+          // Scala extension
+          Some(ReflectConfigEntry(extensionClass.getName, fields = Seq(ModuleField)))
+        }
     }
 
     // serializer loading uses the first constructor found out of these signatures
@@ -225,9 +230,15 @@ object NativeImageUtils {
         Some(ReflectConfigEntry(checker.getName, methods = Seq(ReflectMethod(Constructor))))
       }
 
-    val typedExtensions = concreteClassesToJsonAdt(scanResult.getClassesImplementing("akka.actor.typed.ExtensionId")) {
+    val typedExtensions = concreteClassesToJsonAdt(scanResult.getSubclasses("akka.actor.typed.ExtensionId")) {
       extensionClass =>
-        Some(ReflectConfigEntry(extensionClass.getName, fields = Seq(ModuleField)))
+        if (extensionClass.hasMethod("getInstance")) {
+          // Java extension
+          Some(ReflectConfigEntry(extensionClass.getName, methods = Seq(ReflectMethod("getInstance"))))
+        } else {
+          // Scala extension
+          Some(ReflectConfigEntry(extensionClass.getName, fields = Seq(ModuleField)))
+        }
     }
 
     val allConfig = additionalEntries ++ mailBoxTypes ++ extensions ++ serializers ++ schedulers ++

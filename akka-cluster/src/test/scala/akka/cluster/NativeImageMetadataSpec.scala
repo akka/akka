@@ -33,7 +33,11 @@ object NativeImageMetadataSpec {
             classOf[java.lang.String].getName,
             classOf[ActorSystem.Settings].getName,
             classOf[EventStream].getName,
-            classOf[DynamicAccess].getName)))))
+            classOf[DynamicAccess].getName)))),
+    // default downing-provider
+    ReflectConfigEntry(
+      classOf[akka.cluster.NoDowning].getName,
+      methods = Seq(ReflectMethod(Constructor, Seq(classOf[ActorSystem].getName)))))
 
   val modulePackages = Seq("akka.cluster")
 
