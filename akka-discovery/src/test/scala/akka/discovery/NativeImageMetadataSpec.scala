@@ -4,7 +4,14 @@
 
 package akka.discovery
 
+import akka.actor.ExtendedActorSystem
+import akka.discovery.aggregate.AggregateServiceDiscovery
+import akka.discovery.config.ConfigServiceDiscovery
+import akka.discovery.dns.DnsServiceDiscovery
 import akka.testkit.NativeImageUtils
+import akka.testkit.NativeImageUtils.Constructor
+import akka.testkit.NativeImageUtils.ReflectConfigEntry
+import akka.testkit.NativeImageUtils.ReflectMethod
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -12,7 +19,19 @@ object NativeImageMetadataSpec {
 
   val metadataDir = NativeImageUtils.metadataDirFor("akka-discovery")
 
-  val additionalEntries = Seq()
+  val additionalEntries = Seq(
+    // akka.discovery.config.class
+    ReflectConfigEntry(
+      classOf[ConfigServiceDiscovery].getName,
+      methods = Seq(ReflectMethod(Constructor, parameterTypes = Seq(classOf[ExtendedActorSystem].getName)))),
+    // akka.discovery.aggregate.class
+    ReflectConfigEntry(
+      classOf[AggregateServiceDiscovery].getName,
+      methods = Seq(ReflectMethod(Constructor, parameterTypes = Seq(classOf[ExtendedActorSystem].getName)))),
+    // akka.discovery.akka-dns.class
+    ReflectConfigEntry(
+      classOf[DnsServiceDiscovery].getName,
+      methods = Seq(ReflectMethod(Constructor, parameterTypes = Seq(classOf[ExtendedActorSystem].getName)))))
 
   val modulePackages = Seq("akka.discovery")
 
