@@ -1,4 +1,22 @@
 [ {
+  "name" : "akka.remote.PhiAccrualFailureDetector",
+  "methods" : [ {
+    "name" : "<init>",
+    "parameterTypes" : [ "com.typesafe.config.Config", "akka.event.EventStream" ]
+  } ]
+}, {
+  "name" : "akka.remote.artery.tcp.ConfigSSLEngineProvider",
+  "methods" : [ {
+    "name" : "<init>",
+    "parameterTypes" : [ "akka.actor.ActorSystem" ]
+  } ]
+}, {
+  "name" : "akka.remote.DeadlineFailureDetector",
+  "methods" : [ {
+    "name" : "<init>",
+    "parameterTypes" : [ "com.typesafe.config.Config", "akka.event.EventStream" ]
+  } ]
+}, {
   "name" : "akka.remote.AddressUidExtension$",
   "fields" : [ {
     "name" : "MODULE$"
@@ -83,4 +101,6 @@
     "name" : "<init>",
     "parameterTypes" : [ "akka.actor.ExtendedActorSystem" ]
   } ]
+}, {
+  "name" : "akka.remote.routing.RemoteRouterConfig"
 } ]

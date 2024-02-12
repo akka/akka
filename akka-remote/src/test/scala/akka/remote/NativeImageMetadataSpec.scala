@@ -4,7 +4,13 @@
 
 package akka.remote
 
+import akka.actor.ActorSystem
+import akka.event.EventStream
 import akka.testkit.NativeImageUtils
+import akka.testkit.NativeImageUtils.Constructor
+import akka.testkit.NativeImageUtils.ReflectConfigEntry
+import akka.testkit.NativeImageUtils.ReflectMethod
+import com.typesafe.config.Config
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -12,7 +18,20 @@ object NativeImageMetadataSpec {
 
   val metadataDir = NativeImageUtils.metadataDirFor("akka-remote")
 
-  val additionalEntries = Seq()
+  val additionalEntries = Seq(
+    // akka.remote.watch-failure-detector.implementation-class (and then also in akka-cluster)
+    ReflectConfigEntry(
+      "akka.remote.PhiAccrualFailureDetector",
+      methods = Seq(ReflectMethod(Constructor, Seq(classOf[Config].getName, classOf[EventStream].getName)))),
+    // ssl-engine-provider
+    ReflectConfigEntry(
+      "akka.remote.artery.tcp.ConfigSSLEngineProvider",
+      methods = Seq(ReflectMethod(Constructor, Seq(classOf[ActorSystem].getName)))),
+    // used by akka-cluster but defined here
+    ReflectConfigEntry(
+      "akka.remote.DeadlineFailureDetector",
+      methods =
+        Seq(ReflectMethod(Constructor, parameterTypes = Seq(classOf[Config].getName, classOf[EventStream].getName)))))
 
   val modulePackages = Seq("akka.remote")
 
