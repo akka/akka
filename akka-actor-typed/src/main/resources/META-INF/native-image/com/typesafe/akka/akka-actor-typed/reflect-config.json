@@ -9,12 +9,6 @@
     "name" : "MODULE$"
   } ]
 }, {
-  "name" : "akka.actor.typed.ActorRef"
-}, {
-  "name" : "akka.actor.typed.internal.adapter.ActorRefAdapter"
-}, {
-  "name" : "akka.actor.typed.internal.receptionist.DefaultServiceKey"
-}, {
   "name" : "akka.actor.typed.internal.adapter.ActorSystemAdapter$AdapterExtension$",
   "fields" : [ {
     "name" : "MODULE$"
@@ -41,6 +35,12 @@
     "name" : "<init>",
     "parameterTypes" : [ "akka.actor.ExtendedActorSystem" ]
   } ]
+}, {
+  "name" : "akka.actor.typed.ActorRef"
+}, {
+  "name" : "akka.actor.typed.internal.adapter.ActorRefAdapter"
+}, {
+  "name" : "akka.actor.typed.internal.receptionist.DefaultServiceKey"
 }, {
   "name" : "akka.actor.typed.ActorRefResolver$",
   "fields" : [ {

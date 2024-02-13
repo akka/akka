@@ -16,6 +16,12 @@
     "parameterTypes" : [ "akka.actor.ExtendedActorSystem" ]
   } ]
 }, {
+  "name" : "akka.cluster.typed.internal.receptionist.ClusterReceptionist$Entry"
+}, {
+  "name" : "akka.actor.typed.internal.pubsub.TopicImpl$MessagePublished"
+}, {
+  "name" : "akka.actor.typed.delivery.internal.DeliverySerializable"
+}, {
   "name" : "akka.cluster.typed.internal.receptionist.ClusterReceptionistConfigCompatChecker",
   "methods" : [ {
     "name" : "<init>"

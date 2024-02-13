@@ -5,6 +5,22 @@
     "parameterTypes" : [ "akka.actor.ExtendedActorSystem" ]
   } ]
 }, {
+  "name" : "akka.persistence.typed.crdt.ORSet$DeltaOp"
+}, {
+  "name" : "akka.persistence.typed.internal.VersionVector"
+}, {
+  "name" : "akka.persistence.typed.crdt.Counter"
+}, {
+  "name" : "akka.persistence.typed.crdt.Counter$Updated"
+}, {
+  "name" : "akka.persistence.typed.internal.ReplicatedEventMetadata"
+}, {
+  "name" : "akka.persistence.typed.internal.PublishedEventImpl"
+}, {
+  "name" : "akka.persistence.typed.crdt.ORSet"
+}, {
+  "name" : "akka.persistence.typed.internal.ReplicatedSnapshotMetadata"
+}, {
   "name" : "akka.persistence.typed.internal.EventWriterExtension$",
   "fields" : [ {
     "name" : "MODULE$"

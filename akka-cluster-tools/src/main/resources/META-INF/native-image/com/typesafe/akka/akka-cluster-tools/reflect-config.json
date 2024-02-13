@@ -15,4 +15,10 @@
     "name" : "<init>",
     "parameterTypes" : [ "akka.actor.ExtendedActorSystem" ]
   } ]
+}, {
+  "name" : "akka.cluster.singleton.ClusterSingletonMessage"
+}, {
+  "name" : "akka.cluster.pubsub.DistributedPubSubMediator$Internal$SendToOneSubscriber"
+}, {
+  "name" : "akka.cluster.pubsub.DistributedPubSubMessage"
 } ]

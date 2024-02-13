@@ -96,4 +96,12 @@
     "name" : "<init>",
     "parameterTypes" : [ "akka.actor.ExtendedActorSystem" ]
   } ]
+}, {
+  "name" : "akka.persistence.serialization.Message"
+}, {
+  "name" : "akka.persistence.SerializedEvent"
+}, {
+  "name" : "akka.persistence.serialization.Snapshot"
+}, {
+  "name" : "akka.persistence.FilteredPayload$"
 } ]

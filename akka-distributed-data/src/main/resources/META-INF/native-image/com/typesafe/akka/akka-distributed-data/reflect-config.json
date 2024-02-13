@@ -21,4 +21,8 @@
     "name" : "<init>",
     "parameterTypes" : [ "akka.actor.ExtendedActorSystem" ]
   } ]
+}, {
+  "name" : "akka.cluster.ddata.ReplicatedDataSerialization"
+}, {
+  "name" : "akka.cluster.ddata.Replicator$ReplicatorMessage"
 } ]

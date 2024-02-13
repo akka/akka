@@ -108,5 +108,109 @@
     "parameterTypes" : [ "akka.actor.ExtendedActorSystem" ]
   } ]
 }, {
+  "name" : "akka.actor.ActorRef"
+}, {
+  "name" : "akka.dispatch.sysmsg.SystemMessage"
+}, {
+  "name" : "akka.actor.Identify"
+}, {
+  "name" : "akka.remote.RemoteWatcher$Heartbeat$"
+}, {
+  "name" : "com.google.protobuf.GeneratedMessageV3"
+}, {
+  "name" : "akka.routing.BroadcastGroup"
+}, {
+  "name" : "akka.actor.ActorSelectionMessage"
+}, {
+  "name" : "akka.actor.Kill$"
+}, {
+  "name" : "akka.actor.PoisonPill$"
+}, {
+  "name" : "akka.protobufv3.internal.GeneratedMessageV3"
+}, {
+  "name" : "java.lang.Throwable"
+}, {
+  "name" : "akka.actor.ActorKilledException"
+}, {
+  "name" : "akka.routing.RandomPool"
+}, {
+  "name" : "akka.actor.InvalidMessageException"
+}, {
+  "name" : "java.util.concurrent.TimeoutException"
+}, {
+  "name" : "akka.routing.ScatterGatherFirstCompletedPool"
+}, {
+  "name" : "akka.routing.ScatterGatherFirstCompletedGroup"
+}, {
+  "name" : "akka.routing.RandomGroup"
+}, {
+  "name" : "akka.actor.Address"
+}, {
+  "name" : "akka.routing.DefaultResizer"
+}, {
+  "name" : "akka.remote.RemoteScope"
+}, {
+  "name" : "akka.actor.ActorIdentity"
+}, {
+  "name" : "akka.actor.Status$Success"
+}, {
+  "name" : "akka.actor.IllegalActorStateException"
+}, {
+  "name" : "akka.remote.DaemonMsgCreate"
+}, {
+  "name" : "akka.routing.FromConfig"
+}, {
+  "name" : "akka.routing.SmallestMailboxPool"
+}, {
+  "name" : "akka.remote.RemoteWatcher$HeartbeatRsp"
+}, {
+  "name" : "akka.actor.ActorInitializationException"
+}, {
+  "name" : "akka.remote.artery.ArteryMessage"
+}, {
+  "name" : "akka.routing.BroadcastPool"
+}, {
+  "name" : "scala.Some"
+}, {
+  "name" : "java.util.Optional"
+}, {
+  "name" : "akka.Done"
+}, {
+  "name" : "akka.NotUsed"
+}, {
+  "name" : "com.typesafe.config.impl.SimpleConfig"
+}, {
+  "name" : "akka.actor.Status$Failure"
+}, {
+  "name" : "akka.remote.UniqueAddress"
+}, {
+  "name" : "akka.routing.TailChoppingGroup"
+}, {
+  "name" : "akka.pattern.StatusReply"
+}, {
+  "name" : "akka.routing.TailChoppingPool"
+}, {
+  "name" : "akka.remote.routing.RemoteRouterConfig"
+}, {
+  "name" : "com.google.protobuf.GeneratedMessage"
+}, {
+  "name" : "akka.routing.RoundRobinGroup"
+}, {
+  "name" : "scalapb.GeneratedMessage"
+}, {
+  "name" : "akka.routing.BalancingPool"
+}, {
+  "name" : "akka.routing.RoundRobinPool"
+}, {
+  "name" : "com.typesafe.config.Config"
+}, {
+  "name" : "akka.remote.serialization.ThrowableNotSerializableException"
+}, {
+  "name" : "akka.actor.LocalScope$"
+}, {
+  "name" : "scala.None$"
+}, {
+  "name" : "akka.actor.InvalidActorNameException"
+}, {
   "name" : "akka.remote.routing.RemoteRouterConfig"
 } ]

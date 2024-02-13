@@ -14,4 +14,8 @@
     "name" : "<init>",
     "parameterTypes" : [ "akka.actor.ExtendedActorSystem" ]
   } ]
+}, {
+  "name" : "akka.persistence.query.typed.EventEnvelope"
+}, {
+  "name" : "akka.persistence.query.Offset"
 } ]

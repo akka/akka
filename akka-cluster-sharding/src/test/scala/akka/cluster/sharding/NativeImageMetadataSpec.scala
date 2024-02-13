@@ -5,16 +5,14 @@
 package akka.cluster.sharding
 
 import akka.actor.ActorSystem
-import akka.testkit.NativeImageUtils
-import akka.testkit.NativeImageUtils.Constructor
-import akka.testkit.NativeImageUtils.ReflectConfigEntry
-import akka.testkit.NativeImageUtils.ReflectMethod
+import akka.testkit.internal.NativeImageUtils.Constructor
+import akka.testkit.internal.NativeImageUtils.ReflectConfigEntry
+import akka.testkit.internal.NativeImageUtils.ReflectMethod
+import akka.testkit.internal.NativeImageUtils
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
 object NativeImageMetadataSpec {
-
-  val metadataDir = NativeImageUtils.metadataDirFor("akka-cluster-sharding")
 
   val additionalEntries = Seq(
     // akka.management.health-checks.readiness-checks.sharding
@@ -22,11 +20,11 @@ object NativeImageMetadataSpec {
       "akka.cluster.sharding.ClusterShardingHealthCheck",
       methods = Seq(ReflectMethod(Constructor, parameterTypes = Seq(classOf[ActorSystem].getName)))))
 
-  val modulePackages = Seq("akka.cluster.sharding")
+  val nativeImageUtils = new NativeImageUtils("akka-cluster-sharding", additionalEntries, Seq("akka.cluster.sharding"))
 
   // run this to regenerate metadata 'akka-cluster-sharding/Test/runMain akka.cluster.sharding.NativeImageMetadataSpec'
   def main(args: Array[String]): Unit = {
-    NativeImageUtils.writeMetadata(metadataDir, additionalEntries, modulePackages)
+    nativeImageUtils.writeMetadata()
   }
 }
 
@@ -36,7 +34,7 @@ class NativeImageMetadataSpec extends AnyWordSpec with Matchers {
   "Native-image metadata for akka-cluster-sharding" should {
 
     "be up to date" in {
-      val (existing, current) = NativeImageUtils.verifyMetadata(metadataDir, additionalEntries, modulePackages)
+      val (existing, current) = nativeImageUtils.verifyMetadata()
       existing should ===(current)
     }
   }

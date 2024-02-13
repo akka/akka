@@ -50,4 +50,8 @@
     "name" : "<init>",
     "parameterTypes" : [ "akka.actor.ExtendedActorSystem", "java.lang.String" ]
   } ]
+}, {
+  "name" : "akka.serialization.jackson.CborSerializable"
+}, {
+  "name" : "akka.serialization.jackson.JsonSerializable"
 } ]

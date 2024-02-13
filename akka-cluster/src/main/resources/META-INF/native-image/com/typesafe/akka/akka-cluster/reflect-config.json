@@ -28,6 +28,10 @@
     "parameterTypes" : [ "akka.actor.ExtendedActorSystem" ]
   } ]
 }, {
+  "name" : "akka.cluster.routing.ClusterRouterPool"
+}, {
+  "name" : "akka.cluster.ClusterMessage"
+}, {
   "name" : "akka.cluster.Cluster$$anon$1",
   "methods" : [ {
     "name" : "<init>",

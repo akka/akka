@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2023 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.testkit
+package akka.testkit.internal
 
 import akka.actor.DynamicAccess
 import akka.actor.ExtendedActorSystem
@@ -18,6 +18,7 @@ import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.databind.json.JsonMapper
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
 import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
 import io.github.classgraph.ClassGraph
 import io.github.classgraph.ClassInfo
 import io.github.classgraph.ClassInfoList
@@ -35,7 +36,6 @@ import java.util.stream.Collectors
  */
 @InternalApi
 object NativeImageUtils {
-
   // https://www.graalvm.org/latest/reference-manual/native-image/dynamic-features/Reflection/#manual-configuration
   val Constructor = "<init>"
   val ModuleField = ReflectField("MODULE$")
@@ -70,8 +70,19 @@ object NativeImageUtils {
   final case class ReflectMethod(name: String, parameterTypes: Seq[String] = Seq.empty)
   final case class ReflectField(name: String)
   final case class Condition(typeReachable: String)
+}
 
-  def metadataDirFor(akkaModule: String): Path = {
+/**
+ * INTERNAL API
+ */
+@InternalApi
+class NativeImageUtils(
+    akkaModule: String,
+    additionalEntries: Seq[NativeImageUtils.ReflectConfigEntry],
+    packageNames: Seq[String]) {
+  import NativeImageUtils._
+
+  val metadataDir: Path = {
     val repoRoot: Path = {
       if (Files.exists(Paths.get("akka-actor"))) Paths.get("")
       else if (Files.exists(Paths.get("../akka-actor"))) Paths.get("../")
@@ -87,8 +98,8 @@ object NativeImageUtils {
    * @param additionalEntries Additional, up front known entries for the current module, to add
    * @param packageNames The packages to scan
    */
-  def writeMetadata(metadataDir: Path, additionalEntries: Seq[ReflectConfigEntry], packageNames: Seq[String]): Unit = {
-    val metadataJson = generateMetadata(packageNames, additionalEntries)
+  def writeMetadata(): Unit = {
+    val metadataJson = generateMetadata()
     if (!Files.exists(metadataDir)) Files.createDirectories(metadataDir)
     Files.writeString(
       reflectConfigFile(metadataDir),
@@ -103,20 +114,17 @@ object NativeImageUtils {
    * For use in tests, throws if existing metadata in given dir does exist, else returns the pre-existing metadata and the
    * metadata scanned from current classpath for comparing with test library comparison utils.
    */
-  def verifyMetadata(
-      metadataDir: Path,
-      additionalEntries: Seq[ReflectConfigEntry],
-      packageNames: Seq[String]): (String, String) = {
+  def verifyMetadata(): (String, String) = {
     val configFile = reflectConfigFile(metadataDir)
     if (!Files.exists(configFile))
       throw new IllegalArgumentException(
         s"No previous metadata file [$configFile] exists, generate one using 'writeMetadata' first")
-    val currentMetadata = generateMetadata(packageNames, additionalEntries)
+    val currentMetadata = generateMetadata()
     val existingMetadata = Files.readString(configFile, StandardCharsets.UTF_8)
     (existingMetadata, currentMetadata)
   }
 
-  def generateMetadata(packageNames: Seq[String], additionalEntries: Seq[ReflectConfigEntry]): String = {
+  def generateMetadata(): String = {
     val scanResult = new ClassGraph()
     // .verbose() // Log to stderr
       .enableAllInfo() // Scan classes, methods, fields, annotations
@@ -166,6 +174,7 @@ object NativeImageUtils {
             serializerClass.getName,
             methods = Seq(ReflectMethod(Constructor, parameterTypes = paramListAkkaWillUse))))
     }
+    val serializationBindings = serializationBindingsInModule(akkaModule)
 
     val schedulers = concreteClassesToJsonAdt(scanResult.getClassesImplementing(classOf[Scheduler])) { scheduler =>
       // not verifying, expecting that the right constructor will be there
@@ -241,12 +250,26 @@ object NativeImageUtils {
         }
     }
 
-    val allConfig = additionalEntries ++ mailBoxTypes ++ extensions ++ serializers ++ schedulers ++
-      classicRouterConfigs ++ loggingFilters ++ configCheckers ++ typedExtensions
+    val allConfig = additionalEntries ++ mailBoxTypes ++ extensions ++ serializers ++ serializationBindings ++
+      schedulers ++ classicRouterConfigs ++ loggingFilters ++ configCheckers ++ typedExtensions
 
     val mapper =
       JsonMapper.builder().addModule(DefaultScalaModule).configure(SerializationFeature.INDENT_OUTPUT, true).build()
     mapper.writeValueAsString(allConfig)
+  }
+
+  private def serializationBindingsInModule(akkaModule: String): Seq[ReflectConfigEntry] = {
+    ConfigFactory
+      .load()
+      .getConfig("akka.actor.serialization-bindings")
+      .entrySet()
+      .asScala
+      .collect {
+        case entry if entry.getValue.origin().url().toString.contains(akkaModule) =>
+          // key is quoted here for some reason
+          ReflectConfigEntry(entry.getKey.substring(1, entry.getKey.length - 1))
+      }
+      .toVector
   }
 
   private def concreteClassesToJsonAdt(classInfoList: ClassInfoList)(
