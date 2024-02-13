@@ -18,7 +18,7 @@ nativeImageOptions := Seq(
   "--no-fallback",
   "--verbose",
   // FIXME I can't seem to get this to work, need it to verify no errors were logged in CI
-  "--initialize-at-build-time=ch.qos.logback",
+  "--initialize-at-build-time=ch.qos.logback,org.slf4j.LoggerFactory,org.slf4j.MDC",
   "-Dlogback.configurationFile=logback-native-image.xml" // configured at build time
 )
 

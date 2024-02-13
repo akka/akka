@@ -49,4 +49,6 @@ jobs:
         run: |-
           cd native-image-tests/local-scala
           sbt nativeImage -Dakka.version=`cat ~/.version`
-          # FIXME we need something more, actually running it as well to detect errors
+          # run the binary
+          target/native-image/local-scala
+          # FIXME we need something more, parse logs to detect logged errors

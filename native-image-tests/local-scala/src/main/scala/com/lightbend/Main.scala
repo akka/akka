@@ -193,7 +193,7 @@ object RootBehavior {
     }
 }
 
-object AkkaQuickstart extends App {
+object Main extends App {
 
   val greeterMain: ActorSystem[AnyRef] = ActorSystem(RootBehavior(), "AkkaNativeLocalTest")
 
