@@ -23,6 +23,30 @@ addCommandAlias("applyCodeStyle", "headerCreateAll; scalafmtAll; scalafmtSbt")
 
 addCommandAlias(name = "fixall", value = ";scalafmtAll; test:compile; multi-jvm:compile; reload")
 
+addCommandAlias(
+  "regenerateAllNativeImageMetadata",
+  Seq(
+    "akka-actor-tests/Test/runMain akka.NativeImageMetadataSpec",
+    "akka-actor-typed-tests/Test/runMain akka.actor.typed.NativeImageMetadataSpec",
+    "akka-cluster/Test/runMain akka.cluster.NativeImageMetadataSpec",
+    "akka-cluster-metrics/Test/runMain akka.cluster.metrics.NativeImageMetadataSpec",
+    "akka-cluster-sharding/Test/runMain akka.cluster.sharding.NativeImageMetadataSpec",
+    "akka-cluster-sharding-typed/Test/runMain akka.cluster.sharding.typed.NativeImageMetadataSpec",
+    "akka-cluster-tools/Test/runMain akka.cluster.tools.NativeImageMetadataSpec",
+    "akka-cluster-typed/Test/runMain akka.cluster.typed.NativeImageMetadataSpec",
+    "akka-coordination/Test/runMain akka.coordination.NativeImageMetadataSpec",
+    "akka-discovery/Test/runMain akka.discovery.NativeImageMetadataSpec",
+    "akka-distributed-data/Test/runMain akka.cluster.ddata.NativeImageMetadataSpec",
+    "akka-persistence/Test/runMain akka.persistence.NativeImageMetadataSpec",
+    "akka-persistence-query/Test/runMain akka.persistence.query.NativeImageMetadataSpec",
+    "akka-persistence-typed/Test/runMain akka.persistence.typed.NativeImageMetadataSpec",
+    "akka-pki/Test/runMain akka.pki.NativeImageMetadataSpec",
+    "akka-remote/Test/runMain akka.remote.NativeImageMetadataSpec",
+    "akka-serialization-jackson/Test/runMain akka.serialization.jackson.NativeImageMetadataSpec",
+    "akka-slf4j/Test/runMain akka.event.slf4j.NativeImageMetadataSpec",
+    "akka-stream-tests/Test/runMain akka.stream.NativeImageMetadataSpec",
+    "akka-stream-typed/Test/runMain akka.stream.typed.NativeImageMetadataSpec").mkString("; "))
+
 import akka.AkkaBuild._
 import akka.{ AkkaBuild, Dependencies, Protobuf, SigarLoader, VersionGenerator }
 import com.typesafe.sbt.MultiJvmPlugin.MultiJvmKeys.MultiJvm

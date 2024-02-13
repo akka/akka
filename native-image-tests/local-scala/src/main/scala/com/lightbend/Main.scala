@@ -195,6 +195,6 @@ object RootBehavior {
 
 object Main extends App {
 
-  val greeterMain: ActorSystem[AnyRef] = ActorSystem(RootBehavior(), "AkkaNativeLocalTest")
+  ActorSystem(RootBehavior(), "AkkaNativeLocalTest")
 
 }

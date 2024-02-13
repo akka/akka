@@ -45,10 +45,21 @@ jobs:
         run: |-
           sbt "publishLocal; publishM2"
 
-      - name: Local drone control sample Scala native image build
+      - name: Local Scala Akka App native image build
         run: |-
           cd native-image-tests/local-scala
           sbt nativeImage -Dakka.version=`cat ~/.version`
           # run the binary
           target/native-image/local-scala
+          # FIXME we need something more, parse logs to detect logged errors
+
+      - name: Clustered Scala Akka App native image build
+        run: |-
+          cd native-image-tests/cluster-scala
+          sbt nativeImage -Dakka.version=`cat ~/.version`
+          # run the binary
+          # FIXME run two nodes somehow
+          # target/native-image/cluster-scala & 
+          # export AKKA_CLUSTER_PORT=2552
+          # target/native-image/cluster-scala
           # FIXME we need something more, parse logs to detect logged errors
