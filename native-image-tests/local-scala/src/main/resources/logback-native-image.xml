@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<configuration>
+    <appender name="STDOUT" target="System.out" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>[%date{ISO8601}] [%level] [%logger] [%X{akkaAddress}] [%marker] [%thread] - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Used for detecting errors in CI -->
+    <appender name="FILE" class="ch.qos.logback.core.FileAppender">
+        <file>${user.dir}/target/run.log</file>
+        <append>true</append>
+        <encoder>
+            <pattern>[%date{ISO8601}] [%level] [%logger] [%X{akkaAddress}] [%marker] [%thread] - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="ASYNC" class="local.logback.NativeImageAsyncAppender">
+        <queueSize>8192</queueSize>
+        <neverBlock>true</neverBlock>
+        <appender-ref ref="STDOUT" />
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="ASYNC"/>
+        <appender-ref ref="FILE" />
+    </root>
+
+</configuration>

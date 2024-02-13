@@ -16,15 +16,25 @@ object NativeImageMetadataSpec {
   val metadataDir = NativeImageUtils.metadataDirFor("akka-actor-typed")
 
   val additionalEntries = Seq(
-    ReflectConfigEntry(
-      "akka.actor.typed.internal.adapter.ActorSystemAdapter$LoadTypedExtensions$",
-      fields = Seq(ReflectField("MODULE$"))),
-    // trixery around auto-selecting local or cluster receptionist impl
-    ReflectConfigEntry(
-      classOf[akka.actor.typed.internal.receptionist.LocalReceptionist.type].getName,
-      fields = Seq(ModuleField)))
+      ReflectConfigEntry(
+        "akka.actor.typed.internal.adapter.ActorSystemAdapter$LoadTypedExtensions$",
+        fields = Seq(ReflectField("MODULE$"))),
+      // trixery around auto-selecting local or cluster receptionist impl
+      ReflectConfigEntry(
+        classOf[akka.actor.typed.internal.receptionist.LocalReceptionist.type].getName,
+        fields = Seq(ModuleField))) ++ serializationBindingTypeEntries
 
   val modulePackages = Seq("akka.actor.typed")
+
+  def serializationBindingTypeEntries = {
+    // Note: can't load from config because we'd get entries from all the other modules on classpath
+    Set(
+      "akka.actor.typed.ActorRef",
+      "akka.actor.typed.internal.adapter.ActorRefAdapter",
+      "akka.actor.typed.internal.receptionist.DefaultServiceKey").map { typeName =>
+      ReflectConfigEntry(typeName)
+    }
+  }
 
   // run this to regenerate metadata 'akka-actor-typed-tests/Test/runMain akka.actor.typed.NativeImageMetadataSpec'
   def main(args: Array[String]): Unit = {

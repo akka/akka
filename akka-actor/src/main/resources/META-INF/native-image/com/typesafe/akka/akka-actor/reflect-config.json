@@ -226,6 +226,32 @@
     "parameterTypes" : [ "akka.routing.RouterConfig" ]
   } ]
 }, {
+  "name" : "scala.Int"
+}, {
+  "name" : "java.io.Serializable"
+}, {
+  "name" : "akka.util.ByteString$ByteString1C"
+}, {
+  "name" : "scala.Long"
+}, {
+  "name" : "java.lang.String"
+}, {
+  "name" : "scala.Boolean"
+}, {
+  "name" : "java.lang.Boolean"
+}, {
+  "name" : "akka.util.ByteString$ByteString1"
+}, {
+  "name" : "akka.testkit.JavaSerializable"
+}, {
+  "name" : "java.lang.Long"
+}, {
+  "name" : "[B"
+}, {
+  "name" : "java.lang.Integer"
+}, {
+  "name" : "akka.util.ByteString$ByteStrings"
+}, {
   "name" : "akka.dispatch.BoundedControlAwareMailbox",
   "methods" : [ {
     "name" : "<init>",
