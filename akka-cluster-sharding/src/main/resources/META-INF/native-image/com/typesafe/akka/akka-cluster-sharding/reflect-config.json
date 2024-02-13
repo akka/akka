@@ -1,0 +1,33 @@
+[ {
+  "name" : "akka.cluster.sharding.ClusterShardingHealthCheck",
+  "methods" : [ {
+    "name" : "<init>",
+    "parameterTypes" : [ "akka.actor.ActorSystem" ]
+  } ]
+}, {
+  "name" : "akka.cluster.sharding.ClusterSharding$",
+  "fields" : [ {
+    "name" : "MODULE$"
+  } ]
+}, {
+  "name" : "akka.cluster.sharding.ShardingFlightRecorder$",
+  "fields" : [ {
+    "name" : "MODULE$"
+  } ]
+}, {
+  "name" : "akka.cluster.sharding.external.ExternalShardAllocation$",
+  "fields" : [ {
+    "name" : "MODULE$"
+  } ]
+}, {
+  "name" : "akka.cluster.sharding.protobuf.ClusterShardingMessageSerializer",
+  "methods" : [ {
+    "name" : "<init>",
+    "parameterTypes" : [ "akka.actor.ExtendedActorSystem" ]
+  } ]
+}, {
+  "name" : "akka.cluster.sharding.JoinConfigCompatCheckSharding",
+  "methods" : [ {
+    "name" : "<init>"
+  } ]
+} ]

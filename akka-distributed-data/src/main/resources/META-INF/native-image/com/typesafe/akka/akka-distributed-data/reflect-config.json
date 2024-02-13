@@ -1,0 +1,24 @@
+[ {
+  "name" : "akka.cluster.ddata.LmdbDurableStore",
+  "methods" : [ {
+    "name" : "<init>",
+    "parameterTypes" : [ "com.typesafe.config.Config" ]
+  } ]
+}, {
+  "name" : "akka.cluster.ddata.DistributedData$",
+  "fields" : [ {
+    "name" : "MODULE$"
+  } ]
+}, {
+  "name" : "akka.cluster.ddata.protobuf.ReplicatedDataSerializer",
+  "methods" : [ {
+    "name" : "<init>",
+    "parameterTypes" : [ "akka.actor.ExtendedActorSystem" ]
+  } ]
+}, {
+  "name" : "akka.cluster.ddata.protobuf.ReplicatorMessageSerializer",
+  "methods" : [ {
+    "name" : "<init>",
+    "parameterTypes" : [ "akka.actor.ExtendedActorSystem" ]
+  } ]
+} ]

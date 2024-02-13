@@ -162,6 +162,11 @@ object Dependencies {
 
       val protobufRuntime = "com.google.protobuf" % "protobuf-java" % protobufJavaVersion % "optional;provided"
 
+      // used for classpath scanning in testkit/tests for native-image metadata
+      val classgraph = "io.github.classgraph" % "classgraph" % "4.8.165" % "optional;provided;test" // MIT
+      val jacksonCore = Compile.jacksonCore % "optional;provided;test"
+      val jacksonScala = Compile.jacksonScala % "optional;provided;test"
+      val optionalForNativeImageMetadata = Seq(classgraph, jacksonCore, jacksonScala)
     }
 
   }
@@ -178,7 +183,7 @@ object Dependencies {
 
   val coordination = l ++= Seq(TestDependencies.junit, TestDependencies.scalatest)
 
-  val testkit = l ++= Seq(TestDependencies.junit, TestDependencies.scalatest) ++ TestDependencies.metricsAll
+  val testkit = l ++= Seq(TestDependencies.junit, TestDependencies.scalatest) ++ TestDependencies.metricsAll ++ Provided.optionalForNativeImageMetadata
 
   val actorTests = l ++= Seq(
         TestDependencies.junit,
@@ -190,7 +195,7 @@ object Dependencies {
         TestDependencies.jimfs,
         TestDependencies.dockerClient,
         Provided.activation // dockerClient needs javax.activation.DataSource in JDK 11+
-      )
+      ) ++ Provided.optionalForNativeImageMetadata
 
   val actorTestkitTyped = l ++= Seq(
         Provided.logback,

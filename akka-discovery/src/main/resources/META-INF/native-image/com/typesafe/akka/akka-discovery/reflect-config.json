@@ -1,0 +1,24 @@
+[ {
+  "name" : "akka.discovery.config.ConfigServiceDiscovery",
+  "methods" : [ {
+    "name" : "<init>",
+    "parameterTypes" : [ "akka.actor.ExtendedActorSystem" ]
+  } ]
+}, {
+  "name" : "akka.discovery.aggregate.AggregateServiceDiscovery",
+  "methods" : [ {
+    "name" : "<init>",
+    "parameterTypes" : [ "akka.actor.ExtendedActorSystem" ]
+  } ]
+}, {
+  "name" : "akka.discovery.dns.DnsServiceDiscovery",
+  "methods" : [ {
+    "name" : "<init>",
+    "parameterTypes" : [ "akka.actor.ExtendedActorSystem" ]
+  } ]
+}, {
+  "name" : "akka.discovery.Discovery$",
+  "fields" : [ {
+    "name" : "MODULE$"
+  } ]
+} ]

@@ -1,0 +1,22 @@
+[ {
+  "name" : "akka.persistence.typed.serialization.ReplicatedEventSourcingSerializer",
+  "methods" : [ {
+    "name" : "<init>",
+    "parameterTypes" : [ "akka.actor.ExtendedActorSystem" ]
+  } ]
+}, {
+  "name" : "akka.persistence.typed.internal.EventWriterExtension$",
+  "fields" : [ {
+    "name" : "MODULE$"
+  } ]
+}, {
+  "name" : "akka.persistence.typed.telemetry.DurableStateBehaviorInstrumentationProvider$",
+  "fields" : [ {
+    "name" : "MODULE$"
+  } ]
+}, {
+  "name" : "akka.persistence.typed.telemetry.EventSourcedBehaviorInstrumentationProvider$",
+  "fields" : [ {
+    "name" : "MODULE$"
+  } ]
+} ]
