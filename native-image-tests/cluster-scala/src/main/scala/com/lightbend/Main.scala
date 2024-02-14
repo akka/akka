@@ -11,6 +11,8 @@ import akka.actor.typed.scaladsl.Routers
 import akka.cluster.sharding.typed.scaladsl.ClusterSharding
 import akka.cluster.sharding.typed.scaladsl.Entity
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
+import akka.cluster.typed.ClusterSingleton
+import akka.cluster.typed.SingletonActor
 import akka.serialization.jackson.CborSerializable
 import akka.serialization.jackson.JsonSerializable
 import akka.util.Timeout
@@ -122,6 +124,39 @@ object ShardingCheck {
   }
 }
 
+object SingletonCheck {
+  def apply(whenDone: ActorRef[String]): Behavior[AnyRef] = Behaviors.setup { context =>
+    implicit val timeout: Timeout = 3.seconds
+    val proxy = ClusterSingleton(context.system).init(SingletonActor(PingPong(), "PingPongSingleton"))
+
+    Behaviors.withTimers { timers =>
+      timers.startTimerWithFixedDelay("Tick", 50.millis)
+      context.self ! "Tick"
+
+      Behaviors.receiveMessage {
+        case "Tick" =>
+          context.ask(proxy, PingPong.Ping(_, context.system.address)) {
+            case Success(value)     => value
+            case Failure(exception) => exception.getMessage
+          }
+          Behaviors.same
+
+        case Response(message, address) =>
+          context.log.debug("Got singleton response {} from address {}, shutting down", message, address)
+          whenDone ! "Pinged singleton and saw response"
+          Behaviors.stopped
+
+        case error: String =>
+          // probably a timeout
+          context.log.debug("Saw error {}", error)
+          Behaviors.same
+
+      }
+
+    }
+  }
+}
+
 object RootBehavior {
   def apply(): Behavior[AnyRef] = Behaviors.setup { context =>
     Behaviors.withTimers { timers =>
@@ -136,8 +171,14 @@ object RootBehavior {
       // sharding
       context.spawn(ShardingCheck(context.self, expectedNodes), "ShardingPingPong")
 
+      // singleton
+      context.spawn(SingletonCheck(context.self), "SingletonPingPong")
+
       var expectedResponses =
-        Set("Pinged all nodes and saw responses", "Pinged all nodes over sharding and saw responses")
+        Set(
+          "Pinged all nodes and saw responses",
+          "Pinged all nodes over sharding and saw responses",
+          "Pinged singleton and saw response")
 
       Behaviors.receiveMessage {
         case "Timeout" =>
