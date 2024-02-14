@@ -57,9 +57,9 @@ jobs:
         run: |-
           cd native-image-tests/cluster-scala
           sbt nativeImage -Dakka.version=`cat ~/.version`
-          # run the binary
-          # FIXME run two nodes somehow
-          # target/native-image/cluster-scala & 
-          # export AKKA_CLUSTER_PORT=2552
-          # target/native-image/cluster-scala
+          # run the binary in run two nodes
+          target/native-image/cluster-scala & 
+          export AKKA_CLUSTER_PORT=2552
+          target/native-image/cluster-scala
+          # both will complete or error out
           # FIXME we need something more, parse logs to detect logged errors

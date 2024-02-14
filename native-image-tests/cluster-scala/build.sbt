@@ -17,6 +17,7 @@ nativeImageVersion := "21.0.2"
 nativeImageOptions := Seq(
   "--no-fallback",
   "--verbose",
+  "-Dakka.native-image.debug=true",
   // FIXME I can't seem to get this to work, need it to verify no errors were logged in CI
   "--initialize-at-build-time=ch.qos.logback,org.slf4j.LoggerFactory,org.slf4j.MDC",
   "-Dlogback.configurationFile=logback-native-image.xml" // configured at build time

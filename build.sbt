@@ -333,12 +333,12 @@ lazy val protobufV3 = akkaModule("akka-protobuf-v3")
   .enablePlugins(ScaladocNoVerificationOfDiagrams)
   .disablePlugins(MimaPlugin)
   .settings(
-    libraryDependencies += Dependencies.Compile.Provided.protobufRuntime,
+    libraryDependencies += Dependencies.Provided.protobufRuntime,
     assembly / assemblyShadeRules := Seq(
         ShadeRule
           .rename("com.google.protobuf.**" -> "akka.protobufv3.internal.@1")
           // https://github.com/sbt/sbt-assembly/issues/400
-          .inLibrary(Dependencies.Compile.Provided.protobufRuntime)
+          .inLibrary(Dependencies.Provided.protobufRuntime)
           .inProject),
     assembly / assemblyOption := (assembly / assemblyOption).value.withIncludeScala(false).withIncludeBin(false),
     autoScalaLibrary := false, // do not include scala dependency in pom
@@ -350,7 +350,7 @@ lazy val protobufV3 = akkaModule("akka-protobuf-v3")
     // Prevent cyclic task dependencies, see https://github.com/sbt/sbt-assembly/issues/365
     assembly / fullClasspath := (Runtime / managedClasspath).value, // otherwise, there's a cyclic dependency between packageBin and assembly
     assembly / test := {}, // assembly runs tests for unknown reason which introduces another cyclic dependency to packageBin via exportedJars
-    description := s"Akka Protobuf V3 is a shaded version of ${Dependencies.Compile.Provided.protobufRuntime.name} ${Dependencies.Compile.Provided.protobufRuntime.revision}.")
+    description := s"Akka Protobuf V3 is a shaded version of ${Dependencies.Provided.protobufRuntime.name} ${Dependencies.Provided.protobufRuntime.revision}.")
 
 lazy val pki =
   akkaModule("akka-pki")
