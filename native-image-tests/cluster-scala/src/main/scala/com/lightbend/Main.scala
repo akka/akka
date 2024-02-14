@@ -8,10 +8,12 @@ import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.receptionist.ServiceKey
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.Routers
+import akka.cluster.sharding.typed.scaladsl.ClusterSharding
+import akka.cluster.sharding.typed.scaladsl.Entity
+import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
 import akka.serialization.jackson.CborSerializable
 import akka.serialization.jackson.JsonSerializable
 import akka.util.Timeout
-import com.fasterxml.jackson.annotation.JsonCreator
 
 import scala.concurrent.duration.DurationInt
 import scala.util.Failure
@@ -72,16 +74,70 @@ object PingEmAll {
   }
 }
 
+object ShardingCheck {
+  val entityType = EntityTypeKey[PingPong.Ping]("PingAndAPong")
+  val entity = Entity(entityType)(_ => PingPong())
+
+  def apply(whenDone: ActorRef[String], expectedNodeCount: Int): Behavior[AnyRef] = Behaviors.setup { context =>
+    val sharding = ClusterSharding(context.system)
+
+    sharding.init(entity)
+
+    var seenAddresses = Set[Address]()
+
+    Behaviors.withTimers { timers =>
+      timers.startTimerWithFixedDelay("Tick", 50.millis)
+      context.self ! "Tick"
+
+      // roll over different ids to eventually reach all nodes
+      var counter = 0
+
+      Behaviors.receiveMessage {
+        case "Tick" =>
+          implicit val timeout: Timeout = 3.seconds
+          counter += 1
+          val entityRef = sharding.entityRefFor(entityType, counter.toString)
+          context.pipeToSelf(entityRef.ask(PingPong.Ping(_, context.system.address))) {
+            case Success(value)     => value
+            case Failure(exception) => exception.getMessage
+          }
+          Behaviors.same
+        case Response(message, address) =>
+          context.log.debug("Got response {} from address {}", message, address)
+          seenAddresses += address
+          if (seenAddresses.size == expectedNodeCount) {
+            context.log.debug("Saw responses from all nodes, shutting down")
+            whenDone ! "Pinged all nodes over sharding and saw responses"
+            Behaviors.stopped
+          } else {
+            Behaviors.same
+          }
+
+        case error: String =>
+          // probably a timeout
+          context.log.debug("Saw error {}", error)
+          Behaviors.same
+      }
+    }
+  }
+}
+
 object RootBehavior {
   def apply(): Behavior[AnyRef] = Behaviors.setup { context =>
     Behaviors.withTimers { timers =>
       timers.startSingleTimer("Timeout", 30.seconds)
+      val expectedNodes = 2
 
+      // Note that this check uses the Receptionist, so covers that and Ddata as it is the underlying mechanism
       val localPingPong = context.spawn(PingPong(), "PingPong")
       context.system.receptionist ! Receptionist.Register(PingPong.serviceKey, localPingPong)
-      context.spawn(PingEmAll(context.self, 2), "PingEmAll")
+      context.spawn(PingEmAll(context.self, expectedNodes), "PingEmAll")
 
-      var expectedResponses = Set("Pinged all nodes and saw responses")
+      // sharding
+      context.spawn(ShardingCheck(context.self, expectedNodes), "ShardingPingPong")
+
+      var expectedResponses =
+        Set("Pinged all nodes and saw responses", "Pinged all nodes over sharding and saw responses")
 
       Behaviors.receiveMessage {
         case "Timeout" =>
