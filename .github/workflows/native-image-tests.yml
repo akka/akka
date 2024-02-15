@@ -62,7 +62,12 @@ jobs:
           export AKKA_CLUSTER_PORT=2552
           target/native-image/cluster-scala
           # both will complete or error out
-          # FIXME we need something more, parse logs to detect logged errors
+          # TLS remoting check
+          export AKKA_CLUSTER_PORT=2551
+          target/native-image/cluster-scala -Dconfig.resource=cluster-with-tls.conf & 
+          export AKKA_CLUSTER_PORT=2552
+          target/native-image/cluster-scala -Dconfig.resource=cluster-with-tls.conf
+          # both will complete or error out
 
       - name: Email on failure
         if: ${{ failure() }}
