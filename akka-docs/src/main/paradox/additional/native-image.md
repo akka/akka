@@ -15,6 +15,7 @@ The following features cannot be used in native image apps:
 * Lightbend Telemetry
 * Aeron UDP remoting
 * Testkits
+* LevelDB and InMem Akka Persistence plugins
 
 ## Features requiring additional metadata
 

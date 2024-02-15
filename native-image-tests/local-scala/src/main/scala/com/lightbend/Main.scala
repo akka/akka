@@ -167,7 +167,7 @@ object RootBehavior {
         context.system.scheduler.scheduleOnce(10.millis, () => context.self ! "Scheduler works")(
           context.executionContext)
 
-        // Akka io
+        // Akka io/stream TCP, UDP and TLS over TCP
         waitingForAcks += 1
         context.spawn(AkkaIOBehavior(context.self), "AkkaIO")
 

@@ -1,0 +1,7 @@
+{
+  "resources":{
+  "includes":[{
+    "pattern":"\\Qtcp-tls-keystore.p12\\E"
+  }]},
+  "bundles":[]
+}
