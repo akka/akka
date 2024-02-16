@@ -51,7 +51,7 @@ jobs:
           sbt nativeImage -Dakka.version=`cat ~/.version`
           # run the binary
           target/native-image/local-scala
-          # FIXME we need something more, parse logs to detect logged errors
+          # will return nonzero if failed
 
       - name: Clustered Scala Akka App native image build
         run: |-
