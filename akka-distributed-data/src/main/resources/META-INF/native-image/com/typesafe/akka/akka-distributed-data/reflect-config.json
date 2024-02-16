@@ -1,10 +1,4 @@
 [ {
-  "name" : "akka.cluster.ddata.LmdbDurableStore",
-  "methods" : [ {
-    "name" : "<init>",
-    "parameterTypes" : [ "com.typesafe.config.Config" ]
-  } ]
-}, {
   "name" : "akka.cluster.ddata.DistributedData$",
   "fields" : [ {
     "name" : "MODULE$"

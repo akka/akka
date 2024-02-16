@@ -4,23 +4,13 @@
 
 package akka.cluster.ddata
 
-import akka.testkit.internal.NativeImageUtils.Constructor
-import akka.testkit.internal.NativeImageUtils.ReflectConfigEntry
-import akka.testkit.internal.NativeImageUtils.ReflectMethod
 import akka.testkit.internal.NativeImageUtils
-import com.typesafe.config.Config
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
 object NativeImageMetadataSpec {
 
-  val additionalEntries = Seq(
-    // akka.cluster.distributed-data.durable.store-actor-class
-    ReflectConfigEntry(
-      classOf[LmdbDurableStore].getName,
-      methods = Seq(ReflectMethod(Constructor, parameterTypes = Seq(classOf[Config].getName)))))
-
-  val nativeImageUtils = new NativeImageUtils("akka-distributed-data", additionalEntries, Seq("akka.cluster.ddata"))
+  val nativeImageUtils = new NativeImageUtils("akka-distributed-data", Seq.empty, Seq("akka.cluster.ddata"))
 
   // run this to regenerate metadata 'akka-distributed-data/Test/runMain akka.cluster.ddata.NativeImageMetadataSpec'
   def main(args: Array[String]): Unit = {

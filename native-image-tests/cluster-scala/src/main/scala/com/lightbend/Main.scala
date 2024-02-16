@@ -35,7 +35,7 @@ object PingPong {
   final case class Ping(replyTo: ActorRef[Response], from: Address) extends JsonSerializable
 
   def apply(): Behavior[Ping] = Behaviors.receive { (context, message) =>
-    context.log.debug("Saw ping from {}", message.from)
+    context.log.trace("Saw ping from {}", message.from)
     message.replyTo ! Response("Typed actor reply", context.system.address)
     Behaviors.same
   }
@@ -174,6 +174,7 @@ object DdataCheck {
       // Subscribe to changes of the given `key`.
       replicatorAdapter.subscribe(key, identity)
 
+      // write local and let it eventually replicate
       replicatorAdapter.askUpdate(
         replyTo =>
           Replicator.Update(key, GSet.empty[String], Replicator.WriteLocal, replyTo)(set =>
@@ -181,17 +182,17 @@ object DdataCheck {
         identity)
 
       Behaviors.receiveMessage[AnyRef] {
-        case _: Replicator.SubscribeResponse[GSet[_]] =>
-          Behaviors.same
         case changed @ Replicator.Changed(`key`) =>
-          if (changed.get(key).elements.size == expectedNodeCount) {
+          val elements = changed.get(key).elements
+          context.log.debug("Seen ddata entries: {}", elements)
+          if (elements.size == expectedNodeCount) {
             whenDone ! "DData saw entries from all nodes"
             Behaviors.stopped
           } else {
             Behaviors.same
           }
-        case _ =>
-          Behaviors.unhandled
+        case d =>
+          Behaviors.same
 
       }
     }
