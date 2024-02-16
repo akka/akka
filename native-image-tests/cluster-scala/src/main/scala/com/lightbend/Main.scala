@@ -8,6 +8,12 @@ import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.receptionist.ServiceKey
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.Routers
+import akka.cluster.ddata.GSet
+import akka.cluster.ddata.GCounterKey
+import akka.cluster.ddata.GSetKey
+import akka.cluster.ddata.SelfUniqueAddress
+import akka.cluster.ddata.typed.scaladsl.DistributedData
+import akka.cluster.ddata.typed.scaladsl.Replicator
 import akka.cluster.sharding.typed.scaladsl.ClusterSharding
 import akka.cluster.sharding.typed.scaladsl.Entity
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
@@ -130,7 +136,7 @@ object SingletonCheck {
     val proxy = ClusterSingleton(context.system).init(SingletonActor(PingPong(), "PingPongSingleton"))
 
     Behaviors.withTimers { timers =>
-      timers.startTimerWithFixedDelay("Tick", 50.millis)
+      timers.startTimerWithFixedDelay("Tick", 200.millis)
       context.self ! "Tick"
 
       Behaviors.receiveMessage {
@@ -157,6 +163,42 @@ object SingletonCheck {
   }
 }
 
+object DdataCheck {
+
+  val key = GSetKey[String]("nodes")
+
+  def apply(whenDone: ActorRef[String], expectedNodeCount: Int): Behavior[AnyRef] = Behaviors.setup { context =>
+    implicit val node: SelfUniqueAddress = DistributedData(context.system).selfUniqueAddress
+
+    DistributedData.withReplicatorMessageAdapter[AnyRef, GSet[String]] { replicatorAdapter =>
+      // Subscribe to changes of the given `key`.
+      replicatorAdapter.subscribe(key, identity)
+
+      replicatorAdapter.askUpdate(
+        replyTo =>
+          Replicator.Update(key, GSet.empty[String], Replicator.WriteLocal, replyTo)(set =>
+            set.add(context.system.address.toString)),
+        identity)
+
+      Behaviors.receiveMessage[AnyRef] {
+        case _: Replicator.SubscribeResponse[GSet[_]] =>
+          Behaviors.same
+        case changed @ Replicator.Changed(`key`) =>
+          if (changed.get(key).elements.size == expectedNodeCount) {
+            whenDone ! "DData saw entries from all nodes"
+            Behaviors.stopped
+          } else {
+            Behaviors.same
+          }
+        case _ =>
+          Behaviors.unhandled
+
+      }
+    }
+
+  }
+}
+
 object RootBehavior {
   def apply(): Behavior[AnyRef] = Behaviors.setup { context =>
     Behaviors.withTimers { timers =>
@@ -174,11 +216,15 @@ object RootBehavior {
       // singleton
       context.spawn(SingletonCheck(context.self), "SingletonPingPong")
 
+      // ddata
+      context.spawn(DdataCheck(context.self, expectedNodes), "DData")
+
       var expectedResponses =
         Set(
           "Pinged all nodes and saw responses",
           "Pinged all nodes over sharding and saw responses",
-          "Pinged singleton and saw response")
+          "Pinged singleton and saw response",
+          "DData saw entries from all nodes")
 
       Behaviors.receiveMessage {
         case "Timeout" =>
