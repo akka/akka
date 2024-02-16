@@ -63,9 +63,9 @@ jobs:
           target/native-image/cluster-scala
           # both will complete or error out
           # TLS remoting check
-          export AKKA_CLUSTER_PORT=2551
+          export AKKA_CLUSTER_PORT=2443
           target/native-image/cluster-scala -Dconfig.resource=cluster-with-tls.conf & 
-          export AKKA_CLUSTER_PORT=2552
+          export AKKA_CLUSTER_PORT=2444
           target/native-image/cluster-scala -Dconfig.resource=cluster-with-tls.conf
           # both will complete or error out
 
