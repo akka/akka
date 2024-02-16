@@ -16,6 +16,7 @@ The following features cannot be used in native image apps:
 * Aeron UDP remoting
 * Testkits
 * LevelDB and InMem Akka Persistence plugins
+* @ref[Durable storage](../typed/distributed-data.md#durable-storage) for Akka Distributed Data
 
 ## Features requiring additional metadata
 

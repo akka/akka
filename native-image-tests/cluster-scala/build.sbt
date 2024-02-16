@@ -12,10 +12,6 @@ fork := true
 
 // useful for investigations, needs to be run on graalvm JDK
 // javaOptions += "-agentlib:native-image-agent=config-output-dir=target/generated-native-image-metadata"
-javaOptions ++= Seq(
-  // LMDB / ddata durable store
-  "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED",
-  "--add-opens=java.base/java.nio=ALL-UNNAMED")
 
 // GraalVM native image build
 enablePlugins(NativeImagePlugin)
