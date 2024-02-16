@@ -226,6 +226,11 @@
     "parameterTypes" : [ "akka.routing.RouterConfig" ]
   } ]
 }, {
+  "name" : "jdk.jfr.Recording",
+  "methods" : [ {
+    "name" : "<init>"
+  } ]
+}, {
   "name" : "akka.dispatch.BoundedControlAwareMailbox",
   "methods" : [ {
     "name" : "<init>",

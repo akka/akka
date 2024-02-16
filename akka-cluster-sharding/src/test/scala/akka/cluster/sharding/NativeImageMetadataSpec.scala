@@ -18,7 +18,11 @@ object NativeImageMetadataSpec {
     // akka.management.health-checks.readiness-checks.sharding
     ReflectConfigEntry(
       "akka.cluster.sharding.ClusterShardingHealthCheck",
-      methods = Seq(ReflectMethod(Constructor, parameterTypes = Seq(classOf[ActorSystem].getName)))))
+      methods = Seq(ReflectMethod(Constructor, parameterTypes = Seq(classOf[ActorSystem].getName)))),
+    // Flight recording (JFR additionally enabled in akka-actor native-image.properties)
+    ReflectConfigEntry(
+      classOf[akka.cluster.sharding.internal.jfr.JFRShardingFlightRecorder].getName,
+      methods = Seq(ReflectMethod(Constructor))))
 
   val nativeImageUtils = new NativeImageUtils("akka-cluster-sharding", additionalEntries, Seq("akka.cluster.sharding"))
 

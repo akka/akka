@@ -159,7 +159,9 @@ object NativeImageMetadataSpec {
     // Internal Routing infra
     ReflectConfigEntry(
       classOf[akka.routing.RoutedActorCell.RouterActorCreator].getName,
-      methods = Seq(ReflectMethod(NativeImageUtils.Constructor, parameterTypes = Seq(classOf[RouterConfig].getName)))))
+      methods = Seq(ReflectMethod(NativeImageUtils.Constructor, parameterTypes = Seq(classOf[RouterConfig].getName)))),
+    // we use reflective access to this to trigger our own JFR reporting
+    ReflectConfigEntry("jdk.jfr.Recording", methods = Seq(ReflectMethod(NativeImageUtils.Constructor))))
 
   val modulePackages = Seq(
     "akka.actor",

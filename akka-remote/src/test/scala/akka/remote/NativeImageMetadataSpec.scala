@@ -40,7 +40,11 @@ object NativeImageMetadataSpec {
             classOf[java.lang.String].getName,
             classOf[ActorSystem.Settings].getName,
             classOf[EventStream].getName,
-            classOf[DynamicAccess].getName)))))
+            classOf[DynamicAccess].getName)))),
+    // Flight recording (JFR additionally enabled in akka-actor native-image.properties)
+    ReflectConfigEntry(
+      classOf[akka.remote.artery.jfr.JFRRemotingFlightRecorder].getName,
+      methods = Seq(ReflectMethod(Constructor))))
 
   val nativeImageUtils = new NativeImageUtils("akka-remote", additionalEntries, Seq("akka.remote"))
 

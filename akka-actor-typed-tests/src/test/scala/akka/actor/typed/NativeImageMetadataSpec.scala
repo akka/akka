@@ -8,6 +8,8 @@ import akka.testkit.internal.NativeImageUtils.ModuleField
 import akka.testkit.internal.NativeImageUtils.ReflectConfigEntry
 import akka.testkit.internal.NativeImageUtils.ReflectField
 import akka.testkit.internal.NativeImageUtils
+import akka.testkit.internal.NativeImageUtils.Constructor
+import akka.testkit.internal.NativeImageUtils.ReflectMethod
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -20,7 +22,11 @@ object NativeImageMetadataSpec {
     // trixery around auto-selecting local or cluster receptionist impl
     ReflectConfigEntry(
       classOf[akka.actor.typed.internal.receptionist.LocalReceptionist.type].getName,
-      fields = Seq(ModuleField)))
+      fields = Seq(ModuleField)),
+    // Flight recording (JFR additionally enabled in akka-actor native-image.properties)
+    ReflectConfigEntry(
+      classOf[akka.actor.typed.internal.jfr.JFRActorFlightRecorder].getName,
+      methods = Seq(ReflectMethod(Constructor))))
 
   val nativeImageUtils = new NativeImageUtils("akka-actor-typed", additionalEntries, Seq("akka.actor.typed"))
 

@@ -23,6 +23,11 @@
     "parameterTypes" : [ "java.lang.String", "akka.actor.ActorSystem$Settings", "akka.event.EventStream", "akka.actor.DynamicAccess" ]
   } ]
 }, {
+  "name" : "akka.remote.artery.jfr.JFRRemotingFlightRecorder",
+  "methods" : [ {
+    "name" : "<init>"
+  } ]
+}, {
   "name" : "akka.remote.AddressUidExtension$",
   "fields" : [ {
     "name" : "MODULE$"
