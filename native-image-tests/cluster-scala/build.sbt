@@ -10,21 +10,13 @@ lazy val akkaVersion = sys.props.getOrElse("akka.version", "2.9.1")
 
 fork := true
 
-// useful for investigations, needs to be run on graalvm JDK
-// javaOptions += "-agentlib:native-image-agent=config-output-dir=target/generated-native-image-metadata"
+// useful for investigations: sbt nativeImageRunAgent
 
 // GraalVM native image build
 enablePlugins(NativeImagePlugin)
 nativeImageJvm := "graalvm-community"
 nativeImageVersion := "21.0.2"
-nativeImageOptions := Seq(
-  "--no-fallback",
-  "--verbose",
-  "-Dakka.native-image.debug=true",
-  // FIXME I can't seem to get this to work, need it to verify no errors were logged in CI
-  "--initialize-at-build-time=ch.qos.logback,org.slf4j.LoggerFactory,org.slf4j.MDC",
-  "-Dlogback.configurationFile=logback-native-image.xml" // configured at build time
-)
+nativeImageOptions := Seq("--no-fallback", "--verbose", "-Dakka.native-image.debug=true")
 
 libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-actor-typed" % akkaVersion,

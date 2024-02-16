@@ -72,3 +72,15 @@ Classic actors that has a @apidoc[akka.actor.Props$] defined using the @scala[ty
 An easier path is to instead use lambda factories @scala[type `Props(new T)`]
 @java[class `Props.create(T.getClass, () -> new T())`] to define props. The only reason to use the reflection based approach
 is the classic remote deploy feature.
+
+### Logging
+
+When using `akka-slf4j` for logging, automatically used for `akka-actor-typed`, it is very likely that the concrete logger
+chosen needs extra configuration.
+
+While Akka does not mandate a logger implementation, `logback-classic` is used in many Akka samples throughout the Akka projects. 
+To make logback requires additional entries reflect entries, configuring static initalization of logback and either avoid using 
+`ch.qos.logback.classic.AsyncAppender` or declare your own lazy version of (not starting any threads at compile time).
+
+FIXME should we add link to working sample/config for logback?
+FIXME should we provide a lazy async logger appender or show it here?

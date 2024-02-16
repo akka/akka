@@ -65,7 +65,6 @@ object AkkaIOBehavior {
         .onComplete {
           case Success(allTheBytes) => context.self ! allTheBytes.utf8String
           case Failure(error) =>
-            println("TCP client failed")
             error.printStackTrace()
             System.exit(1)
         }
@@ -82,7 +81,6 @@ object AkkaIOBehavior {
       .run()
 
     tlsServerBound.map { _ =>
-      println("Starting TLS client")
       Source
         .single(ByteString.fromString("TLS works\n"))
         .concat(Source.maybe) // do not complete it from our side
