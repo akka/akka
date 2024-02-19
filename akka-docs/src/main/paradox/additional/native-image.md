@@ -24,7 +24,7 @@ In general, any feature that allows a custom implementation provided by a third 
 then plugged into Akka through an entry in the application config file needs to have reflection metadata explicitly added
 as described in the [GraalVM docs here](https://www.graalvm.org/latest/reference-manual/native-image/metadata/).
 
-A few examples such classes are:
+Examples of such classes are:
 
  * Custom Serializers
  * Custom Akka Extensions
@@ -34,20 +34,20 @@ A few examples such classes are:
  * Akka Lease implementations
 
 For plugins provided in libraries, metadata is preferably provided with the library so that end user applications
-does not need to provide metadata for them.
+do not need to provide metadata for them.
 
 ### Serialization with Jackson
 
 When using the built-in @apidoc[JsonSerializable] and @apidoc[CborSerializable] marker traits, message types are automatically added
 for reflective access by Akka. 
 
-If instead using marker self-defined traits, the marker trait defined in `serialization-bindings` as well as each 
-concrete message types (lookup and constructor) needs to be added to the reflection metadata.
+If marker self-defined traits are being used instead, then the marker trait defined in `serialization-bindings`, as well as each 
+concrete message type (lookup and constructor), need to be added to the reflection metadata.
 
-Applications that define and configure @apidoc[JacksonMigration] to evolve data formats needs to list each concrete
+Applications that define and configure @apidoc[JacksonMigration] to evolve data formats need to list each concrete
 migration implementation (lookup and constructor) in reflection metadata.
 
-Additional object mappers added through config `akka.serialization.jackson.jackson-modules` needs entries in the reflective 
+Additional object mappers added through config `akka.serialization.jackson.jackson-modules` need entries in the reflective 
 metadata (lookup and constructor).
 
 ### Third party serializers
@@ -58,16 +58,16 @@ and possibly further per-message metadata depending on the specific serializer l
 ### Extensions
 
 Classic and typed `Extension`s loaded via configuration (`akka.extensions`, `akka.actor.typed.extensions`, `akka.actor.library-extensions` or `akka.actor.typed.library-extensions`)
-needs an entry in the reflection metadata (lookup and constructor).
+need an entry in the reflection metadata (lookup and constructor).
 
 ### Akka Persistence Event Adapters
 
-Event adapters defined in an application needs to be listed in reflection metadata (lookup and constructor).
+Event adapters defined in an application need to be listed in reflection metadata (lookup and constructor).
 
 ### Reflective classic actor construction
 
-Classic actors that has a @apidoc[akka.actor.Props$] defined using the @scala[type `Props[T]()` or class `Props(classOf[T], ...)`] 
-@java[class `Props.create(T.getClass, ...)`] needs reflection entries for lookup and the constructor matching the set of passed parameters. 
+Classic actors that have a @apidoc[akka.actor.Props$] defined using the @scala[type `Props[T]()` or class `Props(classOf[T], ...)`] 
+@java[class `Props.create(T.getClass, ...)`] need reflection entries for lookup and the constructor matching the set of passed parameters. 
 
 An easier path is to instead use lambda factories @scala[type `Props(new T)`]
 @java[class `Props.create(T.getClass, () -> new T())`] to define props. The only reason to use the reflection based approach
@@ -79,8 +79,8 @@ When using `akka-slf4j` for logging, automatically used for `akka-actor-typed`, 
 chosen needs extra configuration.
 
 While Akka does not mandate a logger implementation, `logback-classic` is used in many Akka samples throughout the Akka projects. 
-To make logback requires additional entries reflect entries, configuring static initalization of logback and either avoid using 
-`ch.qos.logback.classic.AsyncAppender` or declare your own lazy version of (not starting any threads at compile time).
+Building native images with logback requires additional reflect entries, configuring static initialization of logback and either avoiding using 
+`ch.qos.logback.classic.AsyncAppender` or declaring your own lazy version of the appender (not starting any threads at native image build time).
 
 FIXME should we add link to working sample/config for logback?
 FIXME should we provide a lazy async logger appender or show it here?
