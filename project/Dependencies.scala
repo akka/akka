@@ -23,7 +23,7 @@ object Dependencies {
   // needs to be inline with the aeron version, check
   // https://github.com/real-logic/aeron/blob/1.x.y/build.gradle
   val agronaVersion = "1.19.2"
-  val nettyVersion = "4.1.104.Final"
+  val nettyVersion = "4.1.107.Final"
   val protobufJavaVersion = "3.24.0" // also sync with protocVersion in Protobuf.scala
   val logbackVersion = "1.2.13"
   val scalaFortifyVersion = "1.0.22"
@@ -101,7 +101,7 @@ object Dependencies {
     val commonsMath = "org.apache.commons" % "commons-math" % "2.2" % Test // ApacheV2
 
     val commonsIo = "commons-io" % "commons-io" % "2.15.1" % Test // ApacheV2
-    val commonsCodec = "commons-codec" % "commons-codec" % "1.16.0" % Test // ApacheV2
+    val commonsCodec = "commons-codec" % "commons-codec" % "1.16.1" % Test // ApacheV2
     val junit = "junit" % "junit" % junitVersion % "test" // Common Public License 1.0
     val logback = Compile.logback % Test // EPL 1.0
 
