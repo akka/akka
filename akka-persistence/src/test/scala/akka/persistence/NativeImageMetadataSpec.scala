@@ -10,17 +10,15 @@ import akka.persistence.journal.leveldb.LeveldbStore
 import akka.persistence.journal.leveldb.SharedLeveldbJournal
 import akka.persistence.snapshot.NoSnapshotStore
 import akka.persistence.snapshot.local.LocalSnapshotStore
-import akka.testkit.NativeImageUtils
-import akka.testkit.NativeImageUtils.Constructor
-import akka.testkit.NativeImageUtils.ReflectConfigEntry
-import akka.testkit.NativeImageUtils.ReflectMethod
+import akka.testkit.internal.NativeImageUtils
+import akka.testkit.internal.NativeImageUtils.Constructor
+import akka.testkit.internal.NativeImageUtils.ReflectConfigEntry
+import akka.testkit.internal.NativeImageUtils.ReflectMethod
 import com.typesafe.config.Config
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
 object NativeImageMetadataSpec {
-
-  val metadataDir = NativeImageUtils.metadataDirFor("akka-persistence")
 
   val additionalEntries = Seq(
     // akka.persistence.internal-stash-overflow-strategy possible "configurators"
@@ -49,11 +47,11 @@ object NativeImageMetadataSpec {
       classOf[PersistencePluginProxy].getName,
       methods = Seq(ReflectMethod(Constructor, parameterTypes = Seq(classOf[Config].getName)))))
 
-  val modulePackages = Seq("akka.persistence")
+  val nativeImageUtils = new NativeImageUtils("akka-persistence", additionalEntries, Seq("akka.persistence"))
 
   // run this to regenerate metadata 'akka-persistence/Test/runMain akka.persistence.NativeImageMetadataSpec'
   def main(args: Array[String]): Unit = {
-    NativeImageUtils.writeMetadata(metadataDir, additionalEntries, modulePackages)
+    nativeImageUtils.writeMetadata()
   }
 }
 
@@ -63,7 +61,7 @@ class NativeImageMetadataSpec extends AnyWordSpec with Matchers {
   "Native-image metadata for akka-persistence" should {
 
     "be up to date" in {
-      val (existing, current) = NativeImageUtils.verifyMetadata(metadataDir, additionalEntries, modulePackages)
+      val (existing, current) = nativeImageUtils.verifyMetadata()
       existing should ===(current)
     }
   }

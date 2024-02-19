@@ -115,14 +115,15 @@ object RootBehavior {
 
         timers.startSingleTimer("Timeout", 30.seconds)
 
-        // FIXME cover akka-persistence and akka-persistence-query with one of the out-of-the-box journals
-
         implicit val timeout: Timeout = 3.seconds
 
         def forwardSuccessOrFail[T]: PartialFunction[Try[T], AnyRef] = {
           case Success(value: T) => value.asInstanceOf[AnyRef]
           case Failure(error)    => throw error
         }
+
+        // read application.conf without extra metadata config
+        context.system.settings.config.getString("local-scala.some-setting")
 
         var waitingForAcks = 0
 
@@ -167,7 +168,7 @@ object RootBehavior {
         context.system.scheduler.scheduleOnce(10.millis, () => context.self ! "Scheduler works")(
           context.executionContext)
 
-        // Akka io
+        // Akka io/stream TCP, UDP and TLS over TCP
         waitingForAcks += 1
         context.spawn(AkkaIOBehavior(context.self), "AkkaIO")
 
@@ -193,8 +194,8 @@ object RootBehavior {
     }
 }
 
-object AkkaQuickstart extends App {
+object Main extends App {
 
-  val greeterMain: ActorSystem[AnyRef] = ActorSystem(RootBehavior(), "AkkaNativeLocalTest")
+  ActorSystem(RootBehavior(), "AkkaNativeLocalTest")
 
 }

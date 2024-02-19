@@ -4,29 +4,17 @@
 
 package akka.cluster.ddata
 
-import akka.testkit.NativeImageUtils
-import akka.testkit.NativeImageUtils.Constructor
-import akka.testkit.NativeImageUtils.ReflectConfigEntry
-import akka.testkit.NativeImageUtils.ReflectMethod
-import com.typesafe.config.Config
+import akka.testkit.internal.NativeImageUtils
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
 object NativeImageMetadataSpec {
 
-  val metadataDir = NativeImageUtils.metadataDirFor("akka-distributed-data")
-
-  val additionalEntries = Seq(
-    // akka.cluster.distributed-data.durable.store-actor-class
-    ReflectConfigEntry(
-      classOf[LmdbDurableStore].getName,
-      methods = Seq(ReflectMethod(Constructor, parameterTypes = Seq(classOf[Config].getName)))))
-
-  val modulePackages = Seq("akka.cluster.ddata")
+  val nativeImageUtils = new NativeImageUtils("akka-distributed-data", Seq.empty, Seq("akka.cluster.ddata"))
 
   // run this to regenerate metadata 'akka-distributed-data/Test/runMain akka.cluster.ddata.NativeImageMetadataSpec'
   def main(args: Array[String]): Unit = {
-    NativeImageUtils.writeMetadata(metadataDir, additionalEntries, modulePackages)
+    nativeImageUtils.writeMetadata()
   }
 }
 
@@ -36,7 +24,7 @@ class NativeImageMetadataSpec extends AnyWordSpec with Matchers {
   "Native-image metadata for akka-distributed-data" should {
 
     "be up to date" in {
-      val (existing, current) = NativeImageUtils.verifyMetadata(metadataDir, additionalEntries, modulePackages)
+      val (existing, current) = nativeImageUtils.verifyMetadata()
       existing should ===(current)
     }
   }

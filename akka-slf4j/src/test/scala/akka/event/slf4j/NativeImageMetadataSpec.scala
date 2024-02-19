@@ -4,26 +4,24 @@
 
 package akka.event.slf4j
 
-import akka.testkit.NativeImageUtils
-import akka.testkit.NativeImageUtils.ReflectConfigEntry
-import akka.testkit.NativeImageUtils.ReflectMethod
+import akka.testkit.internal.NativeImageUtils.ReflectConfigEntry
+import akka.testkit.internal.NativeImageUtils.ReflectMethod
+import akka.testkit.internal.NativeImageUtils
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
 object NativeImageMetadataSpec {
-
-  val metadataDir = NativeImageUtils.metadataDirFor("akka-slf4j")
 
   val additionalEntries = Seq(
     ReflectConfigEntry(
       classOf[akka.event.slf4j.Slf4jLogger].getName,
       methods = Seq(ReflectMethod(NativeImageUtils.Constructor))))
 
-  val modulePackages = Seq("akka.event.slf4j")
+  val nativeImageUtils = new NativeImageUtils("akka-slf4j", additionalEntries, Seq("akka.event.slf4j"))
 
   // run this to regenerate metadata 'akka-slf4j/Test/runMain akka.event.slf4j.NativeImageMetadataSpec'
   def main(args: Array[String]): Unit = {
-    NativeImageUtils.writeMetadata(metadataDir, additionalEntries, modulePackages)
+    nativeImageUtils.writeMetadata()
   }
 }
 
@@ -33,7 +31,7 @@ class NativeImageMetadataSpec extends AnyWordSpec with Matchers {
   "Native-image metadata for akka-slf4j" should {
 
     "be up to date" in {
-      val (existing, current) = NativeImageUtils.verifyMetadata(metadataDir, additionalEntries, modulePackages)
+      val (existing, current) = nativeImageUtils.verifyMetadata()
       existing should ===(current)
     }
   }

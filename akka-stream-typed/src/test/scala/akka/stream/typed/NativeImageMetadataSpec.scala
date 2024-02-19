@@ -4,21 +4,17 @@
 
 package akka.stream.typed
 
-import akka.testkit.NativeImageUtils
+import akka.testkit.internal.NativeImageUtils
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
 object NativeImageMetadataSpec {
 
-  val metadataDir = NativeImageUtils.metadataDirFor("akka-stream-typed")
-
-  val additionalEntries = Seq()
-
-  val modulePackages = Seq("akka.stream.typed")
+  val nativeImageUtils = new NativeImageUtils("akka-stream-typed", Seq(), Seq("akka.stream.typed"))
 
   // run this to regenerate metadata 'akka-stream-typed/Test/runMain akka.stream.typed.NativeImageMetadataSpec'
   def main(args: Array[String]): Unit = {
-    NativeImageUtils.writeMetadata(metadataDir, additionalEntries, modulePackages)
+    nativeImageUtils.writeMetadata()
   }
 }
 
@@ -28,7 +24,7 @@ class NativeImageMetadataSpec extends AnyWordSpec with Matchers {
   "Native-image metadata for akka-stream-typed" should {
 
     "be up to date" in {
-      val (existing, current) = NativeImageUtils.verifyMetadata(metadataDir, additionalEntries, modulePackages)
+      val (existing, current) = nativeImageUtils.verifyMetadata()
       existing should ===(current)
     }
   }

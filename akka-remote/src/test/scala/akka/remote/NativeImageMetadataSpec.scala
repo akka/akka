@@ -7,17 +7,15 @@ package akka.remote
 import akka.actor.ActorSystem
 import akka.actor.DynamicAccess
 import akka.event.EventStream
-import akka.testkit.NativeImageUtils
-import akka.testkit.NativeImageUtils.Constructor
-import akka.testkit.NativeImageUtils.ReflectConfigEntry
-import akka.testkit.NativeImageUtils.ReflectMethod
+import akka.testkit.internal.NativeImageUtils.Constructor
+import akka.testkit.internal.NativeImageUtils.ReflectConfigEntry
+import akka.testkit.internal.NativeImageUtils.ReflectMethod
+import akka.testkit.internal.NativeImageUtils
 import com.typesafe.config.Config
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
 object NativeImageMetadataSpec {
-
-  val metadataDir = NativeImageUtils.metadataDirFor("akka-remote")
 
   val additionalEntries = Seq(
     // akka.remote.watch-failure-detector.implementation-class (and then also in akka-cluster)
@@ -42,13 +40,17 @@ object NativeImageMetadataSpec {
             classOf[java.lang.String].getName,
             classOf[ActorSystem.Settings].getName,
             classOf[EventStream].getName,
-            classOf[DynamicAccess].getName)))))
+            classOf[DynamicAccess].getName)))),
+    // Flight recording (JFR additionally enabled in akka-actor native-image.properties)
+    ReflectConfigEntry(
+      classOf[akka.remote.artery.jfr.JFRRemotingFlightRecorder].getName,
+      methods = Seq(ReflectMethod(Constructor))))
 
-  val modulePackages = Seq("akka.remote")
+  val nativeImageUtils = new NativeImageUtils("akka-remote", additionalEntries, Seq("akka.remote"))
 
   // run this to regenerate metadata 'akka-remote/Test/runMain akka.remote.NativeImageMetadataSpec'
   def main(args: Array[String]): Unit = {
-    NativeImageUtils.writeMetadata(metadataDir, additionalEntries, modulePackages)
+    nativeImageUtils.writeMetadata()
   }
 }
 
@@ -58,7 +60,7 @@ class NativeImageMetadataSpec extends AnyWordSpec with Matchers {
   "Native-image metadata for akka-remote" should {
 
     "be up to date" in {
-      val (existing, current) = NativeImageUtils.verifyMetadata(metadataDir, additionalEntries, modulePackages)
+      val (existing, current) = nativeImageUtils.verifyMetadata()
       existing should ===(current)
     }
   }

@@ -4,17 +4,15 @@
 
 package akka.cluster.metrics
 
-import akka.testkit.NativeImageUtils
-import akka.testkit.NativeImageUtils.Constructor
-import akka.testkit.NativeImageUtils.ReflectConfigEntry
-import akka.testkit.NativeImageUtils.ReflectMethod
+import akka.testkit.internal.NativeImageUtils.Constructor
+import akka.testkit.internal.NativeImageUtils.ReflectConfigEntry
+import akka.testkit.internal.NativeImageUtils.ReflectMethod
+import akka.testkit.internal.NativeImageUtils
 import com.typesafe.config.Config
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
 object NativeImageMetadataSpec {
-
-  val metadataDir = NativeImageUtils.metadataDirFor("akka-cluster-metrics")
 
   val additionalEntries = Seq(
     // akka.cluster.metrics.supervisor.strategy.provider
@@ -22,11 +20,11 @@ object NativeImageMetadataSpec {
       "akka.cluster.metrics.ClusterMetricsStrategy",
       methods = Seq(ReflectMethod(Constructor, parameterTypes = Seq(classOf[Config].getName)))))
 
-  val modulePackages = Seq("akka.cluster.metrics")
+  val nativeImageUtils = new NativeImageUtils("akka-cluster-metrics", additionalEntries, Seq("akka.cluster.metrics"))
 
   // run this to regenerate metadata 'akka-cluster-metrics/Test/runMain akka.cluster.metrics.NativeImageMetadataSpec'
   def main(args: Array[String]): Unit = {
-    NativeImageUtils.writeMetadata(metadataDir, additionalEntries, modulePackages)
+    nativeImageUtils.writeMetadata()
   }
 }
 
@@ -36,7 +34,7 @@ class NativeImageMetadataSpec extends AnyWordSpec with Matchers {
   "Native-image metadata for akka-cluster-metrics" should {
 
     "be up to date" in {
-      val (existing, current) = NativeImageUtils.verifyMetadata(metadataDir, additionalEntries, modulePackages)
+      val (existing, current) = nativeImageUtils.verifyMetadata()
       existing should ===(current)
     }
   }

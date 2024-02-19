@@ -37,6 +37,8 @@ object Dependencies {
 
   val reactiveStreamsVersion = "1.0.4"
 
+  val graalVmNativeImageVersion = "23.1.2"
+
   val scalaTestVersion = "3.2.17"
 
   val scalaTestScalaCheckVersion = "1-17"
@@ -89,86 +91,86 @@ object Dependencies {
     val lz4Java = "org.lz4" % "lz4-java" % "1.8.0" // ApacheV2
 
     val logback = "ch.qos.logback" % "logback-classic" % logbackVersion // EPL 1.0
+  }
+  object Docs {
+    val sprayJson = "io.spray" %% "spray-json" % "1.3.6" % Test
+    val gson = "com.google.code.gson" % "gson" % "2.10.1" % Test
+  }
 
-    object Docs {
-      val sprayJson = "io.spray" %% "spray-json" % "1.3.6" % Test
-      val gson = "com.google.code.gson" % "gson" % "2.10.1" % Test
-    }
+  object TestDependencies {
+    val commonsMath = "org.apache.commons" % "commons-math" % "2.2" % Test // ApacheV2
 
-    object TestDependencies {
-      val commonsMath = "org.apache.commons" % "commons-math" % "2.2" % Test // ApacheV2
+    val commonsIo = "commons-io" % "commons-io" % "2.15.1" % Test // ApacheV2
+    val commonsCodec = "commons-codec" % "commons-codec" % "1.16.1" % Test // ApacheV2
+    val junit = "junit" % "junit" % junitVersion % "test" // Common Public License 1.0
+    val logback = Compile.logback % Test // EPL 1.0
 
-      val commonsIo = "commons-io" % "commons-io" % "2.15.1" % Test // ApacheV2
-      val commonsCodec = "commons-codec" % "commons-codec" % "1.16.1" % Test // ApacheV2
-      val junit = "junit" % "junit" % junitVersion % "test" // Common Public License 1.0
-      val logback = Compile.logback % Test // EPL 1.0
+    val scalatest = "org.scalatest" %% "scalatest" % scalaTestVersion % Test // ApacheV2
 
-      val scalatest = "org.scalatest" %% "scalatest" % scalaTestVersion % Test // ApacheV2
+    // The 'scalaTestPlus' projects are independently versioned,
+    // but the version of each module starts with the scalatest
+    // version it was intended to work with
+    // Used for the Junit Suite - running Junit tests from scalatest
+    val scalatestJUnit = "org.scalatestplus" %% "junit-4-13" % (scalaTestVersion + ".0") % Test // ApacheV2
+    // Used for running the streams TCK which is testng based
+    val scalatestTestNG = "org.scalatestplus" %% "testng-7-5" % (scalaTestVersion + ".0") % Test // ApacheV2
+    val scalatestScalaCheck = "org.scalatestplus" %% s"scalacheck-$scalaTestScalaCheckVersion" % (scalaTestVersion + ".0") % Test // ApacheV2
+    // Used in one place in cluster metrics, but we can't get away without mockito because of a package private constructor
+    val scalatestMockito = "org.scalatestplus" %% "mockito-4-11" % (scalaTestVersion + ".0") % Test // ApacheV2
 
-      // The 'scalaTestPlus' projects are independently versioned,
-      // but the version of each module starts with the scalatest
-      // version it was intended to work with
-      // Used for the Junit Suite - running Junit tests from scalatest
-      val scalatestJUnit = "org.scalatestplus" %% "junit-4-13" % (scalaTestVersion + ".0") % Test // ApacheV2
-      // Used for running the streams TCK which is testng based
-      val scalatestTestNG = "org.scalatestplus" %% "testng-7-5" % (scalaTestVersion + ".0") % Test // ApacheV2
-      val scalatestScalaCheck = "org.scalatestplus" %% s"scalacheck-$scalaTestScalaCheckVersion" % (scalaTestVersion + ".0") % Test // ApacheV2
-      // Used in one place in cluster metrics, but we can't get away without mockito because of a package private constructor
-      val scalatestMockito = "org.scalatestplus" %% "mockito-4-11" % (scalaTestVersion + ".0") % Test // ApacheV2
+    val log4j = "log4j" % "log4j" % "1.2.17" % Test // ApacheV2
 
-      val log4j = "log4j" % "log4j" % "1.2.17" % Test // ApacheV2
+    // in-memory filesystem for file related tests
+    val jimfs = "com.google.jimfs" % "jimfs" % "1.3.0" % Test // ApacheV2
 
-      // in-memory filesystem for file related tests
-      val jimfs = "com.google.jimfs" % "jimfs" % "1.3.0" % Test // ApacheV2
+    // docker utils
+    val dockerClient = "com.spotify" % "docker-client" % "8.16.0" % Test // ApacheV2
 
-      // docker utils
-      val dockerClient = "com.spotify" % "docker-client" % "8.16.0" % Test // ApacheV2
+    // metrics, measurements, perf testing
+    val metrics = "io.dropwizard.metrics" % "metrics-core" % "4.2.23" % Test // ApacheV2
+    val metricsJvm = "io.dropwizard.metrics" % "metrics-jvm" % "4.2.23" % Test // ApacheV2
+    val latencyUtils = "org.latencyutils" % "LatencyUtils" % "2.0.3" % Test // Free BSD
+    val hdrHistogram = "org.hdrhistogram" % "HdrHistogram" % "2.1.12" % Test // CC0
+    val metricsAll = Seq(metrics, metricsJvm, latencyUtils, hdrHistogram)
 
-      // metrics, measurements, perf testing
-      val metrics = "io.dropwizard.metrics" % "metrics-core" % "4.2.23" % Test // ApacheV2
-      val metricsJvm = "io.dropwizard.metrics" % "metrics-jvm" % "4.2.23" % Test // ApacheV2
-      val latencyUtils = "org.latencyutils" % "LatencyUtils" % "2.0.3" % Test // Free BSD
-      val hdrHistogram = "org.hdrhistogram" % "HdrHistogram" % "2.1.12" % Test // CC0
-      val metricsAll = Seq(metrics, metricsJvm, latencyUtils, hdrHistogram)
+    // sigar logging
+    val slf4jJul = "org.slf4j" % "jul-to-slf4j" % slf4jVersion % Test // MIT
+    val slf4jLog4j = "org.slf4j" % "log4j-over-slf4j" % slf4jVersion % Test // MIT
 
-      // sigar logging
-      val slf4jJul = "org.slf4j" % "jul-to-slf4j" % slf4jVersion % Test // MIT
-      val slf4jLog4j = "org.slf4j" % "log4j-over-slf4j" % slf4jVersion % Test // MIT
+    // reactive streams tck
+    val reactiveStreamsTck = ("org.reactivestreams" % "reactive-streams-tck" % reactiveStreamsVersion % Test)
+      .exclude("org.testng", "testng") // MIT-0
 
-      // reactive streams tck
-      val reactiveStreamsTck = ("org.reactivestreams" % "reactive-streams-tck" % reactiveStreamsVersion % Test)
-        .exclude("org.testng", "testng") // MIT-0
+    val protobufRuntime = "com.google.protobuf" % "protobuf-java" % protobufJavaVersion % Test
 
-      val protobufRuntime = "com.google.protobuf" % "protobuf-java" % protobufJavaVersion % Test
+    // YCSB (Yahoo Cloud Serving Benchmark https://ycsb.site)
+    val ycsb = "site.ycsb" % "core" % "0.17.0" % Test // ApacheV2
+  }
 
-      // YCSB (Yahoo Cloud Serving Benchmark https://ycsb.site)
-      val ycsb = "site.ycsb" % "core" % "0.17.0" % Test // ApacheV2
-    }
+  object Provided {
+    val sigarLoader = "io.kamon" % "sigar-loader" % "1.6.6-rev002" % "optional;provided" // ApacheV2
 
-    object Provided {
-      val sigarLoader = "io.kamon" % "sigar-loader" % "1.6.6-rev002" % "optional;provided" // ApacheV2
+    val activation = "com.sun.activation" % "javax.activation" % "1.2.0" % "provided;test"
 
-      val activation = "com.sun.activation" % "javax.activation" % "1.2.0" % "provided;test"
+    val levelDB = "org.iq80.leveldb" % "leveldb" % "0.12" % "optional;provided" // ApacheV2
+    val levelDBmultiJVM = "org.iq80.leveldb" % "leveldb" % "0.12" % "optional;provided;multi-jvm;test" // ApacheV2
+    val levelDBNative = "org.fusesource.leveldbjni" % "leveldbjni-all" % "1.8" % "optional;provided" // New BSD
 
-      val levelDB = "org.iq80.leveldb" % "leveldb" % "0.12" % "optional;provided" // ApacheV2
-      val levelDBmultiJVM = "org.iq80.leveldb" % "leveldb" % "0.12" % "optional;provided;multi-jvm;test" // ApacheV2
-      val levelDBNative = "org.fusesource.leveldbjni" % "leveldbjni-all" % "1.8" % "optional;provided" // New BSD
+    val junit = Compile.junit % "optional;provided;test"
 
-      val junit = Compile.junit % "optional;provided;test"
+    val scalatest = "org.scalatest" %% "scalatest" % scalaTestVersion % "optional;provided;test" // ApacheV2
 
-      val scalatest = "org.scalatest" %% "scalatest" % scalaTestVersion % "optional;provided;test" // ApacheV2
+    val logback = Compile.logback % "optional;provided;test" // EPL 1.0
 
-      val logback = Compile.logback % "optional;provided;test" // EPL 1.0
+    val protobufRuntime = "com.google.protobuf" % "protobuf-java" % protobufJavaVersion % "optional;provided"
 
-      val protobufRuntime = "com.google.protobuf" % "protobuf-java" % protobufJavaVersion % "optional;provided"
+    // used for classpath scanning in testkit/tests for native-image metadata
+    val classgraph = "io.github.classgraph" % "classgraph" % "4.8.165" % "optional;provided;test" // MIT
+    val jacksonCore = Compile.jacksonCore % "optional;provided;test"
+    val jacksonScala = Compile.jacksonScala % "optional;provided;test"
+    val optionalForNativeImageMetadata = Seq(classgraph, jacksonCore, jacksonScala)
 
-      // used for classpath scanning in testkit/tests for native-image metadata
-      val classgraph = "io.github.classgraph" % "classgraph" % "4.8.165" % "optional;provided;test" // MIT
-      val jacksonCore = Compile.jacksonCore % "optional;provided;test"
-      val jacksonScala = Compile.jacksonScala % "optional;provided;test"
-      val optionalForNativeImageMetadata = Seq(classgraph, jacksonCore, jacksonScala)
-    }
-
+    val graalVmNativeImage = "org.graalvm.sdk" % "nativeimage" % graalVmNativeImageVersion % "optional;provided" // UPL-1.0 https://opensource.org/license/upl/
   }
 
   import Compile._
@@ -285,6 +287,7 @@ object Dependencies {
         jacksonCbor,
         jacksonScala,
         lz4Java,
+        Provided.graalVmNativeImage,
         TestDependencies.junit,
         TestDependencies.scalatest)
 
