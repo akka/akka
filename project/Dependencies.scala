@@ -37,7 +37,7 @@ object Dependencies {
 
   val reactiveStreamsVersion = "1.0.4"
 
-  val scalaTestVersion = "3.2.17"
+  val scalaTestVersion = "3.2.18"
 
   val scalaTestScalaCheckVersion = "1-17"
 
