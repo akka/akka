@@ -27,7 +27,6 @@ as described in the [GraalVM docs here](https://www.graalvm.org/latest/reference
 Examples of such classes are:
 
  * Custom Serializers
- * Custom Akka Extensions
  * Custom Mailbox Types
  * Akka Persistence plugins
  * Akka Discovery implementations
