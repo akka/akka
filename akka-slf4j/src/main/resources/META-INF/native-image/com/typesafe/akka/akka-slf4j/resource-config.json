@@ -1,0 +1,8 @@
+{
+  "resources":{
+    "includes":[{
+      "pattern":"\\Qlogback.xml\\E"
+    }]
+  },
+  "bundles":[]
+}
