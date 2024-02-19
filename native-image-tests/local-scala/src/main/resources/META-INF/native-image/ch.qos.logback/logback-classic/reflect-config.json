@@ -1,295 +1,65 @@
 [
   {
-    "condition": {
-      "typeReachable": "ch.qos.logback.classic.LoggerContext"
-    },
-    "name": "ch.qos.logback.classic.pattern.CallerDataConverter",
-    "allPublicConstructors": true
+    "name":"ch.qos.logback.classic.encoder.PatternLayoutEncoder",
+    "queryAllPublicMethods":true,
+    "methods":[{"name":"<init>","parameterTypes":[] }]
   },
   {
-    "condition": {
-      "typeReachable": "ch.qos.logback.classic.LoggerContext"
-    },
-    "name": "ch.qos.logback.classic.pattern.ClassOfCallerConverter",
-    "allPublicConstructors": true
+    "name":"ch.qos.logback.classic.pattern.DateConverter",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
   },
   {
-    "condition": {
-      "typeReachable": "ch.qos.logback.classic.LoggerContext"
-    },
-    "name": "ch.qos.logback.classic.pattern.ContextNameConverter",
-    "allPublicConstructors": true
+    "name":"ch.qos.logback.classic.pattern.LevelConverter",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
   },
   {
-    "condition": {
-      "typeReachable": "ch.qos.logback.classic.LoggerContext"
-    },
-    "name": "ch.qos.logback.classic.pattern.DateConverter",
-    "allPublicConstructors": true
+    "name":"ch.qos.logback.classic.pattern.LineSeparatorConverter",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
   },
   {
-    "condition": {
-      "typeReachable": "ch.qos.logback.classic.LoggerContext"
-    },
-    "name": "ch.qos.logback.classic.pattern.ExtendedThrowableProxyConverter",
-    "allPublicConstructors": true
+    "name":"ch.qos.logback.classic.pattern.LoggerConverter",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
   },
   {
-    "condition": {
-      "typeReachable": "ch.qos.logback.classic.LoggerContext"
-    },
-    "name": "ch.qos.logback.classic.pattern.FileOfCallerConverter",
-    "allPublicConstructors": true
+    "name":"ch.qos.logback.classic.pattern.MDCConverter",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
   },
   {
-    "condition": {
-      "typeReachable": "ch.qos.logback.classic.LoggerContext"
-    },
-    "name": "ch.qos.logback.classic.pattern.LevelConverter",
-    "allPublicConstructors": true
+    "name":"ch.qos.logback.classic.pattern.MarkerConverter",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
   },
   {
-    "condition": {
-      "typeReachable": "ch.qos.logback.classic.LoggerContext"
-    },
-    "name": "ch.qos.logback.classic.pattern.LineOfCallerConverter",
-    "allPublicConstructors": true
+    "name":"ch.qos.logback.classic.pattern.MessageConverter",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
   },
   {
-    "condition": {
-      "typeReachable": "ch.qos.logback.classic.LoggerContext"
-    },
-    "name": "ch.qos.logback.classic.pattern.LineSeparatorConverter",
-    "allPublicConstructors": true
+    "name":"ch.qos.logback.classic.pattern.ThreadConverter",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
   },
   {
-    "condition": {
-      "typeReachable": "ch.qos.logback.classic.LoggerContext"
-    },
-    "name": "ch.qos.logback.classic.pattern.LocalSequenceNumberConverter",
-    "allPublicConstructors": true
+    "name":"ch.qos.logback.core.ConsoleAppender",
+    "queryAllPublicMethods":true,
+    "methods":[{"name":"<init>","parameterTypes":[] }]
   },
   {
-    "condition": {
-      "typeReachable": "ch.qos.logback.classic.LoggerContext"
-    },
-    "name": "ch.qos.logback.classic.pattern.LoggerConverter",
-    "allPublicConstructors": true
+    "name":"ch.qos.logback.core.OutputStreamAppender",
+    "methods":[{"name":"setEncoder","parameterTypes":["ch.qos.logback.core.encoder.Encoder"] }]
   },
   {
-    "condition": {
-      "typeReachable": "ch.qos.logback.classic.LoggerContext"
-    },
-    "name": "ch.qos.logback.classic.pattern.MDCConverter",
-    "allPublicConstructors": true
+    "name":"ch.qos.logback.core.encoder.Encoder",
+    "methods":[{"name":"valueOf","parameterTypes":["java.lang.String"] }]
   },
   {
-    "condition": {
-      "typeReachable": "ch.qos.logback.classic.LoggerContext"
-    },
-    "name": "ch.qos.logback.classic.pattern.MarkerConverter",
-    "allPublicConstructors": true
+    "name":"ch.qos.logback.core.encoder.LayoutWrappingEncoder",
+    "methods":[{"name":"setParent","parameterTypes":["ch.qos.logback.core.spi.ContextAware"] }]
   },
   {
-    "condition": {
-      "typeReachable": "ch.qos.logback.classic.LoggerContext"
-    },
-    "name": "ch.qos.logback.classic.pattern.MessageConverter",
-    "allPublicConstructors": true
+    "name":"ch.qos.logback.core.pattern.PatternLayoutEncoderBase",
+    "methods":[{"name":"setPattern","parameterTypes":["java.lang.String"] }]
   },
   {
-    "condition": {
-      "typeReachable": "ch.qos.logback.classic.LoggerContext"
-    },
-    "name": "ch.qos.logback.classic.pattern.MethodOfCallerConverter",
-    "allPublicConstructors": true
-  },
-  {
-    "condition": {
-      "typeReachable": "ch.qos.logback.classic.LoggerContext"
-    },
-    "name": "ch.qos.logback.classic.pattern.NopThrowableInformationConverter",
-    "allPublicConstructors": true
-  },
-  {
-    "condition": {
-      "typeReachable": "ch.qos.logback.classic.LoggerContext"
-    },
-    "name": "ch.qos.logback.classic.pattern.PrefixCompositeConverter",
-    "allPublicConstructors": true
-  },
-  {
-    "condition": {
-      "typeReachable": "ch.qos.logback.classic.LoggerContext"
-    },
-    "name": "ch.qos.logback.classic.pattern.PropertyConverter",
-    "allPublicConstructors": true
-  },
-  {
-    "condition": {
-      "typeReachable": "ch.qos.logback.classic.LoggerContext"
-    },
-    "name": "ch.qos.logback.classic.pattern.RelativeTimeConverter",
-    "allPublicConstructors": true
-  },
-  {
-    "condition": {
-      "typeReachable": "ch.qos.logback.classic.LoggerContext"
-    },
-    "name": "ch.qos.logback.classic.pattern.RootCauseFirstThrowableProxyConverter",
-    "allPublicConstructors": true
-  },
-  {
-    "condition": {
-      "typeReachable": "ch.qos.logback.classic.LoggerContext"
-    },
-    "name": "ch.qos.logback.classic.pattern.ThreadConverter",
-    "allPublicConstructors": true
-  },
-  {
-    "condition": {
-      "typeReachable": "ch.qos.logback.classic.LoggerContext"
-    },
-    "name": "ch.qos.logback.classic.pattern.ThrowableProxyConverter",
-    "allPublicConstructors": true
-  },
-  {
-    "condition": {
-      "typeReachable": "ch.qos.logback.classic.LoggerContext"
-    },
-    "name": "ch.qos.logback.classic.pattern.color.HighlightingCompositeConverter",
-    "allPublicConstructors": true
-  },
-  {
-    "condition": {
-      "typeReachable": "ch.qos.logback.classic.LoggerContext"
-    },
-    "name": "ch.qos.logback.core.pattern.IdentityCompositeConverter",
-    "allPublicConstructors": true
-  },
-  {
-    "condition": {
-      "typeReachable": "ch.qos.logback.classic.LoggerContext"
-    },
-    "name": "ch.qos.logback.core.pattern.ReplacingCompositeConverter",
-    "allPublicConstructors": true
-  },
-  {
-    "condition": {
-      "typeReachable": "ch.qos.logback.classic.LoggerContext"
-    },
-    "name": "ch.qos.logback.core.pattern.color.BlackCompositeConverter",
-    "allPublicConstructors": true
-  },
-  {
-    "condition": {
-      "typeReachable": "ch.qos.logback.classic.LoggerContext"
-    },
-    "name": "ch.qos.logback.core.pattern.color.BlueCompositeConverter",
-    "allPublicConstructors": true
-  },
-  {
-    "condition": {
-      "typeReachable": "ch.qos.logback.classic.LoggerContext"
-    },
-    "name": "ch.qos.logback.core.pattern.color.BoldBlueCompositeConverter",
-    "allPublicConstructors": true
-  },
-  {
-    "condition": {
-      "typeReachable": "ch.qos.logback.classic.LoggerContext"
-    },
-    "name": "ch.qos.logback.core.pattern.color.BoldCyanCompositeConverter",
-    "allPublicConstructors": true
-  },
-  {
-    "condition": {
-      "typeReachable": "ch.qos.logback.classic.LoggerContext"
-    },
-    "name": "ch.qos.logback.core.pattern.color.BoldGreenCompositeConverter",
-    "allPublicConstructors": true
-  },
-  {
-    "condition": {
-      "typeReachable": "ch.qos.logback.classic.LoggerContext"
-    },
-    "name": "ch.qos.logback.core.pattern.color.BoldMagentaCompositeConverter",
-    "allPublicConstructors": true
-  },
-  {
-    "condition": {
-      "typeReachable": "ch.qos.logback.classic.LoggerContext"
-    },
-    "name": "ch.qos.logback.core.pattern.color.BoldRedCompositeConverter",
-    "allPublicConstructors": true
-  },
-  {
-    "condition": {
-      "typeReachable": "ch.qos.logback.classic.LoggerContext"
-    },
-    "name": "ch.qos.logback.core.pattern.color.BoldWhiteCompositeConverter",
-    "allPublicConstructors": true
-  },
-  {
-    "condition": {
-      "typeReachable": "ch.qos.logback.classic.LoggerContext"
-    },
-    "name": "ch.qos.logback.core.pattern.color.BoldYellowCompositeConverter",
-    "allPublicConstructors": true
-  },
-  {
-    "condition": {
-      "typeReachable": "ch.qos.logback.classic.LoggerContext"
-    },
-    "name": "ch.qos.logback.core.pattern.color.CyanCompositeConverter",
-    "allPublicConstructors": true
-  },
-  {
-    "condition": {
-      "typeReachable": "ch.qos.logback.classic.LoggerContext"
-    },
-    "name": "ch.qos.logback.core.pattern.color.GrayCompositeConverter",
-    "allPublicConstructors": true
-  },
-  {
-    "condition": {
-      "typeReachable": "ch.qos.logback.classic.LoggerContext"
-    },
-    "name": "ch.qos.logback.core.pattern.color.GreenCompositeConverter",
-    "allPublicConstructors": true
-  },
-  {
-    "condition": {
-      "typeReachable": "ch.qos.logback.classic.LoggerContext"
-    },
-    "name": "ch.qos.logback.core.pattern.color.MagentaCompositeConverter",
-    "allPublicConstructors": true
-  },
-  {
-    "condition": {
-      "typeReachable": "ch.qos.logback.classic.LoggerContext"
-    },
-    "name": "ch.qos.logback.core.pattern.color.RedCompositeConverter",
-    "allPublicConstructors": true
-  },
-  {
-    "condition": {
-      "typeReachable": "ch.qos.logback.classic.LoggerContext"
-    },
-    "name": "ch.qos.logback.core.pattern.color.WhiteCompositeConverter",
-    "allPublicConstructors": true
-  },
-  {
-    "condition": {
-      "typeReachable": "ch.qos.logback.classic.LoggerContext"
-    },
-    "name": "ch.qos.logback.core.pattern.color.YellowCompositeConverter",
-    "allPublicConstructors": true
-  },
-  {
-    "condition": {
-      "typeReachable": "ch.qos.logback.classic.LoggerContext"
-    },
-    "name": "org.slf4j.impl.StaticLoggerBinder"
+    "name":"ch.qos.logback.core.spi.ContextAware",
+    "methods":[{"name":"valueOf","parameterTypes":["java.lang.String"] }]
   }
+
 ]

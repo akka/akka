@@ -1,7 +1,7 @@
 {
   "resources":{
     "includes":[{
-      "pattern":"\\Qlogback.xml\\E"
+      "pattern":".*\\.conf"
     }]
   },
   "bundles":[]

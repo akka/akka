@@ -89,7 +89,7 @@ class NativeImageUtils(
       else throw new RuntimeException("Couldn't figure out akka repo root directory")
     }
 
-    repoRoot.resolve(s"$akkaModule/src/main/resources/META-INF/native-image/com/typesafe/akka/$akkaModule")
+    repoRoot.resolve(s"$akkaModule/src/main/resources/META-INF/native-image/com.typesafe.akka/$akkaModule")
   }
 
   /**

@@ -115,14 +115,15 @@ object RootBehavior {
 
         timers.startSingleTimer("Timeout", 30.seconds)
 
-        // FIXME cover akka-persistence and akka-persistence-query with one of the out-of-the-box journals
-
         implicit val timeout: Timeout = 3.seconds
 
         def forwardSuccessOrFail[T]: PartialFunction[Try[T], AnyRef] = {
           case Success(value: T) => value.asInstanceOf[AnyRef]
           case Failure(error)    => throw error
         }
+
+        // read application.conf without extra metadata config
+        context.system.settings.config.getString("local-scala.some-setting")
 
         var waitingForAcks = 0
 

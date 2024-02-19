@@ -1,9 +1,0 @@
-{
-  "resources": {
-    "includes": [
-      {
-        "pattern": "\\Qcom/fasterxml/jackson/module/scala/build.properties\\E"
-      }
-    ]
-  }
-}
