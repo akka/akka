@@ -23,6 +23,30 @@ addCommandAlias("applyCodeStyle", "headerCreateAll; scalafmtAll; scalafmtSbt")
 
 addCommandAlias(name = "fixall", value = ";scalafmtAll; test:compile; multi-jvm:compile; reload")
 
+addCommandAlias(
+  "regenerateAllNativeImageMetadata",
+  Seq(
+    "akka-actor-tests/Test/runMain akka.NativeImageMetadataSpec",
+    "akka-actor-typed-tests/Test/runMain akka.actor.typed.NativeImageMetadataSpec",
+    "akka-cluster/Test/runMain akka.cluster.NativeImageMetadataSpec",
+    "akka-cluster-metrics/Test/runMain akka.cluster.metrics.NativeImageMetadataSpec",
+    "akka-cluster-sharding/Test/runMain akka.cluster.sharding.NativeImageMetadataSpec",
+    "akka-cluster-sharding-typed/Test/runMain akka.cluster.sharding.typed.NativeImageMetadataSpec",
+    "akka-cluster-tools/Test/runMain akka.cluster.tools.NativeImageMetadataSpec",
+    "akka-cluster-typed/Test/runMain akka.cluster.typed.NativeImageMetadataSpec",
+    "akka-coordination/Test/runMain akka.coordination.NativeImageMetadataSpec",
+    "akka-discovery/Test/runMain akka.discovery.NativeImageMetadataSpec",
+    "akka-distributed-data/Test/runMain akka.cluster.ddata.NativeImageMetadataSpec",
+    "akka-persistence/Test/runMain akka.persistence.NativeImageMetadataSpec",
+    "akka-persistence-query/Test/runMain akka.persistence.query.NativeImageMetadataSpec",
+    "akka-persistence-typed/Test/runMain akka.persistence.typed.NativeImageMetadataSpec",
+    "akka-pki/Test/runMain akka.pki.NativeImageMetadataSpec",
+    "akka-remote/Test/runMain akka.remote.NativeImageMetadataSpec",
+    "akka-serialization-jackson/Test/runMain akka.serialization.jackson.NativeImageMetadataSpec",
+    "akka-slf4j/Test/runMain akka.event.slf4j.NativeImageMetadataSpec",
+    "akka-stream-tests/Test/runMain akka.stream.NativeImageMetadataSpec",
+    "akka-stream-typed/Test/runMain akka.stream.typed.NativeImageMetadataSpec").mkString("; "))
+
 import akka.AkkaBuild._
 import akka.{ AkkaBuild, Dependencies, Protobuf, SigarLoader, VersionGenerator }
 import com.typesafe.sbt.MultiJvmPlugin.MultiJvmKeys.MultiJvm
@@ -309,12 +333,12 @@ lazy val protobufV3 = akkaModule("akka-protobuf-v3")
   .enablePlugins(ScaladocNoVerificationOfDiagrams)
   .disablePlugins(MimaPlugin)
   .settings(
-    libraryDependencies += Dependencies.Compile.Provided.protobufRuntime,
+    libraryDependencies += Dependencies.Provided.protobufRuntime,
     assembly / assemblyShadeRules := Seq(
         ShadeRule
           .rename("com.google.protobuf.**" -> "akka.protobufv3.internal.@1")
           // https://github.com/sbt/sbt-assembly/issues/400
-          .inLibrary(Dependencies.Compile.Provided.protobufRuntime)
+          .inLibrary(Dependencies.Provided.protobufRuntime)
           .inProject),
     assembly / assemblyOption := (assembly / assemblyOption).value.withIncludeScala(false).withIncludeBin(false),
     autoScalaLibrary := false, // do not include scala dependency in pom
@@ -326,7 +350,7 @@ lazy val protobufV3 = akkaModule("akka-protobuf-v3")
     // Prevent cyclic task dependencies, see https://github.com/sbt/sbt-assembly/issues/365
     assembly / fullClasspath := (Runtime / managedClasspath).value, // otherwise, there's a cyclic dependency between packageBin and assembly
     assembly / test := {}, // assembly runs tests for unknown reason which introduces another cyclic dependency to packageBin via exportedJars
-    description := s"Akka Protobuf V3 is a shaded version of ${Dependencies.Compile.Provided.protobufRuntime.name} ${Dependencies.Compile.Provided.protobufRuntime.revision}.")
+    description := s"Akka Protobuf V3 is a shaded version of ${Dependencies.Provided.protobufRuntime.name} ${Dependencies.Provided.protobufRuntime.revision}.")
 
 lazy val pki =
   akkaModule("akka-pki")

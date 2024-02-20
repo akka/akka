@@ -29,7 +29,6 @@ import akka.persistence.typed.internal.NoOpSnapshotAdapter
 import akka.persistence.typed.internal.StashState
 import akka.persistence.typed.telemetry.EmptyEventSourcedBehaviorInstrumentation
 import akka.serialization.jackson.CborSerializable
-import akka.util.ConstantFun
 
 object EventSourcedBehaviorWatchSpec {
   sealed trait Command extends CborSerializable
@@ -69,7 +68,7 @@ class EventSourcedBehaviorWatchSpec
       (_, _) => Set.empty[String],
       NoOpEventAdapter.instance[String],
       NoOpSnapshotAdapter.instance[String],
-      snapshotWhen = ConstantFun.scalaAnyThreeToFalse,
+      snapshotWhen = SnapshotWhenPredicate.noSnapshot,
       ClassicRecovery(),
       RetentionCriteria.disabled,
       holdingRecoveryPermit = false,

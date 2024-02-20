@@ -121,6 +121,15 @@ Deleting events in Event Sourcing based applications is typically either not use
 By deleting events you will lose the history of how the system changed before it reached current state, which is
 one of the main reasons for using Event Sourcing in the first place.
 
+If snapshots are triggered using the predicate-based api (@scala[`snapshotWhen`]@java[`shouldSnapshot`]), events are not deleted 
+by default. Event deletion can be enabled using the following api:
+
+Scala
+:  @@snip [BasicPersistentBehaviorCompileOnly.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BasicPersistentBehaviorCompileOnly.scala) { #snapshottingPredicateDeleteEvents }
+
+Java
+:  @@snip [BasicPersistentBehaviorTest.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BasicPersistentBehaviorTest.java) { #snapshottingPredicateDeleteEvents }
+
 If snapshot-based retention is enabled, after a snapshot has been successfully stored, a delete of the events
 (journaled by a single event sourced actor) up until the sequence number of the data held by that snapshot can be issued.
 

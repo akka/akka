@@ -4,21 +4,19 @@
 
 package akka.cluster.tools
 
-import akka.testkit.NativeImageUtils
+import akka.testkit.internal.NativeImageUtils
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
 object NativeImageMetadataSpec {
 
-  val metadataDir = NativeImageUtils.metadataDirFor("akka-cluster-tools")
-
-  val additionalEntries = Seq()
-
   val modulePackages = Seq("akka.cluster.pubsub", "akka.cluster.singleton")
+
+  val nativeImageUtils = new NativeImageUtils("akka-cluster-tools", Seq(), modulePackages)
 
   // run this to regenerate metadata 'akka-cluster-tools/Test/runMain akka.cluster.tools.NativeImageMetadataSpec'
   def main(args: Array[String]): Unit = {
-    NativeImageUtils.writeMetadata(metadataDir, additionalEntries, modulePackages)
+    nativeImageUtils.writeMetadata()
   }
 }
 
@@ -28,7 +26,7 @@ class NativeImageMetadataSpec extends AnyWordSpec with Matchers {
   "Native-image metadata for akka-cluster-tools" should {
 
     "be up to date" in {
-      val (existing, current) = NativeImageUtils.verifyMetadata(metadataDir, additionalEntries, modulePackages)
+      val (existing, current) = nativeImageUtils.verifyMetadata()
       existing should ===(current)
     }
   }
