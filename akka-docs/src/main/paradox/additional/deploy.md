@@ -8,5 +8,6 @@
 * [Operating, Managing, Observability](operations.md)
 * [Deploying](deploying.md)
 * [Rolling Updates](rolling-updates.md)
+* [Native Image](native-image.md)
 
 @@@

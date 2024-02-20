@@ -1,0 +1,10 @@
+{
+  "resources":{
+    "includes":[{
+      "pattern":"\\Qtcp-tls-keystore.p12\\E"
+    },{
+      "pattern":"\\Qlogback.xml\\E"
+    }]
+  },
+  "bundles":[]
+}

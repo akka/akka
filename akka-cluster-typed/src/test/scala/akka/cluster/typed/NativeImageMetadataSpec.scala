@@ -5,15 +5,13 @@
 package akka.cluster.typed
 
 import akka.cluster.typed.internal.receptionist.ClusterReceptionist
-import akka.testkit.NativeImageUtils
-import akka.testkit.NativeImageUtils.ModuleField
-import akka.testkit.NativeImageUtils.ReflectConfigEntry
+import akka.testkit.internal.NativeImageUtils
+import akka.testkit.internal.NativeImageUtils.ModuleField
+import akka.testkit.internal.NativeImageUtils.ReflectConfigEntry
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
 object NativeImageMetadataSpec {
-
-  val metadataDir = NativeImageUtils.metadataDirFor("akka-cluster-typed")
 
   val additionalEntries = Seq(
     // trixery around auto-selecting local or cluster receptionist impl
@@ -21,9 +19,11 @@ object NativeImageMetadataSpec {
 
   val modulePackages = Seq("akka.cluster.typed", "akka.cluster.ddata.typed")
 
+  val nativeImageUtils = new NativeImageUtils("akka-cluster-typed", additionalEntries, modulePackages)
+
   // run this to regenerate metadata 'akka-cluster-typed/Test/runMain akka.cluster.typed.NativeImageMetadataSpec'
   def main(args: Array[String]): Unit = {
-    NativeImageUtils.writeMetadata(metadataDir, additionalEntries, modulePackages)
+    nativeImageUtils.writeMetadata()
   }
 }
 
@@ -33,7 +33,7 @@ class NativeImageMetadataSpec extends AnyWordSpec with Matchers {
   "Native-image metadata for akka-cluster-typed" should {
 
     "be up to date" in {
-      val (existing, current) = NativeImageUtils.verifyMetadata(metadataDir, additionalEntries, modulePackages)
+      val (existing, current) = nativeImageUtils.verifyMetadata()
       existing should ===(current)
     }
   }

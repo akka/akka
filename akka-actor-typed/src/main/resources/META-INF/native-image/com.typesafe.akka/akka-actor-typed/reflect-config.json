@@ -1,0 +1,74 @@
+[ {
+  "name" : "akka.actor.typed.internal.adapter.ActorSystemAdapter$LoadTypedExtensions$",
+  "fields" : [ {
+    "name" : "MODULE$"
+  } ]
+}, {
+  "name" : "akka.actor.typed.internal.receptionist.LocalReceptionist$",
+  "fields" : [ {
+    "name" : "MODULE$"
+  } ]
+}, {
+  "name" : "akka.actor.typed.internal.jfr.JFRActorFlightRecorder",
+  "methods" : [ {
+    "name" : "<init>"
+  } ]
+}, {
+  "name" : "akka.actor.typed.internal.adapter.ActorSystemAdapter$AdapterExtension$",
+  "fields" : [ {
+    "name" : "MODULE$"
+  } ]
+}, {
+  "name" : "akka.actor.typed.internal.adapter.ActorSystemAdapter$LoadTypedExtensions$",
+  "fields" : [ {
+    "name" : "MODULE$"
+  } ]
+}, {
+  "name" : "akka.actor.typed.internal.adapter.AdapterExtension$",
+  "fields" : [ {
+    "name" : "MODULE$"
+  } ]
+}, {
+  "name" : "akka.actor.typed.internal.MiscMessageSerializer",
+  "methods" : [ {
+    "name" : "<init>",
+    "parameterTypes" : [ "akka.actor.ExtendedActorSystem" ]
+  } ]
+}, {
+  "name" : "akka.actor.typed.internal.receptionist.ServiceKeySerializer",
+  "methods" : [ {
+    "name" : "<init>",
+    "parameterTypes" : [ "akka.actor.ExtendedActorSystem" ]
+  } ]
+}, {
+  "name" : "akka.actor.typed.ActorRef"
+}, {
+  "name" : "akka.actor.typed.internal.adapter.ActorRefAdapter"
+}, {
+  "name" : "akka.actor.typed.internal.receptionist.DefaultServiceKey"
+}, {
+  "name" : "akka.actor.typed.ActorRefResolver$",
+  "fields" : [ {
+    "name" : "MODULE$"
+  } ]
+}, {
+  "name" : "akka.actor.typed.internal.ActorFlightRecorder$",
+  "fields" : [ {
+    "name" : "MODULE$"
+  } ]
+}, {
+  "name" : "akka.actor.typed.internal.EventStreamExtension$",
+  "fields" : [ {
+    "name" : "MODULE$"
+  } ]
+}, {
+  "name" : "akka.actor.typed.pubsub.PubSub$",
+  "fields" : [ {
+    "name" : "MODULE$"
+  } ]
+}, {
+  "name" : "akka.actor.typed.receptionist.Receptionist$",
+  "fields" : [ {
+    "name" : "MODULE$"
+  } ]
+} ]

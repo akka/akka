@@ -1,0 +1,21 @@
+[ {
+  "name" : "akka.persistence.query.PersistenceQuery$",
+  "fields" : [ {
+    "name" : "MODULE$"
+  } ]
+}, {
+  "name" : "akka.persistence.query.typed.internal.EventsBySliceFirehose$",
+  "fields" : [ {
+    "name" : "MODULE$"
+  } ]
+}, {
+  "name" : "akka.persistence.query.internal.QuerySerializer",
+  "methods" : [ {
+    "name" : "<init>",
+    "parameterTypes" : [ "akka.actor.ExtendedActorSystem" ]
+  } ]
+}, {
+  "name" : "akka.persistence.query.typed.EventEnvelope"
+}, {
+  "name" : "akka.persistence.query.Offset"
+} ]

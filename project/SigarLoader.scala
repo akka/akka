@@ -12,7 +12,7 @@ import sbt.Keys._
  */
 object SigarLoader {
 
-  import Dependencies.Compile.Provided.sigarLoader
+  import Dependencies.Provided.sigarLoader
 
   /** Enable Sigar java agent injection during tests. */
   lazy val sigarTestEnabled = sys.props.get("akka.test.sigar").getOrElse("false").toBoolean
