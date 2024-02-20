@@ -5,7 +5,6 @@
 package akka.persistence.typed.scaladsl
 
 import scala.annotation.tailrec
-
 import akka.actor.typed.BackoffSupervisorStrategy
 import akka.actor.typed.Behavior
 import akka.actor.typed.Signal
@@ -176,8 +175,20 @@ object EventSourcedBehavior {
    * [[EventSourcedBehavior.withRetention]] with [[RetentionCriteria.snapshotEvery]] is used together with
    * `snapshotWhen`. Such deletes are only triggered by snapshots matching the `numberOfEvents` in the
    * [[RetentionCriteria]].
+   *
+   * Events can be deleted if `snapshotWhen(predicate, deleteEventsOnSnapshot = true)` is used.
    */
   def snapshotWhen(predicate: (State, Event, Long) => Boolean): EventSourcedBehavior[Command, Event, State]
+
+  /**
+   * Can be used to delete events after `shouldSnapshot`.
+   *
+   * Can be used in combination with `[[EventSourcedBehavior.retentionCriteria]]` in a way that events are triggered
+   * up the the oldest snapshot based on `[[RetentionCriteria.snapshotEvery]]` config.
+   */
+  def snapshotWhen(
+      predicate: (State, Event, Long) => Boolean,
+      deleteEventsOnSnapshot: Boolean): EventSourcedBehavior[Command, Event, State]
 
   /**
    * Criteria for retention/deletion of snapshots and events.

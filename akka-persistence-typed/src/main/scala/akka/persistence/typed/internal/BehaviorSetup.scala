@@ -24,6 +24,8 @@ import akka.persistence.typed.SnapshotAdapter
 import akka.persistence.typed.scaladsl.EventSourcedBehavior
 import akka.persistence.typed.scaladsl.RetentionCriteria
 import akka.persistence.typed.telemetry.EventSourcedBehaviorInstrumentation
+import akka.persistence.typed.scaladsl.SnapshotWhenPredicate
+
 import akka.util.OptionVal
 
 /**
@@ -51,7 +53,7 @@ private[akka] final class BehaviorSetup[C, E, S](
     val tagger: (S, E) => Set[String],
     val eventAdapter: EventAdapter[E, Any],
     val snapshotAdapter: SnapshotAdapter[S],
-    val snapshotWhen: (S, E, Long) => Boolean,
+    val snapshotWhen: SnapshotWhenPredicate[S, E],
     val recovery: Recovery,
     val retention: RetentionCriteria,
     var holdingRecoveryPermit: Boolean,
@@ -84,6 +86,12 @@ private[akka] final class BehaviorSetup[C, E, S](
       })) {
     throw new IllegalArgumentException(
       "Retention criteria with delete events can't be used together with snapshot-is-optional=true. " +
+      "That can result in wrong recovered state if snapshot load fails.")
+  }
+
+  if (isSnapshotOptional && snapshotWhen.deleteEventsOnSnapshot) {
+    throw new IllegalArgumentException(
+      "SnapshotWhen predicate with delete events can't be used together with snapshot-is-optional=true. " +
       "That can result in wrong recovered state if snapshot load fails.")
   }
 
@@ -169,11 +177,11 @@ private[akka] final class BehaviorSetup[C, E, S](
   def shouldSnapshot(state: S, event: E, sequenceNr: Long): SnapshotAfterPersist = {
     retention match {
       case DisabledRetentionCriteria =>
-        if (snapshotWhen(state, event, sequenceNr)) SnapshotWithoutRetention
+        if (snapshotWhen.predicate(state, event, sequenceNr)) SnapshotWithoutRetention
         else NoSnapshot
       case s: SnapshotCountRetentionCriteriaImpl =>
         if (s.snapshotWhen(sequenceNr)) SnapshotWithRetention
-        else if (snapshotWhen(state, event, sequenceNr)) SnapshotWithoutRetention
+        else if (snapshotWhen.predicate(state, event, sequenceNr)) SnapshotWithoutRetention
         else NoSnapshot
       case unexpected => throw new IllegalStateException(s"Unexpected retention criteria: $unexpected")
     }

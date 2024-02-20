@@ -246,6 +246,18 @@ object BasicPersistentBehaviorCompileOnly {
     }
   //#snapshottingPredicate
 
+  def predicate[State, Event]: (State, Event, Long) => Boolean = { (_, _, _) =>
+    true
+  }
+  EventSourcedBehavior[Command, Event, State](
+    persistenceId = PersistenceId.ofUniqueId("abc"),
+    emptyState = State(),
+    commandHandler = (state, cmd) => throw new NotImplementedError("TODO: process the command & return an Effect"),
+    eventHandler = (state, evt) => throw new NotImplementedError("TODO: process the event return the next state"))
+  //#snapshottingPredicateDeleteEvents
+    .snapshotWhen(predicate, deleteEventsOnSnapshot = true)
+  //#snapshottingPredicateDeleteEvents
+
   //#snapshotSelection
   import akka.persistence.typed.SnapshotSelectionCriteria
 

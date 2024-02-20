@@ -6,7 +6,6 @@ package akka.persistence.typed.javadsl
 
 import java.util.Collections
 import java.util.Optional
-
 import akka.actor.typed
 import akka.actor.typed.BackoffSupervisorStrategy
 import akka.actor.typed.Behavior
@@ -140,15 +139,27 @@ abstract class EventSourcedBehavior[Command, Event, State] private[akka] (
    * When persisting multiple events at once the snapshot is triggered after all the events have
    * been persisted.
    *
-   * Snapshots triggered by `snapshotWhen` will not trigger deletes of old snapshots and events if
+   * Snapshots triggered by `shouldSnapshot` will not trigger deletes of old snapshots and events if
    * [[EventSourcedBehavior.retentionCriteria]] with [[RetentionCriteria.snapshotEvery]] is used together with
    * `shouldSnapshot`. Such deletes are only triggered by snapshots matching the `numberOfEvents` in the
    * [[RetentionCriteria]].
+   *
+   * Events can be deleted if `deleteEventsOnSnapshot` returns `true`.
    *
    * @return `true` if snapshot should be saved at the given `state`, `event` and `sequenceNr` when the event has
    *         been successfully persisted
    */
   def shouldSnapshot(@unused state: State, @unused event: Event, @unused sequenceNr: Long): Boolean = false
+
+  /**
+   * Can be used to delete events after `shouldSnapshot`.
+   *
+   * Can be used in combination with `[[EventSourcedBehavior.retentionCriteria]]` in a way that events are triggered
+   * up the the oldest snapshot based on `[[RetentionCriteria.snapshotEvery]]` config.
+   *
+   * @return `true` if events should be deleted after `shouldSnapshot` evaluates to true
+   */
+  def deleteEventsOnSnapshot: Boolean = false
 
   /**
    * Criteria for retention/deletion of snapshots and events.
@@ -217,7 +228,7 @@ abstract class EventSourcedBehavior[Command, Event, State] private[akka] (
       (state, cmd) => commandHandlerInstance(state, cmd).asInstanceOf[EffectImpl[Event, State]],
       eventHandlerInstance(_, _),
       getClass)
-      .snapshotWhen(snapshotWhen)
+      .snapshotWhen(snapshotWhen, deleteEventsOnSnapshot)
       .withRetention(retentionCriteria.asScala)
       .withTaggerForState(tagger)
       .eventAdapter(eventAdapter())

@@ -9,10 +9,8 @@ import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.concurrent.atomic.AtomicReference
-
 import scala.annotation.tailrec
 import scala.collection.immutable
-
 import akka.Done
 import akka.actor.UnhandledMessage
 import akka.actor.typed.{ Behavior, Signal }
@@ -888,7 +886,20 @@ private[akka] object Running {
       val signal = response match {
         case SaveSnapshotSuccess(meta) =>
           setup.internalLogger.debug(s"Persistent snapshot [{}] saved successfully", meta)
-          if (snapshotReason == SnapshotWithRetention) {
+          if (snapshotReason == SnapshotWithoutRetention && setup.snapshotWhen.deleteEventsOnSnapshot) {
+            def retentionBasedSequence = setup.retention match {
+              case s @ SnapshotCountRetentionCriteriaImpl(_, _, true) =>
+                val deleteEventsToSeqNr = s.deleteUpperSequenceNr(meta.sequenceNr)
+                setup.retentionProgressDeleteEventsStarted(state.seqNr, deleteEventsToSeqNr)
+                Some(deleteEventsToSeqNr) // keepNSnapshots batches of events
+              case _ => None
+            }
+            val deleteEventsToSeqNr =
+              if (setup.isOnlyOneSnapshot) Some(meta.sequenceNr) // delete all events up to the snapshot
+              else retentionBasedSequence
+            internalDeleteEvents(meta.sequenceNr, deleteEventsToSeqNr.getOrElse(meta.sequenceNr))
+
+          } else if (snapshotReason == SnapshotWithRetention) {
             // deletion of old events and snapshots are triggered by the SaveSnapshotSuccess
             setup.retention match {
               case DisabledRetentionCriteria => // no further actions
