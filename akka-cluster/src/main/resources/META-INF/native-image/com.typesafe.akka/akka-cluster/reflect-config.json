@@ -47,7 +47,7 @@
     "name" : "<init>"
   } ]
 }, {
-  "name" : "akka.cluster.JoinConfigCompatChecker$$anon$1",
+  "name" : "akka.cluster.JoinConfigCompatChecker$CompositeChecker",
   "methods" : [ {
     "name" : "<init>"
   } ]
