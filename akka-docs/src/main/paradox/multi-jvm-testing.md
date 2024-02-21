@@ -15,7 +15,7 @@ To configure it in your project you should do the following steps:
 1.  Add it as a plugin by adding the following to your project/plugins.sbt:
 
     ```none
-    addSbtPlugin("com.typesafe.sbt" % "sbt-multi-jvm" % "0.4.0")
+    addSbtPlugin("com.github.sbt" % "sbt-multi-jvm" % "0.6.0")
     ```
 
 2.  Add multi-JVM testing to `build.sbt` or `project/Build.scala` by enabling `MultiJvmPlugin` and
