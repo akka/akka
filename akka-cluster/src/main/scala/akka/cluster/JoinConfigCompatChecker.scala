@@ -148,17 +148,18 @@ object JoinConfigCompatChecker {
           .get // can't continue if we can't load it
       }
 
-    // composite checker
-    new JoinConfigCompatChecker {
-      override val requiredKeys: im.Seq[String] = {
-        // Always include akka.version (used in join logging)
-        "akka.version" +: checkers.flatMap(_.requiredKeys).to(im.Seq)
-      }
-      override def check(toValidate: Config, clusterConfig: Config): ConfigValidation =
-        checkers.foldLeft(Valid: ConfigValidation) { (acc, checker) =>
-          acc ++ checker.check(toValidate, clusterConfig)
-        }
+    new CompositeChecker(checkers)
+  }
+
+  private final class CompositeChecker(checkers: Set[JoinConfigCompatChecker]) extends JoinConfigCompatChecker {
+    override val requiredKeys: im.Seq[String] = {
+      // Always include akka.version (used in join logging)
+      "akka.version" +: checkers.flatMap(_.requiredKeys).to(im.Seq)
     }
+    override def check(toValidate: Config, clusterConfig: Config): ConfigValidation =
+      checkers.foldLeft(Valid: ConfigValidation) { (acc, checker) =>
+        acc ++ checker.check(toValidate, clusterConfig)
+      }
   }
 }
 
