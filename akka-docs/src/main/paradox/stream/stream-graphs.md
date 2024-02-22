@@ -47,6 +47,7 @@ Akka Streams currently provide these junctions (for a detailed list see the @ref
 
     * @scala[`Broadcast[T]`]@java[`Broadcast<T>`] – *(1 input, N outputs)* given an input element emits to each output
     * @scala[`Balance[T]`]@java[`Balance<T>`] – *(1 input, N outputs)* given an input element emits to one of its output ports
+    * @scala[`Partition[T]]`]@java[`Partition<T>`] – *(1 input, N outputs)* given an input element emits to specified output based on a partition function
     * @scala[`UnzipWith[In,A,B,...]`]@java[`UnzipWith<In,A,B,...>`] – *(1 input, N outputs)* takes a function of 1 input that given a value for each input emits N output elements (where N <= 20)
     * @scala[`UnZip[A,B]`]@java[`UnZip<A,B>`] – *(1 input, 2 outputs)* splits a stream of @scala[`(A,B)`]@java[`Pair<A,B>`] tuples into two streams, one of type `A` and one of type `B`
 
