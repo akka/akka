@@ -96,7 +96,7 @@ final class AkkaJacksonSerializationFeature extends Feature {
         .stream(clazz.getDeclaredMethods)
         .forEach(method =>
           if (method.getParameterTypes.length == 0 && isPossiblyGetter(scalaCaseClass, method.getName)) {
-            log("Registering method " + clazz + "." + method.getName)
+            log("Registering method " + clazz.getName + "." + method.getName)
             RuntimeReflection.register(method)
             RuntimeReflection.registerAsQueried(method)
           })
@@ -136,6 +136,26 @@ final class AkkaJacksonSerializationFeature extends Feature {
           }
         }
       }
+
+      if (classOf[scala.Enumeration].isAssignableFrom(clazz)) {
+        try {
+          log("Registering scala Enumeration " + clazz.getName)
+          // access to $outer needed by Scala Jackson enumeration support
+          util.Arrays
+            .stream(clazz.getMethods)
+            .forEach(method =>
+              if (classOf[scala.Enumeration#Value].isAssignableFrom(method.getReturnType)) {
+                log("Registering Scala Enumeration value " + clazz.getName + "." + method.getName)
+                val outer = method.getReturnType.getDeclaredField(s"$$outer")
+                RuntimeReflection.register(outer)
+                RuntimeReflection.register(method)
+              })
+        } catch {
+          case _: NoSuchFieldException =>
+            log(s"failed to find $$outer field for Scala Enumeration")
+        }
+      }
+
     }
   }
 

@@ -14,12 +14,14 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo
 import com.fasterxml.jackson.annotation.JsonTypeName
 import com.fasterxml.jackson.core.JsonGenerator
 import com.fasterxml.jackson.core.JsonParser
+import com.fasterxml.jackson.core.`type`.TypeReference
 import com.fasterxml.jackson.databind.DeserializationContext
 import com.fasterxml.jackson.databind.SerializerProvider
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer
 import com.fasterxml.jackson.databind.ser.std.StdSerializer
+import com.fasterxml.jackson.module.scala.JsonScalaEnumeration
 
 object JacksonCheck {
 
@@ -96,8 +98,6 @@ object JacksonCheck {
   final case class Compass(@JsonProperty("currentDirection") currentDirection: Direction) extends JsonSerializable
 
   // scala enums
-  // FIXME this one needs some very specific stuff for Scala enums, might not be worth it
-  /*
   object Planet extends Enumeration with JsonSerializable {
     type Planet = Value
     val Mercury, Venus, Earth, Mars, Krypton = Value
@@ -108,9 +108,13 @@ object JacksonCheck {
 
   // Serializes planet values as a JsonString
   class PlanetType extends TypeReference[Planet.type] {}
+
+  // FIXME the deserialization sees the @JsonScalaEnumeration, but the serialization does not
+  //       so the serialized form is `{"enumClass":"com.lightbend.JacksonCheck$Planet","value":"Earth"}`
+  //       while the deserializer expects "Earth"
   final case class Superhero(name: String, @JsonScalaEnumeration(classOf[PlanetType]) planet: Planet.Planet)
       extends JsonSerializable
-   */
+
   def checkJackson(implicit system: ActorSystem[_]): String = {
     val serializationExtension = SerializationExtension(system)
     def serializationRoundtrip(someObject: AnyRef): Unit = {
@@ -127,6 +131,8 @@ object JacksonCheck {
     serializationRoundtrip(Zoo(Lion("aslan")))
     serializationRoundtrip(Zoo(Unicorn))
     serializationRoundtrip(Compass(Direction.South))
+    // serializationRoundtrip(Superhero("Greta", Planet.Earth))
+    // serializationRoundtrip(Superhero("Clark", Planet.Krypton))
 
     "Akka Serialization Jackson works"
   }

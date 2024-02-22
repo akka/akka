@@ -44,7 +44,7 @@ Messages with only primitives, standard library or Akka provided types should wo
 message structures must be carefully tested as it is hard to predict if and how Jackson will reflectively interact with them.
 
 @scala[However, nested types cannot automatically be found and sealed supertypes for ADTs must be marked with the marker 
-traits or will cause runtime errors. Scala standard library Enums are not possible to serialize in native images.]
+traits or will cause runtime errors.]
 
 Single parameter constructor messages that in a regular JDK can work after adding a `@JsonCreator` will instead need a 
 `@JsonProperty("parameterName")` annotation on the constructor parameter to work in native-images. 
