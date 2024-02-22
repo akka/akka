@@ -16,11 +16,16 @@ fork := true
 enablePlugins(NativeImagePlugin)
 nativeImageJvm := "graalvm-community"
 nativeImageVersion := "21.0.2"
-nativeImageOptions := Seq("--no-fallback", "--verbose", "--initialize-at-build-time=ch.qos.logback")
+nativeImageOptions := Seq(
+  "--no-fallback",
+  "--verbose",
+  "-Dakka.native-image.debug=true",
+  "--initialize-at-build-time=ch.qos.logback")
 
 libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-actor-typed" % akkaVersion,
   "com.typesafe.akka" %% "akka-stream" % akkaVersion,
+  "com.typesafe.akka" %% "akka-serialization-jackson" % akkaVersion,
   "ch.qos.logback" % "logback-classic" % "1.2.13",
   "com.typesafe.akka" %% "akka-actor-testkit-typed" % akkaVersion % Test,
   "org.scalatest" %% "scalatest" % "3.2.15" % Test)

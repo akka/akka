@@ -45,7 +45,6 @@ object AkkaIOBehavior {
     implicit val system: ActorSystem[_] = context.system
     implicit val ec: ExecutionContext = context.executionContext
 
-    // FIXME ideally we'd cover TLS as well?
     val tcpHost = "127.0.0.1"
     val tcpPort = 1337
     val tcp = Tcp(context.system)
@@ -55,6 +54,12 @@ object AkkaIOBehavior {
       .bind(tcpHost, tcpPort)
       .toMat(Sink.foreach(incomingConnection => incomingConnection.handleWith(Flow[ByteString])))(Keep.left)
       .run()
+      .andThen {
+        case Success(_) =>
+        case Failure(error) =>
+          println("Failed to run regular TCP server")
+          error.printStackTrace()
+      }
 
     tcpServerBound.map { _ =>
       // pass bytes over tcp, collect response, send to self
@@ -65,6 +70,7 @@ object AkkaIOBehavior {
         .onComplete {
           case Success(allTheBytes) => context.self ! allTheBytes.utf8String
           case Failure(error) =>
+            println("Failed to run regular TCP client")
             error.printStackTrace()
             System.exit(1)
         }
@@ -79,6 +85,12 @@ object AkkaIOBehavior {
         incomingConnection.handleWith(
           Flow[ByteString].mapConcat(_.utf8String.toList).takeWhile(_ != '\n').map(c => ByteString(c)))))(Keep.left)
       .run()
+      .andThen {
+        case Success(_) =>
+        case Failure(error) =>
+          println("Failed to run TLS server")
+          error.printStackTrace()
+      }
 
     tlsServerBound.map { _ =>
       Source
@@ -92,7 +104,7 @@ object AkkaIOBehavior {
           case Failure(error) =>
             println("TLS client failed")
             error.printStackTrace()
-            System.exit(1)
+          // System.exit(1)
         }
     }
 
