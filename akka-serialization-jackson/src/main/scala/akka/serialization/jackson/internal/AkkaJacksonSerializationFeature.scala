@@ -9,7 +9,6 @@ import akka.serialization.jackson.CborSerializable
 import akka.serialization.jackson.JsonSerializable
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer
 import com.fasterxml.jackson.databind.ser.std.StdSerializer
-import com.fasterxml.jackson.module.scala.JsonScalaEnumeration
 import org.graalvm.nativeimage.hosted.Feature
 import org.graalvm.nativeimage.hosted.RuntimeReflection
 
@@ -112,7 +111,6 @@ final class AkkaJacksonSerializationFeature extends Feature {
       RuntimeReflection.registerAllDeclaredConstructors(clazz)
       // we still need explicit register of each constructor for some reason
       util.Arrays.stream(clazz.getDeclaredConstructors).forEach { constructor =>
-        // FIXME this could probably be more selective
         log(
           "Registering constructor " + clazz.getName + "(" + util.Arrays
             .stream(constructor.getParameters)
@@ -127,10 +125,12 @@ final class AkkaJacksonSerializationFeature extends Feature {
         util.Arrays.stream(constructor.getParameterTypes).forEach { parameterType =>
           registerTypeForJacksonSerialization(access, parameterType)
 
-          // Scala enumeration annotation like in Akka docs
+        /*
+          // Scala enumeration annotation like in Akka docs, not working
           if (parameterType.isAnnotationPresent(classOf[JsonScalaEnumeration])) {
             RuntimeReflection.register(parameterType.getAnnotation(classOf[JsonScalaEnumeration]).value())
           }
+         */
 
         }
       }
@@ -153,7 +153,9 @@ final class AkkaJacksonSerializationFeature extends Feature {
       }
 
       if (classOf[scala.Enumeration].isAssignableFrom(clazz)) {
-        try {
+        warning(
+          "Saw a scala.Enumeration in " + clazz.getName + ", this is not supported out of the box and will require additional manual native image metadata")
+        /*try {
           log("Registering scala Enumeration " + clazz.getName)
           // access to $outer needed by Scala Jackson enumeration support
           util.Arrays
@@ -169,7 +171,7 @@ final class AkkaJacksonSerializationFeature extends Feature {
         } catch {
           case _: NoSuchFieldException =>
             log(s"failed to find $$outer field for Scala Enumeration")
-        }
+        } */
       }
 
     }
@@ -201,5 +203,9 @@ final class AkkaJacksonSerializationFeature extends Feature {
   private def log(msg: String): Unit = {
     if (debug)
       System.out.println("[DEBUG] [AkkaJacksonSerializationFeature] " + msg)
+  }
+
+  private def warning(msg: String): Unit = {
+    System.out.println("[WARN] [AkkaJacksonSerializationFeature] " + msg)
   }
 }

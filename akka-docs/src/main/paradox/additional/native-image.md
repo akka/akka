@@ -38,13 +38,16 @@ do not need to provide metadata for them.
 ### Serialization with Jackson
 
 When using the built-in @apidoc[JsonSerializable] and @apidoc[CborSerializable] marker traits, message types are automatically added
-for reflective access by Akka. 
+for reflective access by Akka. But there are a few important caveats:
 
 Messages with only primitives, standard library or Akka provided types should work but more complex
 message structures must be carefully tested as it is hard to predict if and how Jackson will reflectively interact with them.
 
 @scala[However, nested types cannot automatically be found and sealed supertypes for ADTs must be marked with the marker 
-traits or will cause runtime errors.]
+traits or will cause runtime errors. Scala standard library Enumerations is not possible to serialize.]
+
+When annotating single parameter constructors, the `@JsonCreator` annotation must be on the constructor, and not on the 
+class to be picked up in a native image. @scala[So instead of `@JsonCreator case class MyClass(field: String)`, it should be `case class MyClass @JsonCreator() (field: String)`]
 
 If self-defined marker traits are being used, then the marker trait defined in `serialization-bindings`, as well as each 
 concrete message type (lookup and constructor) and the field types, need to be added to the reflection metadata.
