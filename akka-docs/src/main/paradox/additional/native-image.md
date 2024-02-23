@@ -78,7 +78,7 @@ When using `akka-slf4j` for logging, automatically used for `akka-actor-typed`, 
 chosen needs extra configuration.
 
 While Akka does not mandate a logger implementation, `logback-classic` is used in many Akka samples throughout the Akka projects. 
-Becausue of this Akka provides reflection metadata for logback out of the box, however projects using it will need an extra
+Because of this Akka provides reflection metadata for logback out of the box, however projects using it will need an extra
 native image flag `--initialize-at-build-time=ch.qos.logback`.
 
 FIXME maybe just provide the lazy appender out of the box as well? 
