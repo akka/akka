@@ -12,6 +12,8 @@ lazy val akkaVersion = sys.props.getOrElse("akka.version", "2.9.1")
 
 fork := true
 
+javacOptions += "-parameters"
+
 // GraalVM native image build
 enablePlugins(NativeImagePlugin)
 nativeImageJvm := "graalvm-community"

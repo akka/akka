@@ -144,6 +144,9 @@ object JacksonCheck {
     serializationRoundtrip(Zoo(Unicorn))
     serializationRoundtrip(Compass(Direction.South))
 
+    serializationRoundtrip(new JavaJacksonModels.SimpleCommand("some text"))
+    serializationRoundtrip(new JavaJacksonModels.Zoo(new JavaJacksonModels.Elephant("dumbo", 23)))
+
     def notWorkingYet() {
       serializationRoundtrip(Alien("Clark", Planet.Krypton))
       serializationRoundtrip(Superhero("Greta", Planet.Earth))
