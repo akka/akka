@@ -16,9 +16,7 @@ fork := true
 enablePlugins(NativeImagePlugin)
 nativeImageJvm := "graalvm-community"
 nativeImageVersion := "21.0.2"
-nativeImageOptions := Seq(
-  "--no-fallback",
-  "--verbose")
+nativeImageOptions := Seq("--no-fallback", "--verbose", "--initialize-at-build-time=ch.qos.logback")
 
 libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-actor-typed" % akkaVersion,
