@@ -44,7 +44,8 @@ Messages with only primitives, standard library or Akka provided types should wo
 message structures must be carefully tested as it is hard to predict if and how Jackson will reflectively interact with them.
 
 @scala[However, nested types cannot automatically be found and sealed supertypes for ADTs must be marked with the marker 
-traits or will cause runtime errors. Scala standard library Enumerations is not possible to serialize.]
+traits or will cause runtime errors. Scala standard library Enumerations are not possible to serialize without manually
+defining additional metadata.]
 
 When annotating single parameter constructors, the `@JsonCreator` annotation must be on the constructor, and not on the 
 class to be picked up in a native image. @scala[So instead of `@JsonCreator case class MyClass(field: String)`, it should be `case class MyClass @JsonCreator() (field: String)`]

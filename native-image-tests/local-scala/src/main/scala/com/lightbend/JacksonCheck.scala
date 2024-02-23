@@ -49,7 +49,7 @@ object JacksonCheck {
       new JsonSubTypes.Type(value = classOf[Lion], name = "lion"),
       new JsonSubTypes.Type(value = classOf[Elephant], name = "elephant"),
       new JsonSubTypes.Type(value = classOf[Unicorn], name = "unicorn")))
-  sealed trait Animal extends JsonSerializable
+  sealed trait Animal
 
   final case class Lion @JsonCreator()(name: String) extends Animal
   final case class Elephant(name: String, age: Int) extends Animal
@@ -67,7 +67,7 @@ object JacksonCheck {
   // object enum
   @JsonSerialize(`using` = classOf[DirectionJsonSerializer])
   @JsonDeserialize(`using` = classOf[DirectionJsonDeserializer])
-  sealed trait Direction extends JsonSerializable
+  sealed trait Direction
 
   object Direction {
     case object North extends Direction
@@ -106,7 +106,7 @@ object JacksonCheck {
   final case class Compass @JsonCreator()(currentDirection: Direction) extends JsonSerializable
 
   // scala enums
-  object Planet extends Enumeration with JsonSerializable {
+  object Planet extends Enumeration {
     type Planet = Value
     val Mercury, Venus, Earth, Mars, Krypton = Value
   }
@@ -145,8 +145,8 @@ object JacksonCheck {
     serializationRoundtrip(Compass(Direction.South))
 
     def notWorkingYet() {
+      serializationRoundtrip(Alien("Clark", Planet.Krypton))
       serializationRoundtrip(Superhero("Greta", Planet.Earth))
-      serializationRoundtrip(Superhero("Clark", Planet.Krypton))
     }
 
     "Akka Serialization Jackson works"

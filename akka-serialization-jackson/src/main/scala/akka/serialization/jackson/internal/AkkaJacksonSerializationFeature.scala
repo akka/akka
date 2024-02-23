@@ -17,6 +17,8 @@ import java.util
 import java.util.stream.Collectors
 
 /**
+ * Provides auto-registration of user classes marked with the built in marker types.
+ *
  * INTERNAL API
  */
 @InternalApi
@@ -38,7 +40,7 @@ final class AkkaJacksonSerializationFeature extends Feature {
       val jsonSerializable =
         access.findClassByName(classOf[JsonSerializable].getName)
 
-      access.registerSubtypeReachabilityHandler({ (_, subtype) =>
+      access.registerSubtypeReachabilityHandler({ (access, subtype) =>
         if (subtype != null) {
           registerTypeForJacksonSerialization(access, subtype)
         }
@@ -47,12 +49,13 @@ final class AkkaJacksonSerializationFeature extends Feature {
       val cborSerializable =
         access.findClassByName(classOf[CborSerializable].getName)
 
-      access.registerSubtypeReachabilityHandler({ (_, subtype) =>
+      access.registerSubtypeReachabilityHandler({ (access, subtype) =>
         if (subtype != null) {
           registerTypeForJacksonSerialization(access, subtype)
         }
       }, cborSerializable)
 
+      // FIXME some overlap here with manually defined entries in NativeImageMetadataSpec, one place is probably enough?
       val jsonStdSerializer = access.findClassByName(classOf[StdSerializer[_]].getName)
       access.registerSubtypeReachabilityHandler({ (_, subtype) =>
         if (subtype != null) {
@@ -74,7 +77,7 @@ final class AkkaJacksonSerializationFeature extends Feature {
     }
   }
 
-  private def registerTypeForJacksonSerialization(access: Feature.BeforeAnalysisAccess, clazz: Class[_]): Unit = {
+  private def registerTypeForJacksonSerialization(access: Feature.DuringAnalysisAccess, clazz: Class[_]): Unit = {
 
     if (!alreadyRegisteredType.contains(clazz.getName) && clazz.getPackage != null && !clazz.getPackage.getName
           .startsWith("java") && !clazz.getPackage.getName.startsWith("scala")) {
@@ -120,17 +123,19 @@ final class AkkaJacksonSerializationFeature extends Feature {
         RuntimeReflection.registerAsQueried(constructor)
         RuntimeReflection.registerConstructorLookup(clazz, constructor.getParameterTypes: _*)
         // also register each constructor parameter type
-        // FIXME if parameter is an interface, could we hook up further callbacks for concrete classes here to auto register
-        //       ADTs as well?
         util.Arrays.stream(constructor.getParameterTypes).forEach { parameterType =>
           registerTypeForJacksonSerialization(access, parameterType)
 
-        /*
-          // Scala enumeration annotation like in Akka docs, not working
-          if (parameterType.isAnnotationPresent(classOf[JsonScalaEnumeration])) {
-            RuntimeReflection.register(parameterType.getAnnotation(classOf[JsonScalaEnumeration]).value())
+          if (parameterType.isInterface) {
+            // ADT or something like it, try to register concrete classes for that interface as well
+            access.registerSubtypeReachabilityHandler({ (access, clazz) =>
+              registerTypeForJacksonSerialization(access, clazz)
+            }, parameterType)
           }
-         */
+          if (classOf[scala.Enumeration#Value].isAssignableFrom(parameterType)) {
+            warning(
+              "Saw a scala.Enumeration field this is not supported out of the box and will require adding manual metadata")
+          }
 
         }
       }
@@ -151,29 +156,6 @@ final class AkkaJacksonSerializationFeature extends Feature {
           }
         }
       }
-
-      if (classOf[scala.Enumeration].isAssignableFrom(clazz)) {
-        warning(
-          "Saw a scala.Enumeration in " + clazz.getName + ", this is not supported out of the box and will require additional manual native image metadata")
-        /*try {
-          log("Registering scala Enumeration " + clazz.getName)
-          // access to $outer needed by Scala Jackson enumeration support
-          util.Arrays
-            .stream(clazz.getMethods)
-            .forEach(method =>
-              if (!method.getName.equals("Value") && !method.getName.equals("apply") && !method.getName.equals(
-                    "withName") && classOf[scala.Enumeration#Value].isAssignableFrom(method.getReturnType)) {
-                log("Registering Scala Enumeration value " + clazz.getName + "." + method.getName)
-                val outer = method.getReturnType.getDeclaredField(s"$$outer")
-                RuntimeReflection.register(outer)
-                RuntimeReflection.register(method)
-              })
-        } catch {
-          case _: NoSuchFieldException =>
-            log(s"failed to find $$outer field for Scala Enumeration")
-        } */
-      }
-
     }
   }
 
