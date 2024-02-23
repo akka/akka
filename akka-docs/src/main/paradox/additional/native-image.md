@@ -78,8 +78,12 @@ When using `akka-slf4j` for logging, automatically used for `akka-actor-typed`, 
 chosen needs extra configuration.
 
 While Akka does not mandate a logger implementation, `logback-classic` is used in many Akka samples throughout the Akka projects. 
-Building native images with logback requires additional reflect entries, configuring static initialization of logback and either avoiding using 
-`ch.qos.logback.classic.AsyncAppender` or declaring your own lazy version of the appender (not starting any threads at native image build time).
+Becausue of this Akka provides reflection metadata for logback out of the box, however projects using it will need an extra
+native image flag `--initialize-at-build-time=ch.qos.logback`.
+
+FIXME maybe just provide the lazy appender out of the box as well? 
+      alternatively should we provide a lazy async logger appender or show it here?
+
+If using `ch.qos.logback.classic.AsyncAppender` you will need to declare your own lazy version of the appender (not starting any threads at native image build time).
 
 FIXME should we add link to working sample/config for logback?
-FIXME should we provide a lazy async logger appender or show it here?
