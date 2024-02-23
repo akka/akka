@@ -1,178 +1,150 @@
-[
-  {
-    "name": "akka.serialization.jackson.AkkaJacksonModule",
-    "methods": [
-      {
-        "name": "<init>"
-      }
-    ]
-  },
-  {
-    "name": "akka.serialization.jackson.AkkaTypedJacksonModule",
-    "methods": [
-      {
-        "name": "<init>"
-      }
-    ]
-  },
-  {
-    "name": "akka.serialization.jackson.AkkaStreamJacksonModule",
-    "methods": [
-      {
-        "name": "<init>"
-      }
-    ]
-  },
-  {
-    "name": "akka.serialization.jackson.JacksonObjectMapperProvider$",
-    "fields": [
-      {
-        "name": "MODULE$"
-      }
-    ]
-  },
-  {
-    "name": "akka.serialization.jackson.JacksonCborSerializer",
-    "methods": [
-      {
-        "name": "<init>",
-        "parameterTypes": [
-          "akka.actor.ExtendedActorSystem",
-          "java.lang.String"
-        ]
-      }
-    ]
-  },
-  {
-    "name": "akka.serialization.jackson.JacksonJsonSerializer",
-    "methods": [
-      {
-        "name": "<init>",
-        "parameterTypes": [
-          "akka.actor.ExtendedActorSystem",
-          "java.lang.String"
-        ]
-      }
-    ]
-  },
-  {
-    "name": "akka.serialization.jackson.ActorRefSerializer",
-    "methods": [
-      {
-        "name": "<init>",
-        "parameterTypes": []
-      }
-    ]
-  },
-  {
-    "name": "akka.serialization.jackson.ActorRefDeserializer",
-    "methods": [
-      {
-        "name": "<init>",
-        "parameterTypes": []
-      }
-    ]
-  },
-  {
-    "name": "akka.serialization.jackson.AddressSerializer",
-    "methods": [
-      {
-        "name": "<init>",
-        "parameterTypes": []
-      }
-    ]
-  },
-  {
-    "name": "akka.serialization.jackson.AddressDeserializer",
-    "methods": [
-      {
-        "name": "<init>",
-        "parameterTypes": []
-      }
-    ]
-  },
-  {
-    "name": "akka.serialization.jackson.FiniteDurationSerializer",
-    "methods": [
-      {
-        "name": "<init>",
-        "parameterTypes": []
-      }
-    ]
-  },
-  {
-    "name": "akka.serialization.jackson.FiniteDurationDeserializer",
-    "methods": [
-      {
-        "name": "<init>",
-        "parameterTypes": []
-      }
-    ]
-  },
-  {
-    "condition" : { "typeReachable" : "akka.actor.typed.ActorRef" },
-    "name": "akka.serialization.jackson.TypedActorRefSerializer",
-    "methods": [
-      {
-        "name": "<init>",
-        "parameterTypes": []
-      }
-    ]
-  },
-  {
-    "condition" : { "typeReachable" : "akka.actor.typed.ActorRef" },
-    "name": "akka.serialization.jackson.TypedActorRefDeserializer",
-    "methods": [
-      {
-        "name": "<init>",
-        "parameterTypes": []
-      }
-    ]
-  },
-  {
-    "condition" : { "typeReachable" : "akka.stream.SourceRef" },
-    "name": "akka.serialization.jackson.SourceRefSerializer",
-    "methods": [
-      {
-        "name": "<init>",
-        "parameterTypes": []
-      }
-    ]
-  },
-  {
-    "condition" : { "typeReachable" : "akka.stream.SourceRef" },
-    "name": "akka.serialization.jackson.SourceRefDeserializer",
-    "methods": [
-      {
-        "name": "<init>",
-        "parameterTypes": []
-      }
-    ]
-  },
-  {
-    "condition" : { "typeReachable" : "akka.stream.SinkRef" },
-    "name": "akka.serialization.jackson.SinkRefSerializer",
-    "methods": [
-      {
-        "name": "<init>",
-        "parameterTypes": []
-      }
-    ]
-  },
-  {
-    "condition" : { "typeReachable" : "akka.stream.SinkRef" },
-    "name": "akka.serialization.jackson.SinkRefDeserializer",
-    "methods": [
-      {
-        "name": "<init>",
-        "parameterTypes": []
-      }
-    ]
-  },
-  {
-    "name": "akka.serialization.jackson.CborSerializable"
-  },
-  {
-    "name": "akka.serialization.jackson.JsonSerializable"
+[ {
+  "name" : "akka.serialization.jackson.AkkaJacksonModule",
+  "methods" : [ {
+    "name" : "<init>"
+  } ]
+}, {
+  "name" : "akka.serialization.jackson.AkkaTypedJacksonModule",
+  "methods" : [ {
+    "name" : "<init>"
+  } ]
+}, {
+  "name" : "akka.serialization.jackson.AkkaStreamJacksonModule",
+  "methods" : [ {
+    "name" : "<init>"
+  } ]
+}, {
+  "name" : "com.fasterxml.jackson.module.paramnames.ParameterNamesModule",
+  "methods" : [ {
+    "name" : "<init>"
+  } ]
+}, {
+  "name" : "com.fasterxml.jackson.datatype.jdk8.Jdk8Module",
+  "methods" : [ {
+    "name" : "<init>"
+  } ]
+}, {
+  "name" : "com.fasterxml.jackson.datatype.jsr310.JavaTimeModule",
+  "methods" : [ {
+    "name" : "<init>"
+  } ]
+}, {
+  "name" : "com.fasterxml.jackson.module.scala.DefaultScalaModule",
+  "methods" : [ {
+    "name" : "<init>"
+  } ]
+}, {
+  "name" : "akka.serialization.jackson.CborSerializable",
+  "fields" : [ {
+    "name" : "MODULE$"
+  } ]
+}, {
+  "name" : "akka.serialization.jackson.JsonSerializable",
+  "fields" : [ {
+    "name" : "MODULE$"
+  } ]
+}, {
+  "name" : "akka.serialization.jackson.JacksonObjectMapperProvider$",
+  "fields" : [ {
+    "name" : "MODULE$"
+  } ]
+}, {
+  "name" : "akka.serialization.jackson.ActorRefSerializer",
+  "methods" : [ {
+    "name" : "<init>"
+  } ]
+}, {
+  "name" : "akka.serialization.jackson.ActorRefDeserializer",
+  "methods" : [ {
+    "name" : "<init>"
+  } ]
+}, {
+  "name" : "akka.serialization.jackson.AddressSerializer",
+  "methods" : [ {
+    "name" : "<init>"
+  } ]
+}, {
+  "name" : "akka.serialization.jackson.AddressDeserializer",
+  "methods" : [ {
+    "name" : "<init>"
+  } ]
+}, {
+  "name" : "akka.serialization.jackson.FiniteDurationSerializer",
+  "methods" : [ {
+    "name" : "<init>"
+  } ]
+}, {
+  "name" : "akka.serialization.jackson.FiniteDurationDeserializer",
+  "methods" : [ {
+    "name" : "<init>"
+  } ]
+}, {
+  "name" : "akka.serialization.jackson.TypedActorRefSerializer",
+  "methods" : [ {
+    "name" : "<init>"
+  } ],
+  "condition" : {
+    "typeReachable" : "akka.actor.typed.ActorRef"
   }
-]
+}, {
+  "name" : "akka.serialization.jackson.TypedActorRefDeserializer",
+  "methods" : [ {
+    "name" : "<init>"
+  } ],
+  "condition" : {
+    "typeReachable" : "akka.actor.typed.ActorRef"
+  }
+}, {
+  "name" : "akka.serialization.jackson.SourceRefSerializer",
+  "methods" : [ {
+    "name" : "<init>"
+  } ],
+  "condition" : {
+    "typeReachable" : "akka.stream.SourceRef"
+  }
+}, {
+  "name" : "akka.serialization.jackson.SourceRefDeserializer",
+  "methods" : [ {
+    "name" : "<init>"
+  } ],
+  "condition" : {
+    "typeReachable" : "akka.stream.SourceRef"
+  }
+}, {
+  "name" : "akka.serialization.jackson.SinkRefSerializer",
+  "methods" : [ {
+    "name" : "<init>"
+  } ],
+  "condition" : {
+    "typeReachable" : "akka.stream.SinkRef"
+  }
+}, {
+  "name" : "akka.serialization.jackson.SinkRefDeserializer",
+  "methods" : [ {
+    "name" : "<init>"
+  } ],
+  "condition" : {
+    "typeReachable" : "akka.stream.SinkRef"
+  }
+}, {
+  "name" : "akka.serialization.jackson.JacksonObjectMapperProvider$",
+  "fields" : [ {
+    "name" : "MODULE$"
+  } ]
+}, {
+  "name" : "akka.serialization.jackson.JacksonCborSerializer",
+  "methods" : [ {
+    "name" : "<init>",
+    "parameterTypes" : [ "akka.actor.ExtendedActorSystem", "java.lang.String" ]
+  } ]
+}, {
+  "name" : "akka.serialization.jackson.JacksonJsonSerializer",
+  "methods" : [ {
+    "name" : "<init>",
+    "parameterTypes" : [ "akka.actor.ExtendedActorSystem", "java.lang.String" ]
+  } ]
+}, {
+  "name" : "akka.serialization.jackson.CborSerializable"
+}, {
+  "name" : "akka.serialization.jackson.JsonSerializable"
+} ]

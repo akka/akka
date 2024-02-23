@@ -46,9 +46,6 @@ message structures must be carefully tested as it is hard to predict if and how 
 @scala[However, nested types cannot automatically be found and sealed supertypes for ADTs must be marked with the marker 
 traits or will cause runtime errors.]
 
-Single parameter constructor messages that in a regular JDK can work after adding a `@JsonCreator` will instead need a 
-`@JsonProperty("parameterName")` annotation on the constructor parameter to work in native-images. 
-
 If self-defined marker traits are being used, then the marker trait defined in `serialization-bindings`, as well as each 
 concrete message type (lookup and constructor) and the field types, need to be added to the reflection metadata.
 

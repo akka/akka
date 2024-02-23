@@ -9,6 +9,7 @@ import akka.serialization.jackson.CborSerializable
 import akka.serialization.jackson.JsonSerializable
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer
 import com.fasterxml.jackson.databind.ser.std.StdSerializer
+import com.fasterxml.jackson.module.scala.JsonScalaEnumeration
 import org.graalvm.nativeimage.hosted.Feature
 import org.graalvm.nativeimage.hosted.RuntimeReflection
 
@@ -29,49 +30,55 @@ final class AkkaJacksonSerializationFeature extends Feature {
   private val alreadyRegisteredType = new java.util.HashSet[String]()
 
   override def beforeAnalysis(access: Feature.BeforeAnalysisAccess): Unit = {
-    // Concrete message types (defined by users) that can be serializable must have a reflection entry and reflection
-    // construction access so that Jackson can instantiate and set fields. The message classes will all
-    // be used in user code, if not the message is never sent or received, so Graal will find them as reachable.
-    // That makes it possible to auto-register reflection entries for all messages tagged with either of the two built in
-    // marker traits.
-    val jsonSerializable =
-      access.findClassByName(classOf[JsonSerializable].getName)
+    try {
+      // Concrete message types (defined by users) that can be serializable must have a reflection entry and reflection
+      // construction access so that Jackson can instantiate and set fields. The message classes will all
+      // be used in user code, if not the message is never sent or received, so Graal will find them as reachable.
+      // That makes it possible to auto-register reflection entries for all messages tagged with either of the two built in
+      // marker traits.
+      val jsonSerializable =
+        access.findClassByName(classOf[JsonSerializable].getName)
 
-    access.registerSubtypeReachabilityHandler({ (_, subtype) =>
-      if (subtype != null) {
-        registerTypeForJacksonSerialization(access, subtype)
-      }
-    }, jsonSerializable)
+      access.registerSubtypeReachabilityHandler({ (_, subtype) =>
+        if (subtype != null) {
+          registerTypeForJacksonSerialization(access, subtype)
+        }
+      }, jsonSerializable)
 
-    val cborSerializable =
-      access.findClassByName(classOf[CborSerializable].getName)
+      val cborSerializable =
+        access.findClassByName(classOf[CborSerializable].getName)
 
-    access.registerSubtypeReachabilityHandler({ (_, subtype) =>
-      if (subtype != null) {
-        registerTypeForJacksonSerialization(access, subtype)
-      }
-    }, cborSerializable)
+      access.registerSubtypeReachabilityHandler({ (_, subtype) =>
+        if (subtype != null) {
+          registerTypeForJacksonSerialization(access, subtype)
+        }
+      }, cborSerializable)
 
-    val jsonStdSerializer = access.findClassByName(classOf[StdSerializer[_]].getName)
-    access.registerSubtypeReachabilityHandler({ (_, subtype) =>
-      if (subtype != null) {
-        registerCustomJacksonSerializers(subtype)
-      }
-    }, jsonStdSerializer)
+      val jsonStdSerializer = access.findClassByName(classOf[StdSerializer[_]].getName)
+      access.registerSubtypeReachabilityHandler({ (_, subtype) =>
+        if (subtype != null) {
+          registerCustomJacksonSerializers(subtype)
+        }
+      }, jsonStdSerializer)
 
-    val jsonStdDeserializer = access.findClassByName(classOf[StdDeserializer[_]].getName)
-    access.registerSubtypeReachabilityHandler({ (_, subtype) =>
-      if (subtype != null) {
-        registerCustomJacksonSerializers(subtype)
-      }
-    }, jsonStdDeserializer)
+      val jsonStdDeserializer = access.findClassByName(classOf[StdDeserializer[_]].getName)
+      access.registerSubtypeReachabilityHandler({ (_, subtype) =>
+        if (subtype != null) {
+          registerCustomJacksonSerializers(subtype)
+        }
+      }, jsonStdDeserializer)
 
+    } catch {
+      case th: Throwable =>
+        System.err.println("Akka Jackson Serialization feature failed")
+        th.printStackTrace()
+    }
   }
 
   private def registerTypeForJacksonSerialization(access: Feature.BeforeAnalysisAccess, clazz: Class[_]): Unit = {
 
-    if (!alreadyRegisteredType.contains(clazz.getName) && clazz.getPackage == null || (!clazz.getPackage.getName
-          .startsWith("java") && !clazz.getPackage.getName.startsWith("scala"))) {
+    if (!alreadyRegisteredType.contains(clazz.getName) && clazz.getPackage != null && !clazz.getPackage.getName
+          .startsWith("java") && !clazz.getPackage.getName.startsWith("scala")) {
       alreadyRegisteredType.add(clazz.getName)
       log("Registering for jackson serialization: " + clazz.getName)
       RuntimeReflection.register(clazz)
@@ -107,17 +114,25 @@ final class AkkaJacksonSerializationFeature extends Feature {
       util.Arrays.stream(clazz.getDeclaredConstructors).forEach { constructor =>
         // FIXME this could probably be more selective
         log(
-          "Registering constructor " + clazz.getName + ".<init>(" + util.Arrays
+          "Registering constructor " + clazz.getName + "(" + util.Arrays
             .stream(constructor.getParameters)
-            .map(_.getName)
+            .map(param => param.getName + ": " + param.getType.getName)
             .collect(Collectors.joining(", ")) + ")")
         RuntimeReflection.register(constructor)
         RuntimeReflection.registerAsQueried(constructor)
         RuntimeReflection.registerConstructorLookup(clazz, constructor.getParameterTypes: _*)
         // also register each constructor parameter type
-        util.Arrays
-          .stream(constructor.getParameterTypes)
-          .forEach(parameterType => registerTypeForJacksonSerialization(access, parameterType))
+        // FIXME if parameter is an interface, could we hook up further callbacks for concrete classes here to auto register
+        //       ADTs as well?
+        util.Arrays.stream(constructor.getParameterTypes).forEach { parameterType =>
+          registerTypeForJacksonSerialization(access, parameterType)
+
+          // Scala enumeration annotation like in Akka docs
+          if (parameterType.isAnnotationPresent(classOf[JsonScalaEnumeration])) {
+            RuntimeReflection.register(parameterType.getAnnotation(classOf[JsonScalaEnumeration]).value())
+          }
+
+        }
       }
 
       if (!clazz.getName.endsWith("$")) {
@@ -144,7 +159,8 @@ final class AkkaJacksonSerializationFeature extends Feature {
           util.Arrays
             .stream(clazz.getMethods)
             .forEach(method =>
-              if (classOf[scala.Enumeration#Value].isAssignableFrom(method.getReturnType)) {
+              if (!method.getName.equals("Value") && !method.getName.equals("apply") && !method.getName.equals(
+                    "withName") && classOf[scala.Enumeration#Value].isAssignableFrom(method.getReturnType)) {
                 log("Registering Scala Enumeration value " + clazz.getName + "." + method.getName)
                 val outer = method.getReturnType.getDeclaredField(s"$$outer")
                 RuntimeReflection.register(outer)
@@ -160,7 +176,7 @@ final class AkkaJacksonSerializationFeature extends Feature {
   }
 
   private def registerCustomJacksonSerializers(subtype: Class[_]): Unit = {
-    if (subtype != null && !subtype.isInterface && !Modifier.isAbstract(subtype.getModifiers) && !subtype.getPackage.getName
+    if (subtype != null && !subtype.isInterface && !Modifier.isAbstract(subtype.getModifiers) && subtype.getPackage != null && !subtype.getPackage.getName
           .startsWith("com.fasterxml.jackson") && !subtype.getPackage.getName.startsWith("akka")) {
       log("Registering custom Jackson JsonSerializer: " + subtype.getName)
       RuntimeReflection.register(subtype)

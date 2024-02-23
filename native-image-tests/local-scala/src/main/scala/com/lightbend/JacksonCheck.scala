@@ -25,11 +25,21 @@ import com.fasterxml.jackson.module.scala.JsonScalaEnumeration
 
 object JacksonCheck {
 
+  @JsonCreator
+  final case class SingleParam(field: String) extends JsonSerializable
+
+  final case class NestedTypes(field: NestedType, field2: NestedType2) extends JsonSerializable
+
+  // these are auto-detected
+  @JsonCreator
+  final case class NestedType(someField: String)
+  final case class NestedType2(otherField: Double, yetAnother: Int)
+
   // from the akka-serialization-jackson docs
 
   // type hierarchy / ADT
-  // FIXME: Still haven't figured out why @JsonCreator cannot be used here
-  final case class Zoo(@JsonProperty("primaryAttraction") primaryAttraction: Animal) extends JsonSerializable
+  @JsonCreator
+  final case class Zoo(primaryAttraction: Animal) extends JsonSerializable
 
   // Note: native image needs additional marker trait on ADT supertype here or else
   //       AkkaJacksonSerializationFeature has no way to detect and register the subtypes for
@@ -43,7 +53,8 @@ object JacksonCheck {
       new JsonSubTypes.Type(value = classOf[Unicorn], name = "unicorn")))
   sealed trait Animal extends JsonSerializable
 
-  final case class Lion(@JsonProperty("name") name: String) extends Animal
+  @JsonCreator
+  final case class Lion(name: String) extends Animal
   final case class Elephant(name: String, age: Int) extends Animal
 
   @JsonDeserialize(`using` = classOf[UnicornDeserializer])
@@ -112,6 +123,8 @@ object JacksonCheck {
   // FIXME the deserialization sees the @JsonScalaEnumeration, but the serialization does not
   //       so the serialized form is `{"enumClass":"com.lightbend.JacksonCheck$Planet","value":"Earth"}`
   //       while the deserializer expects "Earth"
+  //       Verfied that in the native image the annotation is available on the constructor parameter for reflection
+  //       @com.fasterxml.jackson.module.scala.JsonScalaEnumeration(com.lightbend.JacksonCheck.PlanetType.class)
   final case class Superhero(name: String, @JsonScalaEnumeration(classOf[PlanetType]) planet: Planet.Planet)
       extends JsonSerializable
 
@@ -128,11 +141,16 @@ object JacksonCheck {
         s"Jackson Serialization of ${someObject.getClass} doesn't work, ${someObject} isn't equal to serialized-deserialized ${deserialized}")
     }
 
+    serializationRoundtrip(SingleParam("some text"))
+    serializationRoundtrip(NestedTypes(NestedType("some text"), NestedType2(7d, 4)))
     serializationRoundtrip(Zoo(Lion("aslan")))
     serializationRoundtrip(Zoo(Unicorn))
     serializationRoundtrip(Compass(Direction.South))
-    // serializationRoundtrip(Superhero("Greta", Planet.Earth))
-    // serializationRoundtrip(Superhero("Clark", Planet.Krypton))
+
+    def notWorkingYet() {
+      serializationRoundtrip(Superhero("Greta", Planet.Earth))
+      serializationRoundtrip(Superhero("Clark", Planet.Krypton))
+    }
 
     "Akka Serialization Jackson works"
   }
