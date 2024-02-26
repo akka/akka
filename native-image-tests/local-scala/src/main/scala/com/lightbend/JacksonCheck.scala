@@ -8,7 +8,6 @@ import akka.serialization.SerializationExtension
 import akka.serialization.SerializerWithStringManifest
 import akka.serialization.jackson.JsonSerializable
 import com.fasterxml.jackson.annotation.JsonCreator
-import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
 import com.fasterxml.jackson.annotation.JsonTypeName
@@ -26,18 +25,19 @@ import com.fasterxml.jackson.module.scala.JsonScalaEnumeration
 object JacksonCheck {
 
   // Note: class level JsonCreator does not work with native-image, it must be on the constructor
-  final case class SingleParam @JsonCreator()(field: String) extends JsonSerializable
+  final case class SingleParam(field: String) extends JsonSerializable
 
   final case class NestedTypes(field: NestedType, field2: NestedType2) extends JsonSerializable
 
   // these are auto-detected
-  final case class NestedType @JsonCreator()(someField: String)
+  final case class NestedType(someField: String)
   final case class NestedType2(otherField: Double, yetAnother: Int)
 
   // from the akka-serialization-jackson docs
 
   // type hierarchy / ADT
-  final case class Zoo @JsonCreator()(primaryAttraction: Animal) extends JsonSerializable
+  // FIXME regular JDK doesn't need this @JsonCreator annotation but graal does
+  final case class Zoo(primaryAttraction: Animal) extends JsonSerializable
 
   // Note: native image needs additional marker trait on ADT supertype here or else
   //       AkkaJacksonSerializationFeature has no way to detect and register the subtypes for
@@ -51,7 +51,7 @@ object JacksonCheck {
       new JsonSubTypes.Type(value = classOf[Unicorn], name = "unicorn")))
   sealed trait Animal
 
-  final case class Lion @JsonCreator()(name: String) extends Animal
+  final case class Lion(name: String) extends Animal
   final case class Elephant(name: String, age: Int) extends Animal
 
   @JsonDeserialize(`using` = classOf[UnicornDeserializer])
@@ -103,7 +103,7 @@ object JacksonCheck {
     }
   }
 
-  final case class Compass @JsonCreator()(currentDirection: Direction) extends JsonSerializable
+  final case class Compass(currentDirection: Direction) extends JsonSerializable
 
   // scala enums
   object Planet extends Enumeration {

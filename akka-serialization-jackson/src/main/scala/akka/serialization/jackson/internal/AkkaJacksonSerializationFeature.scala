@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.deser.std.StdDeserializer
 import com.fasterxml.jackson.databind.ser.std.StdSerializer
 import org.graalvm.nativeimage.hosted.Feature
 import org.graalvm.nativeimage.hosted.RuntimeReflection
+import org.graalvm.nativeimage.hosted.RuntimeResourceAccess
 
 import java.lang.reflect.Modifier
 import java.util
@@ -29,6 +30,7 @@ final class AkkaJacksonSerializationFeature extends Feature {
   private val debug = System.getProperty("akka.native-image.debug") == "true"
 
   private val alreadyRegisteredType = new java.util.HashSet[String]()
+  private val alreadyRegisteredClassResources = new java.util.HashSet[String]()
 
   override def beforeAnalysis(access: Feature.BeforeAnalysisAccess): Unit = {
     try {
@@ -86,6 +88,10 @@ final class AkkaJacksonSerializationFeature extends Feature {
       RuntimeReflection.register(clazz)
       RuntimeReflection.registerAllDeclaredFields(clazz)
       RuntimeReflection.registerAllDeclaredMethods(clazz)
+
+      // FIXME we could do this only if Scala class to bloat Java apps less
+      registerClassResourceForAccess(access, clazz)
+
       try {
         val scalaModuleField = clazz.getDeclaredField("MODULE$")
         RuntimeReflection.register(scalaModuleField)
@@ -144,7 +150,7 @@ final class AkkaJacksonSerializationFeature extends Feature {
         // check for companion object
         val companion = access.findClassByName(clazz.getName + "$")
         if (companion != null) {
-          log("Registering companion object for " + clazz.getName)
+          log("Registering Scala companion object for " + clazz.getName)
           RuntimeReflection.register(companion)
           RuntimeReflection.registerAllMethods(companion)
 
@@ -156,7 +162,32 @@ final class AkkaJacksonSerializationFeature extends Feature {
           }
         }
       }
+
+      def registerEnclosing(clazz: Class[_]): Unit = {
+        if (clazz.getEnclosingClass != null) {
+          // Jackson Scala module looks at enclosing if it exists (scala.reflect.ScalaSignature may go there)
+          val enclosing = clazz.getEnclosingClass
+          log("Registering enclosing class/object for " + enclosing.getName)
+          RuntimeReflection.register(enclosing)
+          registerEnclosing(enclosing)
+        }
+      }
+      // recursively register all enclosing classes/objects
+      registerEnclosing(clazz)
     }
+  }
+
+  private def registerClassResourceForAccess(access: Feature.DuringAnalysisAccess, clazz: Class[_]): Unit = {
+    if (!alreadyRegisteredClassResources.contains(clazz.getName)) {
+      // Scala Jackson support needs the class files as resources as well
+      alreadyRegisteredClassResources.add(clazz.getName)
+      val resourceName = clazz.getName.replace('.', '/') + ".class"
+      if (access.getApplicationClassLoader.getResource(resourceName) != null) {
+        log("Registering class resource " + resourceName)
+        RuntimeResourceAccess.addResource(clazz.getModule, resourceName)
+      }
+    }
+
   }
 
   private def registerCustomJacksonSerializers(subtype: Class[_]): Unit = {

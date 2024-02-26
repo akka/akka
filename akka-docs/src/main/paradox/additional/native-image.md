@@ -40,15 +40,9 @@ do not need to provide metadata for them.
 When using the built-in @apidoc[JsonSerializable] and @apidoc[CborSerializable] marker traits, message types are automatically added
 for reflective access by Akka. But there are a few important caveats:
 
-Messages with only primitives, standard library or Akka provided types should work but more complex
-message structures must be carefully tested as it is hard to predict if and how Jackson will reflectively interact with them.
-
-@scala[However, nested types cannot automatically be found and sealed supertypes for ADTs must be marked with the marker 
-traits or will cause runtime errors. Scala standard library Enumerations are not possible to serialize without manually
-defining additional metadata.]
-
-When annotating single parameter constructors, the `@JsonCreator` annotation must be on the constructor, and not on the 
-class to be picked up in a native image. @scala[So instead of `@JsonCreator case class MyClass(field: String)`, it should be `case class MyClass @JsonCreator() (field: String)`]
+Messages with only primitives, standard library your own or Akka provided types should work, but more complex
+message structures and special Jackson annotations must be carefully tested as it is hard to predict if and how 
+Jackson will reflectively interact with them.
 
 If self-defined marker traits are being used, then the marker trait defined in `serialization-bindings`, as well as each 
 concrete message type (lookup and constructor) and the field types, need to be added to the reflection metadata.
@@ -67,11 +61,11 @@ and possibly further per-message metadata depending on the specific serializer l
 ### Extensions
 
 Classic and typed `Extension`s loaded via configuration (`akka.extensions`, `akka.actor.typed.extensions`, `akka.actor.library-extensions` or `akka.actor.typed.library-extensions`)
-need an entry in the reflection metadata (lookup and constructor).
+need an entry in the reflection metadata (class and constructor).
 
 ### Akka Persistence Event Adapters
 
-Event adapters defined in an application need to be listed in reflection metadata (lookup and constructor).
+Event adapters defined in an application need to be listed in reflection metadata (class and constructor).
 
 ### Reflective classic actor construction
 

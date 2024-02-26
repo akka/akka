@@ -14,7 +14,6 @@ public class JavaJacksonModels {
 
     public static class SimpleCommand implements JsonSerializable {
         private final String name;
-
         @JsonCreator
         public SimpleCommand(String name) {
             this.name = name;
