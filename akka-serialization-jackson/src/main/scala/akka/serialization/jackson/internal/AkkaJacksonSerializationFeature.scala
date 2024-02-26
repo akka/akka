@@ -130,19 +130,26 @@ final class AkkaJacksonSerializationFeature extends Feature {
         RuntimeReflection.registerConstructorLookup(clazz, constructor.getParameterTypes: _*)
         // also register each constructor parameter type
         util.Arrays.stream(constructor.getParameterTypes).forEach { parameterType =>
-          registerTypeForJacksonSerialization(access, parameterType)
+          if (parameterType.getPackage != null) {
+            val packageName = parameterType.getPackage.getName
 
-          if (parameterType.isInterface) {
-            // ADT or something like it, try to register concrete classes for that interface as well
-            access.registerSubtypeReachabilityHandler({ (access, clazz) =>
-              registerTypeForJacksonSerialization(access, clazz)
-            }, parameterType)
-          }
-          if (classOf[scala.Enumeration#Value].isAssignableFrom(parameterType)) {
-            warning(
-              "Saw a scala.Enumeration field this is not supported out of the box and will require adding manual metadata")
-          }
+            // avoid digging to deep into akka and stdlib types
+            if (!packageName.startsWith("akka") && !packageName.startsWith("java") && !packageName
+                  .startsWith("scala")) {
+              registerTypeForJacksonSerialization(access, parameterType)
 
+              if (parameterType.isInterface) {
+                // ADT or something like it, try to register concrete classes for that interface as well
+                access.registerSubtypeReachabilityHandler({ (access, clazz) =>
+                  registerTypeForJacksonSerialization(access, clazz)
+                }, parameterType)
+              }
+              if (classOf[scala.Enumeration#Value].isAssignableFrom(parameterType)) {
+                warning(
+                  "Saw a scala.Enumeration field this is not supported out of the box and will require adding manual metadata")
+              }
+            }
+          }
         }
       }
 
