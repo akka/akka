@@ -10,13 +10,14 @@ require additional metadata for reflective access to work.
 
 ## Unsupported features
 
-The following features cannot be used in native image apps:
+The following features and aspects are not currently supported out of the box:
 
 * Lightbend Telemetry
 * Aeron UDP remoting
 * Testkits
 * LevelDB and InMem Akka Persistence plugins
 * @ref[Durable storage](../typed/distributed-data.md#durable-storage) for Akka Distributed Data
+* Serialization of Scala 3 classes
 
 ## Features requiring additional metadata
 
@@ -85,9 +86,5 @@ While Akka does not mandate a logger implementation, `logback-classic` is used i
 Because of this Akka provides reflection metadata for logback out of the box, however projects using it will need an extra
 native image flag `--initialize-at-build-time=ch.qos.logback`.
 
-FIXME maybe just provide the lazy appender out of the box as well? 
-      alternatively should we provide a lazy async logger appender or show it here?
-
-If using `ch.qos.logback.classic.AsyncAppender` you will need to declare your own lazy version of the appender (not starting any threads at native image build time).
-
-FIXME should we add link to working sample/config for logback?
+Special care needs to be taken if using the async logback appender, either avoid using it
+`ch.qos.logback.classic.AsyncAppender` or declare your own lazy version of the appender (not starting any threads at native image build time). You can see an example of such a lazy appender in the @scala[[Akka Projections edge replication sample](https://github.com/akka/akka-projection/blob/main/samples/grpc/local-drone-control-scala/src/main/scala/local/logback/NativeImageAsyncAppender.scala)]@java[[Akka Projections edge replication sample](https://github.com/akka/akka-projection/blob/main/samples/grpc/local-drone-control-java/src/main/java/local/logback/NativeImageAsyncAppender.java)]
