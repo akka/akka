@@ -41,7 +41,7 @@ do not need to provide metadata for them.
 When using the built-in @apidoc[JsonSerializable] and @apidoc[CborSerializable] marker traits, message types are automatically added
 for reflective access by Akka. But there are a few important caveats:
 
-Messages with only primitives, standard library your own or Akka provided types should work, but more complex
+Messages with only primitives, standard library, your own or Akka provided types should work, but more complex
 message structures and special Jackson annotations must be carefully tested as it is hard to predict if and how 
 Jackson will reflectively interact with them.
 
@@ -86,5 +86,5 @@ While Akka does not mandate a logger implementation, `logback-classic` is used i
 Because of this Akka provides reflection metadata for logback out of the box, however projects using it will need an extra
 native image flag `--initialize-at-build-time=ch.qos.logback`.
 
-Special care needs to be taken if using the async logback appender, either avoid using it
+Special care needs to be taken if using the async logback appender. Either avoid using
 `ch.qos.logback.classic.AsyncAppender` or declare your own lazy version of the appender (not starting any threads at native image build time). You can see an example of such a lazy appender in the @scala[[Akka Projections edge replication sample](https://github.com/akka/akka-projection/blob/main/samples/grpc/local-drone-control-scala/src/main/scala/local/logback/NativeImageAsyncAppender.scala)]@java[[Akka Projections edge replication sample](https://github.com/akka/akka-projection/blob/main/samples/grpc/local-drone-control-java/src/main/java/local/logback/NativeImageAsyncAppender.java)]

@@ -146,7 +146,7 @@ final class AkkaJacksonSerializationFeature extends Feature {
               }
               if (classOf[scala.Enumeration#Value].isAssignableFrom(parameterType)) {
                 warning(
-                  "Saw a scala.Enumeration field this is not supported out of the box and will require adding manual metadata")
+                  "Saw a scala.Enumeration field. This is not supported out of the box and will require adding manual metadata")
               }
             }
           }
