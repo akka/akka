@@ -5,7 +5,9 @@
 package akka.serialization.jackson
 
 import akka.testkit.internal.NativeImageUtils
+import akka.testkit.internal.NativeImageUtils.Condition
 import akka.testkit.internal.NativeImageUtils.Constructor
+import akka.testkit.internal.NativeImageUtils.ModuleField
 import akka.testkit.internal.NativeImageUtils.ReflectConfigEntry
 import akka.testkit.internal.NativeImageUtils.ReflectMethod
 import com.typesafe.config.ConfigFactory
@@ -26,7 +28,47 @@ object NativeImageMetadataSpec {
       }
       .toVector
 
-    jacksonModules
+    val manualAdditions = Seq(
+      ReflectConfigEntry("akka.serialization.jackson.CborSerializable", fields = Seq(ModuleField)),
+      ReflectConfigEntry("akka.serialization.jackson.JsonSerializable", fields = Seq(ModuleField)),
+      ReflectConfigEntry("akka.serialization.jackson.JacksonObjectMapperProvider$", fields = Seq(ModuleField)),
+      // specific jackson serializers/de-serializers
+      ReflectConfigEntry("akka.serialization.jackson.ActorRefSerializer", methods = Seq(ReflectMethod(Constructor))),
+      ReflectConfigEntry("akka.serialization.jackson.ActorRefDeserializer", methods = Seq(ReflectMethod(Constructor))),
+      ReflectConfigEntry("akka.serialization.jackson.AddressSerializer", methods = Seq(ReflectMethod(Constructor))),
+      ReflectConfigEntry("akka.serialization.jackson.AddressDeserializer", methods = Seq(ReflectMethod(Constructor))),
+      ReflectConfigEntry(
+        "akka.serialization.jackson.FiniteDurationSerializer",
+        methods = Seq(ReflectMethod(Constructor))),
+      ReflectConfigEntry(
+        "akka.serialization.jackson.FiniteDurationDeserializer",
+        methods = Seq(ReflectMethod(Constructor))),
+      ReflectConfigEntry(
+        "akka.serialization.jackson.TypedActorRefSerializer",
+        methods = Seq(ReflectMethod(Constructor)),
+        condition = Some(Condition(typeReachable = "akka.actor.typed.ActorRef"))),
+      ReflectConfigEntry(
+        "akka.serialization.jackson.TypedActorRefDeserializer",
+        methods = Seq(ReflectMethod(Constructor)),
+        condition = Some(Condition(typeReachable = "akka.actor.typed.ActorRef"))),
+      ReflectConfigEntry(
+        "akka.serialization.jackson.SourceRefSerializer",
+        methods = Seq(ReflectMethod(Constructor)),
+        condition = Some(Condition(typeReachable = "akka.stream.SourceRef"))),
+      ReflectConfigEntry(
+        "akka.serialization.jackson.SourceRefDeserializer",
+        methods = Seq(ReflectMethod(Constructor)),
+        condition = Some(Condition(typeReachable = "akka.stream.SourceRef"))),
+      ReflectConfigEntry(
+        "akka.serialization.jackson.SinkRefSerializer",
+        methods = Seq(ReflectMethod(Constructor)),
+        condition = Some(Condition(typeReachable = "akka.stream.SinkRef"))),
+      ReflectConfigEntry(
+        "akka.serialization.jackson.SinkRefDeserializer",
+        methods = Seq(ReflectMethod(Constructor)),
+        condition = Some(Condition(typeReachable = "akka.stream.SinkRef"))))
+
+    jacksonModules ++ manualAdditions
   }
 
   val nativeImageUtils =

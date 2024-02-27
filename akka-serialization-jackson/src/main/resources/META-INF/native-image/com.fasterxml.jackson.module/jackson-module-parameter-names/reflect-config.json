@@ -1,0 +1,6 @@
+[
+  {
+    "name":"com.fasterxml.jackson.module.paramnames.ParameterNamesModule",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  }
+]

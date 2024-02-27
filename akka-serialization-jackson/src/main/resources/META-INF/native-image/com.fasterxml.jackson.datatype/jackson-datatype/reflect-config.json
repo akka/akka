@@ -1,0 +1,10 @@
+[
+  {
+    "name":"com.fasterxml.jackson.datatype.jdk8.Jdk8Module",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"com.fasterxml.jackson.datatype.jsr310.JavaTimeModule",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  }
+]

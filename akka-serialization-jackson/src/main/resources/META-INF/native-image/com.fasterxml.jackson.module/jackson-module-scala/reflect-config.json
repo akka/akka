@@ -1,0 +1,6 @@
+[
+  {
+    "name":"com.fasterxml.jackson.module.scala.DefaultScalaModule",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  }
+]

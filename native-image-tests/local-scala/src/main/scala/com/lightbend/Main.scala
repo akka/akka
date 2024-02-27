@@ -177,6 +177,14 @@ object RootBehavior {
         val publisher = Source.single("Streams works").runWith(Sink.asPublisher(false))
         Source.fromPublisher(publisher).map(identity).runWith(Sink.foreach(context.self ! _))
 
+        waitingForAcks += 1
+        context.pipeToSelf(Future {
+          JacksonCheck.checkJackson(context.system)
+        }(context.executionContext)) {
+          case Success(string) => string
+          case Failure(error)  => throw error
+        }
+
         Behaviors.receiveMessage {
           case "Timeout" =>
             context.log.error("Didn't see all tests complete within 30s, something is wrong")
@@ -185,9 +193,10 @@ object RootBehavior {
           case message =>
             context.log.info("Got message: {}", message)
             waitingForAcks -= 1
-            if (waitingForAcks == 0)
+            if (waitingForAcks == 0) {
+              context.log.info("Everything checks out, shutting down")
               Behaviors.stopped
-            else
+            } else
               Behaviors.same
         }
       }
