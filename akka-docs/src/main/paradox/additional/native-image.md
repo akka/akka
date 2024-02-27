@@ -6,7 +6,11 @@ project.description: How to build native image executables with Akka
 Building native images with Akka is supported, both for local and cluster actor system applications. 
 
 Most built-in features in Akka can be used as is, however some functionality is not available and some extension points
-require additional metadata for reflective access to work.
+require additional metadata for reflective access to work. Akka and the Akka umbrella tries to provide metadata for third
+party dependencies where needed and not provided by the dependency to allow applications with zero or little extra 
+native-image metadata.
+
+A full sample including many of the Akka projects and build tool set up can be found in the @extref[Akka Edge Documentation](akka-edge:lightweight-deployments.html#graalvm-native-image). 
 
 ## Unsupported features
 
@@ -17,7 +21,7 @@ The following features and aspects are not currently supported out of the box:
 * Testkits
 * LevelDB and InMem Akka Persistence plugins
 * @ref[Durable storage](../typed/distributed-data.md#durable-storage) for Akka Distributed Data
-* Serialization of Scala 3 classes
+* Scala 3
 
 ## Features requiring additional metadata
 
@@ -41,15 +45,23 @@ do not need to provide metadata for them.
 When using the built-in @apidoc[JsonSerializable] and @apidoc[CborSerializable] marker traits, message types are automatically added
 for reflective access by Akka. But there are a few important caveats:
 
-Messages with only primitives, standard library, your own or Akka provided types should work, but more complex
+Messages with only primitives, standard library, your own or Akka provided types are automatically registered. More complex
 message structures and special Jackson annotations must be carefully tested as it is hard to predict if and how 
-Jackson will reflectively interact with them.
+Jackson will reflectively interact with them. 
+
+Types only referenced in fields as type parameters of other generic types, like for example
+in a collection @scala[List[MyClass]]@java[List<MyClass>], will require explicit marker traits to be picked up 
+@scala[`class MyClass() extends JsonSerializable`] @java[`class MyClass implements JsonSerializable`] or explicit entries
+in the `reflect-config.json` of your application.
+
+@scala[Scala standard library enumerations are not supported for serialization out of the box.]
 
 If self-defined marker traits are being used, then the marker trait defined in `serialization-bindings`, as well as each 
-concrete message type (lookup and constructor) and the field types, need to be added to the reflection metadata.
+concrete message type (lookup, constructor fields as needed by Jackson) and the field types, need to be added to the 
+reflection metadata.
 
 Applications that define and configure @apidoc[JacksonMigration] to evolve data formats need to list each concrete
-migration implementation (lookup and constructor) in reflection metadata.
+migration implementation (lookup and zero parameter constructor) in reflection metadata.
 
 Additional object mappers added through config `akka.serialization.jackson.jackson-modules` need entries in the reflective 
 metadata (lookup and constructor).

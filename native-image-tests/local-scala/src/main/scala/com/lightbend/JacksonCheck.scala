@@ -22,15 +22,31 @@ import com.fasterxml.jackson.databind.deser.std.StdDeserializer
 import com.fasterxml.jackson.databind.ser.std.StdSerializer
 import com.fasterxml.jackson.module.scala.JsonScalaEnumeration
 
+import java.time.Instant
+import scala.concurrent.duration.DurationInt
+import scala.concurrent.duration.FiniteDuration
+
 object JacksonCheck {
 
   final case class SingleParam(field: String) extends JsonSerializable
 
   final case class NestedTypes(field: NestedType, field2: NestedType2) extends JsonSerializable
 
-  // these are auto-detected
   final case class NestedType(someField: String)
   final case class NestedType2(otherField: Double, yetAnother: Int)
+
+  final case class EvenMoreNested(
+      nestedTypes: NestedTypes,
+      duration: FiniteDuration,
+      option: Option[String],
+      javaDuration: java.time.Duration,
+      instant: Instant,
+      list: List[String],
+      listOfOwnType: Seq[ImInACollection])
+      extends JsonSerializable
+
+  // this needs to be explicitly marked with trait
+  final case class ImInACollection(value: String) extends JsonSerializable
 
   // from the akka-serialization-jackson docs
 
@@ -114,6 +130,15 @@ object JacksonCheck {
 
     serializationRoundtrip(SingleParam("some text"))
     serializationRoundtrip(NestedTypes(NestedType("some text"), NestedType2(7d, 4)))
+    serializationRoundtrip(
+      EvenMoreNested(
+        NestedTypes(NestedType("some text"), NestedType2(1d, 9)),
+        5.seconds,
+        Some("optional string"),
+        java.time.Duration.ofSeconds(7),
+        Instant.now(),
+        List("one"),
+        Vector(ImInACollection("collection item"))))
     serializationRoundtrip(Zoo(Lion("aslan")))
     serializationRoundtrip(Zoo(Unicorn))
     serializationRoundtrip(Compass(Direction.South))
