@@ -602,7 +602,7 @@ private[akka] final class PromiseActorRef(
     case StoppedWithPath(p) => p
     case Stopped            =>
       // even if we are already stopped we still need to produce a proper path
-      updateState(Stopped, StoppedWithPath(provider.tempPath()))
+      updateState(Stopped, StoppedWithPath(provider.tempPath(refPathPrefix)))
       path
     case Registering => path // spin until registration is completed
     case unexpected  => throw new IllegalStateException(s"Unexpected state: $unexpected")
