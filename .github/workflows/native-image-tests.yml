@@ -39,11 +39,11 @@ jobs:
       - name: Gather version
         run: |-
           echo "just tail" 
-          sbt "akka-actor/version" --batch | tail -n 1
+          sbt "akka-actor/version" --batch | tail -n 2 | head -n 1
           echo "cut column"
-          sbt "akka-actor/version" --batch | tail -n 1 | cut -f 2 -d ' '
+          sbt "akka-actor/version" --batch | tail -n 2 | head -n 1 | cut -f 2 -d ' '
           echo "to file"
-          sbt "akka-actor/version" --batch | tail -n 1 | cut -f 2 -d ' ' > ~/.version
+          sbt "akka-actor/version" --batch | tail -n 2 | head -n 1 | cut -f 2 -d ' ' > ~/.version
           cat ~/.version
 
       - name: Publish artifacts locally
