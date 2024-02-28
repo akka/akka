@@ -39,7 +39,7 @@ jobs:
       - name: Gather version
         run: |-
           # outputs one extra line on ci vs local and prefix "[info] a.b.c"
-          sbt "akka-actor/version" --batch | tail -n 2 | head -n 1 | cut -f 2 -d ' ' > ~/.version
+          sbt "akka-actor/version" --batch | tail -n 2 | head -n 1 | cut -f 2 -d ' ' | tr -d '\200-\377' > ~/.version
           echo [$(cat ~/.version)]
 
       - name: Publish artifacts locally
