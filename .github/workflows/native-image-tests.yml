@@ -39,6 +39,10 @@ jobs:
       - name: Gather version
         run: |-
           # outputs one extra line on ci vs local and prefix "[info] a.b.c"
+          sbt "akka-actor/version" --batch --no-colors
+          echo "\n\n\n"
+          sbt "akka-actor/version" --batch --no-colors | tail -n 2
+          sbt "akka-actor/version" --batch --no-colors | tail -n 2 | head -n 1 
           sbt "akka-actor/version" --batch --no-colors | tail -n 2 | head -n 1 | cut -f 2 -d ' ' > ~/.version
           echo [$(cat ~/.version)]
           hexdump -c ~/.version
