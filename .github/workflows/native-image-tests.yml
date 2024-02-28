@@ -37,12 +37,11 @@ jobs:
           jvm: temurin:1.11
 
       - name: Gather version
+        # some cleanup of the sbt output to get the version sbt will use when publishing below
         run: |-
-          # outputs one extra line on ci vs local and prefix "[info] a.b.c"
-          sbt "akka-actor/version" --batch --no-colors | tail -n 1  
           sbt "akka-actor/version" --batch --no-colors | tail -n 1 | cut -f 2 -d ' ' | tr -d '\n' > ~/.version
           echo [$(cat ~/.version)]
-          hexdump -c ~/.version
+          # useful for debugging: hexdump -c ~/.version
 
       - name: Publish artifacts locally
         run: |-
