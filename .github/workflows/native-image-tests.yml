@@ -41,6 +41,7 @@ jobs:
           # outputs one extra line on ci vs local and prefix "[info] a.b.c"
           sbt "akka-actor/version" --batch | tail -n 2 | head -n 1 | cut -f 2 -d ' ' | tr -d '\n' > ~/.version
           echo [$(cat ~/.version)]
+          hexdump -c ~/.version
 
       - name: Publish artifacts locally
         run: |-
