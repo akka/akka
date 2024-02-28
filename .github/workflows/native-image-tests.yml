@@ -38,17 +38,13 @@ jobs:
 
       - name: Gather version
         run: |-
-          echo "just tail" 
-          sbt "akka-actor/version" --batch | tail -n 2 | head -n 1
-          echo "cut column"
-          sbt "akka-actor/version" --batch | tail -n 2 | head -n 1 | cut -f 2 -d ' '
-          echo "to file"
+          # outputs one extra line on ci vs local and prefix "[info] a.b.c"
           sbt "akka-actor/version" --batch | tail -n 2 | head -n 1 | cut -f 2 -d ' ' > ~/.version
-          cat ~/.version
+          echo [$(cat ~/.version)]
 
       - name: Publish artifacts locally
         run: |-
-          sbt "publishLocal; publishM2"
+          sbt publishLocal
 
       - name: Local Scala Akka App native image build
         run: |-
