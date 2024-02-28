@@ -38,7 +38,7 @@ jobs:
 
       - name: Gather version
         run: |-
-          echo `git describe --tags | sed -e "s/v\(.*\)-\([0-9][0-9]*\).*/\\1+\\2-/"``git rev-parse HEAD | head -c8`-SNAPSHOT > ~/.version
+          sbt "akka-actor/version" --batch | tail -n 1 | cut -f 2 -d ' ' > ~/.version
           cat ~/.version
 
       - name: Publish artifacts locally
