@@ -406,8 +406,7 @@ partition.
 
 As a precaution for that scenario all nodes are downed if no decision is made within
 `stable-after + down-all-when-unstable` from the first unreachability event.
-The measurement is reset if all unreachable have been healed, downed or removed, or
-if there are no changes within `stable-after * 2`.
+The measurement is reset if all unreachable have been healed, downed or removed.
 
 This is enabled by default for all strategies and by default the duration is derived to
 be 3/4 of `stable-after`.
