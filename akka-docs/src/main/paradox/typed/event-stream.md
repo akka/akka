@@ -66,7 +66,7 @@ Scala
 :  @@snip [LoggingDocSpec.scala](/akka-actor-typed-tests/src/test/scala/akka/actor/typed/eventstream/LoggingDocSpec.scala) { #superclass-subscription-eventstream }
 
 Java
-:  @@snip [LoggingDocTest.java](/akka-actor-typed-tests/src/test/scala/akka/actor/typed/eventstream/LoggingDocSpec.scala) { #superclass-subscription-eventstream }
+:  @@snip [LoggingDocTest.java](/akka-actor-typed-tests/src/test/java/akka/actor/typed/eventstream/LoggingDocTest.java) { #superclass-subscription-eventstream }
 
 Similarly to @ref:[Actor Classification](#actor-classification), @apidoc[event.EventStream] will automatically remove subscribers when they terminate.
 
