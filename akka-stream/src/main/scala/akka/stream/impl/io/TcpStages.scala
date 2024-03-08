@@ -5,14 +5,11 @@
 package akka.stream.impl.io
 
 import java.net.InetSocketAddress
-import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.{ AtomicBoolean, AtomicLong }
-
 import scala.annotation.nowarn
 import scala.collection.immutable
 import scala.concurrent.{ Future, Promise }
 import scala.concurrent.duration.{ Duration, FiniteDuration }
-
 import akka.{ Done, NotUsed }
 import akka.actor.{ ActorRef, Terminated }
 import akka.annotation.InternalApi
@@ -22,6 +19,7 @@ import akka.io.Tcp
 import akka.io.Tcp._
 import akka.stream._
 import akka.stream.impl.ReactiveStreamsCompliance
+import akka.stream.impl.Timers
 import akka.stream.impl.fusing.GraphStages.detacher
 import akka.stream.scaladsl.{ BidiFlow, Flow, TcpIdleTimeoutException, Tcp => StreamTcp }
 import akka.stream.scaladsl.Tcp.{ OutgoingConnection, ServerBinding }
@@ -593,19 +591,13 @@ private[stream] object ConnectionSourceStage {
       case Some(address) => s" on connection to [$address]"
       case _             => ""
     }
+    BidiFlow.fromGraph(
+      new Timers.IdleTimeoutBidi(
+        idleTimeout,
+        failureCreator = _ =>
+          new TcpIdleTimeoutException(
+            s"TCP idle-timeout encountered$connectionToString, no bytes passed in the last $idleTimeout",
+            idleTimeout)))
 
-    val toNetTimeout: BidiFlow[ByteString, ByteString, ByteString, ByteString, NotUsed] =
-      BidiFlow.fromFlows(
-        Flow[ByteString].mapError {
-          case _: TimeoutException =>
-            new TcpIdleTimeoutException(
-              s"TCP idle-timeout encountered$connectionToString, no bytes passed in the last $idleTimeout",
-              idleTimeout)
-        },
-        Flow[ByteString])
-    val fromNetTimeout: BidiFlow[ByteString, ByteString, ByteString, ByteString, NotUsed] =
-      toNetTimeout.reversed // now the bottom flow transforms the exception, the top one doesn't (since that one is "fromNet")
-
-    fromNetTimeout.atop(BidiFlow.bidirectionalIdleTimeout[ByteString, ByteString](idleTimeout)).atop(toNetTimeout)
   }
 }
