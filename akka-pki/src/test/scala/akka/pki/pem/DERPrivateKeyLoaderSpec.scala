@@ -28,6 +28,10 @@ class DERPrivateKeyLoaderSpec extends AnyWordSpec with Matchers with EitherValue
       // primes, and it fails to parse a multi-prime PKCS#8 key.
     }
 
+    "parse ECDSA keys" in {
+      load("ecdsa.pem")
+    }
+
     "fail on unsupported PEM contents (Certificates are not private keys)" in {
       assertThrows[PEMLoadingException] {
         load("certificate.pem")
