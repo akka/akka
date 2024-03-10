@@ -44,7 +44,8 @@ object PEMDecoder {
   }
 
   /**
-   * Decodes a PEM String into an identifier and the DER bytes of the content.
+   * Decodes the first certificate or private key entry in a PEM String into an identifier and the
+   * DER bytes of the content.
    *
    * See https://tools.ietf.org/html/rfc7468 and https://en.wikipedia.org/wiki/Privacy-Enhanced_Mail
    *
@@ -57,7 +58,7 @@ object PEMDecoder {
   def decode(pemData: String): DERData = {
     PEMRegex
       .findAllMatchIn(pemData)
-      .find(regexMatch => regexMatch.group(1).contains("PRIVATE KEY"))
+      .find(regexMatch => regexMatch.group(1).contains("PRIVATE KEY") || regexMatch.group(1).contains("CERTIFICATE"))
       .map { privateKeyRegexMatch =>
         try {
           new DERData(privateKeyRegexMatch.group(1), Base64.getMimeDecoder.decode(privateKeyRegexMatch.group(2)))
@@ -68,7 +69,8 @@ object PEMDecoder {
               iae)
         }
       }
-      .getOrElse(throw new PEMLoadingException("Not a PEM encoded data."))
+      .getOrElse(throw new PEMLoadingException(
+        "Could not find a private key, a certificate or the given string is not PEM encoded data."))
   }
 
   @ApiMayChange
