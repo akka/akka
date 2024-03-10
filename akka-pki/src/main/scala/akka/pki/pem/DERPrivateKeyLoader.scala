@@ -140,8 +140,62 @@ object DERPrivateKeyLoader {
 
   private def loadPkcs8PrivateKey(bytes: Array[Byte]) = {
     val keySpec = new PKCS8EncodedKeySpec(bytes)
+
+    val derInputStream = new ASN1InputStream(new DERDecoder, bytes)
+    val sequence = {
+      try {
+        derInputStream.readObject[ASN1Sequence]()
+      } finally {
+        derInputStream.close()
+      }
+    }
+
+    /*
+     PrivateKeyInfo ::= SEQUENCE {
+        version                   Version,
+        privateKeyAlgorithm       PrivateKeyAlgorithmIdentifier,
+        privateKey                PrivateKey,
+        attributes           [0]  IMPLICIT Attributes OPTIONAL }
+
+      Version ::= INTEGER
+
+      PrivateKeyAlgorithmIdentifier ::= AlgorithmIdentifier
+
+      PrivateKey ::= OCTET STRING
+
+      Attributes ::= SET OF Attribute
+
+      AlgorithmIdentifier  ::=  SEQUENCE  {
+         algorithm   OBJECT IDENTIFIER,
+         parameters  ANY DEFINED BY algorithm OPTIONAL
+     }
+     */
+    val version = getInteger(sequence, 0, "version")
+    require(version == BigInteger.ZERO, s"Exepcted version 0, but file is of format version $version")
+    val javaPrivateKeyAlgorithmName = sequence.get(1) match {
+      case privateKeyAlgorithmIdentifier: ASN1Sequence =>
+        privateKeyAlgorithmIdentifier.get(0) match {
+          case oid: ASN1ObjectIdentifier =>
+            oid.getValue match {
+              case "1.2.840.113549.1.1.1" => "rsa"
+              case "1.2.840.10045.2.1"    => "ec"
+              case "1.3.101.110"          => "X25519"
+              case "1.3.101.111"          => "x448"
+              case "1.3.101.112"          => "ed25519"
+              case "1.3.101.113"          => "ed448"
+              case unknown                => throw new IllegalArgumentException(s"Unknown algorithm idenfifier [$unknown]")
+            }
+          case unexpected =>
+            throw new IllegalArgumentException(
+              s"Unexpected type of the algorithm, expected object idenfier, was: [${unexpected.getClass}]")
+        }
+      case unexpected =>
+        throw new IllegalArgumentException(
+          s"Unexpected type of the privateKeyAlgorithm, expected object idenfier, was: [${unexpected.getClass}]")
+    }
+
     // FIXME we can't actually be sure it is RSA, could just as well be ECDSA or Ed25519
-    val keyFactory = KeyFactory.getInstance("RSA")
+    val keyFactory = KeyFactory.getInstance(javaPrivateKeyAlgorithmName)
     keyFactory.generatePrivate(keySpec)
   }
 

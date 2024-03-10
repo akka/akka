@@ -29,7 +29,16 @@ class DERPrivateKeyLoaderSpec extends AnyWordSpec with Matchers with EitherValue
     }
 
     "parse ECDSA keys" in {
-      load("ecdsa.pem")
+      val pkcs1 = load("ecdsa.pem")
+      val pkcs8 = load("pkcs8-ecdsa.pem")
+      pkcs1.getAlgorithm should ===("EC")
+      pkcs8.getAlgorithm should ===("EC")
+      // FIXME how can we compare, are they actually equal?
+
+    }
+
+    "parse EdDSA keys" in {
+      load("ed25519.pem")
     }
 
     "fail on unsupported PEM contents (Certificates are not private keys)" in {
