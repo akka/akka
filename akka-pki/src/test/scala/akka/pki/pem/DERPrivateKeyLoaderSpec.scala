@@ -38,6 +38,7 @@ class DERPrivateKeyLoaderSpec extends AnyWordSpec with Matchers with EitherValue
     }
 
     "parse EdDSA keys" in {
+      assume(sys.props("java.specification.version").toInt >= 15, "Only available in JDK 15 and newer")
       load("ed25519.pem")
     }
 
