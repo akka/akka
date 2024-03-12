@@ -194,7 +194,6 @@ object DERPrivateKeyLoader {
           s"Unexpected type of the privateKeyAlgorithm, expected object idenfier, was: [${unexpected.getClass}]")
     }
 
-    // FIXME we can't actually be sure it is RSA, could just as well be ECDSA or Ed25519
     val keyFactory = KeyFactory.getInstance(javaPrivateKeyAlgorithmName)
     keyFactory.generatePrivate(keySpec)
   }
