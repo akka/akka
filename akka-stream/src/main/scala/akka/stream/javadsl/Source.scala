@@ -818,7 +818,7 @@ object Source {
    *
    * @param create - function that is called on stream start and creates/opens resource.
    * @param read - function that reads data from opened resource. It is called each time backpressure signal
-   *             is received. Stream calls close and completes when `read` returns None.
+   *             is received. Stream calls close and completes when `read` returns an empty Optional.
    * @param close - function that closes resource
    */
   def unfoldResource[T, S](
@@ -844,7 +844,7 @@ object Source {
    *
    * @param create - function that is called on stream start and creates/opens resource.
    * @param read - function that reads data from opened resource. It is called each time backpressure signal
-   *             is received. Stream calls close and completes when `CompletionStage` from read function returns None.
+   *             is received. Stream calls close and completes when `CompletionStage` from read function returns an empty Optional.
    * @param close - function that closes resource
    */
   def unfoldResourceAsync[T, S](
