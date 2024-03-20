@@ -4,9 +4,13 @@
 
 package akka.actor.typed.eventstream;
 
-// #imports
+import static akka.actor.typed.javadsl.Adapter.spawn;
+import static akka.actor.typed.javadsl.Adapter.toClassic;
+
+import akka.actor.Actor;
 import akka.actor.AllDeadLetters;
 import akka.actor.SuppressedDeadLetter;
+import akka.actor.Terminated;
 import akka.actor.testkit.typed.javadsl.ActorTestKit;
 import akka.actor.testkit.typed.javadsl.TestProbe;
 import akka.actor.typed.Behavior;
@@ -14,56 +18,64 @@ import akka.actor.typed.Props;
 import akka.actor.typed.SpawnProtocol;
 import akka.actor.typed.SpawnProtocol.Spawn;
 import akka.actor.typed.eventstream.EventStream.Publish;
-import akka.actor.typed.eventstream.EventStream.Subscribe;
-import akka.actor.typed.javadsl.AbstractBehavior;
-import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.AskPattern;
-import akka.actor.typed.javadsl.Behaviors;
-import akka.actor.typed.javadsl.Receive;
-import akka.testkit.javadsl.TestKit;
 import java.time.Duration;
 import java.util.concurrent.CompletionStage;
+import org.junit.Assert;
 import org.junit.Test;
 import org.scalatestplus.junit.JUnitSuite;
 // #imports-deadletter
 import akka.actor.DeadLetter;
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.ActorSystem;
+import akka.actor.typed.eventstream.EventStream.Subscribe;
+import akka.actor.typed.javadsl.AbstractBehavior;
+import akka.actor.typed.javadsl.ActorContext;
+import akka.actor.typed.javadsl.Behaviors;
+import akka.actor.typed.javadsl.Receive;
+import org.slf4j.Logger;
 // #imports-deadletter
 
 public class LoggingDocTest extends JUnitSuite {
 
     @Test
     public void subscribeToDeadLetters() {
-        // #deadletters
-        ActorSystem<DeadLetter> system = ActorSystem.create(Behaviors.empty(), "DeadLetters");
-        system.eventStream().tell(new Subscribe<>(DeadLetter.class, system));
-        // #deadletters
+        ActorSystem<SpawnProtocol.Command> system = ActorSystem.create(SpawnProtocol.create(),
+            "DeadLettersSystem");
+        // #subscribe-deadletter
+        ActorRef<DeadLetter> deadLetters = spawn(toClassic(system), DeadLetterActor.create(),
+            "DeadLetters");
+        system.eventStream().tell(new Subscribe<>(DeadLetter.class, deadLetters));
+        // #subscribe-deadletter
         ActorTestKit.shutdown(system);
     }
 
     public
     // #deadletter-actor
-    static class DeadLetterActor extends AbstractBehavior<String> {
+    static class DeadLetterActor extends AbstractBehavior<DeadLetter> {
 
-        public static Behavior<String> create() {
+        final Logger log = getContext().getLog();
+
+        public static Behavior<DeadLetter> create() {
             return Behaviors.setup(DeadLetterActor::new);
         }
 
-        public DeadLetterActor(ActorContext<String> context) {
+        public DeadLetterActor(ActorContext<DeadLetter> context) {
             super(context);
             ActorRef<DeadLetter> messageAdapter = context.messageAdapter(
                 DeadLetter.class,
-                d -> d.message().toString()
+                d -> d
             );
+            // subscribe DeadLetter at start up.
             context.getSystem().eventStream()
                 .tell(new Subscribe<>(DeadLetter.class, messageAdapter));
         }
 
         @Override
-        public Receive<String> createReceive() {
-            return newReceiveBuilder().onMessage(String.class, msg -> {
-                System.out.println(msg);
+        public Receive<DeadLetter> createReceive() {
+            return newReceiveBuilder().onMessage(DeadLetter.class, msg -> {
+                log.info("receive dead letter: {} from <{}> to <{}>", msg, msg.sender(),
+                    msg.recipient());
                 return Behaviors.same();
             }).build();
         }
@@ -95,6 +107,8 @@ public class LoggingDocTest extends JUnitSuite {
 
     static class Listener extends AbstractBehavior<AllKindsOfMusic> {
 
+        final Logger log = getContext().getLog();
+
         public static Behavior<AllKindsOfMusic> create() {
             return Behaviors.setup(Listener::new);
         }
@@ -108,15 +122,13 @@ public class LoggingDocTest extends JUnitSuite {
         public Receive<AllKindsOfMusic> createReceive() {
             return newReceiveBuilder()
                 .onMessage(Jazz.class, msg -> {
-                    System.out.printf("%s is listening to: %s%n",
-                        getContext().getSelf().path().name(),
+                    log.info("{} is listening to Jazz: {}", getContext().getSelf().path().name(),
                         msg);
                     return Behaviors.same();
                 })
                 .onMessage(Electronic.class, msg -> {
-                    System.out.printf("%s is listening to: %s%n",
-                        getContext().getSelf().path().name(),
-                        msg);
+                    log.info("{} is listening to Electronic: {}",
+                        getContext().getSelf().path().name(), msg);
                     return Behaviors.same();
                 }).build();
         }
@@ -168,6 +180,15 @@ public class LoggingDocTest extends JUnitSuite {
         // #suppressed-deadletters
         system.eventStream().tell(new Subscribe<>(SuppressedDeadLetter.class, actor));
         // #suppressed-deadletters
+        Terminated suppression = Terminated.apply(Actor.noSender(), false, false);
+        SuppressedDeadLetter deadLetter = SuppressedDeadLetter.apply(suppression, Actor.noSender(),
+            Actor.noSender());
+        system.eventStream().tell(new Publish<>(deadLetter));
+
+        SuppressedDeadLetter suppressedDeadLetter = probe.expectMessageClass(
+            SuppressedDeadLetter.class);
+        Assert.assertNotNull(suppressedDeadLetter);
+        Assert.assertNotEquals(suppression, suppressedDeadLetter.message());
 
         ActorTestKit.shutdown(system);
     }
@@ -180,6 +201,23 @@ public class LoggingDocTest extends JUnitSuite {
         // #all-deadletters
         system.eventStream().tell(new Subscribe<>(AllDeadLetters.class, actor));
         // #all-deadletters
+
+        Terminated suppression = Terminated.apply(Actor.noSender(), false, false);
+        SuppressedDeadLetter suppressedDeadLetter = SuppressedDeadLetter.apply(suppression,
+            Actor.noSender(),
+            Actor.noSender());
+        system.eventStream().tell(new Publish<>(suppressedDeadLetter));
+        DeadLetter deadLetter = DeadLetter.apply("deadLetter", Actor.noSender(), Actor.noSender());
+        system.eventStream().tell(new Publish<>(deadLetter));
+
+        // both of the following messages will be received by the subscription actor
+        SuppressedDeadLetter receiveSuppressed = probe.expectMessageClass(
+            SuppressedDeadLetter.class);
+        Assert.assertNotNull(receiveSuppressed);
+        Assert.assertNotEquals(suppression, receiveSuppressed.message());
+        DeadLetter receiveDeadLetter = probe.expectMessageClass(DeadLetter.class);
+        Assert.assertNotNull(receiveDeadLetter);
+        Assert.assertNotEquals(deadLetter.message(), receiveDeadLetter.message());
 
         ActorTestKit.shutdown(system);
     }
