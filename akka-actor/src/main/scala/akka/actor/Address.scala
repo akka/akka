@@ -22,6 +22,8 @@ import akka.annotation.InternalApi
  * This class is final to allow use as a case class (copy method etc.); if
  * for example a remote transport would want to associate additional
  * information with an address, then this must be done externally.
+ *
+ * Not for user instantiation
  */
 @SerialVersionUID(1L)
 final case class Address private[akka] (protocol: String, system: String, host: Option[String], port: Option[Int]) {
@@ -133,6 +135,10 @@ object Address {
   }
 }
 
+/**
+ * INTERNAL API
+ */
+@InternalApi
 private[akka] trait PathUtils {
   protected def split(s: String, fragment: String): List[String] = {
     @tailrec

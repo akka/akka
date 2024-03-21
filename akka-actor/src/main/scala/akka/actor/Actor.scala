@@ -127,6 +127,7 @@ final case class Terminated private[akka] (@BeanProperty actor: ActorRef)(
  * The watcher ([[akka.actor.dungeon.DeathWatch]]) subscribes to the `AddressTerminatedTopic`
  * and translates this event to [[akka.actor.Terminated]], which is sent itself.
  */
+@InternalApi
 @SerialVersionUID(1L)
 private[akka] final case class AddressTerminated(address: Address)
     extends AutoReceivedMessage
@@ -156,12 +157,16 @@ trait NotInfluenceReceiveTimeout
 /**
  * IllegalActorStateException is thrown when a core invariant in the Actor implementation has been violated.
  * For instance, if you try to create an Actor that doesn't extend Actor.
+ *
+ * Not for user instatiation
  */
 @SerialVersionUID(1L)
 final case class IllegalActorStateException private[akka] (message: String) extends AkkaException(message)
 
 /**
  * ActorKilledException is thrown when an Actor receives the [[akka.actor.Kill]] message
+ *
+ * Not for user instatiation
  */
 @SerialVersionUID(1L)
 final case class ActorKilledException private[akka] (message: String) extends AkkaException(message) with NoStackTrace
