@@ -151,8 +151,8 @@ private[akka] class MsgDecoder extends MessageToMessageDecoder[AnyRef] {
       } else if (w.hasBarrier) {
         val barrier = w.getBarrier
         barrier.getOp match {
-          case BarrierOp.Succeeded => BarrierResult(barrier.getName, true)
-          case BarrierOp.Failed    => BarrierResult(barrier.getName, false)
+          case BarrierOp.Succeeded => BarrierResult(barrier.getName, success = true)
+          case BarrierOp.Failed    => BarrierResult(barrier.getName, success = false)
           case BarrierOp.Fail      => FailBarrier(barrier.getName)
           case BarrierOp.Enter =>
             EnterBarrier(
@@ -164,8 +164,8 @@ private[akka] class MsgDecoder extends MessageToMessageDecoder[AnyRef] {
         import TCP.{ FailType => FT }
         f.getFailure match {
           case FT.Throttle       => ThrottleMsg(f.getAddress, f.getDirection, f.getRateMBit)
-          case FT.Abort          => DisconnectMsg(f.getAddress, true)
-          case FT.Disconnect     => DisconnectMsg(f.getAddress, false)
+          case FT.Abort          => DisconnectMsg(f.getAddress, abort = true)
+          case FT.Disconnect     => DisconnectMsg(f.getAddress, abort = false)
           case FT.Exit           => TerminateMsg(Right(f.getExitValue))
           case FT.Shutdown       => TerminateMsg(Left(false))
           case FT.ShutdownAbrupt => TerminateMsg(Left(true))

@@ -239,8 +239,8 @@ import akka.util.OptionVal
           val logMessage = ex match {
             case e: ActorInitializationException if e.getCause ne null =>
               e.getCause match {
-                case ex: InvocationTargetException if ex.getCause ne null => ex.getCause.getMessage
-                case ex                                                   => ex.getMessage
+                case cause: InvocationTargetException if ex.getCause ne null => cause.getCause.getMessage
+                case cause                                                   => cause.getMessage
               }
             case e => e.getMessage
           }

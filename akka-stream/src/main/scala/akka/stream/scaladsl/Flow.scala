@@ -1421,7 +1421,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * See also [[FlowOps.limit]], [[FlowOps.limitWeighted]]
    */
-  def takeWhile(p: Out => Boolean): Repr[Out] = takeWhile(p, false)
+  def takeWhile(p: Out => Boolean): Repr[Out] = takeWhile(p, inclusive = false)
 
   /**
    * Terminate processing (and cancel the upstream publisher) after predicate
@@ -2326,7 +2326,8 @@ trait FlowOps[+Out, +Mat] {
    *
    * @see [[#groupBy]]
    */
-  def groupBy[K](maxSubstreams: Int, f: Out => K): SubFlow[Out, Mat, Repr, Closed] = groupBy(maxSubstreams, f, false)
+  def groupBy[K](maxSubstreams: Int, f: Out => K): SubFlow[Out, Mat, Repr, Closed] =
+    groupBy(maxSubstreams, f, allowClosedSubstreamRecreation = false)
 
   /**
    * This operation applies the given predicate to all incoming elements and
@@ -3535,7 +3536,7 @@ trait FlowOps[+Out, +Mat] {
       when: Out => Boolean): Graph[FlowShape[Out @uncheckedVariance, Out], M] =
     GraphDSL.createGraph(that) { implicit b => r =>
       import GraphDSL.Implicits._
-      val partition = b.add(new Partition[Out](2, out => if (when(out)) 1 else 0, true))
+      val partition = b.add(new Partition[Out](2, out => if (when(out)) 1 else 0, eagerCancel = true))
       partition.out(1) ~> r
       FlowShape(partition.in, partition.out(0))
     }

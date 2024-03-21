@@ -346,7 +346,7 @@ final class ReplicatorSettings(
       Set.empty,
       6.hours,
       10.days,
-      true,
+      deltaCrdtEnabled = true,
       200)
 
   // For backwards compatibility
@@ -373,7 +373,7 @@ final class ReplicatorSettings(
       durableKeys,
       6.hours,
       10.days,
-      true,
+      deltaCrdtEnabled = true,
       200)
 
   // For backwards compatibility

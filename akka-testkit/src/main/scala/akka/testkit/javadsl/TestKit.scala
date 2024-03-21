@@ -602,7 +602,7 @@ object TestKit {
    * On failure debug output will be logged about the remaining actors in the system.
    */
   def shutdownActorSystem(actorSystem: ActorSystem): Unit = {
-    shutdownActorSystem(actorSystem, 10.seconds, false)
+    shutdownActorSystem(actorSystem, 10.seconds, verifySystemShutdown = false)
   }
 
   /**
@@ -610,7 +610,7 @@ object TestKit {
    * On failure debug output will be logged about the remaining actors in the system.
    */
   def shutdownActorSystem(actorSystem: ActorSystem, duration: Duration): Unit = {
-    shutdownActorSystem(actorSystem, duration, false)
+    shutdownActorSystem(actorSystem, duration, verifySystemShutdown = false)
   }
 
   /**

@@ -6,16 +6,13 @@ package akka.actor.typed
 package internal
 
 import java.util.concurrent.ThreadLocalRandom
-
 import scala.concurrent.duration.Deadline
 import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
 import scala.util.Try
 import scala.util.control.Exception.Catcher
 import scala.util.control.NonFatal
-
 import org.slf4j.event.Level
-
 import akka.actor.DeadLetterSuppression
 import akka.actor.Dropped
 import akka.actor.typed.BehaviorInterceptor.PreStartTarget
@@ -28,6 +25,8 @@ import akka.annotation.InternalApi
 import akka.event.Logging
 import akka.util.OptionVal
 import akka.util.unused
+
+import scala.annotation.nowarn
 
 /**
  * INTERNAL API
@@ -412,6 +411,7 @@ private class RestartSupervisor[T, Thr <: Throwable: ClassTag](initial: Behavior
     }
   }
 
+  @nowarn("cat=other-shadowing")
   private def updateRestartCount(): Unit = {
     strategy match {
       case restart: Restart =>

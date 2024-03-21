@@ -178,7 +178,7 @@ trait Conductor { this: TestConductorExt =>
    */
   def disconnect(node: RoleName, target: RoleName): Future[Done] = {
     import Settings.QueryTimeout
-    (controller ? Disconnect(node, target, false)).mapTo(classTag[Done])
+    (controller ? Disconnect(node, target, abort = false)).mapTo(classTag[Done])
   }
 
   /**
@@ -191,7 +191,7 @@ trait Conductor { this: TestConductorExt =>
    */
   def abort(node: RoleName, target: RoleName): Future[Done] = {
     import Settings.QueryTimeout
-    (controller ? Disconnect(node, target, true)).mapTo(classTag[Done])
+    (controller ? Disconnect(node, target, abort = true)).mapTo(classTag[Done])
   }
 
   /**
@@ -437,16 +437,18 @@ private[akka] class Controller(private var initialParticipants: Int, controllerP
    * BarrierTimeouts in the players).
    */
   override def supervisorStrategy = OneForOneStrategy() {
-    case BarrierTimeout(data)             => failBarrier(data)
-    case FailedBarrier(data)              => failBarrier(data)
-    case BarrierEmpty(_, _)               => SupervisorStrategy.Resume
-    case WrongBarrier(name, client, data) => { client ! ToClient(BarrierResult(name, false)); failBarrier(data) }
-    case ClientLost(data, _)              => failBarrier(data)
-    case DuplicateNode(data, _)           => failBarrier(data)
+    case BarrierTimeout(data) => failBarrier(data)
+    case FailedBarrier(data)  => failBarrier(data)
+    case BarrierEmpty(_, _)   => SupervisorStrategy.Resume
+    case WrongBarrier(name, client, data) => {
+      client ! ToClient(BarrierResult(name, success = false)); failBarrier(data)
+    }
+    case ClientLost(data, _)    => failBarrier(data)
+    case DuplicateNode(data, _) => failBarrier(data)
   }
 
   def failBarrier(data: Data): SupervisorStrategy.Directive = {
-    for (c <- data.arrived) c ! ToClient(BarrierResult(data.barrier, false))
+    for (c <- data.arrived) c ! ToClient(BarrierResult(data.barrier, success = false))
     SupervisorStrategy.Restart
   }
 
@@ -469,10 +471,11 @@ private[akka] class Controller(private var initialParticipants: Int, controllerP
       barrier.forward(c)
       if (nodes contains name) {
         if (initialParticipants > 0) {
-          for (NodeInfo(_, _, client) <- nodes.values) client ! ToClient(BarrierResult("initial startup", false))
+          for (NodeInfo(_, _, client) <- nodes.values)
+            client ! ToClient(BarrierResult("initial startup", success = false))
           initialParticipants = 0
         }
-        fsm ! ToClient(BarrierResult("initial startup", false))
+        fsm ! ToClient(BarrierResult("initial startup", success = false))
       } else {
         nodes += name -> c
         if (initialParticipants <= 0) fsm ! ToClient(Done)
@@ -609,11 +612,11 @@ private[akka] class BarrierCoordinator
   when(Idle) {
     case Event(EnterBarrier(name, timeout), d @ Data(clients, _, _, _)) =>
       if (failed)
-        stay().replying(ToClient(BarrierResult(name, false)))
+        stay().replying(ToClient(BarrierResult(name, success = false)))
       else if (clients.map(_.fsm) == Set(sender()))
-        stay().replying(ToClient(BarrierResult(name, true)))
+        stay().replying(ToClient(BarrierResult(name, success = true)))
       else if (clients.find(_.fsm == sender()).isEmpty)
-        stay().replying(ToClient(BarrierResult(name, false)))
+        stay().replying(ToClient(BarrierResult(name, success = false)))
       else {
         goto(Waiting).using(d.copy(barrier = name, arrived = sender() :: Nil, deadline = getDeadline(timeout)))
       }
@@ -658,7 +661,7 @@ private[akka] class BarrierCoordinator
     if (data.arrived.isEmpty) {
       goto(Idle).using(data.copy(barrier = ""))
     } else if ((data.clients.map(_.fsm) -- data.arrived).isEmpty) {
-      data.arrived.foreach(_ ! ToClient(BarrierResult(data.barrier, true)))
+      data.arrived.foreach(_ ! ToClient(BarrierResult(data.barrier, success = true)))
       goto(Idle).using(data.copy(barrier = "", arrived = Nil))
     } else {
       stay().using(data)

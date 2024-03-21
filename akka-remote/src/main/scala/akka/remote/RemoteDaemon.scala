@@ -67,7 +67,7 @@ private[akka] class RemoteSystemDaemon(
 
   import akka.actor.SystemGuardian._
 
-  private val terminating = new Switch(false)
+  private val terminating = new Switch(startAsOn = false)
 
   AddressTerminatedTopic(system).subscribe(this)
 

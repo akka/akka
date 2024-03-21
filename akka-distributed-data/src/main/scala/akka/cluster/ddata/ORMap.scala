@@ -405,8 +405,8 @@ final class ORMap[A, B <: ReplicatedData] private[akka] (
   private def dryMergeDelta(thatDelta: ORMap.DeltaOp, withValueDeltas: Boolean = false): ORMap[A, B] = {
     def mergeValue(lvalue: ReplicatedData, rvalue: ReplicatedData): B =
       (lvalue, rvalue) match {
-        case (v: DeltaReplicatedData, delta: ReplicatedDelta) =>
-          v.mergeDelta(delta.asInstanceOf[v.D]).asInstanceOf[B]
+        case (v: DeltaReplicatedData, replicatedDelta: ReplicatedDelta) =>
+          v.mergeDelta(replicatedDelta.asInstanceOf[v.D]).asInstanceOf[B]
         case _ =>
           lvalue.merge(rvalue.asInstanceOf[lvalue.T]).asInstanceOf[B]
       }
@@ -492,7 +492,7 @@ final class ORMap[A, B <: ReplicatedData] private[akka] (
    * by keeping the vvector (in form of key -> value pair) for deleted keys
    */
   @InternalApi private[akka] def mergeDeltaRetainingDeletedValues(thatDelta: ORMap.DeltaOp): ORMap[A, B] = {
-    val thisWithDeltas = dryMergeDelta(thatDelta, true)
+    val thisWithDeltas = dryMergeDelta(thatDelta, withValueDeltas = true)
     this.mergeRetainingDeletedValues(thisWithDeltas)
   }
 

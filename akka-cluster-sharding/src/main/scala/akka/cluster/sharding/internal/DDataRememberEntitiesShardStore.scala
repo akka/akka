@@ -265,10 +265,10 @@ private[akka] final class DDataRememberEntitiesShardStore(
         log.error("Remember entities shard store unable to update state, due to delete")
         // will trigger shard restart
         context.stop(self)
-      case update: RememberEntitiesShardStore.Update =>
+      case shardStoreUpdate: RememberEntitiesShardStore.Update =>
         log.warning(
           "Remember entities shard store got a new update before write of previous completed, dropping update: [{}]",
-          update)
+          shardStoreUpdate)
     }
 
     next(allUpdates)

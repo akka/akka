@@ -63,7 +63,7 @@ object MergeHub {
    * @param perProducerBufferSize Buffer space used per producer. Default value is 16.
    */
   def source[T](perProducerBufferSize: Int): Source[T, Sink[T, NotUsed]] =
-    Source.fromGraph(new MergeHub[T](perProducerBufferSize, false)).mapMaterializedValue(_._1)
+    Source.fromGraph(new MergeHub[T](perProducerBufferSize, drainingEnabled = false)).mapMaterializedValue(_._1)
 
   /**
    * Creates a [[Source]] that emits elements merged from a dynamic set of producers. After the [[Source]] returned
@@ -82,7 +82,7 @@ object MergeHub {
    * @param perProducerBufferSize Buffer space used per producer. Default value is 16.
    */
   def sourceWithDraining[T](perProducerBufferSize: Int): Source[T, (Sink[T, NotUsed], DrainingControl)] =
-    Source.fromGraph(new MergeHub[T](perProducerBufferSize, true))
+    Source.fromGraph(new MergeHub[T](perProducerBufferSize, drainingEnabled = true))
 
   /**
    * Creates a [[Source]] that emits elements merged from a dynamic set of producers. After the [[Source]] returned

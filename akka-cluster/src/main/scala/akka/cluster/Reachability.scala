@@ -275,9 +275,9 @@ private[cluster] class Reachability private (
 
   def observersGroupedByUnreachable: Map[UniqueAddress, Set[UniqueAddress]] = {
     records.groupBy(_.subject).collect {
-      case (subject, records) if records.exists(_.status == Unreachable) =>
+      case (subject, recordsForSubject) if recordsForSubject.exists(_.status == Unreachable) =>
         val observers: Set[UniqueAddress] =
-          records.iterator.collect { case r if r.status == Unreachable => r.observer }.to(immutable.Set)
+          recordsForSubject.iterator.collect { case r if r.status == Unreachable => r.observer }.to(immutable.Set)
         subject -> observers
     }
   }

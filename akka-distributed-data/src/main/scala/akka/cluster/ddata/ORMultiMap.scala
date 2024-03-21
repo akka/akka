@@ -26,9 +26,10 @@ object ORMultiMap {
     override final val value: Int = 3
   }
 
-  val _empty: ORMultiMap[Any, Any] = new ORMultiMap(new ORMap(ORSet.empty, Map.empty, zeroTag = ORMultiMapTag), false)
+  val _empty: ORMultiMap[Any, Any] =
+    new ORMultiMap(new ORMap(ORSet.empty, Map.empty, zeroTag = ORMultiMapTag), withValueDeltas = false)
   val _emptyWithValueDeltas: ORMultiMap[Any, Any] =
-    new ORMultiMap(new ORMap(ORSet.empty, Map.empty, zeroTag = ORMultiMapWithValueDeltasTag), true)
+    new ORMultiMap(new ORMap(ORSet.empty, Map.empty, zeroTag = ORMultiMapWithValueDeltasTag), withValueDeltas = true)
 
   /**
    * Provides an empty multimap.

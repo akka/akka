@@ -150,13 +150,13 @@ abstract class JavaPartialFunction[A, B] extends AbstractPartialFunction[A, B] {
 
   final def isDefinedAt(x: A): Boolean =
     try {
-      apply(x, true); true
+      apply(x, isCheck = true); true
     } catch { case NoMatch => false }
   final override def apply(x: A): B =
-    try apply(x, false)
+    try apply(x, isCheck = false)
     catch { case NoMatch => throw new MatchError(x) }
   final override def applyOrElse[A1 <: A, B1 >: B](x: A1, default: A1 => B1): B1 =
-    try apply(x, false)
+    try apply(x, isCheck = false)
     catch { case NoMatch => default(x) }
 }
 
@@ -189,7 +189,7 @@ object Option {
   /**
    * <code>Option</code> factory that creates <code>None</code>
    */
-  def none[A] = None.asInstanceOf[Option[A]]
+  def none[A]: Option[A] = None.asInstanceOf[Option[A]]
 
   /**
    * <code>Option</code> factory that creates <code>None</code> if

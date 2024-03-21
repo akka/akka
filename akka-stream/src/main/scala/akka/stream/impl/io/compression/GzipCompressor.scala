@@ -11,7 +11,7 @@ import akka.util.ByteString
 
 /** INTERNAL API */
 @InternalApi private[akka] class GzipCompressor(compressionLevel: Int = Deflater.BEST_COMPRESSION)
-    extends DeflateCompressor(compressionLevel, true) {
+    extends DeflateCompressor(compressionLevel, nowrap = true) {
   override protected lazy val deflater = new Deflater(compressionLevel, true)
   private val checkSum = new CRC32 // CRC32 of uncompressed data
   private var headerSent = false

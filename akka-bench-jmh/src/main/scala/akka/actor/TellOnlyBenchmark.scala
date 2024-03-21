@@ -144,7 +144,7 @@ object TellOnlyBenchmark {
       mbox.enqueue(receiver.self, invocation)
       mbox.messageQueue match {
         case mb: DroppingMessageQueue if mb.dropping => // do nothing
-        case _                                       => registerForExecution(mbox, true, false)
+        case _                                       => registerForExecution(mbox, hasMessageHint = true, hasSystemMessageHint = false)
       }
     }
   }

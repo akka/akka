@@ -6,9 +6,7 @@ package akka.actor.typed
 
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
-
 import org.scalatest.wordspec.AnyWordSpecLike
-
 import akka.actor.InvalidMessageException
 import akka.actor.testkit.typed.TestException
 import akka.actor.testkit.typed.scaladsl.LogCapturing

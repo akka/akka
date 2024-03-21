@@ -136,7 +136,7 @@ import akka.util.OptionVal
         case subscription: Subscription =>
           if (VirtualProcessor.Debug)
             println(s"VirtualPublisher#$hashCode($subscription).subscribe.rec($s) -> Establishing(sub)")
-          val establishing = Establishing(sub, false)
+          val establishing = Establishing(sub, onCompleteBuffered = false)
           if (compareAndSet(subscription, establishing)) establishSubscription(establishing, subscription)
           else rec(sub)
         case pub: Publisher[_] =>

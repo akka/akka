@@ -301,8 +301,8 @@ private[akka] class Deployer(val settings: ActorSystem.Settings, val dynamicAcce
             dynamicAccess
               .createInstanceFor[RouterConfig](fqn, args2)
               .recover {
-                case e @ (_: IllegalArgumentException | _: ConfigException) => throw e
-                case _                                                      => throwCannotInstantiateRouter(args2, e)
+                case e2 @ (_: IllegalArgumentException | _: ConfigException) => throw e2
+                case _                                                       => throwCannotInstantiateRouter(args2, e)
               }
               .get
           case e => throwCannotInstantiateRouter(args2, e)

@@ -24,12 +24,12 @@ class MyJavaStateStoreProvider implements DurableStateStoreProvider {
 
   @Override
   public DurableStateStore<Object> scaladslDurableStateStore() {
-    return new MyStateStore(this.system, this.config, this.cfgPath);
+    return new MyStateStore<>(this.system, this.config, this.cfgPath);
   }
 
   @Override
   public akka.persistence.state.javadsl.DurableStateStore<Object> javadslDurableStateStore() {
-    return new MyJavaStateStore(this.system, this.config, this.cfgPath);
+    return new MyJavaStateStore<>(this.system, this.config, this.cfgPath);
   }
 }
 // #plugin-provider

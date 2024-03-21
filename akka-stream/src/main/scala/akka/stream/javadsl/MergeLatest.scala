@@ -37,5 +37,6 @@ object MergeLatest {
    *
    * @param inputPorts number of input ports
    */
-  def create[T](inputPorts: Int): GraphStage[UniformFanInShape[T, java.util.List[T]]] = create(inputPorts, false)
+  def create[T](inputPorts: Int): GraphStage[UniformFanInShape[T, java.util.List[T]]] =
+    create(inputPorts, eagerComplete = false)
 }

@@ -366,11 +366,11 @@ abstract class SupervisorStrategy {
         true
       case _: Restart =>
         logFailure(context, child, cause, directive)
-        processFailure(context, true, child, cause, stats, children)
+        processFailure(context, restart = true, child, cause, stats, children)
         true
       case _: Stop =>
         logFailure(context, child, cause, directive)
-        processFailure(context, false, child, cause, stats, children)
+        processFailure(context, restart = false, child, cause, stats, children)
         true
       case Escalate =>
         logFailure(context, child, cause, directive)

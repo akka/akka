@@ -518,7 +518,12 @@ private class ShardingProducerControllerImpl[A: ClassTag](
           onMessage(msg.envelope.entityId, msg.envelope.message, None, msg.alreadyStored, s.replyAfterStore)
         } else {
           storeMessageSent(
-            MessageSent(s.currentSeqNr, msg.envelope.message, false, msg.envelope.entityId, System.currentTimeMillis()),
+            MessageSent(
+              s.currentSeqNr,
+              msg.envelope.message,
+              ack = false,
+              msg.envelope.entityId,
+              System.currentTimeMillis()),
             attempt = 1)
           active(s.copy(currentSeqNr = s.currentSeqNr + 1))
         }

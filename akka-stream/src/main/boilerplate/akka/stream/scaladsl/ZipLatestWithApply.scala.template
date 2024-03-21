@@ -16,7 +16,7 @@ trait ZipLatestWithApply {
    * @param zipper zipping-function from the input values to the output value
    */
   def apply[[#A1#], O](zipper: ([#A1#]) => O): ZipLatestWith1[[#A1#], O] =
-    new ZipLatestWith1(zipper, true)
+    new ZipLatestWith1(zipper, eagerComplete = true)
   #
 
   ]

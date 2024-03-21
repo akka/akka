@@ -47,7 +47,7 @@ object Compression {
    *
    * FIXME: should strategy / flush mode be configurable? See https://github.com/akka/akka/issues/21849
    */
-  def deflate: Flow[ByteString, ByteString, NotUsed] = deflate(Deflater.BEST_COMPRESSION, false)
+  def deflate: Flow[ByteString, ByteString, NotUsed] = deflate(Deflater.BEST_COMPRESSION, nowrap = false)
 
   /**
    * Same as [[deflate]] with configurable level and nowrap
@@ -65,7 +65,7 @@ object Compression {
    * @param maxBytesPerChunk Maximum length of an output [[ByteString]] chunk.
    */
   def inflate(maxBytesPerChunk: Int = MaxBytesPerChunkDefault): Flow[ByteString, ByteString, NotUsed] =
-    inflate(maxBytesPerChunk, false)
+    inflate(maxBytesPerChunk, nowrap = false)
 
   /**
    * Creates a Flow that decompresses a deflate-compressed stream of data.

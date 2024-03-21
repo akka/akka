@@ -1605,7 +1605,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    *
    * See also [[Flow.limit]], [[Flow.limitWeighted]]
    */
-  def takeWhile(p: function.Predicate[Out]): javadsl.Flow[In, Out, Mat] = takeWhile(p, false)
+  def takeWhile(p: function.Predicate[Out]): javadsl.Flow[In, Out, Mat] = takeWhile(p, inclusive = false)
 
   /**
    * Discard elements at the beginning of the stream while predicate is true.
@@ -2293,7 +2293,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    * @see [[#groupBy]]
    */
   def groupBy[K](maxSubstreams: Int, f: function.Function[Out, K]): SubFlow[In, Out, Mat] =
-    new SubFlow(delegate.groupBy(maxSubstreams, f.apply, false))
+    new SubFlow(delegate.groupBy(maxSubstreams, f.apply, allowClosedSubstreamRecreation = false))
 
   /**
    * This operation applies the given predicate to all incoming elements and
