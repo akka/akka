@@ -4,19 +4,18 @@
 
 package akka.actor.typed.receptionist
 
+import akka.actor.typed.scaladsl.AskPattern._
+import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.ActorRef
+import akka.actor.typed.ActorSystem
+import akka.util.Timeout
+
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.Success
-import akka.actor.typed.{ ActorRef, ActorSystem }
-import akka.actor.typed.scaladsl.AskPattern._
-import akka.actor.typed.scaladsl.Behaviors
-import akka.util.Timeout
-
-import scala.annotation.nowarn
 
 object ReceptionistApiSpec {
 
-  @nowarn("cat=other-shadowing")
   def compileOnlySpec(): Unit = {
     // some dummy prerequisites
     implicit val timeout: Timeout = 3.seconds
