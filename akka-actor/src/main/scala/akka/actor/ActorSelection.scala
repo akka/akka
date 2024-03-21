@@ -4,9 +4,10 @@
 
 package akka.actor
 
+import akka.annotation.InternalApi
+
 import java.util.concurrent.CompletionStage
 import java.util.regex.Pattern
-
 import scala.annotation.nowarn
 import scala.annotation.tailrec
 import scala.collection.immutable
@@ -16,7 +17,6 @@ import scala.concurrent.Promise
 import scala.concurrent.duration._
 import scala.language.implicitConversions
 import scala.util.Success
-
 import akka.dispatch.ExecutionContexts
 import akka.pattern.ask
 import akka.routing.MurmurHash
@@ -307,6 +307,7 @@ private[akka] sealed trait SelectionPathElement
 /**
  * INTERNAL API
  */
+@InternalApi
 @SerialVersionUID(2L)
 private[akka] final case class SelectChildName(name: String) extends SelectionPathElement {
   override def toString: String = name
@@ -315,6 +316,7 @@ private[akka] final case class SelectChildName(name: String) extends SelectionPa
 /**
  * INTERNAL API
  */
+@InternalApi
 @SerialVersionUID(2L)
 private[akka] final case class SelectChildPattern(patternStr: String) extends SelectionPathElement {
   val pattern: Pattern = Helpers.makePattern(patternStr)
@@ -324,6 +326,7 @@ private[akka] final case class SelectChildPattern(patternStr: String) extends Se
 /**
  * INTERNAL API
  */
+@InternalApi
 @SerialVersionUID(2L)
 private[akka] case object SelectParent extends SelectionPathElement {
   override def toString: String = ".."

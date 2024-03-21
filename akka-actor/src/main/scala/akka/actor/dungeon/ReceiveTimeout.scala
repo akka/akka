@@ -6,15 +6,23 @@ package akka.actor.dungeon
 
 import scala.concurrent.duration.Duration
 import scala.concurrent.duration.FiniteDuration
-
 import akka.actor.ActorCell
 import akka.actor.Cancellable
 import akka.actor.NotInfluenceReceiveTimeout
+import akka.annotation.InternalApi
 
+/**
+ * INTERNAL API
+ */
+@InternalApi
 private[akka] object ReceiveTimeout {
   final val emptyReceiveTimeoutData: (Duration, Cancellable) = (Duration.Undefined, ActorCell.emptyCancellable)
 }
 
+/**
+ * INTERNAL API
+ */
+@InternalApi
 private[akka] trait ReceiveTimeout { this: ActorCell =>
 
   import ActorCell._

@@ -103,7 +103,10 @@ object ActorRef {
  * If you need to keep track of actor references in a collection and do not care
  * about the exact actor incarnation you can use the ``ActorPath`` as key because
  * the unique id of the actor is not taken into account when comparing actor paths.
+ *
+ * Not for user extension
  */
+@DoNotInherit
 @nowarn("msg=deprecated")
 abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable {
   scalaRef: InternalActorRef with ActorRefScope =>
@@ -209,14 +212,20 @@ trait ScalaActorRef { ref: ActorRef with InternalActorRef with ActorRefScope =>
  * All ActorRefs have a scope which describes where they live. Since it is
  * often necessary to distinguish between local and non-local references, this
  * is the only method provided on the scope.
+ *
+ * Internal API
  */
+@InternalApi
 private[akka] trait ActorRefScope {
   def isLocal: Boolean
 }
 
 /**
  * Refs which are statically known to be local inherit from this Scope
+ *
+ * Internal API
  */
+@InternalApi
 private[akka] trait LocalRef extends ActorRefScope {
   final def isLocal = true
 }
@@ -251,7 +260,7 @@ private[akka] trait RepointableRef extends ActorRefScope {
  * Internal trait for assembling all the functionality needed internally on
  * ActorRefs. NOTE THAT THIS IS NOT A STABLE EXTERNAL INTERFACE!
  *
- * DO NOT USE THIS UNLESS INTERNALLY WITHIN AKKA!
+ * INTERNAL API
  */
 @nowarn("msg=deprecated")
 @InternalApi private[akka] abstract class InternalActorRef extends ActorRef with ScalaActorRef { this: ActorRefScope =>
@@ -304,7 +313,10 @@ private[akka] trait RepointableRef extends ActorRefScope {
  * LocalActorRef and RepointableActorRef. The former specializes the return
  * type of `underlying` so that follow-up calls can use invokevirtual instead
  * of invokeinterface.
+ *
+ * INTERNAL API
  */
+@InternalApi
 private[akka] abstract class ActorRefWithCell extends InternalActorRef { this: ActorRefScope =>
   def underlying: Cell
   def children: immutable.Iterable[ActorRef]
@@ -313,7 +325,10 @@ private[akka] abstract class ActorRefWithCell extends InternalActorRef { this: A
 
 /**
  * This is an internal look-up failure token, not useful for anything else.
+ *
+ * INTERNAL API
  */
+@InternalApi
 private[akka] case object Nobody extends MinimalActorRef {
   override val path: RootActorPath = new RootActorPath(Address("akka", "all-systems"), "/Nobody")
   override def provider = throw new UnsupportedOperationException("Nobody does not provide")
@@ -327,6 +342,7 @@ private[akka] case object Nobody extends MinimalActorRef {
 /**
  * INTERNAL API
  */
+@InternalApi
 @SerialVersionUID(1L) private[akka] class SerializedNobody extends Serializable {
   @throws(classOf[java.io.ObjectStreamException])
   private def readResolve(): AnyRef = Nobody
@@ -337,6 +353,7 @@ private[akka] case object Nobody extends MinimalActorRef {
  *
  *  INTERNAL API
  */
+@InternalApi
 private[akka] class LocalActorRef private[akka] (
     _system: ActorSystemImpl,
     _props: Props,
@@ -457,6 +474,7 @@ private[akka] class LocalActorRef private[akka] (
  * Memento pattern for serializing ActorRefs transparently
  * INTERNAL API
  */
+@InternalApi
 @SerialVersionUID(1L)
 private[akka] final case class SerializedActorRef private (path: String) {
   import akka.serialization.JavaSerializer.currentSystem
@@ -479,6 +497,7 @@ private[akka] final case class SerializedActorRef private (path: String) {
 /**
  * INTERNAL API
  */
+@InternalApi
 private[akka] object SerializedActorRef {
   def apply(actorRef: ActorRef): SerializedActorRef = {
     new SerializedActorRef(actorRef)
@@ -490,6 +509,7 @@ private[akka] object SerializedActorRef {
  *
  * INTERNAL API
  */
+@InternalApi
 private[akka] trait MinimalActorRef extends InternalActorRef with LocalRef {
 
   override def getParent: InternalActorRef = Nobody
@@ -657,6 +677,7 @@ private[akka] object DeadLetterActorRef {
  *
  * INTERNAL API
  */
+@InternalApi
 private[akka] class EmptyLocalActorRef(
     override val provider: ActorRefProvider,
     override val path: ActorPath,
@@ -719,6 +740,7 @@ private[akka] class EmptyLocalActorRef(
  *
  * INTERNAL API
  */
+@InternalApi
 private[akka] class DeadLetterActorRef(_provider: ActorRefProvider, _path: ActorPath, _eventStream: EventStream)
     extends EmptyLocalActorRef(_provider, _path, _eventStream) {
 

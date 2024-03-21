@@ -290,6 +290,7 @@ object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with Extensi
   /**
    * INTERNAL API
    */
+  @InternalApi
   private[akka] final case class Phase(
       dependsOn: Set[String],
       timeout: FiniteDuration,
@@ -355,6 +356,9 @@ private[akka] object JVMShutdownHooks extends JVMShutdownHooks {
   override def removeHook(t: Thread): Boolean = Runtime.getRuntime.removeShutdownHook(t)
 }
 
+/**
+ * Not for user instantiation, use the extension to access
+ */
 final class CoordinatedShutdown private[akka] (
     system: ExtendedActorSystem,
     phases: Map[String, CoordinatedShutdown.Phase],

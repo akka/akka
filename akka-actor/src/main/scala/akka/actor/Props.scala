@@ -7,8 +7,8 @@ package akka.actor
 import scala.annotation.varargs
 import scala.collection.immutable
 import scala.reflect.ClassTag
-
 import akka.actor.Deploy.{ NoDispatcherGiven, NoMailboxGiven }
+import akka.annotation.InternalApi
 import akka.dispatch._
 import akka.routing._
 
@@ -51,6 +51,7 @@ object Props extends AbstractProps {
    *
    * (Not because it is so immensely complicated, only because we might remove it if no longer needed internally)
    */
+  @InternalApi
   private[akka] class EmptyActor extends Actor {
     def receive = Actor.emptyBehavior
   }

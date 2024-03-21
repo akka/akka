@@ -5,21 +5,28 @@
 package akka.actor.dungeon
 
 import java.util.Optional
-
 import scala.annotation.nowarn
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.util.control.NonFatal
-
 import akka.actor._
+import akka.annotation.InternalApi
 import akka.annotation.InternalStableApi
 import akka.serialization.{ Serialization, SerializationExtension, Serializers }
 import akka.util.{ Helpers, Unsafe }
 
+/**
+ * INTERNAL API
+ */
+@InternalApi
 private[akka] object Children {
   val GetNobody = () => Nobody
 }
 
+/**
+ * INTERNAL API
+ */
+@InternalApi
 private[akka] trait Children { this: ActorCell =>
 
   import ChildrenContainer._

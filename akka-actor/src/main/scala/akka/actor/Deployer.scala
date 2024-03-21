@@ -211,7 +211,10 @@ case object NoScopeGiven extends NoScopeGiven {
 
 /**
  * Deployer maps actor paths to actor deployments.
+ *
+ * INTERNAL API
  */
+@InternalApi
 private[akka] class Deployer(val settings: ActorSystem.Settings, val dynamicAccess: DynamicAccess) {
 
   import akka.util.ccompat.JavaConverters._

@@ -32,7 +32,7 @@ object Dependencies {
   val jacksonDatabindVersion = jacksonCoreVersion // https://github.com/FasterXML/jackson/wiki/Jackson-Releases
 
   val scala213Version = "2.13.13"
-  val scala3Version = "3.3.1"
+  val scala3Version = "3.3.3"
   val allScalaVersions = Seq(scala213Version, scala3Version)
 
   val reactiveStreamsVersion = "1.0.4"
@@ -165,7 +165,7 @@ object Dependencies {
     val protobufRuntime = "com.google.protobuf" % "protobuf-java" % protobufJavaVersion % "optional;provided"
 
     // used for classpath scanning in testkit/tests for native-image metadata
-    val classgraph = "io.github.classgraph" % "classgraph" % "4.8.165" % "optional;provided;test" // MIT
+    val classgraph = "io.github.classgraph" % "classgraph" % "4.8.168" % "optional;provided;test" // MIT
     val jacksonCore = Compile.jacksonCore % "optional;provided;test"
     val jacksonScala = Compile.jacksonScala % "optional;provided;test"
     val optionalForNativeImageMetadata = Seq(classgraph, jacksonCore, jacksonScala)
