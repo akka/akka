@@ -32,7 +32,7 @@ object Dependencies {
   val jacksonDatabindVersion = jacksonCoreVersion // https://github.com/FasterXML/jackson/wiki/Jackson-Releases
 
   val scala213Version = "2.13.12"
-  val scala3Version = "3.3.1"
+  val scala3Version = "3.3.3"
   val allScalaVersions = Seq(scala213Version, scala3Version)
 
   val reactiveStreamsVersion = "1.0.4"
