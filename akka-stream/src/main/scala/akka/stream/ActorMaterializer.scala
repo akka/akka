@@ -5,21 +5,18 @@
 package akka.stream
 
 import java.util.concurrent.TimeUnit
-
 import scala.annotation.nowarn
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
-
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
-
 import akka.actor.ActorContext
 import akka.actor.ActorRef
 import akka.actor.ActorRefFactory
 import akka.actor.ActorSystem
 import akka.actor.ExtendedActorSystem
 import akka.actor.Props
-import akka.annotation.InternalApi
+import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.event.LoggingAdapter
 import akka.japi.function
 import akka.stream.impl._
@@ -257,13 +254,22 @@ abstract class ActorMaterializer extends Materializer with MaterializerLoggingPr
 class MaterializationException(msg: String, cause: Throwable = null) extends RuntimeException(msg, cause)
 
 /**
+ * A base exception for abrupt stream termination.
+ *
+ * Not for user extension
+ */
+@DoNotInherit
+sealed class AbruptStreamTerminationException(msg: String, cause: Throwable)
+    extends RuntimeException(msg, cause)
+    with NoStackTrace
+
+/**
  * This exception signals that an actor implementing a Reactive Streams Subscriber, Publisher or Processor
  * has been terminated without being notified by an onError, onComplete or cancel signal. This usually happens
  * when an ActorSystem is shut down while stream processing actors are still running.
  */
 final case class AbruptTerminationException(actor: ActorRef)
-    extends RuntimeException(s"Processor actor [$actor] terminated abruptly")
-    with NoStackTrace
+    extends AbruptStreamTerminationException(s"Processor actor [$actor] terminated abruptly", cause = null)
 
 /**
  * Signal that the operator was abruptly terminated, usually seen as a call to `postStop` of the `GraphStageLogic` without
@@ -271,9 +277,9 @@ final case class AbruptTerminationException(actor: ActorRef)
  * the actor running the graph is killed, which happens when the materializer or actor system is terminated.
  */
 final class AbruptStageTerminationException(logic: GraphStageLogic)
-    extends RuntimeException(
-      s"GraphStage [$logic] terminated abruptly, caused by for example materializer or actor system termination.")
-    with NoStackTrace
+    extends AbruptStreamTerminationException(
+      s"GraphStage [$logic] terminated abruptly, caused by for example materializer or actor system termination.",
+      cause = null)
 
 object ActorMaterializerSettings {
 
