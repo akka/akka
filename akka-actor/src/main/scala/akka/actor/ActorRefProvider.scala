@@ -176,7 +176,10 @@ import akka.util.OptionVal
 /**
  * Interface implemented by ActorSystem and ActorContext, the only two places
  * from which you can get fresh actors.
+ *
+ * Not for user extension
  */
+@DoNotInherit
 @implicitNotFound(
   "implicit ActorRefFactory required: if outside of an Actor you need an implicit ActorSystem, inside of an actor this should be the implicit ActorContext")
 trait ActorRefFactory {
@@ -280,11 +283,13 @@ trait ActorRefFactory {
 /**
  * Internal Akka use only, used in implementation of system.stop(child).
  */
+@InternalApi
 private[akka] final case class StopChild(child: ActorRef)
 
 /**
  * INTERNAL API
  */
+@InternalApi
 private[akka] object SystemGuardian {
 
   /**

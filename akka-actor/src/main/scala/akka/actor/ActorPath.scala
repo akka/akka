@@ -311,6 +311,9 @@ final case class RootActorPath(address: Address, name: String = "/") extends Act
 
 }
 
+/**
+ * Not for user instantiation
+ */
 @SerialVersionUID(1L)
 final class ChildActorPath private[akka] (val parent: ActorPath, val name: String, override private[akka] val uid: Int)
     extends ActorPath {

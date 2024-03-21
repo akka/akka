@@ -24,11 +24,13 @@ import akka.util.ccompat._
 /**
  * INTERNAL API
  */
+@InternalApi
 private[akka] sealed trait ChildStats
 
 /**
  * INTERNAL API
  */
+@InternalApi
 private[akka] case object ChildNameReserved extends ChildStats
 
 /**
