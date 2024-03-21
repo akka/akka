@@ -9,7 +9,12 @@ import scala.util.control.NoStackTrace
 import akka.AkkaException
 import akka.annotation.InternalApi
 import akka.annotation.InternalStableApi
-import akka.dispatch.{DequeBasedMessageQueueSemantics, Envelope, RequiresMessageQueue, UnboundedDequeBasedMessageQueueSemantics}
+import akka.dispatch.{
+  DequeBasedMessageQueueSemantics,
+  Envelope,
+  RequiresMessageQueue,
+  UnboundedDequeBasedMessageQueueSemantics
+}
 
 /**
  *  The `Stash` trait enables an actor to temporarily stash away messages that can not or
