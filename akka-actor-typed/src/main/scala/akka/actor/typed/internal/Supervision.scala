@@ -26,8 +26,6 @@ import akka.event.Logging
 import akka.util.OptionVal
 import akka.util.unused
 
-import scala.annotation.nowarn
-
 /**
  * INTERNAL API
  */
@@ -411,13 +409,13 @@ private class RestartSupervisor[T, Thr <: Throwable: ClassTag](initial: Behavior
     }
   }
 
-  @nowarn("cat=other-shadowing")
   private def updateRestartCount(): Unit = {
     strategy match {
-      case restart: Restart =>
+      case restartStrategy: Restart =>
         val timeLeft = deadlineHasTimeLeft
         val newDeadline =
-          if (deadline.isDefined && timeLeft) deadline else OptionVal.Some(Deadline.now + restart.withinTimeRange)
+          if (deadline.isDefined && timeLeft) deadline
+          else OptionVal.Some(Deadline.now + restartStrategy.withinTimeRange)
         restartCount = if (timeLeft) restartCount + 1 else 1
         deadline = newDeadline
       case _: Backoff =>
