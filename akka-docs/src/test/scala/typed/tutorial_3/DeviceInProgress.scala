@@ -6,8 +6,10 @@ package typed.tutorial_3
 
 /*
 //#read-protocol-1
+//#device-with-read
 package com.example
 
+//#device-with-read
 //#read-protocol-1
  */
 
