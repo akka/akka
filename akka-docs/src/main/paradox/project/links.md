@@ -30,7 +30,7 @@ url="https://repo.akka.io/maven"
 
 ## Snapshots Repository
 
-Snapshot builds are available at https://repo.akka.io/snapshots. All Akka modules that belong to the same build have the same version.
+Snapshot builds are available from the repository at `https://repo.akka.io/snapshots`. All Akka modules that belong to the same build have the same version.
 
 @@@ warning
 
