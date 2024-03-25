@@ -6,8 +6,10 @@ package typed.tutorial_3
 
 /*
 //#read-protocol-1
+//#device-with-read
 package com.example
 
+//#device-with-read
 //#read-protocol-1
  */
 
@@ -32,7 +34,10 @@ object DeviceInProgress2 {
   import akka.actor.typed.ActorRef
 
   //#device-with-read
+  import akka.actor.typed.ActorRef
   import akka.actor.typed.Behavior
+  import akka.actor.typed.PostStop
+  import akka.actor.typed.Signal
   import akka.actor.typed.scaladsl.AbstractBehavior
   import akka.actor.typed.scaladsl.ActorContext
   import akka.actor.typed.scaladsl.Behaviors
