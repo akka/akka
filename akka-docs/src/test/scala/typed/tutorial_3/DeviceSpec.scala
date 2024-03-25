@@ -54,8 +54,7 @@ class DeviceSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike {
       response2.value should ===(Some(55.0))
     }
     //#device-write-read-test
-
+    //#device-read-test
   }
-  //#device-read-test
 }
 //#device-read-test
