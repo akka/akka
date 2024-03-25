@@ -30,12 +30,12 @@ Use of Akka relieves you from creating the infrastructure for an actor system an
 An actor in Akka always belongs to a parent. You create an actor by calling  @apidoc[ActorContext.spawn()](akka.actor.typed.*.ActorContext) {scala="#spawn[U](behavior:akka.actor.typed.Behavior[U],name:String,props:akka.actor.typed.Props):akka.actor.typed.ActorRef[U]" java="#spawn(akka.actor.typed.Behavior,java.lang.String,akka.actor.typed.Props)"}. The creator actor becomes the
 _parent_ of the newly created _child_ actor. You might ask then, who is the parent of the _first_ actor you create?
 
-As illustrated below, all actors have a common parent, the user guardian, which is defined and created when you start the @apidoc[akka.actor.typed.ActorSystem].
+As illustrated below, all your actors have a common parent, the user guardian, which is defined and created when you start the @apidoc[akka.actor.typed.ActorSystem].
 As we covered in the @scala[[Quickstart Guide](https://developer.lightbend.com/guides/akka-quickstart-scala/)]@java[[Quickstart Guide](https://developer.lightbend.com/guides/akka-quickstart-java/)], creation of an actor returns a reference that is a valid URL. So, for example, if we create an actor named `someActor` from the user guardian with `context.spawn(someBehavior, "someActor")`, its reference will include the path `/user/someActor`.
 
 ![actor tree diagram](diagrams/actor_top_tree.png)
 
-In fact, before your first actor is started, Akka has already created two actors in the system. The names of these built-in actors contain _guardian_. The guardian actors include:
+In fact, before your first actor - the user guardian - is started, Akka has already created two other guardian actors in the system: `/` and `/system`. Thus, there are three _guardian_ actors at the top of the tree:
 
  - `/` the so-called _root guardian_. This is the parent of all actors in the system, and the last one to stop when the system itself is terminated.
  - `/system` the _system guardian_. Akka or other libraries built on top of Akka may create actors in the _system_ namespace.
