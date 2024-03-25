@@ -40,7 +40,7 @@ object DeviceInProgress2 {
 
   object Device {
     def apply(groupId: String, deviceId: String): Behavior[Command] =
-      Behaviors.setup(context => new Device(context, groupId, deviceId))
+      Behaviors.setup(context => new Device(context, groupId, deviceId, None))
 
     //#read-protocol-2
     sealed trait Command
@@ -49,11 +49,13 @@ object DeviceInProgress2 {
     //#read-protocol-2
   }
 
-  class Device(context: ActorContext[Device.Command], groupId: String, deviceId: String)
+  class Device(
+      context: ActorContext[Device.Command],
+      groupId: String,
+      deviceId: String,
+      lastTemperatureReading: Option[Double])
       extends AbstractBehavior[Device.Command](context) {
     import Device._
-
-    var lastTemperatureReading: Option[Double] = None
 
     context.log.info2("Device actor {}-{} started", groupId, deviceId)
 

@@ -16,7 +16,10 @@ import akka.actor.typed.scaladsl.LoggerOps
 
 object Device {
   def apply(groupId: String, deviceId: String): Behavior[Command] =
-    Behaviors.setup(context => new Device(context, groupId, deviceId))
+    Behaviors.setup(context => new Device(context, groupId, deviceId, None))
+
+  def apply(groupId: String, deviceId: String, temperature: Double): Behavior[Command] =
+    Behaviors.setup(context => new Device(context, groupId, deviceId, Some(temperature)))
 
   sealed trait Command
 
@@ -30,21 +33,26 @@ object Device {
   //#write-protocol
 }
 
-class Device(context: ActorContext[Device.Command], groupId: String, deviceId: String)
+class Device(
+    context: ActorContext[Device.Command],
+    groupId: String,
+    deviceId: String,
+    lastTemperatureReading: Option[Double])
     extends AbstractBehavior[Device.Command](context) {
   import Device._
 
-  var lastTemperatureReading: Option[Double] = None
-
   context.log.info2("Device actor {}-{} started", groupId, deviceId)
+
+  private def updatedDevice(temperature: Double): Behavior[Command] = {
+    Device(groupId, deviceId, temperature)
+  }
 
   override def onMessage(msg: Command): Behavior[Command] = {
     msg match {
       case RecordTemperature(id, value, replyTo) =>
         context.log.info2("Recorded temperature reading {} with {}", value, id)
-        lastTemperatureReading = Some(value)
         replyTo ! TemperatureRecorded(id)
-        this
+        updatedDevice(value)
 
       case ReadTemperature(id, replyTo) =>
         replyTo ! RespondTemperature(id, lastTemperatureReading)
