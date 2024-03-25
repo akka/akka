@@ -157,10 +157,10 @@ private[stream] final class SourceRefStageImpl[Out](val initialPartnerRef: Optio
 
       // demand management ---
       private var state: State = initialPartnerRef match {
-        case OptionVal.Some(ref) =>
+        case OptionVal.Some(partnerRef) =>
           // this means we're the "remote" for an already active Source on the other side (the "origin")
-          self.watch(ref)
-          AwaitingSubscription(ref)
+          self.watch(partnerRef)
+          AwaitingSubscription(partnerRef)
         case _ =>
           // we are the "origin", and awaiting the other side to start when we'll receive their partherRef
           AwaitingPartner
@@ -353,9 +353,9 @@ private[stream] final class SourceRefStageImpl[Out](val initialPartnerRef: Optio
 
         case DemandRedeliveryTimerKey =>
           state match {
-            case Running(ref) =>
+            case Running(partner) =>
               log.debug("[{}] Scheduled re-delivery of demand until [{}]", stageActorName, localCumulativeDemand)
-              ref ! StreamRefsProtocol.CumulativeDemand(localCumulativeDemand)
+              partner ! StreamRefsProtocol.CumulativeDemand(localCumulativeDemand)
               scheduleDemandRedelivery()
 
             case other =>
@@ -400,17 +400,17 @@ private[stream] final class SourceRefStageImpl[Out](val initialPartnerRef: Optio
 
       override def onDownstreamFinish(cause: Throwable): Unit = {
         state match {
-          case Running(ref) =>
-            triggerCancellationExchange(ref, cause)
+          case Running(partner) =>
+            triggerCancellationExchange(partner, cause)
 
           case AwaitingPartner =>
             // we can't do a graceful cancellation dance in this case, wait for partner and then cancel
             // or timeout if we never get a partner
             scheduleOnce(TerminationDeadlineTimerKey, finalTerminationSignalDeadline)
 
-          case AwaitingSubscription(ref) =>
+          case AwaitingSubscription(partner) =>
             // we didn't get a first demand yet but have access to the partner - try a cancellation dance
-            triggerCancellationExchange(ref, cause)
+            triggerCancellationExchange(partner, cause)
 
           case UpstreamCompleted(_) =>
             // we saw upstream complete so let's just complete

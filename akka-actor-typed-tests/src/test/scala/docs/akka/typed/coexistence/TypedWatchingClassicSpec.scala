@@ -39,8 +39,8 @@ object TypedWatchingClassicSpec {
         classic.tell(Typed.Ping(context.self), context.self.toClassic)
 
         Behaviors
-          .receivePartial[Command] {
-            case (context, Pong) =>
+          .receiveMessagePartial[Command] {
+            case Pong =>
               // it's not possible to get the sender, that must be sent in message
               // context.stop is an implicit extension method
               context.stop(classic)

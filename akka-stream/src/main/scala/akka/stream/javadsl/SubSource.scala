@@ -860,7 +860,7 @@ final class SubSource[Out, Mat](
    *
    * '''Cancels when''' predicate returned false or downstream cancels
    */
-  def takeWhile(p: function.Predicate[Out]): SubSource[Out, Mat] = takeWhile(p, false)
+  def takeWhile(p: function.Predicate[Out]): SubSource[Out, Mat] = takeWhile(p, inclusive = false)
 
   /**
    * Terminate processing (and cancel the upstream publisher) after predicate

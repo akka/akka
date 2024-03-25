@@ -284,7 +284,8 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
       verifySession: SSLSession => Try[Unit],
       closing: TLSClosing): Flow[ByteString, ByteString, Future[OutgoingConnection]] = {
 
-    val connection = outgoingConnection(remoteAddress, localAddress, options, true, connectTimeout, idleTimeout)
+    val connection =
+      outgoingConnection(remoteAddress, localAddress, options, halfClose = true, connectTimeout, idleTimeout)
     val tls = TLS(createSSLEngine, verifySession, closing)
     connection.join(tlsWrapping.atop(tls).reversed)
   }

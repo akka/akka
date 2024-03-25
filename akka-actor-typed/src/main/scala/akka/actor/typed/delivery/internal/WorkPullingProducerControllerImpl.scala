@@ -435,7 +435,7 @@ private class WorkPullingProducerControllerImpl[A: ClassTag](
       selectWorker() match {
         case Some((outKey, out)) =>
           storeMessageSent(
-            MessageSent(s.currentSeqNr, resend.msg, false, out.confirmationQualifier, System.currentTimeMillis()),
+            MessageSent(s.currentSeqNr, resend.msg, ack = false, out.confirmationQualifier, System.currentTimeMillis()),
             attempt = 1)
           // When StoreMessageSentCompleted (oldConfirmationQualifier, oldSeqNr) confirmation will be stored
           active(

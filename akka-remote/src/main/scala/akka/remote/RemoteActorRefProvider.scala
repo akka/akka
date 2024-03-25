@@ -412,7 +412,15 @@ private[akka] class RemoteActorRefProvider(
       (Iterator(props.deploy) ++ deployment.iterator).reduce((a, b) => b.withFallback(a)) match {
         case d @ Deploy(_, _, _, RemoteScope(address), _, _) =>
           if (hasAddress(address)) {
-            local.actorOf(system, props, supervisor, path, false, deployment.headOption, false, async)
+            local.actorOf(
+              system,
+              props,
+              supervisor,
+              path,
+              systemService = false,
+              deployment.headOption,
+              lookupDeploy = false,
+              async = async)
           } else if (props.deploy.scope == LocalScope) {
             throw new ConfigurationException(
               s"${ErrorMessages.RemoteDeploymentConfigErrorPrefix} for local-only Props at [$path]")
@@ -436,14 +444,30 @@ private[akka] class RemoteActorRefProvider(
                 new RemoteActorRef(transport, localAddress, rpath, supervisor, Some(props), Some(d))
               } else {
                 warnIfNotRemoteActorRef(path)
-                local.actorOf(system, props, supervisor, path, systemService, deployment.headOption, false, async)
+                local.actorOf(
+                  system,
+                  props,
+                  supervisor,
+                  path,
+                  systemService,
+                  deployment.headOption,
+                  lookupDeploy = false,
+                  async = async)
               }
 
             } catch {
               case NonFatal(e) => throw new IllegalArgumentException(s"remote deployment failed for [$path]", e)
             }
         case _ =>
-          local.actorOf(system, props, supervisor, path, systemService, deployment.headOption, false, async)
+          local.actorOf(
+            system,
+            props,
+            supervisor,
+            path,
+            systemService,
+            deployment.headOption,
+            lookupDeploy = false,
+            async = async)
       }
     }
 

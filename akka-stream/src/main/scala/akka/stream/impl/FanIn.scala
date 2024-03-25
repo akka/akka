@@ -78,7 +78,7 @@ import akka.util.unused
     private[this] final def completed(index: Int): Boolean = hasState(index, Completed)
     private[this] final def registerCompleted(index: Int): Unit = {
       completedCounter += 1
-      setState(index, Completed, true)
+      setState(index, Completed, on = true)
     }
 
     private[this] final def depleted(index: Int): Boolean = hasState(index, Depleted)

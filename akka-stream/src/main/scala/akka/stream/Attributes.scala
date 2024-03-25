@@ -612,7 +612,7 @@ object Attributes {
      * This applies to [[akka.stream.scaladsl.FlowOps.flatMapPrefix]], [[akka.stream.scaladsl.Flow.futureFlow]] and derived operators.
      */
     val EagerCancellation: NestedMaterializationCancellationPolicy =
-      new NestedMaterializationCancellationPolicy(false, "EagerCancellation")
+      new NestedMaterializationCancellationPolicy(propagateToNestedMaterialization = false, name = "EagerCancellation")
 
     /**
      * A [[NestedMaterializationCancellationPolicy]] that configures graph stages
@@ -621,7 +621,7 @@ object Attributes {
      * This applies to [[akka.stream.scaladsl.FlowOps.flatMapPrefix]], [[akka.stream.scaladsl.Flow.futureFlow]] and derived operators.
      */
     val PropagateToNested: NestedMaterializationCancellationPolicy =
-      new NestedMaterializationCancellationPolicy(true, "PropagateToNested")
+      new NestedMaterializationCancellationPolicy(propagateToNestedMaterialization = true, name = "PropagateToNested")
 
     /**
      * Default [[NestedMaterializationCancellationPolicy]],

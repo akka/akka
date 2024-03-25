@@ -65,7 +65,12 @@ object AkkaDisciplinePlugin extends AutoPlugin {
     "akka-stream-tests-tck",
     "akka-testkit")
 
-  val defaultScala2Options = "-Wconf:cat=unused-nowarn:s,cat=lint-infer-any:s,any:e"
+  // cat=lint-deprecation: we want to keep using both Java and Scala deprecation annotations
+  val defaultScala2Options = "-Wconf:cat=unused-nowarn:s,cat=lint-infer-any:s,cat=lint-deprecation:s,any:e"
+  // cat=lint-named-booleans: naming all boolean params across all tests is quite a bit of extra work and noise
+  // cat=other-shadowing: a good warning, but we do re-use names so much all over the tests that it is a ton of work to fix
+  val defaultScala2TestOptions =
+    "-Wconf:cat=unused-nowarn:s,cat=lint-infer-any:s,cat=lint-named-booleans:s,cat=other-shadowing:s,any:e"
 
   // deprecation doesn't quite seem to work, warns for the location of the annotation
   // We have SerialVersionUID on traits which doesn't make sense but needs to stay for historical/compat reasons
@@ -78,7 +83,7 @@ object AkkaDisciplinePlugin extends AutoPlugin {
       ),
     Test / scalacOptions ++= (
         if (scalaVersion.value.startsWith("3.")) Seq.empty
-        else Seq(defaultScala2Options)
+        else Seq(defaultScala2TestOptions)
       ),
     Compile / doc / scalacOptions := Seq())
 
@@ -119,8 +124,6 @@ object AkkaDisciplinePlugin extends AutoPlugin {
                 "-Ywarn-nullary-unit",
                 "-Ypartial-unification",
                 "-Yno-adapted-args")
-            case Some((2, 12)) =>
-              disciplineScalac2Options
             case _ =>
               disciplineScalac3Options
           }).toSeq,

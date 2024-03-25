@@ -132,14 +132,14 @@ public class LoggingDocTest extends JUnitSuite {
 
         CompletionStage<ActorRef<Jazz>> jazzListener = AskPattern.ask(
             system,
-            replyTo -> new Spawn(Listener.create(), "jazzListener", Props.empty(), replyTo),
+            replyTo -> new Spawn<>(Listener.create().narrow(), "jazzListener", Props.empty(), replyTo),
             timeout,
             system.scheduler()
         );
 
         CompletionStage<ActorRef<AllKindsOfMusic>> musicListener = AskPattern.ask(
             system,
-            replyTo -> new Spawn(Listener.create(), "musicListener", Props.empty(), replyTo),
+            replyTo -> new Spawn<>(Listener.create(), "musicListener", Props.empty(), replyTo),
             timeout,
             system.scheduler()
         );

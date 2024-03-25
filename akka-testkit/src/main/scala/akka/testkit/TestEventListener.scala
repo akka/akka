@@ -360,7 +360,7 @@ final case class ErrorFilter(
   /**
    * Java API: filter only on the given type of exception
    */
-  def this(throwable: Class[_]) = this(throwable, null, null, false, false, Int.MaxValue)
+  def this(throwable: Class[_]) = this(throwable, null, null, pattern = false, complete = false, Int.MaxValue)
 
 }
 

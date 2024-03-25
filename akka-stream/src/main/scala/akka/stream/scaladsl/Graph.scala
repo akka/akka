@@ -770,7 +770,8 @@ object Partition {
    * @param outputPorts number of output ports
    * @param partitioner function deciding which output each element will be targeted
    */ // FIXME BC add `eagerCancel: Boolean = false` parameter
-  def apply[T](outputPorts: Int, partitioner: T => Int): Partition[T] = new Partition(outputPorts, partitioner, false)
+  def apply[T](outputPorts: Int, partitioner: T => Int): Partition[T] =
+    new Partition(outputPorts, partitioner, eagerCancel = false)
 }
 
 /**
@@ -902,7 +903,7 @@ object Balance {
    *   default value is `false`
    */
   def apply[T](outputPorts: Int, waitForAllDownstreams: Boolean = false): Balance[T] =
-    new Balance(outputPorts, waitForAllDownstreams, false)
+    new Balance(outputPorts, waitForAllDownstreams, eagerCancel = false)
 }
 
 /**
@@ -1055,7 +1056,7 @@ object ZipLatest {
  */
 final class ZipLatest[A, B](eagerComplete: Boolean) extends ZipLatestWith2[A, B, (A, B)](Tuple2.apply, eagerComplete) {
 
-  def this() = this(true)
+  def this() = this(eagerComplete = true)
 
   override def toString = "ZipLatest"
 }

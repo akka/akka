@@ -78,7 +78,7 @@ private[akka] object Buffer {
     def nonEmpty: Boolean = used != 0
 
     def enqueue(elem: T): Unit = {
-      put(writeIdx, elem, false)
+      put(writeIdx, elem, maintenance = false)
       writeIdx += 1
     }
 
@@ -87,7 +87,7 @@ private[akka] object Buffer {
 
     private def put(idx: Long, elem: T, maintenance: Boolean): Unit =
       buffer(toOffset(idx, maintenance)) = elem.asInstanceOf[AnyRef]
-    private def get(idx: Long): T = buffer(toOffset(idx, false)).asInstanceOf[T]
+    private def get(idx: Long): T = buffer(toOffset(idx, maintenance = false)).asInstanceOf[T]
 
     def peek(): T = get(readIdx)
 
@@ -108,13 +108,13 @@ private[akka] object Buffer {
        * this is the only place where readIdx is advanced, so give ModuloFixedSizeBuffer
        * a chance to prevent its fatal wrap-around
        */
-      put(readIdx, null.asInstanceOf[T], true)
+      put(readIdx, null.asInstanceOf[T], maintenance = true)
       readIdx += 1
     }
 
     def dropTail(): Unit = {
       writeIdx -= 1
-      put(writeIdx, null.asInstanceOf[T], false)
+      put(writeIdx, null.asInstanceOf[T], maintenance = false)
     }
   }
 

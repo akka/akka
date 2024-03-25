@@ -24,7 +24,7 @@ object Compression {
    * @param maxBytesPerChunk Maximum length of the output [[ByteString]] chunk.
    */
   def inflate(maxBytesPerChunk: Int): Flow[ByteString, ByteString, NotUsed] =
-    inflate(maxBytesPerChunk, false)
+    inflate(maxBytesPerChunk, nowrap = false)
 
   /**
    * Same as [[inflate]] with configurable maximum output length and nowrap

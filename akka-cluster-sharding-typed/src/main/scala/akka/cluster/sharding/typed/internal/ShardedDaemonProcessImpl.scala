@@ -88,7 +88,7 @@ private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
       initialNumberOfInstances: Int,
       behaviorFactory: ShardedDaemonProcessContext => Behavior[T])(
       implicit classTag: ClassTag[T]): ActorRef[ShardedDaemonProcessCommand] =
-    internalInitWithContext(name, initialNumberOfInstances, behaviorFactory, None, None, None, true)
+    internalInitWithContext(name, initialNumberOfInstances, behaviorFactory, None, None, None, supportsRescale = true)
 
   override def initWithContext[T](
       name: EntityId,
@@ -103,7 +103,7 @@ private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
       Some(settings),
       Some(stopMessage),
       None,
-      true)
+      supportsRescale = true)
 
   override def initWithContext[T](
       name: String,
@@ -151,7 +151,7 @@ private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
         numberOfShards,
         if (settings.role.isDefined) settings.role else shardingBaseSettings.role,
         shardingBaseSettings.dataCenter,
-        false, // remember entities disabled
+        rememberEntities = false, // remember entities disabled
         "",
         "",
         ClusterShardingSettings.PassivationStrategySettings.disabled, // passivation disabled
@@ -253,7 +253,14 @@ private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
       behaviorFactory: java.util.function.Function[ShardedDaemonProcessContext, Behavior[T]])
       : ActorRef[ShardedDaemonProcessCommand] = {
     val classTag = ClassTag[T](messageClass)
-    internalInitWithContext[T](name, initialNumberOfInstances, behaviorFactory.apply, None, None, None, true)(classTag)
+    internalInitWithContext[T](
+      name,
+      initialNumberOfInstances,
+      behaviorFactory.apply,
+      None,
+      None,
+      None,
+      supportsRescale = true)(classTag)
   }
 
   override def initWithContext[T](

@@ -517,7 +517,7 @@ abstract class AbstractFSM[S, D] extends FSM[S, D] {
    */
   @deprecated("Use startSingleTimer instead.", since = "2.6.0")
   final def setTimer(name: String, msg: Any, timeout: java.time.Duration): Unit = {
-    setTimer(name, msg, timeout.asScala, false)
+    setTimer(name, msg, timeout.asScala, repeat = false)
   }
 
   /**

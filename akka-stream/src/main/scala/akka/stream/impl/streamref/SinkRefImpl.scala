@@ -82,8 +82,8 @@ private[stream] final class SinkRefStageImpl[In] private[akka] (val initialPartn
       private var partnerRef: OptionVal[ActorRef] = OptionVal.None
       private def getPartnerRef: ActorRef =
         partnerRef match {
-          case OptionVal.Some(ref) => ref
-          case _                   => throw TargetRefNotInitializedYetException()
+          case OptionVal.Some(r) => r
+          case _                 => throw TargetRefNotInitializedYetException()
         }
 
       val SubscriptionTimeoutTimerKey = "SubscriptionTimeoutKey"
@@ -102,7 +102,7 @@ private[stream] final class SinkRefStageImpl[In] private[akka] (val initialPartn
 
       override def preStart(): Unit = {
         initialPartnerRef match {
-          case OptionVal.Some(ref) =>
+          case OptionVal.Some(partner) =>
             log.debug(
               "[{}] Created SinkRef, pointing to remote Sink receiver: {}, local worker: {}",
               stageActorName,
@@ -110,7 +110,7 @@ private[stream] final class SinkRefStageImpl[In] private[akka] (val initialPartn
               self.ref)
             // this will set the `partnerRef`
             observeAndValidateSender(
-              ref,
+              partner,
               "Illegal initialPartnerRef! This may be a bug, please report your " +
               "usage and complete stack trace on the issue tracker: https://github.com/akka/akka")
             tryPull()
@@ -128,14 +128,14 @@ private[stream] final class SinkRefStageImpl[In] private[akka] (val initialPartn
       }
 
       def initialReceive: ((ActorRef, Any)) => Unit = {
-        case (_, Terminated(ref)) =>
+        case (_, Terminated(partner)) =>
           log.debug(
             "[{}] remote terminated [{}], partnerRef: [{}], finishedWithAwaitingPartnerTermination: [{}]",
             stageActorName,
-            ref,
+            partner,
             partnerRef,
             finishedWithAwaitingPartnerTermination)
-          if (ref == getPartnerRef)
+          if (partner == getPartnerRef)
             finishedWithAwaitingPartnerTermination match {
               case OptionVal.Some(Failure(ex)) =>
                 failStage(ex)
@@ -221,8 +221,8 @@ private[stream] final class SinkRefStageImpl[In] private[akka] (val initialPartn
       override def onUpstreamFailure(ex: Throwable): Unit = {
         log.debug("[{}] Upstream failure, partnerRef [{}]", stageActorName, partnerRef)
         partnerRef match {
-          case OptionVal.Some(ref) =>
-            ref ! StreamRefsProtocol.RemoteStreamFailure(ex.getMessage)
+          case OptionVal.Some(partner) =>
+            partner ! StreamRefsProtocol.RemoteStreamFailure(ex.getMessage)
             finishedWithAwaitingPartnerTermination = OptionVal(Failure(ex))
             setKeepGoing(true) // we will terminate once partner ref has Terminated (to avoid racing Terminated with completion message)
 
@@ -237,8 +237,8 @@ private[stream] final class SinkRefStageImpl[In] private[akka] (val initialPartn
       override def onUpstreamFinish(): Unit = {
         log.debug("[{}] Upstream finish, partnerRef [{}]", stageActorName, partnerRef)
         partnerRef match {
-          case OptionVal.Some(ref) =>
-            ref ! StreamRefsProtocol.RemoteStreamCompleted(remoteCumulativeDemandConsumed)
+          case OptionVal.Some(partner) =>
+            partner ! StreamRefsProtocol.RemoteStreamCompleted(remoteCumulativeDemandConsumed)
             finishedWithAwaitingPartnerTermination = OptionVal(Success(Done))
             setKeepGoing(true) // we will terminate once partner ref has Terminated (to avoid racing Terminated with completion message)
           case _ =>

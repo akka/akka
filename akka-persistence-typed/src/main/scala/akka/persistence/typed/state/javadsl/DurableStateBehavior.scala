@@ -139,10 +139,11 @@ abstract class DurableStateBehavior[Command, State] private[akka] (
       (state, cmd) => commandHandler()(state, cmd).asInstanceOf[EffectImpl[State]],
       getClass).withTag(tag).snapshotAdapter(snapshotAdapter()).withDurableStateStorePluginId(durableStateStorePluginId)
 
-    val handler = signalHandler()
-    val behaviorWithSignalHandler =
+    val behaviorWithSignalHandler = {
+      val handler = signalHandler()
       if (handler.isEmpty) behavior
       else behavior.receiveSignal(handler.handler)
+    }
 
     val withSignalHandler =
       if (onPersistFailure.isPresent)

@@ -858,7 +858,7 @@ final class ClusterShardingSettings(
       stateStoreMode,
       rememberEntitiesStoreMode,
       tuningParameters,
-      true,
+      coordinatorSingletonOverrideRole = true,
       coordinatorSingletonSettings,
       leaseSettings)
 
@@ -889,7 +889,7 @@ final class ClusterShardingSettings(
       stateStoreMode,
       rememberEntitiesStoreMode,
       tuningParameters,
-      true,
+      coordinatorSingletonOverrideRole = true,
       coordinatorSingletonSettings,
       leaseSettings)
 

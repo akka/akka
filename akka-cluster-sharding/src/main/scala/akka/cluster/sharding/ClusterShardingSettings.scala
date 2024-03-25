@@ -1163,7 +1163,7 @@ final class ClusterShardingSettings(
       passivationStrategySettings,
       shardRegionQueryTimeout,
       tuningParameters,
-      true,
+      coordinatorSingletonOverrideRole = true,
       coordinatorSingletonSettings,
       leaseSettings)
 
@@ -1192,7 +1192,7 @@ final class ClusterShardingSettings(
       ClusterShardingSettings.PassivationStrategySettings.oldDefault(passivateIdleEntityAfter),
       shardRegionQueryTimeout,
       tuningParameters,
-      true,
+      coordinatorSingletonOverrideRole = true,
       coordinatorSingletonSettings,
       leaseSettings)
 

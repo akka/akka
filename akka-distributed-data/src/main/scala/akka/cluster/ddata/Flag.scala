@@ -9,7 +9,7 @@ object Flag {
   /**
    * `Flag` that is initialized to `false`.
    */
-  val empty: Flag = new Flag(false)
+  val empty: Flag = new Flag(enabled = false)
 
   /**
    * `Flag` that is initialized to `false`.
@@ -19,7 +19,7 @@ object Flag {
   /**
    * `Flag` that is initialized to `true`.
    */
-  val Enabled: Flag = new Flag(true)
+  val Enabled: Flag = new Flag(enabled = true)
 
   def apply(): Flag = Disabled
 

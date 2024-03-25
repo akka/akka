@@ -6,16 +6,13 @@ package akka.actor.typed
 package internal
 
 import java.util.concurrent.ThreadLocalRandom
-
 import scala.concurrent.duration.Deadline
 import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
 import scala.util.Try
 import scala.util.control.Exception.Catcher
 import scala.util.control.NonFatal
-
 import org.slf4j.event.Level
-
 import akka.actor.DeadLetterSuppression
 import akka.actor.Dropped
 import akka.actor.typed.BehaviorInterceptor.PreStartTarget
@@ -414,10 +411,11 @@ private class RestartSupervisor[T, Thr <: Throwable: ClassTag](initial: Behavior
 
   private def updateRestartCount(): Unit = {
     strategy match {
-      case restart: Restart =>
+      case restartStrategy: Restart =>
         val timeLeft = deadlineHasTimeLeft
         val newDeadline =
-          if (deadline.isDefined && timeLeft) deadline else OptionVal.Some(Deadline.now + restart.withinTimeRange)
+          if (deadline.isDefined && timeLeft) deadline
+          else OptionVal.Some(Deadline.now + restartStrategy.withinTimeRange)
         restartCount = if (timeLeft) restartCount + 1 else 1
         deadline = newDeadline
       case _: Backoff =>
