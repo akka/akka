@@ -4,6 +4,13 @@
 
 package typed.tutorial_3
 
+/*
+//#device-read-test
+package com.example
+
+//#device-read-test
+ */
+
 //#device-read-test
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import org.scalatest.wordspec.AnyWordSpecLike
