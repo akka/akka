@@ -18,6 +18,7 @@ import akka.actor.typed.Props;
 import akka.actor.typed.SpawnProtocol;
 import akka.actor.typed.SpawnProtocol.Spawn;
 import akka.actor.typed.eventstream.EventStream.Publish;
+import akka.actor.typed.javadsl.Adapter;
 import akka.actor.typed.javadsl.AskPattern;
 import java.time.Duration;
 import java.util.concurrent.CompletionStage;
@@ -176,13 +177,13 @@ public class LoggingDocTest extends JUnitSuite {
     public void subscribeToSuppressedDeadLetters() {
         ActorSystem<Void> system = ActorSystem.create(Behaviors.empty(), "SuppressedDeadLetter");
         TestProbe<SuppressedDeadLetter> probe = TestProbe.create(system);
-        ActorRef<SuppressedDeadLetter> actor = probe.ref();
+        ActorRef<SuppressedDeadLetter> listener = probe.ref();
+        akka.actor.ActorRef mockRef = Adapter.toClassic(listener);
         // #suppressed-deadletters
-        system.eventStream().tell(new Subscribe<>(SuppressedDeadLetter.class, actor));
+        system.eventStream().tell(new Subscribe<>(SuppressedDeadLetter.class, listener));
         // #suppressed-deadletters
-        Terminated suppression = Terminated.apply(Actor.noSender(), false, false);
-        SuppressedDeadLetter deadLetter = SuppressedDeadLetter.apply(suppression, Actor.noSender(),
-            Actor.noSender());
+        Terminated suppression = Terminated.apply(mockRef, false, false);
+        SuppressedDeadLetter deadLetter = SuppressedDeadLetter.apply(suppression, mockRef, mockRef);
         system.eventStream().tell(new Publish<>(deadLetter));
 
         SuppressedDeadLetter suppressedDeadLetter = probe.expectMessageClass(
@@ -197,17 +198,18 @@ public class LoggingDocTest extends JUnitSuite {
     public void subscribeToAllDeadLetters() {
         ActorSystem<Void> system = ActorSystem.create(Behaviors.empty(), "AllDeadLetters");
         TestProbe<AllDeadLetters> probe = TestProbe.create(system);
-        ActorRef<AllDeadLetters> actor = probe.ref();
+        ActorRef<AllDeadLetters> listener = probe.ref();
+        akka.actor.ActorRef mockRef = Adapter.toClassic(listener);
         // #all-deadletters
-        system.eventStream().tell(new Subscribe<>(AllDeadLetters.class, actor));
+        system.eventStream().tell(new Subscribe<>(AllDeadLetters.class, listener));
         // #all-deadletters
 
         Terminated suppression = Terminated.apply(Actor.noSender(), false, false);
         SuppressedDeadLetter suppressedDeadLetter = SuppressedDeadLetter.apply(suppression,
-            Actor.noSender(),
-            Actor.noSender());
+            mockRef,
+            mockRef);
         system.eventStream().tell(new Publish<>(suppressedDeadLetter));
-        DeadLetter deadLetter = DeadLetter.apply("deadLetter", Actor.noSender(), Actor.noSender());
+        DeadLetter deadLetter = DeadLetter.apply("deadLetter", mockRef, mockRef);
         system.eventStream().tell(new Publish<>(deadLetter));
 
         // both of the following messages will be received by the subscription actor

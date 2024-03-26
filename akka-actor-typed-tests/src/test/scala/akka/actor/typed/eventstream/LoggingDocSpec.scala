@@ -4,7 +4,6 @@
 
 package akka.actor.typed.eventstream
 
-import akka.actor.Actor
 import akka.actor.DeadLetter
 import akka.actor.Terminated
 import akka.actor.testkit.typed.scaladsl.LogCapturing
@@ -17,6 +16,7 @@ import akka.actor.typed.SpawnProtocol
 import akka.actor.typed.SpawnProtocol.Spawn
 import akka.actor.typed.eventstream.EventStream.Publish
 import akka.actor.typed.eventstream.EventStream.Subscribe
+import akka.actor.typed.scaladsl.adapter._
 import akka.actor.typed.scaladsl.Behaviors
 import org.scalatest.wordspec.AnyWordSpecLike
 
@@ -125,25 +125,26 @@ class LoggingDocSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with
   "allow registration to suppressed dead letters" in {
     val probe: TestProbe[Any] = TestProbe()
     val listener: ActorRef[Any] = probe.ref
+    val mockRef = listener.toClassic
 
     //#suppressed-deadletters
     import akka.actor.SuppressedDeadLetter
     system.eventStream ! Subscribe[SuppressedDeadLetter](listener)
     //#suppressed-deadletters
-    val suppression = Terminated(Actor.noSender)(existenceConfirmed = false, addressTerminated = false)
-    val suppressionDeadLetter = SuppressedDeadLetter(suppression, Actor.noSender, Actor.noSender)
+    val suppression = Terminated(mockRef)(existenceConfirmed = false, addressTerminated = false)
+    val suppressionDeadLetter = SuppressedDeadLetter(suppression, mockRef, mockRef)
     system.eventStream ! Publish(suppressionDeadLetter)
 
     val receivedSuppression = probe.expectMessageType[SuppressedDeadLetter]
-    receivedSuppression should equal(suppressionDeadLetter)
+    receivedSuppression shouldBe suppressionDeadLetter
 
     //#all-deadletters
     import akka.actor.AllDeadLetters
     system.eventStream ! Subscribe[AllDeadLetters](listener)
     //#all-deadletters
-    val deadLetter = DeadLetter("deadLetter", Actor.noSender, Actor.noSender)
+    val deadLetter = DeadLetter("deadLetter", mockRef, mockRef)
     val receivedDeadLetter = probe.expectMessageType[DeadLetter]
-    receivedDeadLetter should equal(deadLetter)
+    receivedDeadLetter shouldBe deadLetter
   }
 
 }
