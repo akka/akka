@@ -4,6 +4,13 @@
 
 package typed.tutorial_3
 
+/*
+//#full-device
+package com.example
+
+//#full-device
+ */
+
 //#full-device
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
