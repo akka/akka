@@ -4,9 +4,6 @@
 
 package akka.actor.typed.eventstream;
 
-import static akka.actor.typed.javadsl.Adapter.spawn;
-import static akka.actor.typed.javadsl.Adapter.toClassic;
-
 import akka.actor.Actor;
 import akka.actor.AllDeadLetters;
 import akka.actor.SuppressedDeadLetter;
@@ -44,11 +41,11 @@ public class LoggingDocTest extends JUnitSuite {
         ActorSystem<SpawnProtocol.Command> system = ActorSystem.create(SpawnProtocol.create(),
             "DeadLettersSystem");
         // #subscribe-deadletter
-        CompletionStage<ActorRef<DeadLetter>> spawnActorFuture = AskPattern.ask(system,
-            r -> new Spawn<>(DeadLetterActor.create(), "DeadLetters", Props.empty(), r),
-            Duration.ofSeconds(3), system.scheduler());
-        ActorRef<DeadLetter> deadLetters = spawnActorFuture.toCompletableFuture().join();
-        system.eventStream().tell(new Subscribe<>(DeadLetter.class, deadLetters));
+        ActorSystem.create(Behaviors.setup(ctx -> {
+            ActorRef<DeadLetter> listener = ctx.spawn(DeadLetterActor.create(), "listener");
+            ctx.getSystem().eventStream().tell(new Subscribe<>(DeadLetter.class, listener));
+            return Behaviors.empty();
+        }), "DeadLettersSystem");
         // #subscribe-deadletter
         ActorTestKit.shutdown(system);
     }
