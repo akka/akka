@@ -465,10 +465,10 @@ Using the `ReceiveBuilder` is the typical, and recommended, way of defining mess
 be good to know that it's optional in case you would prefer a different approach. Alternatives could be like:
 
 * direct processing because there is only one message type
+* pattern matching ([Java 21 documentation](https://docs.oracle.com/en/java/javase/21/language/pattern-matching.html))
 * if or switch statements
 * annotation processor
-* [Vavr Pattern Matching DSL](https://www.vavr.io/vavr-docs/#_pattern_matching)
-* pattern matching since JDK 14 ([JEP 305](https://openjdk.java.net/jeps/305))
+* Vavr Pattern Matching DSL
 
 In `Behaviors` there are `receive`, `receiveMessage` and `receiveSignal` factory methods that takes functions
 instead of using the `ReceiveBuilder`, which is the `receive` with the class parameter.

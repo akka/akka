@@ -37,6 +37,6 @@ overridden that setting.
 
 ## Akka Diagnostics
 
-The commercial extension [Akka Enhancements](https://doc.akka.io/docs/akka-enhancements/current/diagnostics-recorder.html) with the major version `1.x` is only compatible up until `2.6.x`.
+The extension "Akka Enhancements: Diagnostics Recorder" with the major version `1.x` is only compatible up until `2.6.x`.
 
 For Akka 2.7 and beyond use `2.x` of `akka-diagnostics` which is now maintained under [Akka Diagnostics](https://doc.akka.io/docs/akka-diagnostics/current/index.html).
