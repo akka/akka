@@ -44,8 +44,10 @@ public class LoggingDocTest extends JUnitSuite {
         ActorSystem<SpawnProtocol.Command> system = ActorSystem.create(SpawnProtocol.create(),
             "DeadLettersSystem");
         // #subscribe-deadletter
-        ActorRef<DeadLetter> deadLetters = spawn(toClassic(system), DeadLetterActor.create(),
-            "DeadLetters");
+        CompletionStage<ActorRef<DeadLetter>> spawnActorFuture = AskPattern.ask(system,
+            r -> new Spawn<>(DeadLetterActor.create(), "DeadLetters", Props.empty(), r),
+            Duration.ofSeconds(3), system.scheduler());
+        ActorRef<DeadLetter> deadLetters = spawnActorFuture.toCompletableFuture().join();
         system.eventStream().tell(new Subscribe<>(DeadLetter.class, deadLetters));
         // #subscribe-deadletter
         ActorTestKit.shutdown(system);
@@ -189,7 +191,7 @@ public class LoggingDocTest extends JUnitSuite {
         SuppressedDeadLetter suppressedDeadLetter = probe.expectMessageClass(
             SuppressedDeadLetter.class);
         Assert.assertNotNull(suppressedDeadLetter);
-        Assert.assertNotEquals(suppression, suppressedDeadLetter.message());
+        Assert.assertEquals(deadLetter, suppressedDeadLetter);
 
         ActorTestKit.shutdown(system);
     }
@@ -216,10 +218,10 @@ public class LoggingDocTest extends JUnitSuite {
         SuppressedDeadLetter receiveSuppressed = probe.expectMessageClass(
             SuppressedDeadLetter.class);
         Assert.assertNotNull(receiveSuppressed);
-        Assert.assertNotEquals(suppression, receiveSuppressed.message());
+        Assert.assertEquals(suppressedDeadLetter, receiveSuppressed);
         DeadLetter receiveDeadLetter = probe.expectMessageClass(DeadLetter.class);
         Assert.assertNotNull(receiveDeadLetter);
-        Assert.assertNotEquals(deadLetter.message(), receiveDeadLetter.message());
+        Assert.assertEquals(deadLetter, receiveDeadLetter);
 
         ActorTestKit.shutdown(system);
     }

@@ -143,6 +143,7 @@ class LoggingDocSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with
     system.eventStream ! Subscribe[AllDeadLetters](listener)
     //#all-deadletters
     val deadLetter = DeadLetter("deadLetter", mockRef, mockRef)
+    system.eventStream ! Publish(deadLetter)
     val receivedDeadLetter = probe.expectMessageType[DeadLetter]
     receivedDeadLetter shouldBe deadLetter
   }
