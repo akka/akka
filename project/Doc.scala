@@ -191,7 +191,7 @@ object BootstrapGenjavadoc extends AutoPlugin {
   override def requires =
     UnidocRoot.CliOptions.genjavadocEnabled
       .ifTrue {
-        // require 11, fail fast for 8, 9, 10
+        // require 11, fail fast for 9, 10
         require(JdkOptions.isJdk11orHigher, "Javadoc generation requires at least jdk 11")
         sbtunidoc.GenJavadocPlugin
       }
@@ -199,7 +199,7 @@ object BootstrapGenjavadoc extends AutoPlugin {
 
   override lazy val projectSettings = UnidocRoot.CliOptions.genjavadocEnabled
     .ifTrue(Seq(
-      unidocGenjavadocVersion := "0.18",
+      unidocGenjavadocVersion := "0.19",
       Compile / scalacOptions ++= Seq(
           "-P:genjavadoc:fabricateParams=false",
           "-P:genjavadoc:suppressSynthetic=false",
