@@ -1,14 +1,29 @@
 # Persistence Plugins 
 
-Storage backends for journals and snapshot stores are pluggable in the Akka persistence extension.
-
-A directory of persistence journal and snapshot store plugins is available at the Akka Community Projects page, see [Community plugins](https://akka.io/community/)
+Storage backends for journals, snapshot stores, durable state stores and persistence queries are pluggable in the Akka persistence extension.
 
 Plugins maintained within the Akka organization are:
 
-* [akka-persistence-cassandra](https://doc.akka.io/docs/akka-persistence-cassandra/current/) (no Durable State support)
-* [akka-persistence-jdbc](https://doc.akka.io/docs/akka-persistence-jdbc/current/)
 * [akka-persistence-r2dbc](https://doc.akka.io/docs/akka-persistence-r2dbc/current/)
+* [akka-persistence-cassandra](https://doc.akka.io/docs/akka-persistence-cassandra/current/)
+* [akka-persistence-jdbc](https://doc.akka.io/docs/akka-persistence-jdbc/current/)
+
+Latest features have mostly been implemented in the R2DBC plugin. Be aware of that many of the new features of @extref[Akka Distributed Cluster](akka-distributed-cluster:) and @extref[Akka Edge](akka-edge:) are only implemented by the
+[R2DBC plugin](https://doc.akka.io/docs/akka-persistence-r2dbc/current/) and are not supported by the Cassandra and JDBC plugins.
+
+Those features were developed for Distributed Cluster and Edge, but they are also useful in other contexts.
+Example of concrete features not supported by the Cassandra and JDBC plugins:
+
+* `eventsBySlices` query
+* Projections over gRPC
+* Replicated Event Sourcing over gRPC
+* Dynamic scaling of number of Projection instances
+* Low latency Projections
+* Projections starting from snapshots
+* Scalability of many Projections
+* Durable State entities (partly supported by JDBC plugin)
+
+## Enable a plugin
 
 Plugins can be selected either by "default" for all persistent actors,
 or "individually", when a persistent actor defines its own set of plugins.
