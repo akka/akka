@@ -5,7 +5,6 @@
 package akka.stream.scaladsl
 
 import java.net.InetSocketAddress
-import java.util.concurrent.TimeoutException
 import javax.net.ssl.SSLEngine
 import javax.net.ssl.SSLSession
 
@@ -395,7 +394,7 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
 }
 
 final class TcpIdleTimeoutException(msg: String, @unused timeout: Duration)
-    extends TimeoutException(msg: String)
+    extends StreamTimeoutException(msg: String)
     with NoStackTrace // only used from a single stage
 
 object TcpAttributes {
