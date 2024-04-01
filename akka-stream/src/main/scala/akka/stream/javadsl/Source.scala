@@ -112,7 +112,7 @@ object Source {
     StreamConverters.fromJavaStream(stream)
 
   /**
-   * Helper to create 'cycled' [[Source]] that will continually produce elements in the order
+   * Helper to create a 'cycled' [[Source]] that will continually produce elements in the order
    * they are provided.
    *
    * Example usage:
