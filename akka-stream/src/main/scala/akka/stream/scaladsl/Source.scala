@@ -282,10 +282,20 @@ object Source {
     StreamConverters.fromJavaStream(stream);
 
   /**
-   * Creates [[Source]] that will continually produce given elements in specified order.
+   * Creates a [[Source]] that will continually produce elements in the order they are provided.
    *
-   * Starts a new 'cycled' `Source` from the given elements. The producer stream of elements
-   * will continue infinitely by repeating the sequence of elements provided by function parameter.
+   * The following example produces a [[Source]] that repeatedly cycles through the integers from 0 to 9:
+   * {{{
+   *   Source.cycle(() => Iterator.range(0, 10))
+   * }}}
+   *
+   * The function `f` is invoked to obtain an [[Iterator]] and elements are emitted into the stream as
+   * provided by that iterator. If the iterator is finite, the function `f` invoked again, as necessary,
+   * when the elements from the previous iteration are exhausted. If every call to the function `f` returns
+   * an iterator that produces the same elements in the same order, then the [[Source]] can be described
+   * as cyclic. However, `f` is not required to behave that way, in which case the [[Source]] will not be cyclic.
+   *
+   * The [[Source]] fails if `f` returns an empty iterator.
    */
   def cycle[T](f: () => Iterator[T]): Source[T, NotUsed] = {
     val iterator = Iterator.continually {
