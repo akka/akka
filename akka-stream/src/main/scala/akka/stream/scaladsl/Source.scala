@@ -255,10 +255,11 @@ object Source {
     fromGraph(new PublisherSource(publisher, DefaultAttributes.publisherSource, shape("PublisherSource")))
 
   /**
-   * Helper to create [[Source]] from `Iterator`.
+   * Helper to create a [[Source]] from an `Iterator`.
+   *
    * Example usage: `Source.fromIterator(() => Iterator.from(0))`
    *
-   * Start a new `Source` from the given function that produces anIterator.
+   * Start a new `Source` from the given function that produces an [[Iterator]].
    * The produced stream of elements will continue until the iterator runs empty
    * or fails during evaluation of the `next()` method.
    * Elements are pulled out of the iterator in accordance with the demand coming
@@ -282,10 +283,20 @@ object Source {
     StreamConverters.fromJavaStream(stream);
 
   /**
-   * Creates [[Source]] that will continually produce given elements in specified order.
+   * Creates a [[Source]] that will continually produce elements in the order they are provided.
    *
-   * Starts a new 'cycled' `Source` from the given elements. The producer stream of elements
-   * will continue infinitely by repeating the sequence of elements provided by function parameter.
+   * The following example produces a [[Source]] that repeatedly cycles through the integers from 0 to 9:
+   * {{{
+   *   Source.cycle(() => Iterator.range(0, 10))
+   * }}}
+   *
+   * The function `f` is invoked to obtain an [[Iterator]] and elements are emitted into the stream as
+   * provided by that iterator. If the iterator is finite, the function `f` invoked again, as necessary,
+   * when the elements from the previous iteration are exhausted. If every call to the function `f` returns
+   * an iterator that produces the same elements in the same order, then the [[Source]] can be described
+   * as cyclic. However, `f` is not required to behave that way, in which case the [[Source]] will not be cyclic.
+   *
+   * The [[Source]] fails if `f` returns an empty iterator.
    */
   def cycle[T](f: () => Iterator[T]): Source[T, NotUsed] = {
     val iterator = Iterator.continually {

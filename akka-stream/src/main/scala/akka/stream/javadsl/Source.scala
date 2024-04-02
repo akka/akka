@@ -80,7 +80,7 @@ object Source {
     new Source(scaladsl.Source.fromPublisher(publisher))
 
   /**
-   * Helper to create [[Source]] from `Iterator`.
+   * Helper to create a [[Source]] from an `Iterator`.
    * Example usage:
    *
    * {{{
@@ -112,15 +112,22 @@ object Source {
     StreamConverters.fromJavaStream(stream)
 
   /**
-   * Helper to create 'cycled' [[Source]] from iterator provider.
+   * Helper to create a 'cycled' [[Source]] that will continually produce elements in the order
+   * they are provided.
+   *
    * Example usage:
    *
    * {{{
    * Source.cycle(() -> Arrays.asList(1, 2, 3).iterator());
    * }}}
    *
-   * Start a new 'cycled' `Source` from the given elements. The producer stream of elements
-   * will continue infinitely by repeating the sequence of elements provided by function parameter.
+   * The function `f` is invoked to obtain an iterator and elements are emitted into the stream as
+   * provided by that iterator. If the iterator is finite, the function `f` invoked again, as necessary,
+   * when the elements from the previous iteration are exhausted. If every call to function `f` returns
+   * an iterator that produces the same elements in the same order, then the [[Source]] will effectively
+   * be cyclic. However, `f` is not required to behave that way, in which case the [[Source]] will not be cyclic.
+   *
+   * The [[Source]] fails if `f` returns an empty iterator.
    */
   def cycle[O](f: function.Creator[java.util.Iterator[O]]): javadsl.Source[O, NotUsed] =
     new Source(scaladsl.Source.cycle(() => f.create().asScala))
