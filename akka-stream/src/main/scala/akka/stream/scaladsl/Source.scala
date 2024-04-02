@@ -255,10 +255,11 @@ object Source {
     fromGraph(new PublisherSource(publisher, DefaultAttributes.publisherSource, shape("PublisherSource")))
 
   /**
-   * Helper to create [[Source]] from `Iterator`.
+   * Helper to create a [[Source]] from an `Iterator`.
+   *
    * Example usage: `Source.fromIterator(() => Iterator.from(0))`
    *
-   * Start a new `Source` from the given function that produces anIterator.
+   * Start a new `Source` from the given function that produces an [[Iterator]].
    * The produced stream of elements will continue until the iterator runs empty
    * or fails during evaluation of the `next()` method.
    * Elements are pulled out of the iterator in accordance with the demand coming

@@ -80,7 +80,7 @@ object Source {
     new Source(scaladsl.Source.fromPublisher(publisher))
 
   /**
-   * Helper to create [[Source]] from `Iterator`.
+   * Helper to create a [[Source]] from an `Iterator`.
    * Example usage:
    *
    * {{{
