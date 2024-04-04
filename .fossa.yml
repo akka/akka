@@ -4,4 +4,10 @@ version: 3
 
 paths:
   exclude:
+    - ./akka-actor-tests
+    - ./akka-actor-typed-tests
     - ./akka-bench-jmh
+    - ./akka-persistence-typed-tests
+    - ./akka-remote-tests
+    - ./akka-stream-tests
+    - ./native-image-tests

@@ -27,6 +27,8 @@ The current versions of all Akka libraries are listed on the [Akka Dependencies]
 
 Community
 ---------
+The Akka family of projects is managed by teams at [Lightbend](https://lightbend.com/) with help from the community.
+
 You can join these groups and chats to discuss and ask Akka related questions:
 
 - Forums: [discuss.akka.io](https://discuss.akka.io)
@@ -37,7 +39,6 @@ In addition to that, you may enjoy following:
 - The [news](https://akka.io/blog/news-archive.html) section of the page, which is updated whenever a new version is released
 - The [Akka Team Blog](https://akka.io/blog/article-archive.html)
 - The [Akka articles in the Lightbend Blog](https://www.lightbend.com/blog/akka)
-- [@akkateam](https://twitter.com/akkateam) on Twitter
 - Questions tagged [#akka on StackOverflow](https://stackoverflow.com/questions/tagged/akka)
 
 Contributing
@@ -55,5 +56,4 @@ or in the akka/dev chat if a more real time communication would be of benefit.
 
 License
 -------
-
-Akka is licensed under the Business Source License 1.1, see [LICENSE](./LICENSE).
+Akka is licensed under the Business Source License 1.1, please see the [Akka License FAQ](https://www.lightbend.com/akka/license-faq).
