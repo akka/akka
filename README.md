@@ -1,5 +1,6 @@
 Akka
 ====
+The Akka family of projects is managed by teams at [Lightbend](https://lightbend.com/) with help from the community.
 
 We believe that writing correct concurrent & distributed, resilient and elastic applications is too hard.
 Most of the time it's because we are using the wrong tools and the wrong level of abstraction.
@@ -27,8 +28,6 @@ The current versions of all Akka libraries are listed on the [Akka Dependencies]
 
 Community
 ---------
-The Akka family of projects is managed by teams at [Lightbend](https://lightbend.com/) with help from the community.
-
 You can join these groups and chats to discuss and ask Akka related questions:
 
 - Forums: [discuss.akka.io](https://discuss.akka.io)
