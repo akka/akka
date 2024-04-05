@@ -140,8 +140,6 @@ class EventSourcedSequenceNumberSpec
       probe.expectMessage("6 eventHandler evt2")
       probe.expectMessage("7 eventHandler evt3")
       probe.expectMessage("7 thenRun")
-
-      ref ! "stop"
     }
 
     // reproducer for #27935
