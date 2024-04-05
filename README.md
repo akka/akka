@@ -1,5 +1,6 @@
 Akka
 ====
+The Akka family of projects is managed by teams at [Lightbend](https://lightbend.com/) with help from the community.
 
 We believe that writing correct concurrent & distributed, resilient and elastic applications is too hard.
 Most of the time it's because we are using the wrong tools and the wrong level of abstraction.
@@ -37,7 +38,6 @@ In addition to that, you may enjoy following:
 - The [news](https://akka.io/blog/news-archive.html) section of the page, which is updated whenever a new version is released
 - The [Akka Team Blog](https://akka.io/blog/article-archive.html)
 - The [Akka articles in the Lightbend Blog](https://www.lightbend.com/blog/akka)
-- [@akkateam](https://twitter.com/akkateam) on Twitter
 - Questions tagged [#akka on StackOverflow](https://stackoverflow.com/questions/tagged/akka)
 
 Contributing
@@ -55,5 +55,4 @@ or in the akka/dev chat if a more real time communication would be of benefit.
 
 License
 -------
-
-Akka is licensed under the Business Source License 1.1, see [LICENSE](./LICENSE).
+Akka is licensed under the Business Source License 1.1, please see the [Akka License FAQ](https://www.lightbend.com/akka/license-faq).
