@@ -4,7 +4,6 @@
 package com.lightbend;
 
 import akka.serialization.jackson.JsonSerializable;
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
@@ -14,7 +13,6 @@ public class JavaJacksonModels {
 
     public static class SimpleCommand implements JsonSerializable {
         private final String name;
-        @JsonCreator
         public SimpleCommand(String name) {
             this.name = name;
         }
@@ -38,7 +36,6 @@ public class JavaJacksonModels {
     public static class Zoo implements JsonSerializable {
         public final Animal primaryAttraction;
 
-        @JsonCreator
         public Zoo(Animal primaryAttraction) {
             this.primaryAttraction = primaryAttraction;
         }
@@ -69,7 +66,6 @@ public class JavaJacksonModels {
     public static final class Lion implements Animal {
         public final String name;
 
-        @JsonCreator
         public Lion(String name) {
             this.name = name;
         }
