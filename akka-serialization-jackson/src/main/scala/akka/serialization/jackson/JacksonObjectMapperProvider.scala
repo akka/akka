@@ -6,13 +6,11 @@ package akka.serialization.jackson
 
 import java.util.Optional
 import java.util.concurrent.ConcurrentHashMap
-
 import scala.annotation.nowarn
 import scala.collection.immutable
 import scala.compat.java8.OptionConverters._
 import scala.util.Failure
 import scala.util.Success
-
 import com.fasterxml.jackson.annotation.JsonAutoDetect
 import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.annotation.PropertyAccessor
@@ -32,7 +30,6 @@ import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.databind.json.JsonMapper
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule
 import com.typesafe.config.Config
-
 import akka.actor.ActorSystem
 import akka.actor.ClassicActorSystemProvider
 import akka.actor.DynamicAccess
@@ -45,6 +42,7 @@ import akka.annotation.InternalStableApi
 import akka.event.Logging
 import akka.event.LoggingAdapter
 import akka.util.unused
+import com.fasterxml.jackson.databind.cfg.ConstructorDetector
 
 object JacksonObjectMapperProvider extends ExtensionId[JacksonObjectMapperProvider] with ExtensionIdProvider {
   override def get(system: ActorSystem): JacksonObjectMapperProvider = super.get(system)
@@ -166,6 +164,17 @@ object JacksonObjectMapperProvider extends ExtensionId[JacksonObjectMapperProvid
         // of the ObjectMapper
         objectMapper.configure(feature, value)
     }
+
+    val constructorDetector = config.getString("constructor-detector-mode") match {
+      case "USE_PROPERTIES_BASED" => ConstructorDetector.USE_PROPERTIES_BASED
+      case "USE_DELEGATING"       => ConstructorDetector.USE_DELEGATING
+      case "DEFAULT"              => ConstructorDetector.DEFAULT
+      case "EXPLICIT_ONLY"        => ConstructorDetector.EXPLICIT_ONLY
+      case unknown =>
+        throw new IllegalArgumentException(
+          s"Unknown constructor-detector-mode [$unknown], must be one of [USE_PROPERTIES_BASED, USE_DELEGATING, DEFAULT, EXPLICIT_ONLY]")
+    }
+    objectMapper.setConstructorDetector(constructorDetector)
 
     val configuredJsonParserFeatures = features(config, "json-parser-features").map {
       case (enumName, value) => JsonParser.Feature.valueOf(enumName) -> value
