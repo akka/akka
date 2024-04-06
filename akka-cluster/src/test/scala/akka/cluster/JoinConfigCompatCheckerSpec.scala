@@ -493,7 +493,7 @@ class JoinConfigCompatCheckerSpec extends AkkaSpec with ClusterTestKit {
           val restartedNode = clusterTestUtil.quitAndRestart(firstNode, joinNodeConfig.withFallback(configWithChecker))
           clusterTestUtil.joinCluster(restartedNode)
 
-          // node will will have joined the cluster
+          // node will have joined the cluster
           awaitCond(clusterTestUtil.isMemberUp(restartedNode), message = "awaiting restarted node to be 'Up'")
         }
       } finally {
@@ -538,7 +538,7 @@ class JoinConfigCompatCheckerSpec extends AkkaSpec with ClusterTestKit {
           val restartedNode = clusterTestUtil.quitAndRestart(firstNode, joinNodeConfig.withFallback(configWithChecker))
           clusterTestUtil.joinCluster(restartedNode)
 
-          // node will will have joined the cluster
+          // node will have joined the cluster
           awaitCond(clusterTestUtil.isMemberUp(restartedNode), message = "awaiting restarted node to be 'Up'")
         }
       } finally {

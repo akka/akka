@@ -45,7 +45,7 @@ A few differences to note:
 * There is no class in the functional style, but that is not strictly a requirement and sometimes it's
   convenient to use a class also with the functional style to reduce number of parameters in the methods.
 * Mutable state, such as the @scala[`var n`]@java[`int n`] is typically used in the object-oriented style.
-* In the functional style the state is is updated by returning a new behavior that holds the new immutable state,
+* In the functional style the state is updated by returning a new behavior that holds the new immutable state,
   the @scala[`n: Int`]@java[`final int n`] parameter of the `counter` method.
 * The object-oriented style must use a new instance of the initial `Behavior` for each spawned actor instance,
   since the state in `AbstractBehavior` instance must not be shared between actor instances.
