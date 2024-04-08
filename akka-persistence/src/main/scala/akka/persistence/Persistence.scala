@@ -309,6 +309,7 @@ class Persistence(val system: ExtendedActorSystem) extends Extension {
    * INTERNAL API
    * Looks up [[akka.persistence.journal.EventAdapters]] by journal plugin's ActorRef.
    */
+  @InternalApi
   private[akka] final def adaptersFor(journalPluginActor: ActorRef): EventAdapters = {
     pluginExtensionId.get().values.collectFirst {
       case ext if ext(system).actor == journalPluginActor => ext(system).adapters
@@ -324,6 +325,7 @@ class Persistence(val system: ExtendedActorSystem) extends Extension {
    * When empty, looks in `akka.persistence.journal.plugin` to find configuration entry path.
    * When configured, uses `journalPluginId` as absolute path to the journal configuration entry.
    */
+  @InternalApi
   private[akka] final def journalConfigFor(
       journalPluginId: String,
       journalPluginConfig: Config = ConfigFactory.empty): Config = {
@@ -336,6 +338,7 @@ class Persistence(val system: ExtendedActorSystem) extends Extension {
    * INTERNAL API
    * Looks up the plugin config by plugin's ActorRef.
    */
+  @InternalApi
   private[akka] final def configFor(journalPluginActor: ActorRef): Config =
     pluginExtensionId.get().values.collectFirst {
       case ext if ext(system).actor == journalPluginActor => ext(system).config
@@ -344,13 +347,17 @@ class Persistence(val system: ExtendedActorSystem) extends Extension {
       case None       => throw new IllegalArgumentException(s"Unknown plugin actor $journalPluginActor")
     }
 
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
   private[akka] final def extensionIdFor(journalPluginActor: ActorRef): String =
-    pluginExtensionId.get().collectFirst {
-      case (id, ext) if ext(system).actor == journalPluginActor => id
-    } match {
-      case Some(conf) => conf
-      case None       => throw new IllegalArgumentException(s"Unknown plugin actor $journalPluginActor")
-    }
+    pluginExtensionId
+      .get()
+      .collectFirst {
+        case (id, ext) if ext(system).actor == journalPluginActor => id
+      }
+      .getOrElse(throw new IllegalArgumentException(s"Unknown plugin actor $journalPluginActor"))
 
   /**
    * INTERNAL API
