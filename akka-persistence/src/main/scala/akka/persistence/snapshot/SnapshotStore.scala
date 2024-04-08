@@ -7,9 +7,9 @@ package akka.persistence.snapshot
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import scala.concurrent.duration._
-
 import akka.actor._
 import akka.pattern.CircuitBreaker
+import akka.pattern.CircuitBreakersRegistry
 import akka.pattern.pipe
 import akka.persistence._
 
@@ -27,7 +27,9 @@ trait SnapshotStore extends Actor with ActorLogging {
     val maxFailures = cfg.getInt("circuit-breaker.max-failures")
     val callTimeout = cfg.getDuration("circuit-breaker.call-timeout", MILLISECONDS).millis
     val resetTimeout = cfg.getDuration("circuit-breaker.reset-timeout", MILLISECONDS).millis
-    CircuitBreaker(context.system.scheduler, maxFailures, callTimeout, resetTimeout)
+    val id = extension.extensionIdFor(self)
+    CircuitBreakersRegistry(context.system).getOrCreate(id)(() =>
+      CircuitBreaker(context.system.scheduler, maxFailures, callTimeout, resetTimeout))
   }
 
   final def receive = receiveSnapshotStore.orElse[Any, Unit](receivePluginInternal)

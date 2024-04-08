@@ -10,9 +10,9 @@ import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.{ Failure, Success, Try }
 import scala.util.control.NonFatal
-
 import akka.actor._
 import akka.pattern.CircuitBreaker
+import akka.pattern.CircuitBreakersRegistry
 import akka.pattern.pipe
 import akka.persistence._
 import akka.util.Helpers.toRootLowerCase
@@ -32,7 +32,9 @@ trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
     val maxFailures = config.getInt("circuit-breaker.max-failures")
     val callTimeout = config.getDuration("circuit-breaker.call-timeout", MILLISECONDS).millis
     val resetTimeout = config.getDuration("circuit-breaker.reset-timeout", MILLISECONDS).millis
-    CircuitBreaker(context.system.scheduler, maxFailures, callTimeout, resetTimeout)
+    val id = extension.extensionIdFor(self)
+    CircuitBreakersRegistry(context.system).getOrCreate(id)(() =>
+      CircuitBreaker(context.system.scheduler, maxFailures, callTimeout, resetTimeout))
   }
 
   private val replayFilterMode: ReplayFilter.Mode =

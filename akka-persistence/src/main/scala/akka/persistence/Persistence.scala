@@ -344,6 +344,14 @@ class Persistence(val system: ExtendedActorSystem) extends Extension {
       case None       => throw new IllegalArgumentException(s"Unknown plugin actor $journalPluginActor")
     }
 
+  private[akka] final def extensionIdFor(journalPluginActor: ActorRef): String =
+    pluginExtensionId.get().collectFirst {
+      case (id, ext) if ext(system).actor == journalPluginActor => id
+    } match {
+      case Some(conf) => conf
+      case None       => throw new IllegalArgumentException(s"Unknown plugin actor $journalPluginActor")
+    }
+
   /**
    * INTERNAL API
    * Returns a journal plugin actor identified by `journalPluginId`.
