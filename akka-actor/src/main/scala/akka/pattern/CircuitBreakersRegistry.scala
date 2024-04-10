@@ -5,9 +5,7 @@
 package akka.pattern
 
 import java.util.concurrent.ConcurrentHashMap
-
 import scala.concurrent.duration.{ DurationLong, MILLISECONDS }
-
 import akka.actor.{
   ActorSystem,
   ClassicActorSystemProvider,
@@ -16,6 +14,7 @@ import akka.actor.{
   ExtensionId,
   ExtensionIdProvider
 }
+import akka.annotation.InternalApi
 import akka.pattern.internal.CircuitBreakerTelemetryProvider
 import akka.util.ccompat.JavaConverters._
 
@@ -85,6 +84,11 @@ final class CircuitBreakersRegistry(system: ExtendedActorSystem) extends Extensi
       allowExceptions,
       telemetry)(system.dispatcher)
   }
+
+  /** INTERNAL API */
+  @InternalApi
+  private[akka] def getOrCreate(id: String)(customCreate: () => CircuitBreaker): CircuitBreaker =
+    breakers.computeIfAbsent(id, _ => customCreate())
 
   private[akka] def get(id: String): CircuitBreaker =
     breakers.computeIfAbsent(id, createCircuitBreaker)
