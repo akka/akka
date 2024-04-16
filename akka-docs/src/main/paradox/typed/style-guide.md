@@ -468,7 +468,6 @@ be good to know that it's optional in case you would prefer a different approach
 * pattern matching ([Java 21 documentation](https://docs.oracle.com/en/java/javase/21/language/pattern-matching.html))
 * if or switch statements
 * annotation processor
-* Vavr Pattern Matching DSL
 
 In `Behaviors` there are `receive`, `receiveMessage` and `receiveSignal` factory methods that takes functions
 instead of using the `ReceiveBuilder`, which is the `receive` with the class parameter.
