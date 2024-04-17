@@ -978,6 +978,12 @@ class ByteStringSpec extends AnyWordSpec with Matchers with Checkers {
           }
         }
       }
+
+      "calling indexWhere(p, idx)" in {
+        check { (a: ByteString, b: Byte, idx: Int) =>
+          likeVector(a)(_.indexWhere(_ == b, math.max(0, idx)))
+        }
+      }
     }
 
     "serialize correctly" when {
