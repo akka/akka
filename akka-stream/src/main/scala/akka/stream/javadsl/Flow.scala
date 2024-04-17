@@ -723,7 +723,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    */
   def mapConcat[T](f: function.Function[Out, java.lang.Iterable[T]]): javadsl.Flow[In, T, Mat] =
     new Flow(delegate.mapConcat { elem =>
-      Util.immutableSeq(f(elem))
+      f(elem).asScala
     })
 
   /**
@@ -835,7 +835,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
       f: function.Creator[function.Function[Out, java.lang.Iterable[T]]]): javadsl.Flow[In, T, Mat] =
     new Flow(delegate.statefulMapConcat { () =>
       val fun = f.create()
-      elem => Util.immutableSeq(fun(elem))
+      elem => fun(elem).asScala
     })
 
   /**
@@ -2939,10 +2939,11 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
       those: java.util.List[_ <: Graph[SourceShape[Out], _ <: Any]],
       segmentSize: Int,
       eagerClose: Boolean): javadsl.Flow[In, Out, Mat] = {
-    val seq = if (those != null) Util.immutableSeq(those).collect {
+    val seq = if (those != null) those.asScala.collect {
       case source: Source[Out @unchecked, _] => source.asScala
       case other                             => other
-    } else immutable.Seq()
+    }.toSeq
+    else immutable.Seq()
     new Flow(delegate.interleaveAll(seq, segmentSize, eagerClose))
   }
 

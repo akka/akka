@@ -18,7 +18,7 @@ import scala.reflect.ClassTag
 import akka.NotUsed
 import akka.annotation.ApiMayChange
 import akka.event.{ LogMarker, LoggingAdapter, MarkerLoggingAdapter }
-import akka.japi.{ function, Pair, Util }
+import akka.japi.{ function, Pair }
 import akka.stream._
 import akka.util.ConstantFun
 import akka.util.JavaDurationConverters._
@@ -192,7 +192,7 @@ final class SubFlow[In, Out, Mat](
    */
   def mapConcat[T](f: function.Function[Out, java.lang.Iterable[T]]): SubFlow[In, T, Mat] =
     new SubFlow(delegate.mapConcat { elem =>
-      Util.immutableSeq(f(elem))
+      f(elem).asScala
     })
 
   /**
@@ -303,7 +303,7 @@ final class SubFlow[In, Out, Mat](
   def statefulMapConcat[T](f: function.Creator[function.Function[Out, java.lang.Iterable[T]]]): SubFlow[In, T, Mat] =
     new SubFlow(delegate.statefulMapConcat { () =>
       val fun = f.create()
-      elem => Util.immutableSeq(fun(elem))
+      elem => fun(elem).asScala
     })
 
   /**
@@ -1761,10 +1761,11 @@ final class SubFlow[In, Out, Mat](
   def mergeAll(
       those: java.util.List[_ <: Graph[SourceShape[Out], _ <: Any]],
       eagerComplete: Boolean): SubFlow[In, Out, Mat] = {
-    val seq = if (those != null) Util.immutableSeq(those).collect {
+    val seq = if (those != null) those.asScala.collect {
       case source: Source[Out @unchecked, _] => source.asScala
       case other                             => other
-    } else immutable.Seq()
+    }.toSeq
+    else immutable.Seq()
     new SubFlow(delegate.mergeAll(seq, eagerComplete))
   }
 
@@ -1818,10 +1819,11 @@ final class SubFlow[In, Out, Mat](
       those: java.util.List[_ <: Graph[SourceShape[Out], _ <: Any]],
       segmentSize: Int,
       eagerClose: Boolean): SubFlow[In, Out, Mat] = {
-    val seq = if (those != null) Util.immutableSeq(those).collect {
+    val seq = if (those != null) those.asScala.collect {
       case source: Source[Out @unchecked, _] => source.asScala
       case other                             => other
-    } else immutable.Seq()
+    }.toSeq
+    else immutable.Seq()
     new SubFlow(delegate.interleaveAll(seq, segmentSize, eagerClose))
   }
 

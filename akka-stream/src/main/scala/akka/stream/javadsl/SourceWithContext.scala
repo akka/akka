@@ -14,7 +14,6 @@ import akka.actor.ClassicActorSystemProvider
 import akka.annotation.ApiMayChange
 import akka.event.{ LogMarker, LoggingAdapter, MarkerLoggingAdapter }
 import akka.japi.Pair
-import akka.japi.Util
 import akka.japi.function
 import akka.stream._
 import akka.util.ConstantFun
@@ -212,7 +211,7 @@ final class SourceWithContext[Out, Ctx, +Mat](delegate: scaladsl.SourceWithConte
    * @see [[akka.stream.javadsl.Source.mapConcat]]
    */
   def mapConcat[Out2](f: function.Function[Out, _ <: java.lang.Iterable[Out2]]): SourceWithContext[Out2, Ctx, Mat] =
-    viaScala(_.mapConcat(elem => Util.immutableSeq(f.apply(elem))))
+    viaScala(_.mapConcat(elem => f.apply(elem).asScala))
 
   /**
    * Apply the given function to each context element (leaving the data elements unchanged).

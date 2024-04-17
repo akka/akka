@@ -12,7 +12,7 @@ import scala.compat.java8.FutureConverters._
 
 import akka.annotation.ApiMayChange
 import akka.event.{ LogMarker, LoggingAdapter, MarkerLoggingAdapter }
-import akka.japi.{ function, Pair, Util }
+import akka.japi.{ function, Pair }
 import akka.stream._
 import akka.util.ConstantFun
 import akka.util.JavaDurationConverters._
@@ -221,7 +221,7 @@ final class FlowWithContext[In, CtxIn, Out, CtxOut, +Mat](
    */
   def mapConcat[Out2](
       f: function.Function[Out, _ <: java.lang.Iterable[Out2]]): FlowWithContext[In, CtxIn, Out2, CtxOut, Mat] =
-    viaScala(_.mapConcat(elem => Util.immutableSeq(f.apply(elem))))
+    viaScala(_.mapConcat(elem => f.apply(elem).asScala))
 
   /**
    * Apply the given function to each context element (leaving the data elements unchanged).
