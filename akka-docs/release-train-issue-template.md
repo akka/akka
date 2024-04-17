@@ -18,7 +18,7 @@ Key links:
 
 - [ ] Check that open PRs and issues assigned to the milestone are reasonable
 - [ ] Update the version and change date in the LICENSE file.
-- [ ] Update the Akka Akka version in the samples to $VERSION$, otherwise the published zip files of the samples will have the old version.
+- [ ] Update the Akka version in the samples to $VERSION$, otherwise the published zip files of the samples will have the old version.
 - [ ] Create a new milestone for the [next version](https://github.com/akka/akka/milestones)
 - [ ] Close the [$VERSION$ milestone](https://github.com/akka/akka/milestones?direction=asc&sort=due_date)
 - [ ] Make sure all important PRs have been merged
