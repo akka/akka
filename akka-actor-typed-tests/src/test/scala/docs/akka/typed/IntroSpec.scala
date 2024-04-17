@@ -4,93 +4,35 @@
 
 package docs.akka.typed
 
-//#imports
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.LoggerOps
 import akka.actor.typed.{ ActorRef, ActorSystem, Behavior }
-//#imports
-
 import akka.NotUsed
 import akka.Done
 import akka.actor.typed.{ DispatcherSelector, Terminated }
 import akka.actor.testkit.typed.scaladsl.LogCapturing
-
 import org.scalatest.wordspec.AnyWordSpecLike
-import akka.actor.testkit.typed.scaladsl.ActorTestKit
+
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 
+import scala.annotation.nowarn
+
 object IntroSpec {
 
-  //#hello-world-actor
   object HelloWorld {
     final case class Greet(whom: String, replyTo: ActorRef[Greeted])
     final case class Greeted(whom: String, from: ActorRef[Greet])
 
     def apply(): Behavior[Greet] = Behaviors.receive { (context, message) =>
       context.log.info("Hello {}!", message.whom)
-      //#hello-world-actor
-      println(s"Hello ${message.whom}!")
-      //#hello-world-actor
       message.replyTo ! Greeted(message.whom, context.self)
       Behaviors.same
     }
   }
-  //#hello-world-actor
 
-  //#hello-world-bot
-  object HelloWorldBot {
-
-    def apply(max: Int): Behavior[HelloWorld.Greeted] = {
-      bot(0, max)
-    }
-
-    private def bot(greetingCounter: Int, max: Int): Behavior[HelloWorld.Greeted] =
-      Behaviors.receive { (context, message) =>
-        val n = greetingCounter + 1
-        context.log.info2("Greeting {} for {}", n, message.whom)
-        //#hello-world-bot
-        println(s"Greeting $n for ${message.whom}")
-        //#hello-world-bot
-        if (n == max) {
-          Behaviors.stopped
-        } else {
-          message.from ! HelloWorld.Greet(message.whom, context.self)
-          bot(n, max)
-        }
-      }
-  }
-  //#hello-world-bot
-
-  //#hello-world-main
-  object HelloWorldMain {
-
-    final case class SayHello(name: String)
-
-    def apply(): Behavior[SayHello] =
-      Behaviors.setup { context =>
-        val greeter = context.spawn(HelloWorld(), "greeter")
-
-        Behaviors.receiveMessage { message =>
-          val replyTo = context.spawn(HelloWorldBot(max = 3), message.name)
-          greeter ! HelloWorld.Greet(message.name, replyTo)
-          Behaviors.same
-        }
-      }
-
-    //#hello-world-main
-    def main(args: Array[String]): Unit = {
-      val system: ActorSystem[HelloWorldMain.SayHello] =
-        ActorSystem(HelloWorldMain(), "hello")
-
-      system ! HelloWorldMain.SayHello("World")
-      system ! HelloWorldMain.SayHello("Akka")
-    }
-    //#hello-world-main
-  }
-  //#hello-world-main
-
+  @nowarn("msg=never used")
   object CustomDispatchersExample {
     object HelloWorldMain {
 
@@ -105,9 +47,7 @@ object IntroSpec {
           val greeter = context.spawn(HelloWorld(), "greeter", props)
 
           Behaviors.receiveMessage { message =>
-            val replyTo = context.spawn(HelloWorldBot(max = 3), message.name)
-
-            greeter ! HelloWorld.Greet(message.name, replyTo)
+            // ...
             Behaviors.same
           }
         }
@@ -230,21 +170,6 @@ class IntroSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogC
   import IntroSpec._
 
   "Intro sample" must {
-    "say hello" in {
-      //#hello-world
-
-      val system: ActorSystem[HelloWorldMain.SayHello] =
-        ActorSystem(HelloWorldMain(), "hello")
-
-      system ! HelloWorldMain.SayHello("World")
-      system ! HelloWorldMain.SayHello("Akka")
-
-      //#hello-world
-
-      Thread.sleep(500) // it will not fail if too short
-      ActorTestKit.shutdown(system)
-    }
-
     "chat" in {
       val system = ActorSystem(Main(), "ChatRoomDemo")
       system.whenTerminated.futureValue should ===(Done)

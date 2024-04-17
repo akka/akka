@@ -18,6 +18,7 @@ Key links:
 
 - [ ] Check that open PRs and issues assigned to the milestone are reasonable
 - [ ] Update the version and change date in the LICENSE file.
+- [ ] Update the Akka version in the samples to $VERSION$, otherwise the published zip files of the samples will have the old version.
 - [ ] Create a new milestone for the [next version](https://github.com/akka/akka/milestones)
 - [ ] Close the [$VERSION$ milestone](https://github.com/akka/akka/milestones?direction=asc&sort=due_date)
 - [ ] Make sure all important PRs have been merged
@@ -72,7 +73,6 @@ For minor or major releases:
 - [ ] Update [Akka Guide samples](https://github.com/akka/akka-guide)
 - [ ] Update [akka-samples](https://github.com/akka/akka-samples)
 - [ ] Update quickstarts:
-  - [ ] [Akka Java](https://github.com/akka/akka-quickstart-java.g8/blob/main/src/main/g8/default.properties)
   - [ ] [Akka Scala](https://github.com/akka/akka-quickstart-scala.g8/blob/main/src/main/g8/default.properties)
   - [ ] [Akka HTTP Java](https://github.com/akka/akka-http-quickstart-java.g8/blob/main/src/main/g8/default.properties)
   - [ ] [Akka HTTP Scala](https://github.com/akka/akka-http-quickstart-scala.g8/blob/main/src/main/g8/default.properties)

@@ -1,0 +1,81 @@
+name: Check samples
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency:
+  # Only run once for latest commit per ref and cancel other (previous) runs.
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  check-samples:
+    name: Check Sample Projects
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        # https://github.com/actions/checkout/releases
+        # v4.1.1
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+        with:
+          fetch-depth: 0
+
+      - name: Checkout GitHub merge
+        if: github.event.pull_request
+        run: |-
+          git fetch origin pull/${{ github.event.pull_request.number }}/merge:scratch
+          git checkout scratch
+
+      - name: Cache Coursier cache
+        # https://github.com/coursier/cache-action/releases
+        # v6.4.4
+        uses: coursier/cache-action@a0e7cd24be81bc84f0d7461e02bd1a96980553d7
+
+      - name: Set up JDK 17
+        # https://github.com/coursier/setup-action/releases
+        # v1.3.5
+        uses: coursier/setup-action@7bde40eee928896f074dbb76d22dd772eed5c65f
+        with:
+          jvm: temurin:1.17
+
+      - name: Gather version
+        # some cleanup of the sbt output to get the version sbt will use when publishing below
+        run: |-
+          sbt --no-colors "print akka-actor/version" | tail -n 1 | tr -d '\n' > ~/.version
+          echo [$(cat ~/.version)]
+          # useful for debugging: hexdump -c ~/.version
+
+      - name: Publish artifacts locally
+        run: |-
+          sbt "publishLocal; publishM2"
+
+      - name: Test akka-quickstart-scala
+        run: |-
+          cd samples/akka-quickstart-scala
+          sbt test -Dakka.version=`cat ~/.version`
+
+      - name: Test akka-quickstart-java
+        run: |-
+          cd samples/akka-quickstart-java
+          mvn test -nsu -ntp -Dakka.version=`cat ~/.version`
+
+      - name: Email on failure
+        if: ${{ failure() }}
+        uses: dawidd6/action-send-mail@6063705cefe50cb915fc53bb06d4049cae2953b2
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          secure: true
+          username: ${{secrets.MAIL_USERNAME}}
+          password: ${{secrets.MAIL_PASSWORD}}
+          subject: "Failed: ${{ github.workflow }} / ${{ github.job }}"
+          to: ${{secrets.MAIL_SEND_TO}}
+          from: Akka CI
+          body: |
+            Job ${{ github.job }} in workflow ${{ github.workflow }} of ${{github.repository}} failed!
+            https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
