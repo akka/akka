@@ -59,8 +59,8 @@ To set state timeouts use @apidoc[Behaviors.withTimers](typed.*.Behaviors$) {sca
 
 ## Example project
 
-@java[@extref[FSM example project](samples:akka-samples-fsm-java)]
-@scala[@extref[FSM example project](samples:akka-samples-fsm-scala)]
+@java[[FSM example project](../attachments/akka-samples-fsm-java.zip)]
+@scala[[FSM example project](../attachments/akka-samples-fsm-scala.zip)]
 is an example project that can be downloaded, and with instructions of how to run.
 
 This project contains a Dining Hakkers sample illustrating how to model a Finite State Machine (FSM) with actors.

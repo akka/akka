@@ -685,16 +685,11 @@ reference documentation of the chosen plugin.
 
 ## Example project
 
-@java[@extref[Persistence example project](samples:akka-samples-persistence-java)]
-@scala[@extref[Persistence example project](samples:akka-samples-persistence-scala)]
-is an example project that can be downloaded, and with instructions of how to run.
-This project contains a Shopping Cart sample illustrating how to use Akka Persistence.
+The @extref[Microservices with Akka tutorial](platform-guide:microservices-tutorial/) contains a
+Shopping Cart sample illustrating how to use Event Sourcing and Projections together. The events are
+consumed by even processors to build other representations from the events, or publish the events
+to other services.
 
-The Shopping Cart sample is expanded further in the @extref[Microservices with Akka tutorial](platform-guide:microservices-tutorial/).
-In that sample the events are tagged to be consumed by even processors to build other representations
-from the events, or publish the events to other services.
-
-@java[@extref[Multi-DC Persistence example project](samples:akka-samples-persistence-dc-java)]
-@scala[@extref[Multi-DC Persistence example project](samples:akka-samples-persistence-dc-scala)]
-illustrates how to use @ref:[Replicated Event Sourcing](replicated-eventsourcing.md) that supports
+The @extref[Akka Distributed Cluster Guide](akka-distributed-cluster:guide/3-active-active.html) illustrates how to use @ref:[Replicated Event Sourcing](replicated-eventsourcing.md) that supports
 active-active persistent entities across data centers.
+

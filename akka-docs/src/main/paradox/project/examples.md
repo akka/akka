@@ -13,15 +13,15 @@ messages.
 
 ## FSM
 
-@java[@extref[FSM example project](samples:akka-samples-fsm-java)]
-@scala[@extref[FSM example project](samples:akka-samples-fsm-scala)]
+* Scala [akka-samples-fsm-scala.zip](../attachments/akka-samples-fsm-scala.zip)
+* Java [akka-samples-fsm-java.zip](../attachments/akka-samples-fsm-java.zip)
 
 This project contains a Dining Hakkers sample illustrating how to model a Finite State Machine (FSM) with actors.
 
 ## Cluster
 
-@java[@extref[Cluster example project](samples:akka-samples-cluster-java)]
-@scala[@extref[Cluster example project](samples:akka-samples-cluster-scala)]
+* Scala [akka-samples-cluster-scala.zip](../attachments/akka-samples-cluster-scala.zip)
+* Java [akka-samples-cluster-java.zip](../attachments/akka-samples-cluster-java.zip)
 
 This project contains samples illustrating different Cluster features, such as
 subscribing to cluster membership events, and sending messages to actors running on nodes in the cluster
@@ -31,55 +31,33 @@ It also includes Multi JVM Testing with the `sbt-multi-jvm` plugin.
 
 ## Distributed Data
 
-@java[@extref[Distributed Data example project](samples:akka-samples-distributed-data-java)]
-@scala[@extref[Distributed Data example project](samples:akka-samples-distributed-data-scala)]
+* Scala [akka-sample-distributed-data-scala.zip](../attachments/akka-sample-distributed-data-scala.zip)
+* Java [akka-sample-distributed-data-java.zip](../attachments/akka-sample-distributed-data-java.zip)
 
 This project contains several samples illustrating how to use Distributed Data.
 
 ## Cluster Sharding
 
-@java[@extref[Sharding example project](samples:akka-samples-cluster-sharding-java)]
-@scala[@extref[Sharding example project](samples:akka-samples-cluster-sharding-scala)]
+* Scala [akka-sample-sharding-scala.zip](../attachments/akka-sample-sharding-scala.zip)
+* Java [akka-sample-sharding-java.zip](../attachments/akka-sample-sharding-java.zip)
 
 This project contains a KillrWeather sample illustrating how to use Cluster Sharding.
 
-## Persistence
-
-@java[@extref[Persistence example project](samples:akka-samples-persistence-java)]
-@scala[@extref[Persistence example project](samples:akka-samples-persistence-scala)]
-
-This project contains a Shopping Cart sample illustrating how to use Akka Persistence.
-
-## CQRS
+## Persistence and CQRS
 
 The @extref[Microservices with Akka tutorial](platform-guide:microservices-tutorial/) contains a
 Shopping Cart sample illustrating how to use Event Sourcing and Projections together. The events are
-tagged to be consumed by even processors to build other representations from the events, or publish the events
+consumed by even processors to build other representations from the events, or publish the events
 to other services.
 
 ## Replicated Event Sourcing
 
-@java[@extref[Multi-DC Persistence example project](samples:akka-samples-persistence-dc-java)]
-@scala[@extref[Multi-DC Persistence example project](samples:akka-samples-persistence-dc-scala)]
-
-Illustrates how to use @ref:[Replicated Event Sourcing](../typed/replicated-eventsourcing.md) that supports
+The @extref[Akka Distributed Cluster Guide](akka-distributed-cluster:guide/3-active-active.html) illustrates how to use @ref:[Replicated Event Sourcing](../typed/replicated-eventsourcing.md) that supports
 active-active persistent entities across data centers.
-
-## Cluster with Kubernetes
-
-@extref[Cluster with Kubernetes example project](samples:akka-sample-cluster-kubernetes-java)
-
-This sample illustrates how to form an Akka Cluster with Akka Bootstrap when running in Kubernetes.
-
-## Distributed workers
-
-@extref[Distributed workers example project](samples:akka-samples-distributed-workers-scala)
-
-This project demonstrates the work pulling pattern using Akka Cluster.
 
 ## Kafka to Cluster Sharding 
 
-@extref[Kafka to Cluster Sharding example project](samples:akka-samples-kafka-to-sharding)
+* Scala [akka-sample-kafka-to-sharding-scala.zip](../attachments/akka-sample-kafka-to-sharding-scala.zip)
 
 This project demonstrates how to use the External Shard Allocation strategy to co-locate the consumption of Kafka
 partitions with the shard that processes the messages.

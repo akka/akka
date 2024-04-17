@@ -828,8 +828,8 @@ The `DistributedData` extension can be configured with the following properties:
 
 ## Example project
 
-@java[@extref[Distributed Data example project](samples:akka-samples-distributed-data-java)]
-@scala[@extref[Distributed Data example project](samples:akka-samples-distributed-data-scala)]
+@java[[Distributed Data example project](../attachments/akka-sample-distributed-data-java.zip)]
+@scala[[Distributed Data example project](../attachments/akka-sample-distributed-data-scala.zip)]
 is an example project that can be downloaded, and with instructions of how to run.
 
 This project contains several samples illustrating how to use Distributed Data.

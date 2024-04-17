@@ -54,15 +54,60 @@ jobs:
         run: |-
           sbt "publishLocal; publishM2"
 
+      - name: Test akka-quickstart-java
+        run: |-
+          cd samples/akka-quickstart-java
+          mvn test -nsu -ntp -Dakka.version=`cat ~/.version`
+
       - name: Test akka-quickstart-scala
         run: |-
           cd samples/akka-quickstart-scala
           sbt test -Dakka.version=`cat ~/.version`
 
-      - name: Test akka-quickstart-java
+      - name: Test akka-sample-cluster-java
         run: |-
-          cd samples/akka-quickstart-java
+          cd samples/akka-sample-cluster-java
           mvn test -nsu -ntp -Dakka.version=`cat ~/.version`
+
+      - name: Test akka-sample-cluster-scala
+        run: |-
+          cd samples/akka-sample-cluster-scala
+          sbt test -Dakka.version=`cat ~/.version`
+
+      - name: Test akka-sample-distributed-data-java
+        run: |-
+          cd samples/akka-sample-distributed-data-java
+          mvn test -nsu -ntp -Dakka.version=`cat ~/.version`
+
+      - name: Test akka-sample-distributed-data-scala
+        run: |-
+          cd samples/akka-sample-distributed-data-scala
+          sbt test -Dakka.version=`cat ~/.version`
+
+      - name: Test akka-sample-fsm-java
+        run: |-
+          cd samples/akka-sample-fsm-java
+          mvn test -nsu -ntp -Dakka.version=`cat ~/.version`
+
+      - name: Test akka-sample-fsm-scala
+        run: |-
+          cd samples/akka-sample-fsm-scala
+          sbt test -Dakka.version=`cat ~/.version`
+
+      - name: Test akka-sample-sharding-java
+        run: |-
+          cd samples/akka-sample-sharding-java
+          mvn test -nsu -ntp -Dakka.version=`cat ~/.version`
+
+      - name: Test akka-sample-sharding-scala
+        run: |-
+          cd samples/akka-sample-sharding-scala
+          sbt test -Dakka.version=`cat ~/.version`
+
+      - name: Test akka-sample-kafka-to-sharding-scala
+        run: |-
+          cd samples/akka-sample-kafka-to-sharding-scala
+          sbt test -Dakka.version=`cat ~/.version`
 
       - name: Email on failure
         if: ${{ failure() }}

@@ -243,7 +243,7 @@ support a greater number of shards.
 
 #### Example project for external allocation strategy
 
-@extref[Kafka to Cluster Sharding](samples:akka-samples-kafka-to-sharding)
+[akka-sample-kafka-to-sharding-scala.zip](../attachments/akka-sample-kafka-to-sharding-scala.zip)
 is an example project that can be downloaded, and with instructions of how to run, that demonstrates how to use
 external sharding to co-locate Kafka partition consumption with shards.
 
@@ -890,8 +890,8 @@ as described in @ref:[Shard allocation](#shard-allocation).
 
 ## Example project
 
-@java[@extref[Sharding example project](samples:akka-samples-cluster-sharding-java)]
-@scala[@extref[Sharding example project](samples:akka-samples-cluster-sharding-scala)]
+@java[[Sharding example project](../attachments/akka-sample-sharding-java.zip)]
+@scala[[Sharding example project](../attachments/akka-sample-sharding-scala.zip)]
 is an example project that can be downloaded, and with instructions of how to run.
 
 This project contains a KillrWeather sample illustrating how to use Cluster Sharding.

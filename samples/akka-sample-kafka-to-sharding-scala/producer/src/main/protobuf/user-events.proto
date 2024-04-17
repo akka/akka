@@ -1,0 +1,18 @@
+// serialization for the data on the Kafka topic
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "sample.sharding.kafka.serialization";
+option java_outer_classname = "UserEventProto";
+
+message UserPurchaseProto {
+   string user_id = 1;
+   string product = 2;
+   int64 quantity = 3;
+   int64 price = 4;
+}
+
+message UserActionProto {
+   string user_id = 1;
+   string description = 2;
+}
