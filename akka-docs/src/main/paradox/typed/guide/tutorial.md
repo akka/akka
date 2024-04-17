@@ -5,7 +5,7 @@ when starting to build an Akka system. You might wonder: Which should be the fir
 Fortunately &#8212; unlike with prose &#8212; established best practices can guide us through these initial steps. In the remainder of this guide, we examine the core logic of a simple Akka application to introduce you to actors and show you how to formulate solutions with them. The example demonstrates common patterns that will help you kickstart your Akka projects.
 
 ## Prerequisites
-You should have already followed the instructions in the @scala[[Akka Quickstart with Scala guide](https://developer.lightbend.com/guides/akka-quickstart-scala/)] @java[[Akka Quickstart with Java guide](https://developer.lightbend.com/guides/akka-quickstart-java/)] to download and run the Hello World example. You will use this as a seed project and add the functionality described in this tutorial.
+You should have already followed the instructions in the @ref[first Hello World example](../actors.md#first-example) to download and run the Hello World example. You will use this as a seed project and add the functionality described in this tutorial.
 
 @@@ note
 Both the Java and Scala DSLs of Akka modules bundled in the same JAR. For a smooth development experience,

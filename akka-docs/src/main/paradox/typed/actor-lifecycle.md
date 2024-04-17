@@ -63,10 +63,10 @@ If a behavior needs to use the `ActorContext`, for example to spawn child actors
 @scala[`context.self`]@java[`context.getSelf()`], it can be obtained by wrapping construction with @apidoc[Behaviors.setup](typed.*.Behaviors$) {scala="#setup[T](factory:akka.actor.typed.scaladsl.ActorContext[T]=%3Eakka.actor.typed.Behavior[T]):akka.actor.typed.Behavior[T]" java="#setup(akka.japi.function.Function)"}:
 
 Scala
-:  @@snip [IntroSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/IntroSpec.scala) { #hello-world-main }
+:  @@snip [HelloWorld.scala](/samples/akka-quickstart-scala/src/main/scala/com/example/HelloWorld.scala) { #hello-world-main }
 
 Java
-:  @@snip [IntroSpec.scala](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/IntroTest.java) { #hello-world-main-setup }
+:  @@snip [HelloWorldMain.java](/samples/akka-quickstart-java/src/main/java/com/example/HelloWorldMain.java) { #hello-world-main }
 
 #### ActorContext Thread Safety
 
@@ -83,10 +83,10 @@ system are directed to the root actor. The root actor is defined by the behavior
 named `HelloWorldMain` in the example below:
 
 Scala
-:  @@snip [IntroSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/IntroSpec.scala) { #hello-world }
+:  @@snip [HelloWorld.scala](/samples/akka-quickstart-scala/src/main/scala/com/example/HelloWorld.scala) { #hello-world }
 
 Java
-:  @@snip [IntroSpec.scala](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/IntroTest.java) { #hello-world }
+:  @@snip [HelloWorldMain.java](/samples/akka-quickstart-java/src/main/java/com/example/HelloWorldMain.java) { #hello-world }
 
 For very simple applications the guardian may contain the actual application logic and handle messages. As soon as the application
 handles more than one concern the guardian should instead just bootstrap the application, spawn the various subsystems as
@@ -114,10 +114,10 @@ is started, it spawns a child actor described by the `HelloWorld` behavior. Addi
 `SayHello` message, it creates a child actor defined by the behavior `HelloWorldBot`:
 
 Scala
-:  @@snip [IntroSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/IntroSpec.scala) { #hello-world-main }
+:  @@snip [HelloWorld.scala](/samples/akka-quickstart-scala/src/main/scala/com/example/HelloWorld.scala) { #hello-world-main }
 
 Java
-:  @@snip [IntroSpec.scala](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/IntroTest.java) { #hello-world-main }
+:  @@snip [HelloWorldMain.java](/samples/akka-quickstart-java/src/main/java/com/example/HelloWorldMain.java) { #hello-world-main }
 
 To specify a dispatcher when spawning an actor use @apidoc[DispatcherSelector]. If not specified, the actor will
 use the default dispatcher, see @ref:[Default dispatcher](dispatchers.md#default-dispatcher) for details.
@@ -126,7 +126,7 @@ Scala
 :  @@snip [IntroSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/IntroSpec.scala) { #hello-world-main-with-dispatchers }
 
 Java
-:  @@snip [IntroSpec.scala](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/IntroTest.java) { #hello-world-main-with-dispatchers }
+:  @@snip [IntroTest.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/IntroTest.java) { #hello-world-main-with-dispatchers }
 
 Refer to @ref:[Actors](actors.md#first-example) for a walk-through of the above examples.
 

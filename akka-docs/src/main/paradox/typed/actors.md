@@ -48,9 +48,12 @@ systems. The API of Akka’s Actors has borrowed some of its syntax from Erlang.
  
 ## First example
 
-If you are new to Akka we recommend that you start with reading the @ref:[Getting Started Guide](guide/introduction.md)
-to get you started with a @java[Maven]@scala[sbt] project with the needed dependencies and then come back here to learn 
-more. We also recommend watching the short [introduction video to Akka actors](https://akka.io/blog/news/2019/12/03/akka-typed-actor-intro-video).  
+If you are new to Akka we recommend watching the short [introduction video to Akka actors](https://akka.io/blog/news/2019/12/03/akka-typed-actor-intro-video).
+
+This sample can be downloaded and includes @java[Maven]@scala[sbt] project with the needed dependencies:
+
+* Scala [akka-quickstart-scala.zip](../attachments/akka-quickstart-scala.zip)
+* Java [akka-quickstart-java.zip](../attachments/akka-quickstart-java.zip)
 
 It is helpful to become familiar with the foundational, external and internal
 ecosystem of your Actors, to see what you can leverage and customize as needed, see
@@ -63,10 +66,10 @@ look like?
 In all of the following these imports are assumed:
 
 Scala
-:  @@snip [IntroSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/IntroSpec.scala) { #imports }
+:  @@snip [HelloWorld.scala](/samples/akka-quickstart-scala/src/main/scala/com/example/HelloWorld.scala) { #imports }
 
 Java
-:  @@snip [IntroSpec.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/IntroTest.java) { #imports }
+:  @@snip [HelloWorld.java](/samples/akka-quickstart-java/src/main/java/com/example/HelloWorld.java) { #imports }
 
 With these in place we can define our first Actor, and it will say
 hello!
@@ -74,10 +77,10 @@ hello!
 ![hello-world1.png](./images/hello-world1.png)
 
 Scala
-:  @@snip [IntroSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/IntroSpec.scala) { #hello-world-actor }
+:  @@snip [HelloWorld.scala](/samples/akka-quickstart-scala/src/main/scala/com/example/HelloWorld.scala) { #hello-world-actor }
 
 Java
-:  @@snip [IntroSpec.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/IntroTest.java) { #hello-world-actor }
+:  @@snip [HelloWorldBot.java](/samples/akka-quickstart-java/src/main/java/com/example/HelloWorld.java) { #hello-world-actor }
 
 This small piece of code defines two message types, one for commanding the
 Actor to greet someone and one that the Actor will use to confirm that it has
@@ -122,10 +125,10 @@ of messages have been reached.
 ![hello-world2.png](./images/hello-world2.png)
 
 Scala
-:  @@snip [IntroSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/IntroSpec.scala) { #hello-world-bot }
+:  @@snip [HelloWorld.scala](/samples/akka-quickstart-scala/src/main/scala/com/example/HelloWorld.scala) { #hello-world-bot }
 
 Java
-:  @@snip [IntroSpec.scala](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/IntroTest.java) { #hello-world-bot }
+:  @@snip [HelloWorldBot.java](/samples/akka-quickstart-java/src/main/java/com/example/HelloWorldBot.java) { #hello-world-bot }
 
 @scala[Note how this Actor manages the counter by changing the behavior for each `Greeted` reply
 rather than using any variables.]@java[Note how this Actor manages the counter with an instance variable.]
@@ -135,18 +138,18 @@ message at a time.
 A third actor spawns the `Greeter` and the `HelloWorldBot` and starts the interaction between those.
 
 Scala
-:  @@snip [IntroSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/IntroSpec.scala) { #hello-world-main }
+:  @@snip [HelloWorld.scala](/samples/akka-quickstart-scala/src/main/scala/com/example/HelloWorld.scala) { #hello-world-main }
 
 Java
-:  @@snip [IntroSpec.scala](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/IntroTest.java) { #hello-world-main }
+:  @@snip [HelloWorldMain.java](/samples/akka-quickstart-java/src/main/java/com/example/HelloWorldMain.java) { #hello-world-main }
 
 Now we want to try out this Actor, so we must start an ActorSystem to host it:
 
 Scala
-:  @@snip [IntroSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/IntroSpec.scala) { #hello-world }
+:  @@snip [HelloWorld.scala](/samples/akka-quickstart-scala/src/main/scala/com/example/HelloWorld.scala) { #hello-world }
 
 Java
-:  @@snip [IntroSpec.scala](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/IntroTest.java) { #hello-world }
+:  @@snip [HelloWorldMain.java](/samples/akka-quickstart-java/src/main/java/com/example/HelloWorldMain.java) { #hello-world }
 
 We start an Actor system from the defined `HelloWorldMain` behavior and send two `SayHello` messages that
 will kick-off the interaction between two separate `HelloWorldBot` actors and the single `Greeter` actor.
