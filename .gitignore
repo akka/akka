@@ -40,6 +40,7 @@
 .tags_sorted_by_file
 .target
 .worksheet
+.gradle
 TAGS
 _akka_cluster/
 _dump
