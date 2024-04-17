@@ -24,7 +24,7 @@ import akka.actor.{ ActorRef, Cancellable, ClassicActorSystemProvider }
 import akka.annotation.ApiMayChange
 import akka.dispatch.ExecutionContexts
 import akka.event.{ LogMarker, LoggingAdapter, MarkerLoggingAdapter }
-import akka.japi.{ function, JavaPartialFunction, Pair, Util }
+import akka.japi.{ function, JavaPartialFunction, Pair }
 import akka.japi.function.Creator
 import akka.stream._
 import akka.stream.impl.{ LinearTraversalBuilder, UnfoldAsyncJava }
@@ -643,7 +643,7 @@ object Source {
       @deprecatedName(Symbol("strategy"))
       fanInStrategy: function.Function[java.lang.Integer, _ <: Graph[UniformFanInShape[T, U], NotUsed]])
       : Source[U, NotUsed] = {
-    val seq = if (rest != null) Util.immutableSeq(rest).map(_.asScala) else immutable.Seq()
+    val seq = if (rest != null) rest.asScala.map(_.asScala).toSeq else immutable.Seq()
     new Source(scaladsl.Source.combine(first.asScala, second.asScala, seq: _*)(num => fanInStrategy.apply(num)))
   }
 
@@ -668,10 +668,11 @@ object Source {
       sources: java.util.List[_ <: Graph[SourceShape[T], M]],
       fanInStrategy: function.Function[java.lang.Integer, Graph[UniformFanInShape[T, U], NotUsed]])
       : Source[U, java.util.List[M]] = {
-    val seq = if (sources != null) Util.immutableSeq(sources).collect {
+    val seq = if (sources != null) sources.asScala.collect {
       case source: Source[T @unchecked, M @unchecked] => source.asScala
       case other                                      => other
-    } else immutable.Seq()
+    }.toSeq
+    else immutable.Seq()
     import akka.util.ccompat.JavaConverters._
     new Source(scaladsl.Source.combine(seq)(size => fanInStrategy(size)).mapMaterializedValue(_.asJava))
   }
@@ -680,7 +681,7 @@ object Source {
    * Combine the elements of multiple streams into a stream of lists.
    */
   def zipN[T](sources: java.util.List[Source[T, _ <: Any]]): Source[java.util.List[T], NotUsed] = {
-    val seq = if (sources != null) Util.immutableSeq(sources).map(_.asScala) else immutable.Seq()
+    val seq = if (sources != null) sources.asScala.map(_.asScala).toSeq else immutable.Seq()
     new Source(scaladsl.Source.zipN(seq).map(_.asJava))
   }
 
@@ -690,7 +691,7 @@ object Source {
   def zipWithN[T, O](
       zipper: function.Function[java.util.List[T], O],
       sources: java.util.List[Source[T, _ <: Any]]): Source[O, NotUsed] = {
-    val seq = if (sources != null) Util.immutableSeq(sources).map(_.asScala) else immutable.Seq()
+    val seq = if (sources != null) sources.asScala.map(_.asScala).toSeq else immutable.Seq()
     new Source(scaladsl.Source.zipWithN[T, O](seq => zipper.apply(seq.asJava))(seq))
   }
 
@@ -902,7 +903,7 @@ object Source {
       eagerComplete: Boolean): javadsl.Source[T, NotUsed] = {
     val seq =
       if (sourcesAndPriorities != null)
-        Util.immutableSeq(sourcesAndPriorities).map(pair => (pair.first.asScala, pair.second.intValue()))
+        sourcesAndPriorities.asScala.map(pair => (pair.first.asScala, pair.second.intValue())).toSeq
       else
         immutable.Seq()
     new Source(scaladsl.Source.mergePrioritizedN(seq, eagerComplete))
@@ -1669,10 +1670,11 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
       those: java.util.List[_ <: Graph[SourceShape[Out], _ <: Any]],
       segmentSize: Int,
       eagerClose: Boolean): javadsl.Source[Out, Mat] = {
-    val seq = if (those != null) Util.immutableSeq(those).collect {
+    val seq = if (those != null) those.asScala.collect {
       case source: Source[Out @unchecked, _] => source.asScala
       case other                             => other
-    } else immutable.Seq()
+    }.toSeq
+    else immutable.Seq()
     new Source(delegate.interleaveAll(seq, segmentSize, eagerClose))
   }
 
@@ -1748,10 +1750,12 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
   def mergeAll(
       those: java.util.List[_ <: Graph[SourceShape[Out], _ <: Any]],
       eagerComplete: Boolean): javadsl.Source[Out, Mat] = {
-    val seq = if (those != null) Util.immutableSeq(those).collect {
-      case source: Source[Out @unchecked, _] => source.asScala
-      case other                             => other
-    } else immutable.Seq()
+    val seq =
+      if (those != null) those.asScala.collect {
+        case source: Source[Out @unchecked, _] => source.asScala
+        case other                             => other
+      }.toSeq
+      else immutable.Seq()
     new Source(delegate.mergeAll(seq, eagerComplete))
   }
 
@@ -2438,7 +2442,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    * '''Cancels when''' downstream cancels
    */
   def mapConcat[T](f: function.Function[Out, _ <: java.lang.Iterable[T]]): javadsl.Source[T, Mat] =
-    new Source(delegate.mapConcat(elem => Util.immutableSeq(f.apply(elem))))
+    new Source(delegate.mapConcat(elem => f.apply(elem).asScala))
 
   /**
    * Transform each stream element with the help of a state.
@@ -2548,7 +2552,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
   def statefulMapConcat[T](f: function.Creator[function.Function[Out, java.lang.Iterable[T]]]): javadsl.Source[T, Mat] =
     new Source(delegate.statefulMapConcat { () =>
       val fun = f.create()
-      elem => Util.immutableSeq(fun(elem))
+      elem => fun(elem).asScala
     })
 
   /**

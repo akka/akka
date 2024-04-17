@@ -9,23 +9,19 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionStage
 import java.util.function.BiFunction
 import java.util.stream.Collector
-
 import scala.annotation.nowarn
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.immutable
 import scala.compat.java8.FutureConverters._
 import scala.compat.java8.OptionConverters._
 import scala.util.Try
-
 import org.reactivestreams.Publisher
 import org.reactivestreams.Subscriber
-
 import akka._
 import akka.actor.ActorRef
 import akka.actor.ClassicActorSystemProvider
 import akka.actor.Status
 import akka.dispatch.ExecutionContexts
-import akka.japi.Util
 import akka.japi.function
 import akka.japi.function.Creator
 import akka.stream._
@@ -33,6 +29,8 @@ import akka.stream.impl.LinearTraversalBuilder
 import akka.stream.javadsl
 import akka.stream.scaladsl
 import akka.stream.scaladsl.SinkToCompletionStage
+
+import akka.util.ccompat.JavaConverters._
 
 /** Java API */
 object Sink {
@@ -376,10 +374,11 @@ object Sink {
       sinks: java.util.List[_ <: Graph[SinkShape[U], M]],
       fanOutStrategy: function.Function[java.lang.Integer, Graph[UniformFanOutShape[T, U], NotUsed]])
       : Sink[T, java.util.List[M]] = {
-    val seq = if (sinks != null) Util.immutableSeq(sinks).collect {
+    val seq = if (sinks != null) sinks.asScala.collect {
       case sink: Sink[U @unchecked, M @unchecked] => sink.asScala
       case other                                  => other
-    } else immutable.Seq()
+    }.toSeq
+    else immutable.Seq()
     import akka.util.ccompat.JavaConverters._
     new Sink(scaladsl.Sink.combine(seq)(size => fanOutStrategy(size)).mapMaterializedValue(_.asJava))
   }
