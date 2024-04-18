@@ -16,7 +16,7 @@ import scala.annotation.nowarn
 import scala.concurrent.duration.DurationInt
 
 object LeaseDocSpec {
-  @nowarn("cat=lint-missing-interpolator")
+  @nowarn("msg=interpolation")
   def config = ConfigFactory.parseString("""
       // #singleton-config
       my.app.my-singleton-lease {
@@ -28,7 +28,7 @@ object LeaseDocSpec {
       """).withFallback(ConfigFactory.load()).resolve()
 }
 
-@nowarn("cat=unused-locals")
+@nowarn("msg=never used")
 class LeaseDocSpec extends ScalaTestWithActorTestKit(LeaseDocSpec.config) with AnyWordSpecLike {
   import akka.cluster.typed.ClusterSingletonApiSpec._
   "docs" should {
