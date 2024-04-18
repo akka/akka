@@ -237,7 +237,7 @@ For tests that involve more than one Cluster node you have to use another journa
 While it's possible to use the @ref:[Persistence Plugin Proxy](../persistence-plugins.md#persistence-plugin-proxy)
 it's often better and more realistic to use a real database.
 
-The @ref:[CQRS example](../project/examples.md#cqrs) includes tests that are using Akka Persistence Cassandra.
+The @extref[Microservices with Akka tutorial](platform-guide:microservices-tutorial/) includes tests that are using a real database.
 
 ### Plugin initialization
 

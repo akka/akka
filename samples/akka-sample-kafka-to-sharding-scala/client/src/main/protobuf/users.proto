@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "sample.sharding.kafka";
+option java_outer_classname = "UserProto";
+
+service UserService {
+    rpc  UserStats (UserStatsRequest) returns (UserStatsResponse) {}
+}
+
+message UserStatsRequest {
+    string id = 1;
+}
+
+message UserStatsResponse {
+    string id = 1;
+    int64 totalPurchases = 2;
+    int64 amountSpent = 3;
+}

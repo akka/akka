@@ -71,8 +71,7 @@ For minor or major releases:
 - [ ] Update `MiMa.latestPatchOf` and PR that change (`project/MiMa.scala`)
 - [ ] Update [akka-dependencies bom](https://github.com/lightbend/akka-dependencies) and version for [Akka module versions](https://doc.akka.io/docs/akka-dependencies/current/) in [akka-dependencies repo](https://github.com/akka/akka-dependencies)
 - [ ] Update [Akka Guide samples](https://github.com/akka/akka-guide)
-- [ ] Update [akka-samples](https://github.com/akka/akka-samples)
-- [ ] Update quickstarts:
+- [ ] Update sbt new templates:
   - [ ] [Akka Scala](https://github.com/akka/akka-quickstart-scala.g8/blob/main/src/main/g8/default.properties)
   - [ ] [Akka HTTP Java](https://github.com/akka/akka-http-quickstart-java.g8/blob/main/src/main/g8/default.properties)
   - [ ] [Akka HTTP Scala](https://github.com/akka/akka-http-quickstart-scala.g8/blob/main/src/main/g8/default.properties)

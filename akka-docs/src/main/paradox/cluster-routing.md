@@ -254,5 +254,5 @@ akka.actor.deployment {
 }
 ```
 The easiest way to run **Router Example with Pool of Routees** example yourself is to try the
-@scala[@extref[Akka Cluster Sample with Scala](samples:akka-samples-cluster-scala)]@java[@extref[Akka Cluster Sample with Java](samples:akka-samples-cluster-java)].
+@scala[[Akka Cluster Sample with Scala](../attachments/akka-samples-cluster-scala.zip)]@java[[Akka Cluster Sample with Java](../attachments/akka-samples-cluster-java.zip)].
 It contains instructions on how to run the **Router Example with Pool of Routees** sample.

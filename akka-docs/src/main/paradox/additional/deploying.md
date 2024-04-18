@@ -13,10 +13,6 @@ To take advantage of running inside Kubernetes while forming a cluster,
 @extref:[Akka Cluster Bootstrap](akka-management:bootstrap/) helps forming or joining a cluster using Akka Discovery to discover peer nodes. 
 with the Kubernetes API or Kubernetes via DNS.  
 
-You can look at the
-@extref[Cluster with Kubernetes example project](samples:akka-sample-cluster-kubernetes-java)
-to see what this looks like in practice.
-
 ### Rolling updates
 
 Enable the @extref:[Kubernetes Rolling Updates](akka-management:rolling-updates.html#kubernetes-rolling-updates)
@@ -32,11 +28,6 @@ To avoid CFS scheduler limits, it is best not to use `resources.limits.cpu` limi
 You can use both Akka remoting and Akka Cluster inside Docker containers. Note
 that you will need to take special care with the network configuration when using Docker,
 described here: @ref:[Akka behind NAT or in a Docker container](../remoting-artery.md#remote-configuration-nat-artery)
-
-You can look at the
-@java[@extref[Cluster with docker-compse example project](samples:akka-sample-cluster-docker-compose-java)]
-@scala[@extref[Cluster with docker-compose example project](samples:akka-sample-cluster-docker-compose-scala)]
-to see what this looks like in practice.
 
 For the JVM to run well in a Docker container, there are some general (not Akka specific) parameters that might need tuning:
 

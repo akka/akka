@@ -465,8 +465,8 @@ See @ref:[Reliable Delivery](reliable-delivery.md)
 
 ## Example project
 
-@java[@extref[Cluster example project](samples:akka-samples-cluster-java)]
-@scala[@extref[Cluster example project](samples:akka-samples-cluster-scala)]
+@java[[Cluster example project](../attachments/akka-samples-cluster-java.zip)]
+@scala[[Cluster example project](../attachments/akka-samples-cluster-scala.zip)]
 is an example project that can be downloaded, and with instructions of how to run.
 
 This project contains samples illustrating different Cluster features, such as

@@ -62,13 +62,57 @@ function zipAndAttach() {
 mkdir -p ${akka_docs_attachments}
 mkdir -p ${target_temporal_attachments}
 
-## akka-quickstart-scala zip file
-prepareTemporalFolder
-fetchProject ${samples_sources}/akka-quickstart-scala akka-quickstart
-zipAndAttach ${akka_docs_attachments}/akka-quickstart-scala.zip ${target_temporal_attachments}
-
 ## akka-quickstart-java zip file
 prepareTemporalFolder
 fetchProject ${samples_sources}/akka-quickstart-java akka-quickstart
 zipAndAttach ${akka_docs_attachments}/akka-quickstart-java.zip ${target_temporal_attachments}
 
+## akka-quickstart-scala zip file
+prepareTemporalFolder
+fetchProject ${samples_sources}/akka-quickstart-scala akka-quickstart
+zipAndAttach ${akka_docs_attachments}/akka-quickstart-scala.zip ${target_temporal_attachments}
+
+# akka-sample-cluster-java
+prepareTemporalFolder
+fetchProject ${samples_sources}/akka-sample-cluster-java akka-sample-cluster
+zipAndAttach ${akka_docs_attachments}/akka-sample-cluster-java.zip ${target_temporal_attachments}
+
+# akka-sample-cluster-scala
+prepareTemporalFolder
+fetchProject ${samples_sources}/akka-sample-cluster-scala akka-sample-cluster
+zipAndAttach ${akka_docs_attachments}/akka-sample-cluster-scala.zip ${target_temporal_attachments}
+
+# akka-sample-distributed-data-java
+prepareTemporalFolder
+fetchProject ${samples_sources}/akka-sample-distributed-data-java akka-sample-distributed-data
+zipAndAttach ${akka_docs_attachments}/akka-sample-distributed-data-java.zip ${target_temporal_attachments}
+
+# akka-sample-distributed-data-scala
+prepareTemporalFolder
+fetchProject ${samples_sources}/akka-sample-distributed-data-scala akka-sample-distributed-data
+zipAndAttach ${akka_docs_attachments}/akka-sample-distributed-data-scala.zip ${target_temporal_attachments}
+
+# akka-sample-fsm-java
+prepareTemporalFolder
+fetchProject ${samples_sources}/akka-sample-fsm-java akka-sample-fsm
+zipAndAttach ${akka_docs_attachments}/akka-sample-fsm-java.zip ${target_temporal_attachments}
+
+# akka-sample-fsm-scala
+prepareTemporalFolder
+fetchProject ${samples_sources}/akka-sample-fsm-scala akka-sample-fsm
+zipAndAttach ${akka_docs_attachments}/akka-sample-fsm-scala.zip ${target_temporal_attachments}
+
+# akka-sample-sharding-java
+prepareTemporalFolder
+fetchProject ${samples_sources}/akka-sample-sharding-java akka-sample-sharding
+zipAndAttach ${akka_docs_attachments}/akka-sample-sharding-java.zip ${target_temporal_attachments}
+
+# akka-sample-sharding-scala
+prepareTemporalFolder
+fetchProject ${samples_sources}/akka-sample-sharding-scala akka-sample-sharding
+zipAndAttach ${akka_docs_attachments}/akka-sample-sharding-scala.zip ${target_temporal_attachments}
+
+# akka-sample-kafka-to-sharding-scala
+prepareTemporalFolder
+fetchProject ${samples_sources}/akka-sample-kafka-to-sharding-scala akka-sample-kafka-to-sharding
+zipAndAttach ${akka_docs_attachments}/akka-sample-kafka-to-sharding-scala.zip ${target_temporal_attachments}
