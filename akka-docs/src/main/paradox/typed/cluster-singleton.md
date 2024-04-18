@@ -182,9 +182,34 @@ don't run at the same time. Reasons for how this can happen:
 A lease can be a final backup that means that the singleton actor won't be created unless
 the lease can be acquired. 
 
-To use a lease for singleton set `akka.cluster.singleton.use-lease` to the configuration location
-of the lease to use. A lease with with the name `<actor system name>-singleton-<singleton actor path>` is used and
+To use a lease for every singleton in an application set `akka.cluster.singleton.use-lease` to the configuration location
+of the lease to use. A lease with the name `<actor system name>-singleton-<singleton actor path>` is used and
 the owner is set to the @scala[`Cluster(system).selfAddress.hostPort`]@java[`Cluster.get(system).selfAddress().hostPort()`].
+
+Note that the `akka.cluster.singleton.lease-name` configuration key is ignored and cannot be used to configure singleton 
+lease names.
+
+It is also possible to configure one individual singleton to use lease by defining a lease config block specifically for it:
+
+@@snip [LeaseDocSpec.scala](/akka-cluster-typed/src/test/scala/docs/akka/cluster/typed/LeaseDocSpec.scala) { #singleton-config }
+
+And then setting that into @apidoc[LeaseUsageSettings] that can be set in the @apidoc[ClusterSingletonSettings]:
+
+Scala
+:  @@snip [LeaseDocSpec.scala](/akka-cluster-typed/src/test/scala/docs/akka/cluster/typed/LeaseDocSpec.scala) { #singleton-load-config }
+
+Java
+:  @@snip [LeaseDocExample.java](/akka-cluster-typed/src/test/java/jdocs/akka/cluster/typed/LeaseDocExample.java) { #singleton-load-config }
+
+
+Or programmatically specifying the lease settings:
+
+Scala
+:  @@snip [LeaseDocSpec.scala](/akka-cluster-typed/src/test/scala/docs/akka/cluster/typed/LeaseDocSpec.scala) { #singleton-settings }
+
+Java
+:  @@snip [LeaseDocExample.java](/akka-cluster-typed/src/test/java/jdocs/akka/cluster/typed/LeaseDocExample.java) { #singleton-settings }
+
 
 If the cluster singleton manager can't acquire the lease it will keep retrying while it is the oldest node in the cluster.
 If the lease is lost then the singleton actor will be terminated then the lease will be re-tried.

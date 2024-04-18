@@ -5,9 +5,7 @@
 package akka.cluster.typed
 
 import scala.concurrent.duration.{ Duration, FiniteDuration, _ }
-
 import com.typesafe.config.Config
-
 import akka.actor.typed._
 import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.cluster.ClusterSettings.DataCenter
@@ -18,6 +16,7 @@ import akka.cluster.singleton.{
 import akka.cluster.typed.internal.AdaptedClusterSingletonImpl
 import akka.coordination.lease.LeaseUsageSettings
 import akka.util.JavaDurationConverters._
+import org.slf4j.LoggerFactory
 
 object ClusterSingletonSettings {
   def apply(system: ActorSystem[_]): ClusterSingletonSettings =
@@ -241,16 +240,21 @@ object ClusterSingletonManagerSettings {
    * the default configuration `akka.cluster.singleton`.
    */
   def apply(config: Config): ClusterSingletonManagerSettings = {
-    val lease = config.getString("use-lease") match {
-      case s if s.isEmpty => None
-      case leaseConfigPath =>
-        Some(
-          new LeaseUsageSettings(
-            leaseConfigPath,
-            config.getDuration("lease-retry-interval").asScala,
-            leaseName = "" // intentionally not in config because would be high risk of not using unique names
-          ))
-    }
+
+    val lease: Option[LeaseUsageSettings] =
+      if (config.hasPath("use-lease")) {
+        val settings = LeaseUsageSettings(config)
+        // intentionally not in config because would be high risk of not using unique names
+        if (settings.leaseName != "") {
+          LoggerFactory
+            .getLogger(classOf[ClusterSingletonManagerSettings])
+            .warn(
+              "Ignoring singleton lease-name [{}] from configuration, lease names must be programmatically configured through 'LeaseUsageSettings'",
+              settings.leaseName)
+          Some(settings.withLeaseName(""))
+        } else Some(settings)
+      } else None
+
     new ClusterSingletonManagerSettings(
       singletonName = config.getString("singleton-name"),
       role = roleOption(config.getString("role")),
