@@ -78,11 +78,12 @@ jobs:
         run: |-
           cd samples/akka-sample-distributed-data-java
           mvn test -nsu -ntp -Dakka.version=`cat ~/.version`
+          sbt test multi-jvm:test -Dakka.version=`cat ~/.version`
 
       - name: Test akka-sample-distributed-data-scala
         run: |-
           cd samples/akka-sample-distributed-data-scala
-          sbt test -Dakka.version=`cat ~/.version`
+          sbt test multi-jvm:test -Dakka.version=`cat ~/.version`
 
       - name: Test akka-sample-fsm-java
         run: |-
