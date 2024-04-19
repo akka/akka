@@ -242,7 +242,7 @@ object ClusterSingletonManagerSettings {
   def apply(config: Config): ClusterSingletonManagerSettings = {
 
     val lease: Option[LeaseUsageSettings] =
-      if (config.hasPath("use-lease")) {
+      if (config.hasPath("use-lease") && config.getString("use-lease").nonEmpty) {
         val settings = LeaseUsageSettings(config)
         // intentionally not in config because would be high risk of not using unique names
         if (settings.leaseName != "") {
