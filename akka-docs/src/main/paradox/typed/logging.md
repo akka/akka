@@ -173,7 +173,7 @@ in the `ActorContext`.
 
 ## SLF4J API compatibility
 
-The SLF4J API broke binary compatibility between versions 1.7 and 2.0. Akka supports depends on 1.7 but support either version. 
+The SLF4J API broke binary compatibility between versions 1.7 and 2.0. Akka depends on 1.7 but supports either versions. 
 
 It is however not possible to mix a logger backend supporting one version with SLF4J API of other version, that will lead
 to no logging to output like this:  
