@@ -171,6 +171,46 @@ The entire MDC is cleared, including attributes that you add yourself to the MDC
 MDC is not cleared automatically if you use a [Logger](https://www.slf4j.org/api/org/slf4j/Logger.html) via [LoggerFactory](https://www.slf4j.org/api/org/slf4j/LoggerFactory.html) or not touch @scala[`log`]@java[`getLog()`]
 in the `ActorContext`.
 
+## SLF4J API compatibility
+
+The SLF4J API broke binary compatibility between versions 1.7 and 2.0. Akka depends on 1.7 but supports either versions. 
+
+It is however not possible to mix a logger backend supporting one version with SLF4J API of other version, that will lead
+to no logging to output like this:  
+
+```
+SLF4J(W): No SLF4J providers were found.
+SLF4J(W): Defaulting to no-operation (NOP) logger implementation
+SLF4J(W): See https://www.slf4j.org/codes.html#noProviders for further details.
+SLF4J(W): Class path contains SLF4J bindings targeting slf4j-api versions 1.7.x or earlier.
+SLF4J(W): Ignoring binding found at [jar:file:/../../../logback-classic-1.2.13.jar!/org/slf4j/impl/StaticLoggerBinder.class]
+```
+
+@@@ div { .group-scala }
+
+Working around this for sbt based projects can either be done by depending on a newer version of the chosen logging backend,
+for example logback 1.4.0+ which support slf4j-api 2.0, or pinning `slf4j-api` to the older version using `dependencyOverrides`:
+```
+dependencyOverrides += "org.slf4j" % "slf4j-api" % "1.7.36"
+```
+
+@@@
+
+@@@ div { .group-java }
+
+Working around this for maven based projects can either be done by depending on a newer version of the chosen logging backend,
+for example logback 1.4.0+ which support slf4j-api 2.0, or pin `slf4j-api` to the older version using a direct dependency on the `slf4j-api` module:
+
+```xml
+<dependency>
+  <groupId>org.slf4j</groupId>
+  <artifactId>slf4j-api</artifactId>
+  <version>1.7.36</version>
+</dependency>
+```
+
+@@@
+
 ## SLF4J backend
 
 To ensure that logging has minimal performance impact it's important that you configure an
@@ -180,7 +220,7 @@ which can slow down the operations of your code if it was performed synchronousl
 @@@ warning
 
 For production the SLF4J backend should be configured with an asynchronous appender as described here.
-Otherwise there is a risk of reduced performance and thread starvation problems of the dispatchers
+Otherwise, there is a risk of reduced performance and thread starvation problems of the dispatchers
 that are running actors and other tasks.
 
 @@@
