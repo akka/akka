@@ -80,15 +80,9 @@ private[akka] trait ReceiveTimeout { this: ActorCell =>
       receiveTimeoutData = (receiveTimeoutData._1, emptyCancellable)
     }
 
-  private def messageMarkedToNotInfluenceTimeout(message: Any): Boolean = message match {
-    case _: NotInfluenceReceiveTimeout => true
-    case w: WrappedMessage =>
-      w.message match {
-        case _: NotInfluenceReceiveTimeout                     => true
-        case scala.util.Success(_: NotInfluenceReceiveTimeout) => true // specifically for typed AdaptedMessage
-        case _                                                 => false
-      }
-    case _ => false
+  private def messageMarkedToNotInfluenceTimeout(message: Any): Boolean = {
+    val unwrapped = WrappedMessage.unwrap(message)
+    unwrapped.isInstanceOf[NotInfluenceReceiveTimeout]
   }
 
 }

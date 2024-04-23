@@ -5,12 +5,10 @@
 package akka.actor
 
 import java.util.concurrent.ConcurrentHashMap
-
 import scala.annotation.nowarn
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.util.control.NonFatal
-
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
 import akka.dispatch._
@@ -23,6 +21,8 @@ import akka.pattern.PromiseActorRef
 import akka.serialization.JavaSerializer
 import akka.serialization.Serialization
 import akka.util.OptionVal
+
+import scala.util.Success
 
 object ActorRef {
 
@@ -647,6 +647,7 @@ object WrappedMessage {
   @tailrec def unwrap(message: Any): Any = {
     message match {
       case w: WrappedMessage => unwrap(w.message)
+      case Success(w)        => unwrap(w) // Specifically for typed adapted responses
       case _                 => message
 
     }
