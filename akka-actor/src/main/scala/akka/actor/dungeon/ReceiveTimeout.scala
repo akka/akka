@@ -9,6 +9,7 @@ import scala.concurrent.duration.FiniteDuration
 import akka.actor.ActorCell
 import akka.actor.Cancellable
 import akka.actor.NotInfluenceReceiveTimeout
+import akka.actor.WrappedMessage
 import akka.annotation.InternalApi
 
 /**
@@ -37,7 +38,7 @@ private[akka] trait ReceiveTimeout { this: ActorCell =>
   /** Called after `ActorCell.receiveMessage` or `ActorCell.autoReceiveMessage`. */
   protected def checkReceiveTimeoutIfNeeded(message: Any, beforeReceive: (Duration, Cancellable)): Unit =
     if (hasTimeoutData || receiveTimeoutChanged(beforeReceive))
-      checkReceiveTimeout(!message.isInstanceOf[NotInfluenceReceiveTimeout] || receiveTimeoutChanged(beforeReceive))
+      checkReceiveTimeout(!messageMarkedToNotInfluenceTimeout(message) || receiveTimeoutChanged(beforeReceive))
 
   final def checkReceiveTimeout(reschedule: Boolean): Unit = {
     val (recvTimeout, task) = receiveTimeoutData
@@ -67,7 +68,7 @@ private[akka] trait ReceiveTimeout { this: ActorCell =>
     receiveTimeoutData ne beforeReceive
 
   protected def cancelReceiveTimeoutIfNeeded(message: Any): (Duration, Cancellable) = {
-    if (hasTimeoutData && !message.isInstanceOf[NotInfluenceReceiveTimeout])
+    if (hasTimeoutData && !messageMarkedToNotInfluenceTimeout(message))
       cancelReceiveTimeoutTask()
 
     receiveTimeoutData
@@ -78,5 +79,10 @@ private[akka] trait ReceiveTimeout { this: ActorCell =>
       receiveTimeoutData._2.cancel()
       receiveTimeoutData = (receiveTimeoutData._1, emptyCancellable)
     }
+
+  private def messageMarkedToNotInfluenceTimeout(message: Any): Boolean = {
+    val unwrapped = WrappedMessage.unwrap(message)
+    unwrapped.isInstanceOf[NotInfluenceReceiveTimeout]
+  }
 
 }
