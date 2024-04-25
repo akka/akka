@@ -4,7 +4,11 @@ Parameters
 
 Licensor:             Lightbend, Inc.
 Licensed Work:        Akka 2.9.2
-                      The Licensed Work is (c) 2023 Lightbend Inc.
+		      This license applies to all sub directories and files
+                      UNLESS another license file is present in a sub
+                      directory, then that other license applies to all files
+                      in its directory and sub directories.
+                      The Licensed Work is (c) 2024 Lightbend Inc.
 Additional Use Grant:
     If you develop an application using a version of Play Framework that
     utilizes binary versions of akka-streams and its dependencies, you may
