@@ -188,7 +188,7 @@ protocol.
  2. Because a @apidoc[akka.io.Tcp.WriteCommand] is atomic you can be sure that no other actor can "inject" other writes into your
 series of writes if you combine them into one single `CompoundWrite`. In scenarios where several actors write
 to the same connection this can be an important feature which can be somewhat hard to achieve otherwise.
- 3. The "sub writes" of a `CompoundWrite` are regular @scala[@scaladoc[Write](akka.io.Tcp$.Write) or @scaladoc[WriteFile](akka.io.Tcp$.WriteFile) commands]@java[messages by @javadoc[TcpMessage.write](akka.io.TcpMessage#write(akka.util.ByteString,akka.io.Tcp.Event)) or @javadoc[TcpMessage.writeFile](akka.io.TcpMessage#writeFile(java.lang.String,long,long,akka.io.Tcp.Event)) methods] that themselves can request
+ 3. The "sub writes" of a `CompoundWrite` are regular @scala[@scaladoc[Write](akka.io.Tcp$$Write) or @scaladoc[WriteFile](akka.io.Tcp$$WriteFile) commands]@java[messages by @javadoc[TcpMessage.write](akka.io.TcpMessage#write(akka.util.ByteString,akka.io.Tcp.Event)) or @javadoc[TcpMessage.writeFile](akka.io.TcpMessage#writeFile(java.lang.String,long,long,akka.io.Tcp.Event)) methods] that themselves can request
 "ack" events. These ACKs are sent out as soon as the respective "sub write" has been completed. This allows you to
 attach more than one ACK to a @scala[`Write` or `WriteFile`]@java[message by `TcpMessage.write` or `TcpMessage.writeFile`] (by combining it with an empty write that itself requests
 an ACK) or to have the connection actor acknowledge the progress of transmitting the `CompoundWrite` by sending
