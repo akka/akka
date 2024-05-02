@@ -37,11 +37,11 @@ Docker allows [constraining each containers' resource usage](https://docs.docker
 
 #### Memory
 
-You may want to look into using [`-XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap`](https://dzone.com/articles/running-a-jvm-in-a-container-without-getting-kille) options for your JVM later than 8u131, which makes it understand c-group memory limits. On JVM 10 and later, the `-XX:+UnlockExperimentalVMOptions` option is no longer needed.
+You may want to look into using `-XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap` options for your JVM later than 8u131, which makes it understand c-group memory limits. On JVM 10 and later, the `-XX:+UnlockExperimentalVMOptions` option is no longer needed.
 
 #### CPU
 
-For multi-threaded applications such as the JVM, the CFS scheduler limits are an ill fit, because they will restrict
+For multithreaded applications such as the JVM, the CFS scheduler limits are an ill fit, because they will restrict
 the allowed CPU usage even when more CPU cycles are available from the host system. This means your application may be
 starved of CPU time, but your system appears idle.
 

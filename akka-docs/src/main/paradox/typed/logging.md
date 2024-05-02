@@ -249,7 +249,7 @@ A starting point for configuration of `logback.xml` for production:
 
 @@snip [logback.xml](/akka-actor-typed-tests/src/test/resources/logback-doc-prod.xml)
 
-Note that the [AsyncAppender](https://logback.qos.ch/apidocs/ch/qos/logback/classic/AsyncAppender.html) may drop log events if the queue becomes full, which may happen if the
+Note that the [AsyncAppender](https://logback.qos.ch/apidocs/ch.qos.logback.classic/ch/qos/logback/classic/AsyncAppender.html) may drop log events if the queue becomes full, which may happen if the
 logging backend can't keep up with the throughput of produced log events. Dropping log events is necessary
 if you want to gracefully degrade your application if only your logging backend or filesystem is experiencing
 issues. 
