@@ -4,6 +4,13 @@
 
 package typed.tutorial_3
 
+/*
+//#device-read-test
+package com.example
+
+//#device-read-test
+ */
+
 //#device-read-test
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -47,8 +54,7 @@ class DeviceSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike {
       response2.value should ===(Some(55.0))
     }
     //#device-write-read-test
-
+    //#device-read-test
   }
-  //#device-read-test
 }
 //#device-read-test
