@@ -6,6 +6,8 @@ This tutorial contains 3 samples illustrating different [Akka cluster](https://d
 
 ## A Simple Cluster Example
 
+To try this example locally, download the sources files with [akka-samples-cluster-scala.zip](https://doc.akka.io/docs/akka/snapshot/attachments/akka-samples-cluster-scala.zip).
+
 Open [application.conf](src/main/resources/application.conf)
 
 To enable cluster capabilities in your Akka project you should, at a minimum, add the remote settings, and use `cluster` as the `akka.actor.provider`. The `akka.cluster.seed-nodes` should normally also be added to your `application.conf` file.

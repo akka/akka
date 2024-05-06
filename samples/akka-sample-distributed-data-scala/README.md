@@ -6,6 +6,8 @@ This tutorial contains 5 samples illustrating how to use [Akka Distributed Data]
 - Replicated Cache
 - Replicated Metrics
 
+To try this example locally, download the sources files with [akka-sample-distributed-data-scala.zip](https://doc.akka.io/docs/akka/snapshot/attachments/akka-sample-distributed-data-scala.zip).
+
 **Akka Distributed Data** is useful when you need to share data between nodes in an Akka Cluster. The data is accessed with an actor providing a key-value store like API. The keys are unique identifiers with type information of the data values. The values are _Conflict Free Replicated Data Types_ (CRDTs).
 
 All data entries are spread to all nodes, or nodes with a certain role, in the cluster via direct replication and gossip based dissemination. You have fine grained control of the consistency level for reads and writes.
