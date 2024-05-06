@@ -3,6 +3,8 @@
 The KillrWeather sample illustrates how to use [Akka Cluster Sharding](http://doc.akka.io/docs/akka/current/scala/typed/cluster-sharding.html) in Scala, for the same sample in Java see [Cluster Sharding Sample Java](https://github.com/akka/akka-samples/tree/2.6/akka-sample-sharding-java).
 It also shows the basic usage of [Akka HTTP](https://doc.akka.io/docs/akka-http/current/index.html).
 
+To try this example locally, download the sources files with [akka-sample-sharding-scala.zip](https://doc.akka.io/docs/akka/snapshot/attachments/akka-sample-sharding-scala.zip).
+
 The sample consists of two applications, each a separate maven submodule:
 
  * *killrweather* - A distributed Akka cluster that shards weather stations, each keeping a set of recorded 
