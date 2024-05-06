@@ -20,7 +20,7 @@ This project contains a Dining Hakkers sample illustrating how to model a Finite
 
 ## Cluster
 
-* Scala [Cluster example project](https://github.com/akka/akka/tree/main/samples/akka-sample-cluster-scala#readme) ([akka-samples-cluster-scala.zip)](../attachments/akka-samples-cluster-scala.zip)
+* Scala [Cluster example project](https://github.com/akka/akka/tree/main/samples/akka-sample-cluster-scala#readme) ([akka-samples-cluster-scala.zip](../attachments/akka-samples-cluster-scala.zip))
 * Java [Cluster example project](https://github.com/akka/akka/tree/main/samples/akka-sample-cluster-java#readme) ([akka-samples-cluster-java.zip](../attachments/akka-samples-cluster-java.zip))
 
 This project contains samples illustrating different Cluster features, such as
