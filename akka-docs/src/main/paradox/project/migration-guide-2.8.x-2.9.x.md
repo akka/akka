@@ -59,3 +59,8 @@ version="0.6.1"
 
 Persistent FSM has been deprecated since Akka 2.6.0 (2019-11-06) and has now been dropped. Details on how to migrate can be found in the Akka 2.8
 docs here: https://doc.akka.io/docs/akka/2.8/persistence-fsm.html#migration-to-eventsourcedbehavior
+
+# Migration Guide 2.9.2 to 2.9.3
+
+Named circuit breaker lookup was taking a `ExtendedActorSystem` requiring a typecast, is now requiring a `ClassicActorSystemProvider`.
+This change is source compatible, but not binary compatible, so will require a recompile if you are using named circuit breakers.
