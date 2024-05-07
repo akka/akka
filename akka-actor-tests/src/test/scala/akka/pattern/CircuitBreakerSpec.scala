@@ -14,8 +14,8 @@ import scala.language.postfixOps
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
-
-import akka.actor.{ ActorSystem, ExtendedActorSystem }
+import akka.actor.ActorSystem
+import akka.actor.ExtendedActorSystem
 import akka.testkit._
 
 object CircuitBreakerSpec {
@@ -752,7 +752,11 @@ class CircuitBreakerSpec extends AkkaSpec("""
 
   "An identified asynchronous circuit breaker" must {
 
-    val breaker = new Breaker(CircuitBreaker("identified")(system.asInstanceOf[ExtendedActorSystem]))
+    // verify that new signature is source compatible
+    CircuitBreaker("identified")(system.asInstanceOf[ExtendedActorSystem])
+    CircuitBreaker.lookup("identified", system.asInstanceOf[ExtendedActorSystem])
+
+    val breaker = new Breaker(CircuitBreaker("identified")(system))
     val cb = breaker()
 
     "be closed after success result" taggedAs TimingTest in {

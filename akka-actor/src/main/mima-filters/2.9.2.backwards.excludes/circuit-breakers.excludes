@@ -1,0 +1,4 @@
+# was taking ExtendedActorSystem, now ClassicActorSystemProvider
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.pattern.CircuitBreaker.lookup")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.pattern.CircuitBreaker.apply")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.pattern.CircuitBreaker.apply")

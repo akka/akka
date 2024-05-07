@@ -9,7 +9,6 @@ import java.util.concurrent.{ Callable, CompletionException, CompletionStage, Co
 import java.util.concurrent.atomic.{ AtomicBoolean, AtomicInteger, AtomicLong }
 import java.util.function.BiFunction
 import java.util.function.Consumer
-
 import scala.annotation.nowarn
 import scala.compat.java8.FutureConverters
 import scala.concurrent.{ Await, ExecutionContext, Future, Promise }
@@ -18,9 +17,9 @@ import scala.concurrent.duration._
 import scala.util.{ Failure, Success, Try }
 import scala.util.control.NoStackTrace
 import scala.util.control.NonFatal
-
 import akka.AkkaException
-import akka.actor.{ ExtendedActorSystem, Scheduler }
+import akka.actor.ClassicActorSystemProvider
+import akka.actor.Scheduler
 import akka.dispatch.ExecutionContexts.parasitic
 import akka.pattern.internal.{ CircuitBreakerNoopTelemetry, CircuitBreakerTelemetry }
 import akka.util.JavaDurationConverters._
@@ -54,9 +53,9 @@ object CircuitBreaker {
    * Create or find a CircuitBreaker in registry.
    *
    * @param id Circuit Breaker identifier
-   * @param system [[ExtendedActorSystem]] that is storing this [[CircuitBreaker]]
+   * @param system [[ActorSystem]] that is storing this [[CircuitBreaker]]
    */
-  def apply(id: String)(implicit system: ExtendedActorSystem): CircuitBreaker =
+  def apply(id: String)(implicit system: ClassicActorSystemProvider): CircuitBreaker =
     CircuitBreakersRegistry(system).get(id)
 
   /**
@@ -79,12 +78,12 @@ object CircuitBreaker {
     apply(scheduler, maxFailures, callTimeout.asScala, resetTimeout.asScala)
 
   /**
-   * Java API: Lookup a CircuitBreaker in registry.
+   * Java API: Create or find a CircuitBreaker in registry.
    *
    * @param id Circuit Breaker identifier
-   * @param system [[ExtendedActorSystem]] that is storing this [[CircuitBreaker]]
+   * @param system [[ActorSystem]] that is storing this [[CircuitBreaker]]
    */
-  def lookup(id: String, system: ExtendedActorSystem): CircuitBreaker =
+  def lookup(id: String, system: ClassicActorSystemProvider): CircuitBreaker =
     apply(id)(system)
 
   protected def convertJavaFailureFnToScala[T](
