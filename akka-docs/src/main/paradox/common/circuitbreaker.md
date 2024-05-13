@@ -65,12 +65,16 @@ The Akka library provides an implementation of a circuit breaker called
 
 ### Initialization
 
-Here's how a @apidoc[CircuitBreaker] would be configured for:
+Here's how a named @apidoc[CircuitBreaker] would be configured for:
 
 * 5 maximum failures
 * a call timeout of 10 seconds
 * a reset timeout of 1 minute
 
+@@snip [application.conf](/akka-docs/src/test/scala/docs/circuitbreaker/CircuitBreakerDocSpec.scala) { #config }
+
+The breaker is created on first access with the same name, subsequent lookups will return the same circuit breaker
+instance. Looking up the the circuit breaker and using it looks like this:
 
 Scala
 :  @@snip [CircuitBreakerDocSpec.scala](/akka-docs/src/test/scala/docs/circuitbreaker/CircuitBreakerDocSpec.scala) { #imports1 #circuit-breaker-initialization }
@@ -121,6 +125,17 @@ Java
 :  @@snip [EvenNoFailureJavaExample.java](/akka-docs/src/test/java/jdocs/circuitbreaker/EvenNoFailureJavaExample.java) { #even-no-as-failure }
 
 ### Low level API
+
+Instead of looking up a configured breaker by name, it is also possible to manually construct it:
+
+Scala
+:  @@snip [CircuitBreakerDocSpec.scala](/akka-docs/src/test/scala/docs/circuitbreaker/CircuitBreakerDocSpec.scala) { #manual-construction }
+
+Java
+:  @@snip [DangerousJavaActor.java](/akka-docs/src/test/java/jdocs/circuitbreaker/DangerousJavaActor.java) { #imports1 #manual-construction }
+
+
+
 
 The low-level API allows you to describe the behavior of the @apidoc[CircuitBreaker](CircuitBreaker) in detail, including deciding what to return to the calling @apidoc[Actor](Actor) in case of success or failure. This is especially useful when expecting the remote call to send a reply.
 @apidoc[CircuitBreaker](CircuitBreaker) doesn't support `Tell Protection` (protecting against calls that expect a reply) natively at the moment.

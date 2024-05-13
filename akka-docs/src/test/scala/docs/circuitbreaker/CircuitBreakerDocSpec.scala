@@ -9,21 +9,32 @@ import scala.concurrent.duration._
 import akka.pattern.CircuitBreaker
 import akka.pattern.pipe
 import akka.actor.{ Actor, ActorLogging, ActorRef }
+import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.Future
 import scala.util.{ Failure, Success, Try }
 
 //#imports1
 
-class CircuitBreakerDocSpec {}
+object CircuitBreakerDocSpec {
+  def config = ConfigFactory.parseString("""
+       #config
+       akka.circuit-breaker.dangerous-breaker {
+         max-failures = 5
+         call-timeout = 10s
+         reset-timeout = 1m
+       }
+       #config
+      """)
+
+}
 
 //#circuit-breaker-initialization
 class DangerousActor extends Actor with ActorLogging {
   import context.dispatcher
+  import context.system
 
-  val breaker =
-    new CircuitBreaker(context.system.scheduler, maxFailures = 5, callTimeout = 10.seconds, resetTimeout = 1.minute)
-      .onOpen(notifyMeOnOpen())
+  val breaker = CircuitBreaker("dangerous-breaker").onOpen(notifyMeOnOpen())
 
   def notifyMeOnOpen(): Unit =
     log.warning("My CircuitBreaker is now open, and will not close for one minute")
@@ -74,6 +85,8 @@ class TellPatternActor(recipient: ActorRef) extends Actor with ActorLogging {
 
 class EvenNoFailureActor extends Actor {
   import context.dispatcher
+  import context.system
+
   //#even-no-as-failure
   def luckyNumber(): Future[Int] = {
     val evenNumberAsFailure: Try[Int] => Boolean = {
@@ -81,8 +94,7 @@ class EvenNoFailureActor extends Actor {
       case Failure(_) => true
     }
 
-    val breaker =
-      new CircuitBreaker(context.system.scheduler, maxFailures = 5, callTimeout = 10.seconds, resetTimeout = 1.minute)
+    val breaker = CircuitBreaker("dangerous-breaker")
 
     // this call will return 8888 and increase failure count at the same time
     breaker.withCircuitBreaker(Future(8888), evenNumberAsFailure)
@@ -91,5 +103,12 @@ class EvenNoFailureActor extends Actor {
 
   override def receive = {
     case x: Int =>
+  }
+
+  def showManualApi(): Unit = {
+    // #manual-construction
+    val breaker =
+      new CircuitBreaker(context.system.scheduler, maxFailures = 5, callTimeout = 10.seconds, resetTimeout = 1.minute)
+    // #manual-construction
   }
 }

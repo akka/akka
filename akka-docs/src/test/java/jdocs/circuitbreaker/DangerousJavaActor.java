@@ -24,13 +24,7 @@ public class DangerousJavaActor extends AbstractActor {
   private final LoggingAdapter log = Logging.getLogger(getContext().system(), this);
 
   public DangerousJavaActor() {
-    this.breaker =
-        new CircuitBreaker(
-                getContext().getDispatcher(),
-                getContext().getSystem().getScheduler(),
-                5,
-                Duration.ofSeconds(10),
-                Duration.ofMinutes(1))
+    this.breaker = CircuitBreaker.lookup("dangerous-breaker", getContext().getSystem())
             .addOnOpenListener(this::notifyMeOnOpen);
   }
 
@@ -65,5 +59,19 @@ public class DangerousJavaActor extends AbstractActor {
         .build();
   }
   // #circuit-breaker-usage
+
+  private void showManualApi() {
+    // #manual-construction
+    CircuitBreaker breaker =
+        CircuitBreaker.create(
+            getContext().getSystem().getScheduler(),
+            // maxFailures
+            5,
+            // callTimeout
+            Duration.ofSeconds(10),
+            // resetTimeout
+            Duration.ofMinutes(1));
+    // #manual-construction
+  }
 
 }

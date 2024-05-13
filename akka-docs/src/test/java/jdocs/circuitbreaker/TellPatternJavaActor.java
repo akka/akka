@@ -20,13 +20,7 @@ public class TellPatternJavaActor extends AbstractActor {
 
   public TellPatternJavaActor(ActorRef targetActor) {
     this.target = targetActor;
-    this.breaker =
-        new CircuitBreaker(
-                getContext().getDispatcher(),
-                getContext().getSystem().getScheduler(),
-                5,
-                Duration.ofSeconds(10),
-                Duration.ofMinutes(1))
+    this.breaker = CircuitBreaker.lookup("dangerous-breaker", getContext().getSystem())
             .addOnOpenListener(this::notifyMeOnOpen);
   }
 
