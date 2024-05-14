@@ -24,7 +24,8 @@ public class DangerousJavaActor extends AbstractActor {
   private final LoggingAdapter log = Logging.getLogger(getContext().system(), this);
 
   public DangerousJavaActor() {
-    this.breaker = CircuitBreaker.lookup("dangerous-breaker", getContext().getSystem())
+    this.breaker =
+        CircuitBreaker.lookup("dangerous-breaker", getContext().getSystem())
             .addOnOpenListener(this::notifyMeOnOpen);
   }
 
@@ -73,5 +74,4 @@ public class DangerousJavaActor extends AbstractActor {
             Duration.ofMinutes(1));
     // #manual-construction
   }
-
 }

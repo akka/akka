@@ -10,7 +10,6 @@ import akka.actor.ReceiveTimeout;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
 import akka.pattern.CircuitBreaker;
-import java.time.Duration;
 
 public class TellPatternJavaActor extends AbstractActor {
 
@@ -20,7 +19,8 @@ public class TellPatternJavaActor extends AbstractActor {
 
   public TellPatternJavaActor(ActorRef targetActor) {
     this.target = targetActor;
-    this.breaker = CircuitBreaker.lookup("dangerous-breaker", getContext().getSystem())
+    this.breaker =
+        CircuitBreaker.lookup("dangerous-breaker", getContext().getSystem())
             .addOnOpenListener(this::notifyMeOnOpen);
   }
 
