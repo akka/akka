@@ -118,8 +118,7 @@ object CircuitBreakerDocSpec {
   object CircuitBreakingIntermediateActor {
     sealed trait Command
     case class Call(payload: String, replyTo: ActorRef[StatusReply[Done]]) extends Command
-    private case class OtherActorReply(reply: StatusReply[Done], originalReplyTo: ActorRef[StatusReply[Done]])
-        extends Command
+    private case class OtherActorReply(reply: Try[Done], originalReplyTo: ActorRef[StatusReply[Done]]) extends Command
     private case object BreakerOpen extends Command
 
     def apply(recipient: ActorRef[OtherActor.Command]): Behavior[Command] =
@@ -139,18 +138,15 @@ object CircuitBreakerDocSpec {
         Behaviors.receiveMessage {
           case Call(payload, replyTo) =>
             if (breaker.isClosed || breaker.isHalfOpen) {
-              context.ask(recipient, OtherActor.Call(payload, _)) {
-                case Success(value)     => OtherActorReply(value, replyTo)
-                case Failure(exception) => OtherActorReply(StatusReply.error(exception), replyTo)
-              }
+              context.askWithStatus(recipient, OtherActor.Call(payload, _))(OtherActorReply(_, replyTo))
             } else {
               replyTo ! StatusReply.error("Service unavailable")
             }
             Behaviors.same
-          case OtherActorReply(statusReply, originalReplyTo) =>
-            if (statusReply.isSuccess) breaker.succeed()
+          case OtherActorReply(reply, originalReplyTo) =>
+            if (reply.isSuccess) breaker.succeed()
             else breaker.fail()
-            originalReplyTo ! statusReply
+            originalReplyTo ! StatusReply.fromTry(reply)
             Behaviors.same
           case BreakerOpen =>
             context.log.warn("Circuit breaker open")
