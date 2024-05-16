@@ -18,7 +18,7 @@ import akka.persistence.typed.internal._
 import akka.util.unused
 
 /**
- * For Java 17 and newer, also see [[EventSourcedOnCommandBehavior]]
+ * For projects using Java 17 and newer, also see [[EventSourcedOnCommandBehavior]]
  */
 abstract class EventSourcedBehavior[Command, Event, State] private[akka] (
     val persistenceId: PersistenceId,

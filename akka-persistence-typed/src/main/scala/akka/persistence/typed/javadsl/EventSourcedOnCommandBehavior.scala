@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2023 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package akka.persistence.typed.javadsl
 
 import akka.actor.typed
@@ -21,8 +25,10 @@ import java.util.Collections
 import java.util.Optional
 
 /**
- * Behavior
- * For Java versions before 17, see [[EventSourcedBehavior]]
+ * Event sourced behavior for projects built with Java 17 or newer where message handling can be done
+ * using switch pattern match.
+ *
+ * For building event sourced actors with Java versions before 17, see [[EventSourcedBehavior]]
  */
 abstract class EventSourcedOnCommandBehavior[Command, Event, State](
     val persistenceId: PersistenceId,

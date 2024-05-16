@@ -4,23 +4,24 @@
 
 package akka.persistence.typed.javadsl
 
-import java.util.Optional
-
 import akka.actor.typed.BackoffSupervisorStrategy
 import akka.actor.typed.Behavior
 import akka.actor.typed.TypedActorContext
 import akka.annotation.InternalApi
 import akka.persistence.typed.internal.ReplicationContextImpl
 
+import java.util.Optional
+
 /**
- * Base class for replicated event sourced behaviors.
+ * Base class for replicated event sourced behaviors for projects built with Java 17 or newer where message handling
+ * can be done using switch pattern match.
  *
- * For projects using Java 17 and newer, also see [[EventSourcedOnCommandBehavior]]
+ * For building replicated event sourced actors with Java versions before 17, see [[ReplicatedEventSourcedBehavior]]
  */
-abstract class ReplicatedEventSourcedBehavior[Command, Event, State](
+abstract class ReplicatedEventSourcedOnCommandBehavior[Command, Event, State](
     replicationContext: ReplicationContext,
     onPersistFailure: Optional[BackoffSupervisorStrategy])
-    extends EventSourcedBehavior[Command, Event, State](replicationContext.persistenceId, onPersistFailure) {
+    extends EventSourcedOnCommandBehavior[Command, Event, State](replicationContext.persistenceId, onPersistFailure) {
 
   def this(replicationContext: ReplicationContext) = this(replicationContext, Optional.empty())
 
