@@ -324,6 +324,7 @@ lazy val persistenceTypedTests = akkaModule("akka-persistence-typed-tests")
     jackson % "test->test")
   .settings(AkkaBuild.mayChangeSettings)
   .settings(Dependencies.persistenceTypedTests)
+  .settings(JdkOptions.maybeJdk21PlusTests)
   .settings(javacOptions += "-parameters") // for Jackson
   .disablePlugins(MimaPlugin)
   .enablePlugins(NoPublish)
