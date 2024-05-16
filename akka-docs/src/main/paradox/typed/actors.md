@@ -427,10 +427,10 @@ To support this "direct" style, an alternative API for defining behavior in an o
 extending @javadoc[AbstractOnMessageBehavior](akka.actor.typed.javadsl.AbstractOnMessageBehavior) and
 implementing the @javadoc[onMessage](akka.actor.typed.javadsl.AbstractOnMessageBehavior#onMessage(T)) method.
 
-Here's the `AbstractOnMessageBehavior`-based implementation of the chat room protocol:
+Here's the `AbstractOnMessageBehavior`-based implementation of the chat room protocol using records for messages and Java 21 switch pattern matching:
 
 Java
-: @@snip [OnMessageIntroTest.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/OnMessageIntroTest.java) {  #chatroom-behavior }
+: @@snip [OnMessageIntroTest.java](/akka-actor-typed-tests/src/test/java-21+/jdocs21/akka/actor/typed/OnMessageIntroTest.java) {  #imports #chatroom-behavior }
 
 @@@
 
