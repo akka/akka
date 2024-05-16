@@ -4,6 +4,7 @@
 
 package akka.cluster.sharding
 
+import scala.collection.immutable
 import scala.collection.immutable.SortedSet
 import scala.util.Random
 
@@ -19,6 +20,7 @@ import akka.cluster.ClusterSettings
 import akka.cluster.Member
 import akka.cluster.MemberStatus
 import akka.cluster.UniqueAddress
+import akka.cluster.sharding.ShardRegion.ShardId
 import akka.testkit.AkkaSpec
 import akka.util.Version
 
@@ -71,6 +73,27 @@ class SliceRangeShardAllocationStrategySpec extends AkkaSpec {
     }
   }
 
+  private def sliceRanges(numberOfRanges: Int): immutable.IndexedSeq[Range] = {
+    val numberOfSlices = 1024
+    val rangeSize = numberOfSlices / numberOfRanges
+    require(
+      numberOfRanges * rangeSize == numberOfSlices,
+      s"numberOfRanges [$numberOfRanges] must be a whole number divisor of numberOfSlices [$numberOfSlices].")
+    (0 until numberOfRanges).map { i =>
+      (i * rangeSize until i * rangeSize + rangeSize)
+    }.toVector
+  }
+
+  private def numberOfSliceRangesPerRegion(
+      numberOfRanges: Int,
+      shardAllocations: Map[ActorRef, immutable.IndexedSeq[ShardId]]): Map[ActorRef, Int] = {
+    val ranges = sliceRanges(numberOfRanges)
+    shardAllocations.map {
+      case (region, shards) =>
+        region -> shards.map(s => ranges.find(_.contains(s.toInt)).get).toSet.size
+    }
+  }
+
   "SliceRangeShardAllocationStrategy" must {
     "allocate to regions" ignore { // FIXME
       val allocationStrategy = strategy()
@@ -103,12 +126,20 @@ class SliceRangeShardAllocationStrategySpec extends AkkaSpec {
           allocations = allocations.updated(region, allocations(region) :+ slice.toString)
         }
 
+        val rangesPerRegion8 = numberOfSliceRangesPerRegion(8, allocations)
+        val rangesPerRegion16 = numberOfSliceRangesPerRegion(16, allocations)
+
         allocations.toIndexedSeq
           .sortBy { case (_, shards) => if (shards.isEmpty) Int.MaxValue else shards.minBy(_.toInt).toInt }
           .foreach {
             case (region, shards) =>
-              println(s"# ${region.path.name}: ${shards.size} (${shards.sortBy(_.toInt).mkString(", ")})")
+              println(s"# ${region.path.name}: ${shards.size}, ${rangesPerRegion8(region)} of 8 ranges, " +
+              s"${rangesPerRegion16(region)} of 16 ranges \n    (${shards.sortBy(_.toInt).mkString(", ")})")
           }
+
+        println(s"total of ${rangesPerRegion8.valuesIterator.sum} connections from $N nodes to 8 backend ranges")
+        println(s"total of ${rangesPerRegion16.valuesIterator.sum} connections from $N nodes to 16 backend ranges")
+
         println("\n")
         println("\n")
       }
@@ -176,6 +207,11 @@ class SliceRangeShardAllocationStrategySpec extends AkkaSpec {
         allocations3 = allocations3.updated(region, allocations3(region) :+ s)
       }
 
+      val oldRangesPerRegion8 = numberOfSliceRangesPerRegion(8, allocations)
+      val oldRangesPerRegion16 = numberOfSliceRangesPerRegion(16, allocations)
+      val newRangesPerRegion8 = numberOfSliceRangesPerRegion(8, allocations3)
+      val newRangesPerRegion16 = numberOfSliceRangesPerRegion(16, allocations3)
+
       var totalSame3 = 0
       allocations.toIndexedSeq
         .sortBy { case (_, shards) => if (shards.isEmpty) Int.MaxValue else shards.minBy(_.toInt).toInt }
@@ -188,16 +224,21 @@ class SliceRangeShardAllocationStrategySpec extends AkkaSpec {
             totalSame3 += same.size
 
             println(s"# ${region.path.name}: ${shards.size}->${shards3.size}, +${added.size}, -${removed.size}")
-            println(s"## old ${region.path.name}: ${shards.size} (${shards.sortBy(_.toInt).mkString(", ")})")
-            println(s"## new ${region.path.name}: ${shards3.size} (${shards3.sortBy(_.toInt).mkString(", ")})")
+            println(
+              s"# old ${region.path.name}: ${shards.size}, ${oldRangesPerRegion8(region)} of 8 ranges, " +
+              s"${oldRangesPerRegion16(region)} of 16 ranges \n    (${shards.sortBy(_.toInt).mkString(", ")})")
+            println(
+              s"# new ${region.path.name}: ${shards3.size}, ${newRangesPerRegion8.getOrElse(region, 0)} of 8 ranges, " +
+              s"${newRangesPerRegion16.getOrElse(region, 0)} of 16 ranges \n    (${shards3.sortBy(_.toInt).mkString(", ")})")
             println("\n")
         }
       println(s"# ${newRegion.path.name}: 0->${allocations3(newRegion).size}, +${allocations3(newRegion).size}, -0")
       println(
         s"## new ${newRegion.path.name}: ${allocations3(newRegion).size} (${allocations3(newRegion).sortBy(_.toInt).mkString(", ")})")
       println(s"# $totalSame3 shards kept at same region after removing one and adding one member")
+      println(s"total of ${newRangesPerRegion8.valuesIterator.sum} connections from $N nodes to 8 backend ranges")
+      println(s"total of ${newRangesPerRegion16.valuesIterator.sum} connections from $N nodes to 16 backend ranges")
     }
-
 //    "allocate to mostly same regions when node is removed" in {
 //      val allocationStrategy = strategy()
 //      val allocations = emptyAllocationsABC
