@@ -5,6 +5,7 @@
 package akka
 
 import sbt._
+import sbt.Keys._
 import sbt.librarymanagement.SemanticSelector
 import sbt.librarymanagement.VersionNumber
 
@@ -21,6 +22,8 @@ object JdkOptions extends AutoPlugin {
     VersionNumber(specificationVersion).matchesSemVer(SemanticSelector(">=11"))
   val isJdk17orHigher: Boolean =
     VersionNumber(specificationVersion).matchesSemVer(SemanticSelector(">=17"))
+  val isJdk21orHigher: Boolean =
+    VersionNumber(specificationVersion).matchesSemVer(SemanticSelector(">=21"))
 
   if (!isJdk11orHigher)
     throw new IllegalArgumentException("JDK 11 or higher is required")
@@ -45,4 +48,13 @@ object JdkOptions extends AutoPlugin {
   }
 
   val targetJdkSettings = Seq(targetSystemJdk := false)
+
+  val maybeJdk21PlusTests: Seq[Def.Setting[_]] =
+    if (isJdk21orHigher)
+      Seq(
+        // following the scala-2.13, scala-3, ... convention
+        Test / unmanagedSourceDirectories += (Test / sourceDirectory).value / "java-21+",
+        // risks that a PR uses JDK 21 syntax in tests, but CI (on JDK 17 and 11) will catch that
+        Test / javacOptions ++= Seq("--release", "21"))
+    else Seq.empty
 }
