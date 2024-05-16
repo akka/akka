@@ -56,16 +56,16 @@ class SliceRangeShardAllocationStrategySpec extends AkkaSpec {
   private val emptyAllocationsABC: Map[ActorRef, Vector[String]] =
     Map(regionA -> Vector.empty, regionB -> Vector.empty, regionC -> Vector.empty)
 
-  private def strategy(rebalanceLimit: Int = 0) =
+  private def strategy() =
     // we don't really "start" it as we fake the cluster access
-    new SliceRangeShardAllocationStrategy(rebalanceLimit) {
+    new SliceRangeShardAllocationStrategy(10, 0.1) {
       override protected def clusterState: ClusterEvent.CurrentClusterState =
         CurrentClusterState(SortedSet(memberA, memberB, memberC))
       override protected def selfMember: Member = memberA
     }
 
   private def createAllocationStrategy(members: IndexedSeq[Member]) = {
-    new SliceRangeShardAllocationStrategy(0) {
+    new SliceRangeShardAllocationStrategy(10, 0.1) {
       override protected def clusterState: CurrentClusterState =
         CurrentClusterState(SortedSet(members: _*))
 
@@ -145,7 +145,7 @@ class SliceRangeShardAllocationStrategySpec extends AkkaSpec {
       }
     }
 
-    "try rebalance impact" in {
+    "try member change impact" in {
       val N = 50
       println(s"# N=$N")
       val members = (1 to N).map(n => newUpMember(s"127.0.0.$n", upNbr = n))
@@ -163,7 +163,6 @@ class SliceRangeShardAllocationStrategySpec extends AkkaSpec {
 
       // remove one member, pick one in the middle
       println("\nRemoving one member\n")
-      // FIXME not really using rebalance for this yet
       val members2 = members.filterNot(_ == members(regions.size / 2))
       val removedRegion = regions(regions.size / 2)
       val removedShards = allocations(removedRegion)
@@ -195,7 +194,6 @@ class SliceRangeShardAllocationStrategySpec extends AkkaSpec {
 
       // remove one and add one member
       println("\nAdding one member\n")
-      // FIXME not really using rebalance for this yet
       val n = members.last.upNumber + 1
       val newMember = newUpMember(s"127.0.0.$n", upNbr = n)
       val members3 = members2 :+ newMember
@@ -239,6 +237,74 @@ class SliceRangeShardAllocationStrategySpec extends AkkaSpec {
       println(s"total of ${newRangesPerRegion8.valuesIterator.sum} connections from $N nodes to 8 backend ranges")
       println(s"total of ${newRangesPerRegion16.valuesIterator.sum} connections from $N nodes to 16 backend ranges")
     }
+
+    "try rebalance impact" in {
+      val N = 10
+      println(s"# N=$N")
+      val members = (1 to N).map(n => newUpMember(s"127.0.0.$n", upNbr = n))
+      val regions = members.map(m => newFakeRegion(s"region${m.upNumber}", m))
+      val strategy = createAllocationStrategy(members)
+      var allocations = regions.map(_ -> Vector.empty[String]).toMap
+
+      val rnd = new Random
+      val slices = rnd.shuffle((0 to 1023).toVector)
+
+      slices.foreach { slice =>
+        val region = strategy.allocateShard(regionA, slice.toString, allocations).futureValue
+        allocations = allocations.updated(region, allocations(region) :+ slice.toString)
+      }
+
+      // add one member
+      println("\nAdding one member\n")
+      val n = members.last.upNumber + 1
+      val newMember = newUpMember(s"127.0.0.$n", upNbr = n)
+      val members3 = members :+ newMember
+      val newRegion = newFakeRegion(s"region${newMember.upNumber}", newMember)
+      var allocations3 = allocations + (newRegion -> Vector.empty)
+      val strategy3 = createAllocationStrategy(members3)
+
+      val rebalancedShards = strategy3.rebalance(allocations3, Set.empty).futureValue
+      println(s"rebalancing shards ${rebalancedShards.toSeq.sortBy(_.toInt).mkString(", ")}")
+      allocations3 = allocations3.map { case (region, shards) => region -> shards.filterNot(rebalancedShards.contains) }
+
+      rebalancedShards.foreach { s =>
+        val region = strategy3.allocateShard(regionA, s, allocations3).futureValue
+        allocations3 = allocations3.updated(region, allocations3(region) :+ s)
+      }
+
+      val oldRangesPerRegion8 = numberOfSliceRangesPerRegion(8, allocations)
+      val oldRangesPerRegion16 = numberOfSliceRangesPerRegion(16, allocations)
+      val newRangesPerRegion8 = numberOfSliceRangesPerRegion(8, allocations3)
+      val newRangesPerRegion16 = numberOfSliceRangesPerRegion(16, allocations3)
+
+      var totalSame3 = 0
+      allocations.toIndexedSeq
+        .sortBy { case (_, shards) => if (shards.isEmpty) Int.MaxValue else shards.minBy(_.toInt).toInt }
+        .foreach {
+          case (region, shards) =>
+            val shards3 = allocations3.getOrElse(region, Vector.empty)
+            val removed = shards.diff(shards3)
+            val added = shards3.diff(shards)
+            val same = shards.intersect(shards3)
+            totalSame3 += same.size
+
+            println(s"# ${region.path.name}: ${shards.size}->${shards3.size}, +${added.size}, -${removed.size}")
+            println(
+              s"# old ${region.path.name}: ${shards.size}, ${oldRangesPerRegion8(region)} of 8 ranges, " +
+              s"${oldRangesPerRegion16(region)} of 16 ranges \n    (${shards.sortBy(_.toInt).mkString(", ")})")
+            println(
+              s"# new ${region.path.name}: ${shards3.size}, ${newRangesPerRegion8.getOrElse(region, 0)} of 8 ranges, " +
+              s"${newRangesPerRegion16.getOrElse(region, 0)} of 16 ranges \n    (${shards3.sortBy(_.toInt).mkString(", ")})")
+            println("\n")
+        }
+      println(s"# ${newRegion.path.name}: 0->${allocations3(newRegion).size}, +${allocations3(newRegion).size}, -0")
+      println(
+        s"## new ${newRegion.path.name}: ${allocations3(newRegion).size} (${allocations3(newRegion).sortBy(_.toInt).mkString(", ")})")
+      println(s"# $totalSame3 shards kept at same region after adding one member and rebalance")
+      println(s"total of ${newRangesPerRegion8.valuesIterator.sum} connections from $N nodes to 8 backend ranges")
+      println(s"total of ${newRangesPerRegion16.valuesIterator.sum} connections from $N nodes to 16 backend ranges")
+    }
+
 //    "allocate to mostly same regions when node is removed" in {
 //      val allocationStrategy = strategy()
 //      val allocations = emptyAllocationsABC

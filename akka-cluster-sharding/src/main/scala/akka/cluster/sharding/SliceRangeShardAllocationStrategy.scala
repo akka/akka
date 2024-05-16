@@ -9,24 +9,33 @@ import scala.collection.immutable
 import scala.concurrent.Future
 
 import akka.actor.ActorRef
-import akka.actor.ActorRefScope
 import akka.actor.ActorSystem
-import akka.actor.MinimalActorRef
 import akka.cluster.Cluster
 import akka.cluster.ClusterEvent.CurrentClusterState
 import akka.cluster.Member
 import akka.cluster.sharding.ShardCoordinator.ActorSystemDependentAllocationStrategy
 import akka.cluster.sharding.ShardRegion.ShardId
 import akka.cluster.sharding.internal.ClusterShardAllocationMixin
+import akka.cluster.sharding.internal.ClusterShardAllocationMixin.RegionEntry
+import akka.cluster.sharding.internal.ClusterShardAllocationMixin.ShardSuitabilityOrdering
 
 object SliceRangeShardAllocationStrategy {
   // Not using Persistence because akka-persistence dependency could be optional
-  val NumberOfSlices = 1024
+  private val NumberOfSlices = 1024
+
+  private val emptyRebalanceResult = Future.successful(Set.empty[ShardId])
 
   final class ShardBySliceMessageExtractor // FIXME
 }
 
-class SliceRangeShardAllocationStrategy(rebalanceLimit: Int)
+/**
+ * It will not rebalance when there is already an ongoing rebalance in progress.
+ *
+ * @param absoluteLimit the maximum number of shards that will be rebalanced in one rebalance round
+ * @param relativeLimit fraction (< 1.0) of total number of (known) shards that will be rebalanced
+ *                      in one rebalance round
+ */
+class SliceRangeShardAllocationStrategy(absoluteLimit: Int, relativeLimit: Double)
     extends ActorSystemDependentAllocationStrategy
     with ClusterShardAllocationMixin {
   import SliceRangeShardAllocationStrategy._
@@ -52,6 +61,8 @@ class SliceRangeShardAllocationStrategy(rebalanceLimit: Int)
     val maxShards = (NumberOfSlices / currentShardAllocations.size) + overfill
     val regionWithNeighbor = findRegionWithNeighbor(slice, maxShards, currentShardAllocations)
 
+    // FIXME take a look at ShardSuitabilityOrdering for member status and appVersion preference
+
     Future.successful(regionWithNeighbor.getOrElse(allocateWithoutNeighbor(slice, currentShardAllocations)))
   }
 
@@ -60,7 +71,7 @@ class SliceRangeShardAllocationStrategy(rebalanceLimit: Int)
       currentShardAllocations: Map[ActorRef, IndexedSeq[ShardId]]): ActorRef = {
 
     // sort regions by member age because if a node is added (random address) we don't want rebalance more than necessary
-    val regionsByMbr = regionsByMember(currentShardAllocations.keySet)
+    val regionsByMbr = regionEntriesFor(currentShardAllocations).map(entry => entry.member -> entry.region).toMap
     val regions = regionsByMbr.keysIterator.toIndexedSeq.sorted(Member.ageOrdering).map(regionsByMbr(_))
 
     // first look for an empty region (e.g. rolling update case)
@@ -84,8 +95,93 @@ class SliceRangeShardAllocationStrategy(rebalanceLimit: Int)
   override def rebalance(
       currentShardAllocations: Map[ActorRef, IndexedSeq[ShardId]],
       rebalanceInProgress: Set[ShardId]): Future[Set[ShardId]] = {
-    println(s"# $rebalanceLimit") // FIXME
-    ???
+    import math.max
+    import math.min
+
+    // This is the same rebalance algorithm as in LeastShardAllocationStrategy, but it picks shards
+    // in s different preferred order
+
+    // FIXME I think this algo is too exact, expecting just 1 diff from optimal.
+    // FIXME Risk that the rebalanced shards end up at the same place and we have a loop without value.
+
+    def limit(numberOfShards: Int): Int =
+      max(1, min((relativeLimit * numberOfShards).toInt, absoluteLimit))
+
+    def rebalancePhase1(
+        numberOfShards: Int,
+        optimalPerRegion: Int,
+        sortedEntries: Iterable[RegionEntry]): Set[ShardId] = {
+      val selected = Vector.newBuilder[ShardId]
+      sortedEntries.foreach {
+        case RegionEntry(_, _, shardIds) =>
+          if (shardIds.size > optimalPerRegion) {
+            // Since we prefer contiguous ranges we pick shards to rebalance from lower and upper slices
+            val sortedShardIds = shardIds.sortBy(_.toInt)
+            val (lowerHalf, upperHalf) = sortedShardIds.iterator.splitAt(sortedShardIds.size / 2)
+            val preferredOrder = lowerHalf.zipAll(upperHalf.toList.reverse, "", "").flatMap {
+              case (a, "") => a :: Nil
+              case ("", b) => b :: Nil
+              case (a, b)  => a :: b :: Nil
+            }
+
+            selected ++= preferredOrder.take(shardIds.size - optimalPerRegion)
+          }
+      }
+      val result = selected.result()
+      result.take(limit(numberOfShards)).toSet
+    }
+
+    def rebalancePhase2(
+        numberOfShards: Int,
+        optimalPerRegion: Int,
+        sortedEntries: Iterable[RegionEntry]): Future[Set[ShardId]] = {
+      // In the first phase the optimalPerRegion is rounded up, and depending on number of shards per region and number
+      // of regions that might not be the exact optimal.
+      // In second phase we look for diff of >= 2 below optimalPerRegion and rebalance that number of shards.
+      val countBelowOptimal =
+        sortedEntries.iterator.map(entry => max(0, (optimalPerRegion - 1) - entry.shardIds.size)).sum
+      if (countBelowOptimal == 0) {
+        emptyRebalanceResult
+      } else {
+        val selected = Vector.newBuilder[ShardId]
+        sortedEntries.foreach {
+          case RegionEntry(_, _, shardIds) =>
+            if (shardIds.size >= optimalPerRegion) {
+              selected += shardIds.maxBy(_.toInt)
+            }
+        }
+        val result = selected.result().take(min(countBelowOptimal, limit(numberOfShards))).toSet
+        Future.successful(result)
+      }
+    }
+
+    if (rebalanceInProgress.nonEmpty) {
+      // one rebalance at a time
+      emptyRebalanceResult
+    } else {
+      val sortedRegionEntries = regionEntriesFor(currentShardAllocations).toVector.sorted(ShardSuitabilityOrdering)
+      if (!isAGoodTimeToRebalance(sortedRegionEntries)) {
+        emptyRebalanceResult
+      } else {
+        val numberOfShards = sortedRegionEntries.map(_.shardIds.size).sum
+        val numberOfRegions = sortedRegionEntries.size
+        if (numberOfRegions == 0 || numberOfShards == 0) {
+          emptyRebalanceResult
+        } else {
+          val optimalPerRegion = numberOfShards / numberOfRegions + (if (numberOfShards % numberOfRegions == 0) 0
+                                                                     else 1)
+
+          val result1 = rebalancePhase1(numberOfShards, optimalPerRegion, sortedRegionEntries)
+
+          if (result1.nonEmpty) {
+            Future.successful(result1)
+          } else {
+            rebalancePhase2(numberOfShards, optimalPerRegion, sortedRegionEntries)
+          }
+        }
+      }
+    }
+
   }
 
   private def findRegionWithNeighbor(
@@ -129,19 +225,6 @@ class SliceRangeShardAllocationStrategy(rebalanceLimit: Int)
           region
       }
     }
-  }
-
-  def regionsByMember(regions: Set[ActorRef]): Map[Member, ActorRef] = {
-    val membersByAddress = clusterState.members.iterator.map(m => m.address -> m).toMap
-    regions.iterator.flatMap { ref =>
-      ref match {
-        case refScope: ActorRefScope if refScope.isLocal && !ref.isInstanceOf[MinimalActorRef] =>
-          // test is using MinimalActorRef
-          Some(selfMember -> ref)
-        case _ =>
-          membersByAddress.get(ref.path.address).map(_ -> ref)
-      }
-    }.toMap
   }
 
 }
