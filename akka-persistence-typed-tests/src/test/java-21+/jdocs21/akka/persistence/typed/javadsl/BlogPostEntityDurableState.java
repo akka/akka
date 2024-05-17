@@ -15,16 +15,21 @@ import akka.persistence.typed.state.javadsl.*;
 public class BlogPostEntityDurableState
     extends DurableStateOnCommandBehavior<
         BlogPostEntityDurableState.Command, BlogPostEntityDurableState.State> {
-  // commands and state as in above snippets
 
-  // #behavior
+  public sealed interface Command {}
 
-  // #state
-  sealed interface State {}
+  public record AddPost(PostContent content, ActorRef<AddPostDone> replyTo) implements Command {}
+  public record GetPost(ActorRef<PostContent> replyTo) implements Command {}
+  public record ChangeBody(String newBody, ActorRef<Done> replyTo) implements Command {}
+  public record Publish(ActorRef<Done> replyTo) implements Command {}
+  public record PostContent(String postId, String title, String body) implements Command {}
+  // reply
+  public record AddPostDone(String postId) {}
 
-  enum BlankState implements State {
-    INSTANCE
-  }
+
+  public sealed interface State {}
+
+  public record BlankState() implements State {}
 
   public record DraftState(PostContent content) implements State {
     DraftState withContent(PostContent newContent) {
@@ -49,23 +54,7 @@ public class BlogPostEntityDurableState
       return content.postId;
     }
   }
-  // #state
 
-  // #commands
-  public sealed interface Command {}
-  // #reply-command
-  public record AddPost(PostContent content, ActorRef<AddPostDone> replyTo) implements Command {}
-
-  public record AddPostDone(String postId) implements Command {}
-
-  // #reply-command
-  public record GetPost(ActorRef<PostContent> replyTo) implements Command {}
-  public record ChangeBody(String newBody, ActorRef<Done> replyTo) implements Command {}
-  public record Publish(ActorRef<Done> replyTo) implements Command {}
-  public record PostContent(String postId, String title, String body) implements Command {}
-  // #commands
-
-  // #behavior
   public static Behavior<Command> create(String entityId, PersistenceId persistenceId) {
     return Behaviors.setup(
         context -> {
@@ -80,13 +69,8 @@ public class BlogPostEntityDurableState
 
   @Override
   public State emptyState() {
-    return BlankState.INSTANCE;
+    return new BlankState();
   }
-
-  // #behavior
-
-  // #command-handler
-
 
   @Override
   public Effect<State> onCommand(State state, Command command) {
@@ -151,9 +135,5 @@ public class BlogPostEntityDurableState
     cmd.replyTo.tell(state.content);
     return Effect().none();
   }
-  // #command-handler
-
-  // #behavior
-  // commandHandler, eventHandler as in above snippets
 }
-  // #behavior
+// #behavior
