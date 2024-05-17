@@ -100,7 +100,7 @@ class SliceRangeShardAllocationStrategySpec extends AkkaSpec {
 
     def rndSeed: Long = System.currentTimeMillis()
 
-    private val rnd = new Random(rndSeed)
+    val rnd = new Random(rndSeed)
 
     private var members: Vector[Member] =
       (1 to initialNumberOfMembers).map(n => newUpMember(s"127.0.0.$n", upNbr = n)).toVector
@@ -119,6 +119,8 @@ class SliceRangeShardAllocationStrategySpec extends AkkaSpec {
 
     private var strategy = createAllocationStrategy(members)
 
+    def numberOfMembers: Int = members.size
+
     def allocateAll(): Map[ActorRef, Vector[ShardId]] =
       allocate(allSlices)
 
@@ -131,6 +133,13 @@ class SliceRangeShardAllocationStrategySpec extends AkkaSpec {
       if (oldAllocations.isEmpty)
         oldAllocations = allocations
       allocations
+    }
+
+    def allocateMissingSlices(atMost: Int): Map[ActorRef, Vector[ShardId]] = {
+      val allocatedSlices = allocations.valuesIterator.flatten.map(_.toInt).toSeq
+      val missingSlices = allSlices.diff(allocatedSlices)
+      val allocateSlices = rnd.shuffle(missingSlices).take(atMost)
+      allocate(allocateSlices, shuffle = false)
     }
 
     def rebalance(): Vector[Int] = {
@@ -153,8 +162,9 @@ class SliceRangeShardAllocationStrategySpec extends AkkaSpec {
     def addMember(): Unit = {
       val n = members.last.upNumber + 1
       val newMember = newUpMember(s"127.0.0.$n", upNbr = n)
-      members = members :+ newMember
+      members :+= newMember
       val newRegion = newFakeRegion(s"region${newMember.upNumber}", newMember)
+      regions :+= newRegion
       allocations = allocations.updated(newRegion, Vector.empty)
       strategy = createAllocationStrategy(members)
     }
@@ -186,7 +196,7 @@ class SliceRangeShardAllocationStrategySpec extends AkkaSpec {
         .sortBy { case (_, shards) => if (shards.isEmpty) Int.MaxValue else shards.minBy(_.toInt).toInt }
         .foreach {
           case (region, shards) =>
-            val deltaFromOptimal = shards.size - optimalSize
+            val deltaFromOptimal = if (allocations.contains(region)) shards.size - optimalSize else 0.0
             varianceSum += deltaFromOptimal * deltaFromOptimal
 
             if (hasOldAllocations) {
@@ -231,7 +241,7 @@ class SliceRangeShardAllocationStrategySpec extends AkkaSpec {
         "to 8 backend ranges")
       println(
         s"total of ${rangesPerRegion16.valuesIterator.sum} connections from ${allocations.size} nodes " +
-        "to 8 backend ranges")
+        "to 16 backend ranges")
     }
 
   }
@@ -299,6 +309,42 @@ class SliceRangeShardAllocationStrategySpec extends AkkaSpec {
         setup.allocate(rebalancedSlices)
       }
       setup.printAllocations(verbose = false)
+    }
+
+    "try simulation" in new Setup {
+      info(s"rnd seed $rndSeed")
+
+      override def initialNumberOfMembers: Int = 10 + rnd.nextInt(90)
+
+      allocateAll()
+
+      (1 to 100).foreach { _ =>
+        rnd.nextInt(21) match {
+          case 0 =>
+            addMember()
+          case 1 =>
+            removeMember(rnd.nextInt(numberOfMembers))
+          case 2 =>
+            removeMember(rnd.nextInt(numberOfMembers))
+            addMember()
+          case n if 3 <= n && n <= 12 =>
+            allocateMissingSlices(rnd.nextInt(10))
+          case n if 13 <= n && n <= 20 =>
+            val rebalancedSlices = rebalance()
+            allocate(rebalancedSlices)
+        }
+      }
+
+      allocateMissingSlices(1024)
+
+      (1 to 100).foreach { n =>
+        val rebalancedSlices = rebalance()
+        println(s"rebalance #$n: ${rebalancedSlices.sorted}")
+        allocate(rebalancedSlices)
+      }
+
+      printAllocations(verbose = false)
+
     }
 
 //    "allocate to mostly same regions when node is removed" in {
