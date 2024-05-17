@@ -94,9 +94,7 @@ class SliceRangeShardAllocationStrategySpec extends AkkaSpec {
     }
   }
 
-  abstract class Setup {
-
-    def initialNumberOfMembers: Int
+  class Setup(initialNumberOfMembers: Int) {
 
     def rndSeed: Long = System.currentTimeMillis()
 
@@ -265,9 +263,9 @@ class SliceRangeShardAllocationStrategySpec extends AkkaSpec {
     // FIXME just temporary playground
     "try distributions" in {
       (1 to 100).foreach { N =>
-        val setup = new Setup {
-          override def initialNumberOfMembers: Int = N
-        }
+        val setup = new Setup(N)
+
+        info(s"rnd seed ${setup.rndSeed}")
 
         println(s"# N=$N")
         setup.allocateAll()
@@ -278,43 +276,34 @@ class SliceRangeShardAllocationStrategySpec extends AkkaSpec {
       }
     }
 
-    "try member change impact" in {
-      val N = 50
-      val setup = new Setup {
-        override def initialNumberOfMembers: Int = N
-      }
-
-      println(s"# N=$N")
-      setup.allocateAll()
-
-      // remove one and add one member, pick one in the middle
-      val removedSlices = setup.removeMember(N / 2)
-      setup.addMember()
-      setup.allocate(removedSlices)
-      setup.printAllocations()
-    }
-
-    "try rebalance impact" in {
-      val N = 50
-      val setup = new Setup {
-        override def initialNumberOfMembers: Int = N
-      }
-      println(s"# N=$N")
-      setup.allocateAll()
-
-      setup.addMember()
-      (1 to 100).foreach { n =>
-        val rebalancedSlices = setup.rebalance()
-        println(s"rebalance #$n: ${rebalancedSlices.sorted}")
-        setup.allocate(rebalancedSlices)
-      }
-      setup.printAllocations(verbose = false)
-    }
-
-    "try simulation" in new Setup {
+    "try member change impact" in new Setup(50) {
       info(s"rnd seed $rndSeed")
 
-      override def initialNumberOfMembers: Int = 10 + rnd.nextInt(90)
+      allocateAll()
+
+      // remove one and add one member, pick one in the middle
+      val removedSlices = removeMember(numberOfMembers / 2)
+      addMember()
+      allocate(removedSlices)
+      printAllocations()
+    }
+
+    "try rebalance impact" in new Setup(50) {
+      info(s"rnd seed $rndSeed")
+
+      allocateAll()
+
+      addMember()
+      (1 to 100).foreach { n =>
+        val rebalancedSlices = rebalance()
+        println(s"rebalance #$n: ${rebalancedSlices.sorted}")
+        allocate(rebalancedSlices)
+      }
+      printAllocations(verbose = false)
+    }
+
+    "try simulation" in new Setup(100) {
+      info(s"rnd seed $rndSeed")
 
       allocateAll()
 

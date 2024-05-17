@@ -59,14 +59,45 @@ class SliceRangeShardAllocationStrategy(absoluteLimit: Int, relativeLimit: Doubl
     if (slice >= NumberOfSlices)
       throw new IllegalArgumentException("slice must be between 0 and 1023. Use `ShardBySliceMessageExtractor`.")
 
-    // allow some overfill, rebalance will try to
+    // allow some overfill, rebalance will try to move from the lower/upper slices
     val overfill = 2
     val maxShards = (NumberOfSlices / currentShardAllocations.size) + overfill
-    val regionWithNeighbor = findRegionWithNeighbor(slice, maxShards, currentShardAllocations)
 
     // FIXME take a look at ShardSuitabilityOrdering for member status and appVersion preference
 
-    Future.successful(regionWithNeighbor.getOrElse(allocateWithoutNeighbor(slice, currentShardAllocations)))
+    findRegionWithNeighbor(slice, maxShards, currentShardAllocations) match {
+      case Some(regionWithNeighbor) =>
+        val neighborShards = currentShardAllocations(regionWithNeighbor)
+        if (neighborShards.size >= NumberOfSlices / currentShardAllocations.size - 2) {
+          // close to max slices, if the slice is at the boundary, look for a region with lower/upper neighbor slice
+          // and compare that as alternative, use the one with least number of slices
+          val neighborSlices = neighborShards.map(_.toInt)
+          val alternative =
+            if (neighborSlices.min > slice)
+              findRegionWithLowerNeighbor(slice, maxShards, currentShardAllocations)
+            else if (neighborSlices.max < slice)
+              findRegionWithUpperNeighbor(slice, maxShards, currentShardAllocations)
+            else
+              None
+
+          val selectedRegion =
+            alternative match {
+              case Some(alternativeRegion) =>
+                if (neighborShards.size >= currentShardAllocations(alternativeRegion).size)
+                  regionWithNeighbor
+                else
+                  alternativeRegion
+              case None =>
+                regionWithNeighbor
+            }
+          Future.successful(selectedRegion)
+
+        } else {
+          Future.successful(regionWithNeighbor)
+        }
+      case None =>
+        Future.successful(allocateWithoutNeighbor(slice, currentShardAllocations))
+    }
   }
 
   private def allocateWithoutNeighbor(
@@ -164,6 +195,48 @@ class SliceRangeShardAllocationStrategy(absoluteLimit: Int, relativeLimit: Doubl
               case None =>
                 find(delta + 1)
             }
+        }
+      }
+    }
+
+    find(delta = 1)
+  }
+
+  private def findRegionWithLowerNeighbor(
+      slice: Int,
+      maxShards: Int,
+      currentShardAllocations: Map[ActorRef, immutable.IndexedSeq[ShardId]]): Option[ActorRef] = {
+    val maxDelta = 10
+
+    @tailrec def find(delta: Int): Option[ActorRef] = {
+      if (delta == maxDelta)
+        None
+      else {
+        findRegionWithNeighbor(slice, -delta, maxShards, currentShardAllocations) match {
+          case found @ Some(_) => found
+          case None =>
+            find(delta + 1)
+        }
+      }
+    }
+
+    find(delta = 1)
+  }
+
+  private def findRegionWithUpperNeighbor(
+      slice: Int,
+      maxShards: Int,
+      currentShardAllocations: Map[ActorRef, immutable.IndexedSeq[ShardId]]): Option[ActorRef] = {
+    val maxDelta = 10
+
+    @tailrec def find(delta: Int): Option[ActorRef] = {
+      if (delta == maxDelta)
+        None
+      else {
+        findRegionWithNeighbor(slice, delta, maxShards, currentShardAllocations) match {
+          case found @ Some(_) => found
+          case None =>
+            find(delta + 1)
         }
       }
     }
