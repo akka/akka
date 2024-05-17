@@ -94,6 +94,139 @@ class SliceRangeShardAllocationStrategySpec extends AkkaSpec {
     }
   }
 
+  abstract class Setup {
+
+    def initialNumberOfMembers: Int
+
+    def rndSeed: Long = System.currentTimeMillis()
+
+    private val rnd = new Random(rndSeed)
+
+    private var members: Vector[Member] =
+      (1 to initialNumberOfMembers).map(n => newUpMember(s"127.0.0.$n", upNbr = n)).toVector
+
+    private var regions: Vector[ActorRef] =
+      members.map(m => newFakeRegion(s"region${m.upNumber}", m))
+
+    private var allocations: Map[ActorRef, Vector[ShardId]] =
+      regions.map(_ -> Vector.empty[String]).toMap
+
+    private var oldAllocations: Map[ActorRef, Vector[ShardId]] =
+      Map.empty
+
+    private val allSlices: Vector[Int] =
+      (0 to 1023).toVector
+
+    private var strategy = createAllocationStrategy(members)
+
+    def allocateAll(): Map[ActorRef, Vector[ShardId]] =
+      allocate(allSlices)
+
+    def allocate(slices: Vector[Int], shuffle: Boolean = true): Map[ActorRef, Vector[ShardId]] = {
+      val shuffledSlices = if (shuffle) rnd.shuffle(slices) else slices
+      shuffledSlices.foreach { slice =>
+        val region = strategy.allocateShard(regionA, slice.toString, allocations).futureValue
+        allocations = allocations.updated(region, allocations(region) :+ slice.toString)
+      }
+      if (oldAllocations.isEmpty)
+        oldAllocations = allocations
+      allocations
+    }
+
+    def rebalance(): Vector[Int] = {
+      val rebalancedShards = strategy.rebalance(allocations, Set.empty).futureValue
+      allocations = allocations.map { case (region, shards) => region -> shards.filterNot(rebalancedShards.contains) }
+      rebalancedShards.map(_.toInt).toVector
+    }
+
+    def removeMember(i: Int): Vector[Int] = {
+      val member = members(i)
+      members = members.filterNot(_ == member)
+      val region = regions(i)
+      regions = regions.filterNot(_ == region)
+      val removedShards = allocations(region)
+      allocations = allocations - region
+      strategy = createAllocationStrategy(members)
+      removedShards.map(_.toInt)
+    }
+
+    def addMember(): Unit = {
+      val n = members.last.upNumber + 1
+      val newMember = newUpMember(s"127.0.0.$n", upNbr = n)
+      members = members :+ newMember
+      val newRegion = newFakeRegion(s"region${newMember.upNumber}", newMember)
+      allocations = allocations.updated(newRegion, Vector.empty)
+      strategy = createAllocationStrategy(members)
+    }
+
+    private def sort(shards: Vector[ShardId]): Vector[Int] =
+      shards.map(_.toInt).sorted
+
+    def printAllocations(verbose: Boolean = true): Unit = {
+      val rangesPerRegion8 = numberOfSliceRangesPerRegion(8, allocations)
+      val rangesPerRegion16 = numberOfSliceRangesPerRegion(16, allocations)
+      val hasOldAllocations = oldAllocations.nonEmpty && (oldAllocations ne allocations)
+      val oldRangesPerRegion8 = numberOfSliceRangesPerRegion(8, oldAllocations)
+      val oldRangesPerRegion16 = numberOfSliceRangesPerRegion(16, oldAllocations)
+
+      var totalSame = 0
+      //also add old allocations to new allocations, but with empty shards
+      val allocationsWithEmptyOldEntries =
+        if (hasOldAllocations) {
+          allocations ++ oldAllocations.iterator.collect {
+            case (region, _) if !allocations.contains(region) =>
+              region -> Vector.empty[String]
+          }
+        } else
+          allocations
+
+      allocationsWithEmptyOldEntries.toIndexedSeq
+        .sortBy { case (_, shards) => if (shards.isEmpty) Int.MaxValue else shards.minBy(_.toInt).toInt }
+        .foreach {
+          case (region, shards) =>
+            if (hasOldAllocations) {
+              val oldShards = oldAllocations.getOrElse(region, Vector.empty)
+              val added = shards.diff(oldShards)
+              val removed = oldShards.diff(shards)
+              val same = shards.intersect(oldShards)
+              totalSame += same.size
+
+              println(s"${region.path.name}: ${oldShards.size}->${shards.size}, +${added.size}, -${removed.size}")
+              if (verbose) {
+                println(s"old ${region.path.name}: ${oldShards.size}, ${oldRangesPerRegion8.getOrElse(region, 0)} of 8 ranges, " +
+                s"${oldRangesPerRegion16.getOrElse(region, 0)} of 16 ranges \n    (${sort(oldShards).mkString(", ")})")
+                println(
+                  s"new ${region.path.name}: ${shards.size}, ${rangesPerRegion8.getOrElse(region, 0)} of 8 ranges, " +
+                  s"${rangesPerRegion16.getOrElse(region, 0)} of 16 ranges \n    (${sort(shards).mkString(", ")})")
+              }
+            } else if (verbose) {
+              println(
+                s"${region.path.name}: ${shards.size}, ${rangesPerRegion8.getOrElse(region, 0)} of 8 ranges, " +
+                s"${rangesPerRegion16.getOrElse(region, 0)} of 16 ranges \n    (${sort(shards).mkString(", ")})")
+            } else {
+              println(s"${region.path.name}: ${shards.size}")
+            }
+        }
+
+      if (hasOldAllocations) {
+        println(s"$totalSame shards kept at same region")
+        println(
+          s"old total of ${oldRangesPerRegion8.valuesIterator.sum} connections from ${oldAllocations.size} nodes " +
+          "to 8 backend ranges")
+        println(
+          s"old total of ${oldRangesPerRegion16.valuesIterator.sum} connections from ${oldAllocations.size} nodes " +
+          "to 16 backend ranges")
+      }
+      println(
+        s"total of ${rangesPerRegion8.valuesIterator.sum} connections from ${allocations.size} nodes " +
+        "to 8 backend ranges")
+      println(
+        s"total of ${rangesPerRegion16.valuesIterator.sum} connections from ${allocations.size} nodes " +
+        "to 8 backend ranges")
+    }
+
+  }
+
   "SliceRangeShardAllocationStrategy" must {
     "allocate to regions" ignore { // FIXME
       val allocationStrategy = strategy()
@@ -113,32 +246,13 @@ class SliceRangeShardAllocationStrategySpec extends AkkaSpec {
     // FIXME just temporary playground
     "try distributions" in {
       (1 to 100).foreach { N =>
-        println(s"# N=$N")
-        val members = (1 to N).map(n => newUpMember(s"127.0.0.$n", upNbr = n))
-        val regions = members.map(m => newFakeRegion(s"region${m.upNumber}", m))
-        val strategy = createAllocationStrategy(members)
-        var allocations = regions.map(_ -> Vector.empty[String]).toMap
-
-        val rnd = new Random
-        val slices = rnd.shuffle((0 to 1023).toVector)
-        slices.foreach { slice =>
-          val region = strategy.allocateShard(regionA, slice.toString, allocations).futureValue
-          allocations = allocations.updated(region, allocations(region) :+ slice.toString)
+        val setup = new Setup {
+          override def initialNumberOfMembers: Int = N
         }
 
-        val rangesPerRegion8 = numberOfSliceRangesPerRegion(8, allocations)
-        val rangesPerRegion16 = numberOfSliceRangesPerRegion(16, allocations)
-
-        allocations.toIndexedSeq
-          .sortBy { case (_, shards) => if (shards.isEmpty) Int.MaxValue else shards.minBy(_.toInt).toInt }
-          .foreach {
-            case (region, shards) =>
-              println(s"# ${region.path.name}: ${shards.size}, ${rangesPerRegion8(region)} of 8 ranges, " +
-              s"${rangesPerRegion16(region)} of 16 ranges \n    (${shards.sortBy(_.toInt).mkString(", ")})")
-          }
-
-        println(s"total of ${rangesPerRegion8.valuesIterator.sum} connections from $N nodes to 8 backend ranges")
-        println(s"total of ${rangesPerRegion16.valuesIterator.sum} connections from $N nodes to 16 backend ranges")
+        println(s"# N=$N")
+        setup.allocateAll()
+        setup.printAllocations()
 
         println("\n")
         println("\n")
@@ -147,162 +261,35 @@ class SliceRangeShardAllocationStrategySpec extends AkkaSpec {
 
     "try member change impact" in {
       val N = 50
+      val setup = new Setup {
+        override def initialNumberOfMembers: Int = N
+      }
+
       println(s"# N=$N")
-      val members = (1 to N).map(n => newUpMember(s"127.0.0.$n", upNbr = n))
-      val regions = members.map(m => newFakeRegion(s"region${m.upNumber}", m))
-      val strategy = createAllocationStrategy(members)
-      var allocations = regions.map(_ -> Vector.empty[String]).toMap
+      setup.allocateAll()
 
-      val rnd = new Random
-      val slices = rnd.shuffle((0 to 1023).toVector)
-
-      slices.foreach { slice =>
-        val region = strategy.allocateShard(regionA, slice.toString, allocations).futureValue
-        allocations = allocations.updated(region, allocations(region) :+ slice.toString)
-      }
-
-      // remove one member, pick one in the middle
-      println("\nRemoving one member\n")
-      val members2 = members.filterNot(_ == members(regions.size / 2))
-      val removedRegion = regions(regions.size / 2)
-      val removedShards = allocations(removedRegion)
-      println(s"# removed shards ${removedShards.sortBy(_.toInt).mkString(", ")}")
-      var allocations2 = allocations - removedRegion
-      val strategy2 = createAllocationStrategy(members2)
-      removedShards.foreach { s =>
-        val region = strategy2.allocateShard(regionA, s, allocations2).futureValue
-        allocations2 = allocations2.updated(region, allocations2(region) :+ s)
-      }
-
-      var totalSame2 = 0
-      allocations.toIndexedSeq
-        .sortBy { case (_, shards) => if (shards.isEmpty) Int.MaxValue else shards.minBy(_.toInt).toInt }
-        .foreach {
-          case (region, shards) =>
-            val shards2 = allocations2.getOrElse(region, Vector.empty)
-            val removed = shards.diff(shards2)
-            val added = shards2.diff(shards)
-            val same = shards.intersect(shards2)
-            totalSame2 += same.size
-
-            println(s"# ${region.path.name}: ${shards.size}->${shards2.size}, +${added.size}, -${removed.size}")
-            println(s"## old ${region.path.name}: ${shards.size} (${shards.sortBy(_.toInt).mkString(", ")})")
-            println(s"## new ${region.path.name}: ${shards2.size} (${shards2.sortBy(_.toInt).mkString(", ")})")
-            println("\n")
-        }
-      println(s"# $totalSame2 shards kept at same region after removing one member")
-
-      // remove one and add one member
-      println("\nAdding one member\n")
-      val n = members.last.upNumber + 1
-      val newMember = newUpMember(s"127.0.0.$n", upNbr = n)
-      val members3 = members2 :+ newMember
-      val newRegion = newFakeRegion(s"region${newMember.upNumber}", newMember)
-      var allocations3 = allocations - removedRegion + (newRegion -> Vector.empty)
-      val strategy3 = createAllocationStrategy(members3)
-      removedShards.foreach { s =>
-        val region = strategy3.allocateShard(regionA, s, allocations3).futureValue
-        allocations3 = allocations3.updated(region, allocations3(region) :+ s)
-      }
-
-      val oldRangesPerRegion8 = numberOfSliceRangesPerRegion(8, allocations)
-      val oldRangesPerRegion16 = numberOfSliceRangesPerRegion(16, allocations)
-      val newRangesPerRegion8 = numberOfSliceRangesPerRegion(8, allocations3)
-      val newRangesPerRegion16 = numberOfSliceRangesPerRegion(16, allocations3)
-
-      var totalSame3 = 0
-      allocations.toIndexedSeq
-        .sortBy { case (_, shards) => if (shards.isEmpty) Int.MaxValue else shards.minBy(_.toInt).toInt }
-        .foreach {
-          case (region, shards) =>
-            val shards3 = allocations3.getOrElse(region, Vector.empty)
-            val removed = shards.diff(shards3)
-            val added = shards3.diff(shards)
-            val same = shards.intersect(shards3)
-            totalSame3 += same.size
-
-            println(s"# ${region.path.name}: ${shards.size}->${shards3.size}, +${added.size}, -${removed.size}")
-            println(
-              s"# old ${region.path.name}: ${shards.size}, ${oldRangesPerRegion8(region)} of 8 ranges, " +
-              s"${oldRangesPerRegion16(region)} of 16 ranges \n    (${shards.sortBy(_.toInt).mkString(", ")})")
-            println(
-              s"# new ${region.path.name}: ${shards3.size}, ${newRangesPerRegion8.getOrElse(region, 0)} of 8 ranges, " +
-              s"${newRangesPerRegion16.getOrElse(region, 0)} of 16 ranges \n    (${shards3.sortBy(_.toInt).mkString(", ")})")
-            println("\n")
-        }
-      println(s"# ${newRegion.path.name}: 0->${allocations3(newRegion).size}, +${allocations3(newRegion).size}, -0")
-      println(
-        s"## new ${newRegion.path.name}: ${allocations3(newRegion).size} (${allocations3(newRegion).sortBy(_.toInt).mkString(", ")})")
-      println(s"# $totalSame3 shards kept at same region after removing one and adding one member")
-      println(s"total of ${newRangesPerRegion8.valuesIterator.sum} connections from $N nodes to 8 backend ranges")
-      println(s"total of ${newRangesPerRegion16.valuesIterator.sum} connections from $N nodes to 16 backend ranges")
+      // remove one and add one member, pick one in the middle
+      val removedSlices = setup.removeMember(N / 2)
+      setup.addMember()
+      setup.allocate(removedSlices)
+      setup.printAllocations()
     }
 
     "try rebalance impact" in {
-      val N = 10
+      val N = 50
+      val setup = new Setup {
+        override def initialNumberOfMembers: Int = N
+      }
       println(s"# N=$N")
-      val members = (1 to N).map(n => newUpMember(s"127.0.0.$n", upNbr = n))
-      val regions = members.map(m => newFakeRegion(s"region${m.upNumber}", m))
-      val strategy = createAllocationStrategy(members)
-      var allocations = regions.map(_ -> Vector.empty[String]).toMap
+      setup.allocateAll()
 
-      val rnd = new Random
-      val slices = rnd.shuffle((0 to 1023).toVector)
-
-      slices.foreach { slice =>
-        val region = strategy.allocateShard(regionA, slice.toString, allocations).futureValue
-        allocations = allocations.updated(region, allocations(region) :+ slice.toString)
+      setup.addMember()
+      (1 to 20).foreach { n =>
+        val rebalancedSlices = setup.rebalance()
+        println(s"rebalance #$n: ${rebalancedSlices.sorted}")
+        setup.allocate(rebalancedSlices)
       }
-
-      // add one member
-      println("\nAdding one member\n")
-      val n = members.last.upNumber + 1
-      val newMember = newUpMember(s"127.0.0.$n", upNbr = n)
-      val members3 = members :+ newMember
-      val newRegion = newFakeRegion(s"region${newMember.upNumber}", newMember)
-      var allocations3 = allocations + (newRegion -> Vector.empty)
-      val strategy3 = createAllocationStrategy(members3)
-
-      val rebalancedShards = strategy3.rebalance(allocations3, Set.empty).futureValue
-      println(s"rebalancing shards ${rebalancedShards.toSeq.sortBy(_.toInt).mkString(", ")}")
-      allocations3 = allocations3.map { case (region, shards) => region -> shards.filterNot(rebalancedShards.contains) }
-
-      rebalancedShards.foreach { s =>
-        val region = strategy3.allocateShard(regionA, s, allocations3).futureValue
-        allocations3 = allocations3.updated(region, allocations3(region) :+ s)
-      }
-
-      val oldRangesPerRegion8 = numberOfSliceRangesPerRegion(8, allocations)
-      val oldRangesPerRegion16 = numberOfSliceRangesPerRegion(16, allocations)
-      val newRangesPerRegion8 = numberOfSliceRangesPerRegion(8, allocations3)
-      val newRangesPerRegion16 = numberOfSliceRangesPerRegion(16, allocations3)
-
-      var totalSame3 = 0
-      allocations.toIndexedSeq
-        .sortBy { case (_, shards) => if (shards.isEmpty) Int.MaxValue else shards.minBy(_.toInt).toInt }
-        .foreach {
-          case (region, shards) =>
-            val shards3 = allocations3.getOrElse(region, Vector.empty)
-            val removed = shards.diff(shards3)
-            val added = shards3.diff(shards)
-            val same = shards.intersect(shards3)
-            totalSame3 += same.size
-
-            println(s"# ${region.path.name}: ${shards.size}->${shards3.size}, +${added.size}, -${removed.size}")
-            println(
-              s"# old ${region.path.name}: ${shards.size}, ${oldRangesPerRegion8(region)} of 8 ranges, " +
-              s"${oldRangesPerRegion16(region)} of 16 ranges \n    (${shards.sortBy(_.toInt).mkString(", ")})")
-            println(
-              s"# new ${region.path.name}: ${shards3.size}, ${newRangesPerRegion8.getOrElse(region, 0)} of 8 ranges, " +
-              s"${newRangesPerRegion16.getOrElse(region, 0)} of 16 ranges \n    (${shards3.sortBy(_.toInt).mkString(", ")})")
-            println("\n")
-        }
-      println(s"# ${newRegion.path.name}: 0->${allocations3(newRegion).size}, +${allocations3(newRegion).size}, -0")
-      println(
-        s"## new ${newRegion.path.name}: ${allocations3(newRegion).size} (${allocations3(newRegion).sortBy(_.toInt).mkString(", ")})")
-      println(s"# $totalSame3 shards kept at same region after adding one member and rebalance")
-      println(s"total of ${newRangesPerRegion8.valuesIterator.sum} connections from $N nodes to 8 backend ranges")
-      println(s"total of ${newRangesPerRegion16.valuesIterator.sum} connections from $N nodes to 16 backend ranges")
+      setup.printAllocations(verbose = false)
     }
 
 //    "allocate to mostly same regions when node is removed" in {
