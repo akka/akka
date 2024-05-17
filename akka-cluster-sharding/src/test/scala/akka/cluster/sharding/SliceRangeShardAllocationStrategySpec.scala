@@ -169,6 +169,9 @@ class SliceRangeShardAllocationStrategySpec extends AkkaSpec {
       val oldRangesPerRegion8 = numberOfSliceRangesPerRegion(8, oldAllocations)
       val oldRangesPerRegion16 = numberOfSliceRangesPerRegion(16, oldAllocations)
 
+      val optimalSize = 1024.0 / allocations.size
+      var varianceSum = 0.0
+
       var totalSame = 0
       //also add old allocations to new allocations, but with empty shards
       val allocationsWithEmptyOldEntries =
@@ -179,11 +182,13 @@ class SliceRangeShardAllocationStrategySpec extends AkkaSpec {
           }
         } else
           allocations
-
       allocationsWithEmptyOldEntries.toIndexedSeq
         .sortBy { case (_, shards) => if (shards.isEmpty) Int.MaxValue else shards.minBy(_.toInt).toInt }
         .foreach {
           case (region, shards) =>
+            val deltaFromOptimal = shards.size - optimalSize
+            varianceSum += deltaFromOptimal * deltaFromOptimal
+
             if (hasOldAllocations) {
               val oldShards = oldAllocations.getOrElse(region, Vector.empty)
               val added = shards.diff(oldShards)
@@ -191,7 +196,8 @@ class SliceRangeShardAllocationStrategySpec extends AkkaSpec {
               val same = shards.intersect(oldShards)
               totalSame += same.size
 
-              println(s"${region.path.name}: ${oldShards.size}->${shards.size}, +${added.size}, -${removed.size}")
+              println(
+                f"${region.path.name}: ${oldShards.size}->${shards.size}, +${added.size}, -${removed.size}, Δ$deltaFromOptimal%1.1f")
               if (verbose) {
                 println(s"old ${region.path.name}: ${oldShards.size}, ${oldRangesPerRegion8.getOrElse(region, 0)} of 8 ranges, " +
                 s"${oldRangesPerRegion16.getOrElse(region, 0)} of 16 ranges \n    (${sort(oldShards).mkString(", ")})")
@@ -201,12 +207,15 @@ class SliceRangeShardAllocationStrategySpec extends AkkaSpec {
               }
             } else if (verbose) {
               println(
-                s"${region.path.name}: ${shards.size}, ${rangesPerRegion8.getOrElse(region, 0)} of 8 ranges, " +
+                f"${region.path.name}: ${shards.size}, Δ$deltaFromOptimal%1.1f, ${rangesPerRegion8.getOrElse(region, 0)} of 8 ranges, " +
                 s"${rangesPerRegion16.getOrElse(region, 0)} of 16 ranges \n    (${sort(shards).mkString(", ")})")
             } else {
               println(s"${region.path.name}: ${shards.size}")
             }
         }
+
+      val stdDeviation = math.sqrt(varianceSum / allocations.size)
+      println(f"Standard deviation from optimal size $stdDeviation%1.1f")
 
       if (hasOldAllocations) {
         println(s"$totalSame shards kept at same region")
@@ -284,7 +293,7 @@ class SliceRangeShardAllocationStrategySpec extends AkkaSpec {
       setup.allocateAll()
 
       setup.addMember()
-      (1 to 20).foreach { n =>
+      (1 to 100).foreach { n =>
         val rebalancedSlices = setup.rebalance()
         println(s"rebalance #$n: ${rebalancedSlices.sorted}")
         setup.allocate(rebalancedSlices)
