@@ -2,9 +2,9 @@ import com.typesafe.sbt.SbtMultiJvm.multiJvmSettings
 import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys.MultiJvm
 
 val AkkaVersion = "2.9.3"
-val AkkaDiagnosticsVersion = "2.1.0"
+val AkkaDiagnosticsVersion = "2.1.1"
 val LogbackClassicVersion = "1.2.11" 
-val ScalaTestVersion = "3.1.1"
+val ScalaTestVersion = "3.2.17"
 
 lazy val `akka-sample-cluster-scala` = project
   .in(file("."))

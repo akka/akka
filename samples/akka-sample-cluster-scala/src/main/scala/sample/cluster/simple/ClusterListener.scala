@@ -23,10 +23,10 @@ object ClusterListener {
   private final case class MemberChange(event: MemberEvent) extends Event
 
   def apply(): Behavior[Event] = Behaviors.setup { ctx =>
-    val memberEventAdapter: ActorRef[MemberEvent] = ctx.messageAdapter(MemberChange)
+    val memberEventAdapter: ActorRef[MemberEvent] = ctx.messageAdapter(MemberChange.apply)
     Cluster(ctx.system).subscriptions ! Subscribe(memberEventAdapter, classOf[MemberEvent])
 
-    val reachabilityAdapter = ctx.messageAdapter(ReachabilityChange)
+    val reachabilityAdapter = ctx.messageAdapter(ReachabilityChange.apply)
     Cluster(ctx.system).subscriptions ! Subscribe(reachabilityAdapter, classOf[ReachabilityEvent])
 
     Behaviors.receiveMessage { message =>
@@ -44,8 +44,7 @@ object ClusterListener {
             case MemberUp(member) =>
               ctx.log.info("Member is Up: {}", member.address)
             case MemberRemoved(member, previousStatus) =>
-              ctx.log.info("Member is Removed: {} after {}",
-                member.address, previousStatus)
+              ctx.log.info("Member is Removed: {} after {}", member.address, previousStatus)
             case _: MemberEvent => // ignore
           }
       }

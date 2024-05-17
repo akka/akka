@@ -7,7 +7,7 @@ import akka.actor.AddressFromURIString
 import akka.actor.typed.ActorSystem
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 /**
  * Main entry point for the application.
@@ -16,9 +16,9 @@ import scala.collection.JavaConverters._
 object KillrWeather {
 
   def main(args: Array[String]): Unit = {
-    val seedNodePorts = ConfigFactory.load().getStringList("akka.cluster.seed-nodes")
-      .asScala
-      .flatMap { case AddressFromURIString(s) => s.port }
+    val seedNodePorts = ConfigFactory.load().getStringList("akka.cluster.seed-nodes").asScala.flatMap {
+      case AddressFromURIString(s) => s.port
+    }
 
     // Either use a single port provided by the user
     // Or start each listed seed nodes port plus one node on a random port in this single JVM if the user

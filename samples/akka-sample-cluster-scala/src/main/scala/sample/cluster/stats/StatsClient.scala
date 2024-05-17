@@ -19,7 +19,7 @@ object StatsClient {
     Behaviors.setup { ctx =>
       Behaviors.withTimers { timers =>
         timers.startTimerWithFixedDelay(Tick, Tick, 2.seconds)
-        val responseAdapter = ctx.messageAdapter(ServiceResponse)
+        val responseAdapter = ctx.messageAdapter(ServiceResponse.apply)
 
         Behaviors.receiveMessage {
           case Tick =>
@@ -34,4 +34,3 @@ object StatsClient {
     }
 
 }
-
