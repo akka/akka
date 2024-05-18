@@ -53,7 +53,7 @@ jobs:
 
       - name: Publish artifacts locally
         run: |-
-          sbt "publishLocal; publishM2"
+          sbt "+publishLocal; publishM2"
 
       - name: Test akka-quickstart-java
         run: |-
