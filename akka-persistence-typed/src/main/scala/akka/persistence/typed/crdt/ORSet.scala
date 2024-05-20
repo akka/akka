@@ -43,8 +43,7 @@ object ORSet {
     def underlying: ORSet[A]
   }
 
-  /** INTERNAL API */
-  @InternalApi private[akka] final case class AddDeltaOp[A](underlying: ORSet[A]) extends AtomicDeltaOp[A] {
+  final case class AddDeltaOp[A](underlying: ORSet[A]) extends AtomicDeltaOp[A] {
 
     override def merge(that: DeltaOp): DeltaOp = that match {
       case AddDeltaOp(u) =>
@@ -67,8 +66,7 @@ object ORSet {
     }
   }
 
-  /** INTERNAL API */
-  @InternalApi private[akka] final case class RemoveDeltaOp[A](underlying: ORSet[A]) extends AtomicDeltaOp[A] {
+  final case class RemoveDeltaOp[A](underlying: ORSet[A]) extends AtomicDeltaOp[A] {
     if (underlying.size != 1)
       throw new IllegalArgumentException(s"RemoveDeltaOp should contain one removed element, but was $underlying")
 
@@ -78,18 +76,15 @@ object ORSet {
     }
   }
 
-  /** INTERNAL API: Used for `clear` but could be used for other cases also */
-  @InternalApi private[akka] final case class FullStateDeltaOp[A](underlying: ORSet[A]) extends AtomicDeltaOp[A] {
+  /** Used for `clear` but could be used for other cases also */
+  final case class FullStateDeltaOp[A](underlying: ORSet[A]) extends AtomicDeltaOp[A] {
     override def merge(that: DeltaOp): DeltaOp = that match {
       case _: AtomicDeltaOp[A @unchecked] => DeltaGroup(Vector(this, that))
       case DeltaGroup(ops)                => DeltaGroup(this +: ops)
     }
   }
 
-  /**
-   * INTERNAL API
-   */
-  @InternalApi private[akka] final case class DeltaGroup[A](ops: immutable.IndexedSeq[DeltaOp]) extends DeltaOp {
+  final case class DeltaGroup[A](ops: immutable.IndexedSeq[DeltaOp]) extends DeltaOp {
     override def merge(that: DeltaOp): DeltaOp = that match {
       case thatAdd: AddDeltaOp[A @unchecked] =>
         // merge AddDeltaOp into last AddDeltaOp in the group, if possible
