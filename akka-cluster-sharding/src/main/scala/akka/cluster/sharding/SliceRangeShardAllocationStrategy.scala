@@ -98,7 +98,7 @@ class SliceRangeShardAllocationStrategy(absoluteLimit: Int, relativeLimit: Doubl
         val selected = Vector.newBuilder[ShardId]
         sortedRegionEntries.zipWithIndex.foreach {
           case (RegionEntry(_, _, shards), i) =>
-            val targetSize = maxShards(i, sortedRegionEntries.size)
+            val targetSize = optimalNumberOfShards(i, sortedRegionEntries.size)
             if (shards.size > targetSize) {
               // Skip shards that were rebalanced in previous rounds to avoid loop of rebalance-allocate
               // to same regions.
@@ -164,13 +164,13 @@ class SliceRangeShardAllocationStrategy(absoluteLimit: Int, relativeLimit: Doubl
       val overfill = 1
       sortedRegionEntries.zipWithIndex.collectFirst {
         case (RegionEntry(region, _, shards), i)
-            if shards.contains(neighbor) && shards.size < maxShards(i, sortedRegionEntries.size) + overfill =>
+            if shards.contains(neighbor) && shards.size < optimalNumberOfShards(i, sortedRegionEntries.size) + overfill =>
           region
       }
     }
   }
 
-  private def maxShards(i: Int, numberOfRegions: Int): Int = {
+  private def optimalNumberOfShards(i: Int, numberOfRegions: Int): Int = {
     val rounding = if (NumberOfSlices % numberOfRegions == 0) 0 else if (i % 2 == 0) 1 else 0
     NumberOfSlices / numberOfRegions + rounding
   }

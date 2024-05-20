@@ -15,7 +15,6 @@ import akka.actor.ActorRefProvider
 import akka.actor.Address
 import akka.actor.MinimalActorRef
 import akka.actor.RootActorPath
-import akka.cluster.ClusterEvent
 import akka.cluster.ClusterEvent.CurrentClusterState
 import akka.cluster.ClusterSettings
 import akka.cluster.Member
@@ -54,17 +53,6 @@ class SliceRangeShardAllocationStrategySpec extends AkkaSpec {
   val regionC = newFakeRegion("regionC", memberC)
   val regionD = newFakeRegion("regionD", memberD)
 
-  private val emptyAllocationsABC: Map[ActorRef, Vector[String]] =
-    Map(regionA -> Vector.empty, regionB -> Vector.empty, regionC -> Vector.empty)
-
-  private def strategy() =
-    // we don't really "start" it as we fake the cluster access
-    new SliceRangeShardAllocationStrategy(10, 0.1) {
-      override protected def clusterState: ClusterEvent.CurrentClusterState =
-        CurrentClusterState(SortedSet(memberA, memberB, memberC))
-      override protected def selfMember: Member = memberA
-    }
-
   private def createAllocationStrategy(members: IndexedSeq[Member]) = {
     new SliceRangeShardAllocationStrategy(10, 0.1) {
       override protected def clusterState: CurrentClusterState =
@@ -95,7 +83,7 @@ class SliceRangeShardAllocationStrategySpec extends AkkaSpec {
     }
   }
 
-  class Setup(initialNumberOfMembers: Int) {
+  class Setup(initialNumberOfMembers: Int, shuffle: Boolean = false) {
 
     def rndSeed: Long = System.currentTimeMillis()
 
@@ -130,10 +118,13 @@ class SliceRangeShardAllocationStrategySpec extends AkkaSpec {
 
     def numberOfMembers: Int = _members.size
 
-    def allocateAll(shuffle: Boolean = true): Map[ActorRef, Vector[ShardId]] =
-      allocate(allSlices, shuffle)
+    def allocateAll(): Map[ActorRef, Vector[ShardId]] =
+      allocate(allSlices)
 
-    def allocate(slices: Vector[Int], shuffle: Boolean = true): Map[ActorRef, Vector[ShardId]] = {
+    def allocate(slice: Int): Map[ActorRef, Vector[ShardId]] =
+      allocate(Vector(slice))
+
+    def allocate(slices: Vector[Int]): Map[ActorRef, Vector[ShardId]] = {
       val shuffledSlices = if (shuffle) rnd.shuffle(slices) else slices
       shuffledSlices.foreach { slice =>
         val region = strategy.allocateShard(regionA, slice.toString, _allocations).futureValue
@@ -147,14 +138,20 @@ class SliceRangeShardAllocationStrategySpec extends AkkaSpec {
     def allocateMissingSlices(atMost: Int): Map[ActorRef, Vector[ShardId]] = {
       val allocatedSlices = _allocations.valuesIterator.flatten.map(_.toInt).toSeq
       val missingSlices = allSlices.diff(allocatedSlices)
-      val allocateSlices = rnd.shuffle(missingSlices).take(atMost)
-      allocate(allocateSlices, shuffle = false)
+      val allocateSlices = if (shuffle) rnd.shuffle(missingSlices).take(atMost) else missingSlices.take(atMost)
+      allocate(allocateSlices)
     }
 
     def rebalance(): Vector[Int] = {
       val rebalancedShards = strategy.rebalance(_allocations, Set.empty).futureValue
       _allocations = _allocations.map { case (region, shards) => region -> shards.filterNot(rebalancedShards.contains) }
       rebalancedShards.map(_.toInt).toVector
+    }
+
+    def rebalanceAndAllocate(): Vector[Int] = {
+      val rebalanced = rebalance()
+      allocate(rebalanced)
+      rebalanced
     }
 
     def repeatRebalanceAndAllocate(): Unit = {
@@ -271,29 +268,28 @@ class SliceRangeShardAllocationStrategySpec extends AkkaSpec {
   }
 
   "SliceRangeShardAllocationStrategy" must {
-    "allocate to regions" ignore { // FIXME
-      val allocationStrategy = strategy()
-      val allocations = emptyAllocationsABC
-      // 3 regions => slice ranges 0-340, 341-681, 682-1021 and the remainder are allocated round-robin (slice % 3)
-      allocationStrategy.allocateShard(regionA, "0", allocations).futureValue should ===(regionA)
-      allocationStrategy.allocateShard(regionA, "100", allocations).futureValue should ===(regionA)
-      allocationStrategy.allocateShard(regionA, "340", allocations).futureValue should ===(regionA)
-      allocationStrategy.allocateShard(regionA, "341", allocations).futureValue should ===(regionB)
-      allocationStrategy.allocateShard(regionA, "681", allocations).futureValue should ===(regionB)
-      allocationStrategy.allocateShard(regionA, "682", allocations).futureValue should ===(regionC)
-      allocationStrategy.allocateShard(regionA, "1021", allocations).futureValue should ===(regionC)
-      allocationStrategy.allocateShard(regionA, "1022", allocations).futureValue should ===(regionC)
-      allocationStrategy.allocateShard(regionA, "1023", allocations).futureValue should ===(regionA)
+    "allocate to regions" in new Setup(3) {
+      allocateAll()
+      val allocationsA = allocations(regions(0))
+      val allocationsB = allocations(regions(1))
+      val allocationsC = allocations(regions(2))
+
+      // 3 regions => optimal 341.33 shards per region
+      // 343: +1 due to overfill, +1 due to even index
+      allocationsA should ===((0 to 342).toVector)
+      // 342: +1 due to overfill
+      allocationsB should ===((343 to 684).toVector)
+      // 339: remainaing, 1024-343-342=339
+      allocationsC should ===((685 to 1023).toVector)
     }
 
     "allocate in almost optimal way when allocated in order" in new Setup(64) {
       // optimal would be 16 per region, but the overfill is needed for rebalance iterations
-      allocateAll(shuffle = false)
+      allocateAll()
       allocations.foreach {
         case (_, slices) =>
           slices.size shouldBe <=(17)
       }
-      printAllocations()
 
       allocation(slice = 0) should ===(allocation(slice = 15))
       allocation(slice = 17) should ===(allocation(slice = 31))
@@ -304,7 +300,7 @@ class SliceRangeShardAllocationStrategySpec extends AkkaSpec {
     // FIXME just temporary playground
     "try distributions" in {
       (1 to 100).foreach { N =>
-        val setup = new Setup(N)
+        val setup = new Setup(N, shuffle = true)
 
         info(s"rnd seed ${setup.rndSeed}")
 
@@ -317,7 +313,7 @@ class SliceRangeShardAllocationStrategySpec extends AkkaSpec {
       }
     }
 
-    "try member change impact" in new Setup(50) {
+    "try member change impact" in new Setup(50, shuffle = true) {
       info(s"rnd seed $rndSeed")
 
       allocateAll()
@@ -329,7 +325,7 @@ class SliceRangeShardAllocationStrategySpec extends AkkaSpec {
       printAllocations()
     }
 
-    "try rebalance impact" in new Setup(50) {
+    "try rebalance impact" in new Setup(50, shuffle = true) {
       info(s"rnd seed $rndSeed")
 
       allocateAll()
@@ -342,7 +338,7 @@ class SliceRangeShardAllocationStrategySpec extends AkkaSpec {
       }
     }
 
-    "try simulation" in new Setup(100) {
+    "try simulation" in new Setup(100, shuffle = true) {
       info(s"rnd seed $rndSeed")
 
       allocateAll()
@@ -368,84 +364,40 @@ class SliceRangeShardAllocationStrategySpec extends AkkaSpec {
 
       repeatRebalanceAndAllocate()
 
-      printAllocations(verbose = true)
+      printAllocations(verbose = false)
 
     }
 
-//    "allocate to mostly same regions when node is removed" in {
-//      val allocationStrategy = strategy()
-//      val allocations = emptyAllocationsABC
-//      allocationStrategy.allocateShard(regionA, "0", allocations).futureValue should ===(regionC)
-//      allocationStrategy.allocateShard(regionA, "1", allocations).futureValue should ===(regionB)
-//      allocationStrategy.allocateShard(regionA, "2", allocations).futureValue should ===(regionB)
-//      allocationStrategy.allocateShard(regionA, "3", allocations).futureValue should ===(regionC)
-//      allocationStrategy.allocateShard(regionA, "10", allocations).futureValue should ===(regionA)
-//      allocationStrategy.allocateShard(regionA, "14", allocations).futureValue should ===(regionA)
+    "allocate to the other regions when node is removed" in new Setup(3) {
+      allocateAll()
+      val removed = removeMember(2)
+      val allocations2 = allocate(removed)
+      allocations2(regions(0)).size should (be >= 511 and be <= 513)
+      allocations2(regions(1)).size should (be >= 511 and be <= 513)
+    }
+
+    "not rebalance when nodes not changed" in new Setup(32) {
+      allocateAll()
+      repeatRebalanceAndAllocate()
+      rebalance() should ===(Vector.empty[Int])
+      rebalance() should ===(Vector.empty[Int])
+    }
+
+    "rebalance when node is added" in new Setup(3) {
+      allocateAll()
+      addMember()
+      val rebalanced = rebalanceAndAllocate()
+      rebalanced.foreach { slice =>
+        allocation(slice).get should ===(regions.last)
+      }
+
+      repeatRebalanceAndAllocate()
+      (0 until 4).foreach { i =>
+        allocations(regions(i)).size should (be >= 253 and be <= 257)
+      }
+    }
+
 //
-//      val allocations2 = allocations - regionC
-//      allocationStrategy.allocateShard(regionA, "0", allocations2).futureValue should ===(regionA)
-//      allocationStrategy.allocateShard(regionA, "1", allocations2).futureValue should ===(regionB)
-//      allocationStrategy.allocateShard(regionA, "2", allocations2).futureValue should ===(regionB)
-//      allocationStrategy.allocateShard(regionA, "3", allocations2).futureValue should ===(regionB)
-//      allocationStrategy.allocateShard(regionA, "10", allocations2).futureValue should ===(regionA)
-//      allocationStrategy.allocateShard(regionA, "14", allocations2).futureValue should ===(regionA)
-//    }
-//
-//    "allocate to mostly same regions when node is added" in {
-//      val allocationStrategy = strategy()
-//      val allocations = emptyAllocationsABC
-//      allocationStrategy.allocateShard(regionA, "0", allocations).futureValue should ===(regionC)
-//      allocationStrategy.allocateShard(regionA, "1", allocations).futureValue should ===(regionB)
-//      allocationStrategy.allocateShard(regionA, "2", allocations).futureValue should ===(regionB)
-//      allocationStrategy.allocateShard(regionA, "3", allocations).futureValue should ===(regionC)
-//      allocationStrategy.allocateShard(regionA, "10", allocations).futureValue should ===(regionA)
-//      allocationStrategy.allocateShard(regionA, "14", allocations).futureValue should ===(regionA)
-//
-//      val allocations2 = allocations.updated(regionD, Vector.empty)
-//      allocationStrategy.allocateShard(regionA, "0", allocations2).futureValue should ===(regionC)
-//      allocationStrategy.allocateShard(regionA, "1", allocations2).futureValue should ===(regionB)
-//      allocationStrategy.allocateShard(regionA, "2", allocations2).futureValue should ===(regionD)
-//      allocationStrategy.allocateShard(regionA, "3", allocations2).futureValue should ===(regionC)
-//      allocationStrategy.allocateShard(regionA, "10", allocations2).futureValue should ===(regionA)
-//      allocationStrategy.allocateShard(regionA, "14", allocations2).futureValue should ===(regionA)
-//    }
-//
-//    "not rebalance when nodes not changed" in {
-//      val allocationStrategy = strategy()
-//      val allocations = emptyAllocationsABC
-//      allocationStrategy.allocateShard(regionA, "0", allocations).futureValue should ===(regionC)
-//      allocationStrategy.allocateShard(regionA, "1", allocations).futureValue should ===(regionB)
-//      allocationStrategy.allocateShard(regionA, "2", allocations).futureValue should ===(regionB)
-//      allocationStrategy.allocateShard(regionA, "10", allocations).futureValue should ===(regionA)
-//
-//      val allocations2 = Map(regionA -> Vector("10"), regionB -> Vector("1", "2"), regionC -> Vector("0"))
-//      allocationStrategy.rebalance(allocations2, Set.empty).futureValue should ===(Set.empty[String])
-//    }
-//
-//    "rebalance when node is added" in {
-//      val allocationStrategy = strategy()
-//      val allocations = emptyAllocationsABC
-//      allocationStrategy.allocateShard(regionA, "0", allocations).futureValue should ===(regionC)
-//      allocationStrategy.allocateShard(regionA, "1", allocations).futureValue should ===(regionB)
-//      allocationStrategy.allocateShard(regionA, "2", allocations).futureValue should ===(regionB)
-//      allocationStrategy.allocateShard(regionA, "3", allocations).futureValue should ===(regionC)
-//      allocationStrategy.allocateShard(regionA, "10", allocations).futureValue should ===(regionA)
-//      allocationStrategy.allocateShard(regionA, "14", allocations).futureValue should ===(regionA)
-//
-//      val allocations2 = Map(
-//        regionA -> Vector("10", "14"),
-//        regionB -> Vector("1", "2"),
-//        regionC -> Vector("0", "3"),
-//        regionD -> Vector.empty)
-//      allocationStrategy.rebalance(allocations2, Set.empty).futureValue should ===(Set("2"))
-//
-//      val allocations3 = Map(
-//        regionB -> Vector("2", "1"),
-//        regionA -> Vector("10", "14"),
-//        regionD -> Vector.empty,
-//        regionC -> Vector("3", "0"))
-//      allocationStrategy.rebalance(allocations3, Set.empty).futureValue should ===(Set("2"))
-//    }
 //
 //    "not rebalance more than limit" in {
 //      val allocationStrategy = strategy(rebalanceLimit = 2)

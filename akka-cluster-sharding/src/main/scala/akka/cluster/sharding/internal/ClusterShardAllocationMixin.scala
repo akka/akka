@@ -51,8 +51,8 @@ import akka.cluster.sharding.internal.ClusterShardAllocationMixin.RegionEntry
         // prefer the node with the least allocated shards
         JInteger.compare(allocatedShardsX.size, allocatedShardsY.size)
       } else if (x.member.upNumber != y.member.upNumber) {
-        // prefer younger
-        Member.ageOrdering.compare(y.member, x.member)
+        // prefer older
+        Member.ageOrdering.compare(x.member, y.member)
       } else {
         Member.addressOrdering.compare(x.member.address, y.member.address)
       }
