@@ -55,7 +55,7 @@ To assist in implementing the event handler the Replicated Event Sourcing detect
 
 ## API
 
-@scala[The same API as regular `EventSourcedBehavior`s]@java[A very similar API to the regular `EventSourcedBehavior`] is used to define the logic. 
+@scala[The same API as regular `EventSourcedBehavior`s]@java[A very similar API to the regular `EventSourcedBehavior` or `EventSourcedOnCommandBehavior` found in @javadoc[ReplicatedEventSourcedBehavior](akka.persistence.typed.javadsl.ReplicatedEventSourcedBehavior) and @javadoc[ReplicatedEventSourcedOnCommandBehavior](akka.persistence.typed.javadsl.ReplicatedEventSourcedOnCommandBehavior)] is used to define the logic. 
 
 ### Consuming events via gRPC transport
 
