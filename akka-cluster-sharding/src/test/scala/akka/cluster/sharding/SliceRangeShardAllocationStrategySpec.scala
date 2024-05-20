@@ -4,6 +4,7 @@
 
 package akka.cluster.sharding
 
+import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.collection.immutable.SortedSet
 import scala.util.Random
@@ -156,6 +157,21 @@ class SliceRangeShardAllocationStrategySpec extends AkkaSpec {
       rebalancedShards.map(_.toInt).toVector
     }
 
+    def repeatRebalanceAndAllocate(): Unit = {
+      @tailrec def loop(n: Int): Unit = {
+        if (n <= 100) {
+          val rebalancedSlices = rebalance()
+          println(s"rebalance #$n: ${rebalancedSlices.sorted}")
+          if (rebalancedSlices.nonEmpty) {
+            allocate(rebalancedSlices)
+            loop(n + 1)
+          }
+        }
+      }
+
+      loop(1)
+    }
+
     def removeMember(i: Int): Vector[Int] = {
       val member = _members(i)
       _members = _members.filterNot(_ == member)
@@ -270,15 +286,19 @@ class SliceRangeShardAllocationStrategySpec extends AkkaSpec {
       allocationStrategy.allocateShard(regionA, "1023", allocations).futureValue should ===(regionA)
     }
 
-    "allocate in optimal way when allocated in order" in new Setup(64) {
+    "allocate in almost optimal way when allocated in order" in new Setup(64) {
+      // optimal would be 16 per region, but the overfill is needed for rebalance iterations
       allocateAll(shuffle = false)
       allocations.foreach {
         case (_, slices) =>
-          slices.size should ===(16)
+          slices.size shouldBe <=(17)
       }
+      printAllocations()
+
       allocation(slice = 0) should ===(allocation(slice = 15))
-      allocation(slice = 16) should ===(allocation(slice = 31))
-      allocation(slice = 1008) should ===(allocation(slice = 1023))
+      allocation(slice = 17) should ===(allocation(slice = 31))
+      allocation(slice = 512) should ===(allocation(slice = 526))
+      allocation(slice = 1008) should ===(allocation(slice = 1019))
     }
 
     // FIXME just temporary playground
@@ -313,14 +333,13 @@ class SliceRangeShardAllocationStrategySpec extends AkkaSpec {
       info(s"rnd seed $rndSeed")
 
       allocateAll()
+      repeatRebalanceAndAllocate()
 
-      addMember()
-      (1 to 100).foreach { n =>
-        val rebalancedSlices = rebalance()
-        println(s"rebalance #$n: ${rebalancedSlices.sorted}")
-        allocate(rebalancedSlices)
+      (1 to 100).foreach { _ =>
+        addMember()
+        repeatRebalanceAndAllocate()
+        printAllocations(verbose = false)
       }
-      printAllocations(verbose = false)
     }
 
     "try simulation" in new Setup(100) {
@@ -347,13 +366,9 @@ class SliceRangeShardAllocationStrategySpec extends AkkaSpec {
 
       allocateMissingSlices(1024)
 
-      (1 to 100).foreach { n =>
-        val rebalancedSlices = rebalance()
-        println(s"rebalance #$n: ${rebalancedSlices.sorted}")
-        allocate(rebalancedSlices)
-      }
+      repeatRebalanceAndAllocate()
 
-      printAllocations(verbose = false)
+      printAllocations(verbose = true)
 
     }
 

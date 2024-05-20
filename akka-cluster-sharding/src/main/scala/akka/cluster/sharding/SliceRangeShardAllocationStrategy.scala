@@ -67,7 +67,7 @@ class SliceRangeShardAllocationStrategy(absoluteLimit: Int, relativeLimit: Doubl
 
     findRegionWithNeighbor(slice, sortedRegionEntries) match {
       case Some(regionWithNeighbor) =>
-          Future.successful(regionWithNeighbor)
+        Future.successful(regionWithNeighbor)
       case None =>
         Future.successful(allocateWithoutNeighbor(sortedRegionEntries))
     }
@@ -158,9 +158,13 @@ class SliceRangeShardAllocationStrategy(absoluteLimit: Int, relativeLimit: Doubl
     else {
       val neighbor = (slice + diff).toString
 
+      // rebalance will pick from lower/upper slices to make the distribution more optimal,
+      // and therefore there must be room for some overfill, otherwise it would just allocate
+      // without neighbor collocation when reaching full allocation
+      val overfill = 1
       sortedRegionEntries.zipWithIndex.collectFirst {
         case (RegionEntry(region, _, shards), i)
-            if shards.contains(neighbor) && shards.size < maxShards(i, sortedRegionEntries.size) =>
+            if shards.contains(neighbor) && shards.size < maxShards(i, sortedRegionEntries.size) + overfill =>
           region
       }
     }
