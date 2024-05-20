@@ -115,7 +115,7 @@ jobs:
         run: |-
           cd samples/akka-sample-kafka-to-sharding-scala
           sbt test -Dakka.version=`cat ~/.version`
-          sbt '++3.3.3!; test' -Dakka.version=`cat ~/.version`
+          sbt 'clean; ++3.3.3!; test' -Dakka.version=`cat ~/.version`
 
       - name: Email on failure
         if: ${{ failure() }}
