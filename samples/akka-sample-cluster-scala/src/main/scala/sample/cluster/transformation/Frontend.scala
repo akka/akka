@@ -10,6 +10,7 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
+import sample.cluster.transformation.Worker.TextTransformed
 
 import scala.util.Failure
 import scala.util.Success
@@ -22,7 +23,6 @@ object Frontend {
   private final case class WorkersUpdated(newWorkers: Set[ActorRef[Worker.TransformText]]) extends Event
   private final case class TransformCompleted(originalText: String, transformedText: String) extends Event
   private final case class JobFailed(why: String, text: String) extends Event
-
 
   def apply(): Behavior[Event] = Behaviors.setup { ctx =>
     Behaviors.withTimers { timers =>
@@ -39,7 +39,10 @@ object Frontend {
     }
   }
 
-  private def running(ctx: ActorContext[Event], workers: IndexedSeq[ActorRef[Worker.TransformText]], jobCounter: Int): Behavior[Event] =
+  private def running(
+      ctx: ActorContext[Event],
+      workers: IndexedSeq[ActorRef[Worker.TransformText]],
+      jobCounter: Int): Behavior[Event] =
     Behaviors.receiveMessage {
       case WorkersUpdated(newWorkers) =>
         ctx.log.info("List of services registered with the receptionist changed: {}", newWorkers)
@@ -54,9 +57,11 @@ object Frontend {
           val selectedWorker = workers(jobCounter % workers.size)
           ctx.log.info("Sending work for processing to {}", selectedWorker)
           val text = s"hello-$jobCounter"
-          ctx.ask(selectedWorker, Worker.TransformText(text, _)) {
-            case Success(transformedText) => TransformCompleted(originalText = text, transformedText.text)
-            case Failure(ex) => JobFailed("Processing timed out", text)
+          // FIXME why does Scala 3 need the explicit type on replyTo to not infer reply to AnyRef
+          ctx.ask(selectedWorker, (replyTo: ActorRef[TextTransformed]) => Worker.TransformText(text, replyTo)) {
+            case Success(transformedText) =>
+              TransformCompleted(originalText = text, transformedText.text)
+            case Failure(_) => JobFailed("Processing timed out", text)
           }
           running(ctx, workers, jobCounter + 1)
         }
