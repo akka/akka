@@ -100,14 +100,24 @@ class SliceRangeShardAllocationStrategySpec extends AkkaSpec {
 
     val rnd = new Random(rndSeed)
 
-    private var members: Vector[Member] =
+    private var _members: Vector[Member] =
       (1 to initialNumberOfMembers).map(n => newUpMember(s"127.0.0.$n", upNbr = n)).toVector
 
-    private var regions: Vector[ActorRef] =
-      members.map(m => newFakeRegion(s"region${m.upNumber}", m))
+    private var _regions: Vector[ActorRef] =
+      _members.map(m => newFakeRegion(s"region${m.upNumber}", m))
 
-    private var allocations: Map[ActorRef, Vector[ShardId]] =
-      regions.map(_ -> Vector.empty[String]).toMap
+    def regions: Vector[ActorRef] = _regions
+
+    private var _allocations: Map[ActorRef, Vector[ShardId]] =
+      _regions.map(_ -> Vector.empty[String]).toMap
+
+    def allocations: Map[ActorRef, Vector[Int]] =
+      _allocations.map { case (region, shards) => region -> shards.map(_.toInt) }
+
+    def allocation(slice: Int): Option[ActorRef] = {
+      val shardId = slice.toString
+      _allocations.collectFirst { case (region, shards) if shards.contains(shardId) => region }
+    }
 
     private var oldAllocations: Map[ActorRef, Vector[ShardId]] =
       Map.empty
@@ -115,86 +125,86 @@ class SliceRangeShardAllocationStrategySpec extends AkkaSpec {
     private val allSlices: Vector[Int] =
       (0 to 1023).toVector
 
-    private var strategy = createAllocationStrategy(members)
+    private var strategy = createAllocationStrategy(_members)
 
-    def numberOfMembers: Int = members.size
+    def numberOfMembers: Int = _members.size
 
-    def allocateAll(): Map[ActorRef, Vector[ShardId]] =
-      allocate(allSlices)
+    def allocateAll(shuffle: Boolean = true): Map[ActorRef, Vector[ShardId]] =
+      allocate(allSlices, shuffle)
 
     def allocate(slices: Vector[Int], shuffle: Boolean = true): Map[ActorRef, Vector[ShardId]] = {
       val shuffledSlices = if (shuffle) rnd.shuffle(slices) else slices
       shuffledSlices.foreach { slice =>
-        val region = strategy.allocateShard(regionA, slice.toString, allocations).futureValue
-        allocations = allocations.updated(region, allocations(region) :+ slice.toString)
+        val region = strategy.allocateShard(regionA, slice.toString, _allocations).futureValue
+        _allocations = _allocations.updated(region, _allocations(region) :+ slice.toString)
       }
       if (oldAllocations.isEmpty)
-        oldAllocations = allocations
-      allocations
+        oldAllocations = _allocations
+      _allocations
     }
 
     def allocateMissingSlices(atMost: Int): Map[ActorRef, Vector[ShardId]] = {
-      val allocatedSlices = allocations.valuesIterator.flatten.map(_.toInt).toSeq
+      val allocatedSlices = _allocations.valuesIterator.flatten.map(_.toInt).toSeq
       val missingSlices = allSlices.diff(allocatedSlices)
       val allocateSlices = rnd.shuffle(missingSlices).take(atMost)
       allocate(allocateSlices, shuffle = false)
     }
 
     def rebalance(): Vector[Int] = {
-      val rebalancedShards = strategy.rebalance(allocations, Set.empty).futureValue
-      allocations = allocations.map { case (region, shards) => region -> shards.filterNot(rebalancedShards.contains) }
+      val rebalancedShards = strategy.rebalance(_allocations, Set.empty).futureValue
+      _allocations = _allocations.map { case (region, shards) => region -> shards.filterNot(rebalancedShards.contains) }
       rebalancedShards.map(_.toInt).toVector
     }
 
     def removeMember(i: Int): Vector[Int] = {
-      val member = members(i)
-      members = members.filterNot(_ == member)
-      val region = regions(i)
-      regions = regions.filterNot(_ == region)
-      val removedShards = allocations(region)
-      allocations = allocations - region
-      strategy = createAllocationStrategy(members)
+      val member = _members(i)
+      _members = _members.filterNot(_ == member)
+      val region = _regions(i)
+      _regions = _regions.filterNot(_ == region)
+      val removedShards = _allocations(region)
+      _allocations = _allocations - region
+      strategy = createAllocationStrategy(_members)
       removedShards.map(_.toInt)
     }
 
     def addMember(): Unit = {
-      val n = members.last.upNumber + 1
+      val n = _members.last.upNumber + 1
       val newMember = newUpMember(s"127.0.0.$n", upNbr = n)
-      members :+= newMember
+      _members :+= newMember
       val newRegion = newFakeRegion(s"region${newMember.upNumber}", newMember)
-      regions :+= newRegion
-      allocations = allocations.updated(newRegion, Vector.empty)
-      strategy = createAllocationStrategy(members)
+      _regions :+= newRegion
+      _allocations = _allocations.updated(newRegion, Vector.empty)
+      strategy = createAllocationStrategy(_members)
     }
 
     private def sort(shards: Vector[ShardId]): Vector[Int] =
       shards.map(_.toInt).sorted
 
     def printAllocations(verbose: Boolean = true): Unit = {
-      val rangesPerRegion8 = numberOfSliceRangesPerRegion(8, allocations)
-      val rangesPerRegion16 = numberOfSliceRangesPerRegion(16, allocations)
-      val hasOldAllocations = oldAllocations.nonEmpty && (oldAllocations ne allocations)
+      val rangesPerRegion8 = numberOfSliceRangesPerRegion(8, _allocations)
+      val rangesPerRegion16 = numberOfSliceRangesPerRegion(16, _allocations)
+      val hasOldAllocations = oldAllocations.nonEmpty && (oldAllocations ne _allocations)
       val oldRangesPerRegion8 = numberOfSliceRangesPerRegion(8, oldAllocations)
       val oldRangesPerRegion16 = numberOfSliceRangesPerRegion(16, oldAllocations)
 
-      val optimalSize = 1024.0 / allocations.size
+      val optimalSize = 1024.0 / _allocations.size
       var varianceSum = 0.0
 
       var totalSame = 0
       //also add old allocations to new allocations, but with empty shards
       val allocationsWithEmptyOldEntries =
         if (hasOldAllocations) {
-          allocations ++ oldAllocations.iterator.collect {
-            case (region, _) if !allocations.contains(region) =>
+          _allocations ++ oldAllocations.iterator.collect {
+            case (region, _) if !_allocations.contains(region) =>
               region -> Vector.empty[String]
           }
         } else
-          allocations
+          _allocations
       allocationsWithEmptyOldEntries.toIndexedSeq
         .sortBy { case (_, shards) => if (shards.isEmpty) Int.MaxValue else shards.minBy(_.toInt).toInt }
         .foreach {
           case (region, shards) =>
-            val deltaFromOptimal = if (allocations.contains(region)) shards.size - optimalSize else 0.0
+            val deltaFromOptimal = if (_allocations.contains(region)) shards.size - optimalSize else 0.0
             varianceSum += deltaFromOptimal * deltaFromOptimal
 
             if (hasOldAllocations) {
@@ -222,7 +232,7 @@ class SliceRangeShardAllocationStrategySpec extends AkkaSpec {
             }
         }
 
-      val stdDeviation = math.sqrt(varianceSum / allocations.size)
+      val stdDeviation = math.sqrt(varianceSum / _allocations.size)
       println(f"Standard deviation from optimal size $stdDeviation%1.1f")
 
       if (hasOldAllocations) {
@@ -235,10 +245,10 @@ class SliceRangeShardAllocationStrategySpec extends AkkaSpec {
           "to 16 backend ranges")
       }
       println(
-        s"total of ${rangesPerRegion8.valuesIterator.sum} connections from ${allocations.size} nodes " +
+        s"total of ${rangesPerRegion8.valuesIterator.sum} connections from ${_allocations.size} nodes " +
         "to 8 backend ranges")
       println(
-        s"total of ${rangesPerRegion16.valuesIterator.sum} connections from ${allocations.size} nodes " +
+        s"total of ${rangesPerRegion16.valuesIterator.sum} connections from ${_allocations.size} nodes " +
         "to 16 backend ranges")
     }
 
@@ -258,6 +268,17 @@ class SliceRangeShardAllocationStrategySpec extends AkkaSpec {
       allocationStrategy.allocateShard(regionA, "1021", allocations).futureValue should ===(regionC)
       allocationStrategy.allocateShard(regionA, "1022", allocations).futureValue should ===(regionC)
       allocationStrategy.allocateShard(regionA, "1023", allocations).futureValue should ===(regionA)
+    }
+
+    "allocate in optimal way when allocated in order" in new Setup(64) {
+      allocateAll(shuffle = false)
+      allocations.foreach {
+        case (_, slices) =>
+          slices.size should ===(16)
+      }
+      allocation(slice = 0) should ===(allocation(slice = 15))
+      allocation(slice = 16) should ===(allocation(slice = 31))
+      allocation(slice = 1008) should ===(allocation(slice = 1023))
     }
 
     // FIXME just temporary playground

@@ -5,7 +5,6 @@
 package akka.cluster.sharding
 
 import scala.annotation.tailrec
-import scala.collection.immutable
 import scala.concurrent.Future
 
 import akka.actor.ActorRef
@@ -17,7 +16,6 @@ import akka.cluster.sharding.ShardCoordinator.ActorSystemDependentAllocationStra
 import akka.cluster.sharding.ShardRegion.ShardId
 import akka.cluster.sharding.internal.ClusterShardAllocationMixin
 import akka.cluster.sharding.internal.ClusterShardAllocationMixin.RegionEntry
-import akka.cluster.sharding.internal.ClusterShardAllocationMixin.ShardSuitabilityOrdering
 
 object SliceRangeShardAllocationStrategy {
   // Not using Persistence because akka-persistence dependency could be optional
@@ -42,6 +40,9 @@ class SliceRangeShardAllocationStrategy(absoluteLimit: Int, relativeLimit: Doubl
 
   private var cluster: Cluster = _
 
+  private val shardSuitabilityOrdering =
+    new ClusterShardAllocationMixin.ShardSuitabilityOrdering(preferLeastShards = false)
+
   override def start(system: ActorSystem): Unit = {
     cluster = Cluster(system)
   }
@@ -59,24 +60,23 @@ class SliceRangeShardAllocationStrategy(absoluteLimit: Int, relativeLimit: Doubl
     if (slice >= NumberOfSlices)
       throw new IllegalArgumentException("slice must be between 0 and 1023. Use `ShardBySliceMessageExtractor`.")
 
-    // allow some overfill, rebalance will try to move from the lower/upper slices
-    val overfill = 2
-    val maxShards = (NumberOfSlices / currentShardAllocations.size) + overfill
+    // FIXME allow some overfill, rebalance will try to move from the lower/upper slices
+//    val overfill = if ((NumberOfSlices % currentShardAllocations.size) == 0) 0 else 1
 
-    // FIXME take a look at ShardSuitabilityOrdering for member status and appVersion preference
+    val sortedRegionEntries = regionEntriesFor(currentShardAllocations).toVector.sorted(shardSuitabilityOrdering)
 
-    findRegionWithNeighbor(slice, maxShards, currentShardAllocations) match {
+    findRegionWithNeighbor(slice, sortedRegionEntries) match {
       case Some(regionWithNeighbor) =>
         val neighborShards = currentShardAllocations(regionWithNeighbor)
-        if (neighborShards.size >= NumberOfSlices / currentShardAllocations.size - 2) {
+        if (neighborShards.size >= NumberOfSlices / currentShardAllocations.size) {
           // close to max slices, if the slice is at the boundary, look for a region with lower/upper neighbor slice
           // and compare that as alternative, use the one with least number of slices
           val neighborSlices = neighborShards.map(_.toInt)
           val alternative =
             if (neighborSlices.min > slice)
-              findRegionWithLowerNeighbor(slice, maxShards, currentShardAllocations)
+              findRegionWithLowerNeighbor(slice, sortedRegionEntries)
             else if (neighborSlices.max < slice)
-              findRegionWithUpperNeighbor(slice, maxShards, currentShardAllocations)
+              findRegionWithUpperNeighbor(slice, sortedRegionEntries)
             else
               None
 
@@ -85,8 +85,11 @@ class SliceRangeShardAllocationStrategy(absoluteLimit: Int, relativeLimit: Doubl
               case Some(alternativeRegion) =>
                 if (neighborShards.size >= currentShardAllocations(alternativeRegion).size)
                   regionWithNeighbor
-                else
+                else {
+                  println(
+                    s"# Using alternative ${alternativeRegion.path.name} instead of ${regionWithNeighbor.path.name} for slice $slice, neighbor size ${neighborShards.size}") // FIXME
                   alternativeRegion
+                }
               case None =>
                 regionWithNeighbor
             }
@@ -96,34 +99,13 @@ class SliceRangeShardAllocationStrategy(absoluteLimit: Int, relativeLimit: Doubl
           Future.successful(regionWithNeighbor)
         }
       case None =>
-        Future.successful(allocateWithoutNeighbor(slice, currentShardAllocations))
+        Future.successful(allocateWithoutNeighbor(sortedRegionEntries))
     }
   }
 
-  private def allocateWithoutNeighbor(
-      slice: Int,
-      currentShardAllocations: Map[ActorRef, IndexedSeq[ShardId]]): ActorRef = {
-
-    // sort regions by member age because if a node is added (random address) we don't want rebalance more than necessary
-    val regionsByMbr = regionEntriesFor(currentShardAllocations).map(entry => entry.member -> entry.region).toMap
-    val regions = regionsByMbr.keysIterator.toIndexedSeq.sorted(Member.ageOrdering).map(regionsByMbr(_))
-
-    // first look for an empty region (e.g. rolling update case)
-    regions.reverse.collectFirst { case region if currentShardAllocations(region).isEmpty => region } match {
-      case Some(emptyRegion) => emptyRegion
-      case None =>
-        val rangeSize = NumberOfSlices / regions.size
-        val i = slice / rangeSize
-
-        if (i < regions.size) {
-          regions(i)
-        } else {
-          // This covers the rounding case for the last region, which we just distribute over all regions.
-          // May also happen if member for that region has been removed, but that should be a rare case.
-          regions(slice % regions.size)
-        }
-    }
-
+  private def allocateWithoutNeighbor(sortedRegionEntries: Vector[RegionEntry]): ActorRef = {
+    val sortedByLeastShards = sortedRegionEntries.sorted(ClusterShardAllocationMixin.ShardSuitabilityOrdering)
+    sortedByLeastShards.head.region
   }
 
   override def rebalance(
@@ -139,17 +121,14 @@ class SliceRangeShardAllocationStrategy(absoluteLimit: Int, relativeLimit: Doubl
       // one rebalance at a time
       emptyRebalanceResult
     } else {
-      val sortedRegionEntries = regionEntriesFor(currentShardAllocations).toVector.sorted(ShardSuitabilityOrdering)
+      val sortedRegionEntries = regionEntriesFor(currentShardAllocations).toVector.sorted(shardSuitabilityOrdering)
       if (!isAGoodTimeToRebalance(sortedRegionEntries)) {
         emptyRebalanceResult
       } else {
-        // this is the number of slices per region that we are aiming for
-        val overfill = 1
-        val targetSize = NumberOfSlices / sortedRegionEntries.size + overfill
         val selected = Vector.newBuilder[ShardId]
-        // FIXME ShardSuitabilityOrdering isn't used, but it seems better to use most shards first, combine them?
-        sortedRegionEntries.sortBy(entry => 0 - entry.shardIds.size).foreach {
-          case RegionEntry(_, _, shards) =>
+        sortedRegionEntries.zipWithIndex.foreach {
+          case (RegionEntry(_, _, shards), i) =>
+            val targetSize = maxShards(i, sortedRegionEntries.size)
             if (shards.size > targetSize) {
               // Skip shards that were rebalanced in previous rounds to avoid loop of rebalance-allocate
               // to same regions.
@@ -169,7 +148,7 @@ class SliceRangeShardAllocationStrategy(absoluteLimit: Int, relativeLimit: Doubl
         val currentNumberOfShards = sortedRegionEntries.map(_.shardIds.size).sum
         val limitedResult = result.take(limit(currentNumberOfShards)).toSet
         previousRebalance = previousRebalance.union(limitedResult)
-        if (previousRebalance.size >= 100)
+        if (previousRebalance.size >= NumberOfSlices / 4)
           previousRebalance = Set.empty[ShardId] // start over
         Future.successful(limitedResult)
       }
@@ -177,20 +156,17 @@ class SliceRangeShardAllocationStrategy(absoluteLimit: Int, relativeLimit: Doubl
 
   }
 
-  private def findRegionWithNeighbor(
-      slice: Int,
-      maxShards: Int,
-      currentShardAllocations: Map[ActorRef, immutable.IndexedSeq[ShardId]]): Option[ActorRef] = {
+  private def findRegionWithNeighbor(slice: Int, sortedRegionEntries: Vector[RegionEntry]): Option[ActorRef] = {
     val maxDelta = 10
 
     @tailrec def find(delta: Int): Option[ActorRef] = {
       if (delta == maxDelta)
         None
       else {
-        findRegionWithNeighbor(slice, -delta, maxShards, currentShardAllocations) match {
+        findRegionWithNeighbor(slice, -delta, sortedRegionEntries) match {
           case found @ Some(_) => found
           case None =>
-            findRegionWithNeighbor(slice, delta, maxShards, currentShardAllocations) match {
+            findRegionWithNeighbor(slice, delta, sortedRegionEntries) match {
               case found @ Some(_) => found
               case None =>
                 find(delta + 1)
@@ -202,17 +178,14 @@ class SliceRangeShardAllocationStrategy(absoluteLimit: Int, relativeLimit: Doubl
     find(delta = 1)
   }
 
-  private def findRegionWithLowerNeighbor(
-      slice: Int,
-      maxShards: Int,
-      currentShardAllocations: Map[ActorRef, immutable.IndexedSeq[ShardId]]): Option[ActorRef] = {
+  private def findRegionWithLowerNeighbor(slice: Int, sortedRegionEntries: Vector[RegionEntry]): Option[ActorRef] = {
     val maxDelta = 10
 
     @tailrec def find(delta: Int): Option[ActorRef] = {
       if (delta == maxDelta)
         None
       else {
-        findRegionWithNeighbor(slice, -delta, maxShards, currentShardAllocations) match {
+        findRegionWithNeighbor(slice, -delta, sortedRegionEntries) match {
           case found @ Some(_) => found
           case None =>
             find(delta + 1)
@@ -223,17 +196,14 @@ class SliceRangeShardAllocationStrategy(absoluteLimit: Int, relativeLimit: Doubl
     find(delta = 1)
   }
 
-  private def findRegionWithUpperNeighbor(
-      slice: Int,
-      maxShards: Int,
-      currentShardAllocations: Map[ActorRef, immutable.IndexedSeq[ShardId]]): Option[ActorRef] = {
+  private def findRegionWithUpperNeighbor(slice: Int, sortedRegionEntries: Vector[RegionEntry]): Option[ActorRef] = {
     val maxDelta = 10
 
     @tailrec def find(delta: Int): Option[ActorRef] = {
       if (delta == maxDelta)
         None
       else {
-        findRegionWithNeighbor(slice, delta, maxShards, currentShardAllocations) match {
+        findRegionWithNeighbor(slice, delta, sortedRegionEntries) match {
           case found @ Some(_) => found
           case None =>
             find(delta + 1)
@@ -247,18 +217,24 @@ class SliceRangeShardAllocationStrategy(absoluteLimit: Int, relativeLimit: Doubl
   private def findRegionWithNeighbor(
       slice: Int,
       diff: Int,
-      maxShards: Int,
-      currentShardAllocations: Map[ActorRef, immutable.IndexedSeq[ShardId]]): Option[ActorRef] = {
+      sortedRegionEntries: Vector[RegionEntry]): Option[ActorRef] = {
     val neighborSlice = slice + diff
     if (neighborSlice < 0 || neighborSlice > NumberOfSlices - 1)
       None
     else {
       val neighbor = (slice + diff).toString
-      currentShardAllocations.collectFirst {
-        case (region, shards) if shards.contains(neighbor) && shards.size < maxShards =>
+
+      sortedRegionEntries.zipWithIndex.collectFirst {
+        case (RegionEntry(region, _, shards), i)
+            if shards.contains(neighbor) && shards.size < maxShards(i, sortedRegionEntries.size) =>
           region
       }
     }
+  }
+
+  private def maxShards(i: Int, numberOfRegions: Int): Int = {
+    val rounding = if (NumberOfSlices % numberOfRegions == 0) 0 else if (i % 2 == 0) 1 else 0
+    NumberOfSlices / numberOfRegions + rounding
   }
 
 }
