@@ -67,37 +67,7 @@ class SliceRangeShardAllocationStrategy(absoluteLimit: Int, relativeLimit: Doubl
 
     findRegionWithNeighbor(slice, sortedRegionEntries) match {
       case Some(regionWithNeighbor) =>
-        val neighborShards = currentShardAllocations(regionWithNeighbor)
-        if (neighborShards.size >= NumberOfSlices / currentShardAllocations.size) {
-          // close to max slices, if the slice is at the boundary, look for a region with lower/upper neighbor slice
-          // and compare that as alternative, use the one with least number of slices
-          val neighborSlices = neighborShards.map(_.toInt)
-          val alternative =
-            if (neighborSlices.min > slice)
-              findRegionWithLowerNeighbor(slice, sortedRegionEntries)
-            else if (neighborSlices.max < slice)
-              findRegionWithUpperNeighbor(slice, sortedRegionEntries)
-            else
-              None
-
-          val selectedRegion =
-            alternative match {
-              case Some(alternativeRegion) =>
-                if (neighborShards.size >= currentShardAllocations(alternativeRegion).size)
-                  regionWithNeighbor
-                else {
-                  println(
-                    s"# Using alternative ${alternativeRegion.path.name} instead of ${regionWithNeighbor.path.name} for slice $slice, neighbor size ${neighborShards.size}") // FIXME
-                  alternativeRegion
-                }
-              case None =>
-                regionWithNeighbor
-            }
-          Future.successful(selectedRegion)
-
-        } else {
           Future.successful(regionWithNeighbor)
-        }
       case None =>
         Future.successful(allocateWithoutNeighbor(sortedRegionEntries))
     }
@@ -171,42 +141,6 @@ class SliceRangeShardAllocationStrategy(absoluteLimit: Int, relativeLimit: Doubl
               case None =>
                 find(delta + 1)
             }
-        }
-      }
-    }
-
-    find(delta = 1)
-  }
-
-  private def findRegionWithLowerNeighbor(slice: Int, sortedRegionEntries: Vector[RegionEntry]): Option[ActorRef] = {
-    val maxDelta = 10
-
-    @tailrec def find(delta: Int): Option[ActorRef] = {
-      if (delta == maxDelta)
-        None
-      else {
-        findRegionWithNeighbor(slice, -delta, sortedRegionEntries) match {
-          case found @ Some(_) => found
-          case None =>
-            find(delta + 1)
-        }
-      }
-    }
-
-    find(delta = 1)
-  }
-
-  private def findRegionWithUpperNeighbor(slice: Int, sortedRegionEntries: Vector[RegionEntry]): Option[ActorRef] = {
-    val maxDelta = 10
-
-    @tailrec def find(delta: Int): Option[ActorRef] = {
-      if (delta == maxDelta)
-        None
-      else {
-        findRegionWithNeighbor(slice, delta, sortedRegionEntries) match {
-          case found @ Some(_) => found
-          case None =>
-            find(delta + 1)
         }
       }
     }
