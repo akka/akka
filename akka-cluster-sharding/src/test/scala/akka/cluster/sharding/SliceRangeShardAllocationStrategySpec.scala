@@ -53,8 +53,11 @@ class SliceRangeShardAllocationStrategySpec extends AkkaSpec {
   val regionC = newFakeRegion("regionC", memberC)
   val regionD = newFakeRegion("regionD", memberD)
 
-  private def createAllocationStrategy(members: IndexedSeq[Member]) = {
-    new SliceRangeShardAllocationStrategy(10, 0.1) {
+  private def createAllocationStrategy(
+      members: IndexedSeq[Member],
+      absoluteLimit: Int = 10,
+      relativeLimit: Double = 0.1) = {
+    new SliceRangeShardAllocationStrategy(absoluteLimit, relativeLimit) {
       override protected def clusterState: CurrentClusterState =
         CurrentClusterState(SortedSet(members: _*))
 
@@ -297,7 +300,141 @@ class SliceRangeShardAllocationStrategySpec extends AkkaSpec {
       allocation(slice = 1008) should ===(allocation(slice = 1019))
     }
 
-    // FIXME just temporary playground
+    // FIXME when not allocating in order (which is the normal case) it would be good if it would use
+    // the optimal size and understand that it's better to use a later region for higher slices?
+    // Or pre-allocate in order after reaching min-nr-of-members.
+
+    "allocate to the other regions when node is removed" in new Setup(3) {
+      allocateAll()
+      val removed = removeMember(2)
+      val allocations2 = allocate(removed)
+      allocations2(regions(0)).size should (be >= 511 and be <= 513)
+      allocations2(regions(1)).size should (be >= 511 and be <= 513)
+    }
+
+    "not rebalance when nodes not changed" in new Setup(32) {
+      allocateAll()
+      repeatRebalanceAndAllocate()
+      rebalance() should ===(Vector.empty[Int])
+      rebalance() should ===(Vector.empty[Int])
+    }
+
+    "rebalance when node is added" in new Setup(3) {
+      allocateAll()
+      addMember()
+      val rebalanced = rebalanceAndAllocate()
+      rebalanced.foreach { slice =>
+        allocation(slice).get should ===(regions.last)
+      }
+
+      repeatRebalanceAndAllocate()
+      (0 until 4).foreach { i =>
+        allocations(regions(i)).size should (be >= 253 and be <= 257)
+      }
+    }
+
+    "not rebalance more than limit" in {
+      val allocationStrategy = createAllocationStrategy(Vector(memberA, memberB, memberC, memberD), absoluteLimit = 2)
+      val allocations = Map(
+        regionA -> (0 until 300).map(_.toString).toVector,
+        regionB -> Vector.empty,
+        regionC -> Vector.empty,
+        regionD -> Vector.empty)
+      allocationStrategy.rebalance(allocations, Set.empty).futureValue should ===(Set("0", "299"))
+      // FIXME it would have been nice if it could understand that 0 isn't a good choice, but 288 and 299, or
+      // 256 and 299
+
+      val allocationStrategy2 = createAllocationStrategy(Vector(memberA, memberB, memberC, memberD), absoluteLimit = 2)
+      val allocations2 = Map(
+        regionA -> (0 until 300).map(_.toString).toVector,
+        regionB -> (300 until 600).map(_.toString).toVector,
+        regionC -> Vector.empty,
+        regionD -> Vector.empty)
+      allocationStrategy2.rebalance(allocations2, Set.empty).futureValue should ===(Set("0", "299"))
+    }
+
+    "not rebalance those that have recently been rebalanced" in {
+      val allocationStrategy = createAllocationStrategy(Vector(memberA, memberB, memberC, memberD), absoluteLimit = 2)
+      val allocations = Map(
+        regionA -> (0 until 300).map(_.toString).toVector,
+        regionB -> Vector.empty,
+        regionC -> Vector.empty,
+        regionD -> Vector.empty)
+      allocationStrategy.rebalance(allocations, Set.empty).futureValue should ===(Set("0", "299"))
+      allocationStrategy.rebalance(allocations, Set.empty).futureValue should ===(Set("1", "298"))
+      allocationStrategy.rebalance(allocations, Set.empty).futureValue should ===(Set("2", "297"))
+    }
+
+    "not rebalance when rebalance in progress" in {
+      val allocationStrategy = createAllocationStrategy(Vector(memberA, memberB, memberC, memberD), absoluteLimit = 2)
+      val allocations = Map(
+        regionA -> (0 until 300).map(_.toString).toVector,
+        regionB -> Vector.empty,
+        regionC -> Vector.empty,
+        regionD -> Vector.empty)
+      allocationStrategy.rebalance(allocations, Set.empty).futureValue should ===(Set("0", "299"))
+      allocationStrategy.rebalance(allocations, Set("0", "299")).futureValue should ===(Set.empty[String])
+    }
+
+    "not rebalance when rolling update in progress" in {
+      // multiple versions to simulate rolling update in progress
+      val member1 = newUpMember("127.0.0.1", upNbr = 1, version = Version("1.0.0"))
+      val member2 = newUpMember("127.0.0.2", upNbr = 2, version = Version("1.0.1"))
+      val member3 = newUpMember("127.0.0.3", upNbr = 3, version = Version("1.0.0"))
+
+      val allocationStrategy = createAllocationStrategy(Vector(member1, member2, member3))
+      val allocations = Map(
+        regionA -> (0 until 300).map(_.toString).toVector,
+        regionB -> (300 until 600).map(_.toString).toVector,
+        regionC -> Vector.empty)
+      allocationStrategy.rebalance(allocations, Set.empty).futureValue should ===(Set.empty[String])
+    }
+
+    "not rebalance when regions are unreachable" in {
+      val allocationStrategy =
+        new SliceRangeShardAllocationStrategy(10, 0.1) {
+          override protected def clusterState: CurrentClusterState =
+            CurrentClusterState(SortedSet(memberA, memberB, memberC), unreachable = Set(memberB))
+
+          override protected def selfMember: Member = memberB
+        }
+      val allocations = Map(
+        regionA -> (0 until 300).map(_.toString).toVector,
+        regionB -> (300 until 600).map(_.toString).toVector,
+        regionC -> Vector.empty)
+      allocationStrategy.rebalance(allocations, Set.empty).futureValue should ===(Set.empty[String])
+    }
+
+    "not rebalance when members are joining dc" in {
+      val allocationStrategy =
+        new SliceRangeShardAllocationStrategy(10, 0.1) {
+
+          val member1 = newUpMember("127.0.0.1", upNbr = 1)
+          val member2 =
+            Member(
+              UniqueAddress(Address("akka", "myapp", "127.0.0.2", 252525), 1L),
+              Set(ClusterSettings.DcRolePrefix + ClusterSettings.DefaultDataCenter),
+              member1.appVersion).copyUp(2)
+          val member3 = newUpMember("127.0.0.3", upNbr = 3)
+
+          override protected def clusterState: CurrentClusterState =
+            CurrentClusterState(SortedSet(member1, member2, member3), unreachable = Set.empty)
+          override protected def selfMember: Member = member2
+        }
+      val allocations = Map(
+        regionA -> (0 until 300).map(_.toString).toVector,
+        regionB -> (300 until 600).map(_.toString).toVector,
+        regionC -> Vector.empty)
+      allocationStrategy.rebalance(allocations, Set.empty).futureValue should ===(Set.empty[String])
+
+    }
+
+  }
+
+  // These are not real tests, but can be useful for exploring the algorithm and tuning
+  "SliceRangeShardAllocationStrategy simulations" must {
+    // FIXME mark these as `ignore`
+
     "try distributions" in {
       (1 to 100).foreach { N =>
         val setup = new Setup(N, shuffle = true)
@@ -367,123 +504,6 @@ class SliceRangeShardAllocationStrategySpec extends AkkaSpec {
       printAllocations(verbose = false)
 
     }
-
-    "allocate to the other regions when node is removed" in new Setup(3) {
-      allocateAll()
-      val removed = removeMember(2)
-      val allocations2 = allocate(removed)
-      allocations2(regions(0)).size should (be >= 511 and be <= 513)
-      allocations2(regions(1)).size should (be >= 511 and be <= 513)
-    }
-
-    "not rebalance when nodes not changed" in new Setup(32) {
-      allocateAll()
-      repeatRebalanceAndAllocate()
-      rebalance() should ===(Vector.empty[Int])
-      rebalance() should ===(Vector.empty[Int])
-    }
-
-    "rebalance when node is added" in new Setup(3) {
-      allocateAll()
-      addMember()
-      val rebalanced = rebalanceAndAllocate()
-      rebalanced.foreach { slice =>
-        allocation(slice).get should ===(regions.last)
-      }
-
-      repeatRebalanceAndAllocate()
-      (0 until 4).foreach { i =>
-        allocations(regions(i)).size should (be >= 253 and be <= 257)
-      }
-    }
-
-//
-//
-//    "not rebalance more than limit" in {
-//      val allocationStrategy = strategy(rebalanceLimit = 2)
-//      val allocations = Map(
-//        regionA -> Vector("0", "1", "2", "3", "10", "14"),
-//        regionB -> Vector.empty,
-//        regionC -> Vector.empty,
-//        regionD -> Vector.empty)
-//      allocationStrategy.rebalance(allocations, Set.empty).futureValue should ===(Set("0", "1"))
-//
-//      val allocations2 = Map(
-//        regionA -> Vector("2", "3", "10", "14"),
-//        regionB -> Vector("1"),
-//        regionC -> Vector("0"),
-//        regionD -> Vector.empty)
-//      allocationStrategy.rebalance(allocations2, Set.empty).futureValue should ===(Set("2", "3"))
-//
-//      val allocations3 =
-//        Map(regionA -> Vector("10", "14"), regionB -> Vector("1"), regionC -> Vector("0", "3"), regionD -> Vector("2"))
-//      allocationStrategy.rebalance(allocations3, Set.empty).futureValue should ===(Set.empty[String])
-//    }
-//
-//    "not rebalance those that are in progress" in {
-//      val allocationStrategy = strategy(rebalanceLimit = 2)
-//      val allocations = Map(
-//        regionA -> Vector("0", "1", "2", "3", "10", "14"),
-//        regionB -> Vector.empty,
-//        regionC -> Vector.empty,
-//        regionD -> Vector.empty)
-//      allocationStrategy.rebalance(allocations, Set.empty).futureValue should ===(Set("0", "1"))
-//      allocationStrategy.rebalance(allocations, Set("0", "1")).futureValue should ===(Set("2", "3"))
-//      // 10 and 14 are already at right place
-//      allocationStrategy.rebalance(allocations, Set("0", "1", "2", "3")).futureValue should ===(Set.empty[String])
-//    }
-//
-//    "not rebalance when rolling update in progress" in {
-//      val allocationStrategy =
-//        new SliceRangeShardAllocationStrategy(rebalanceLimit = 0) {
-//
-//          val member1 = newUpMember("127.0.0.1", upNbr = 1, version = Version("1.0.0"))
-//          val member2 = newUpMember("127.0.0.2", upNbr = 2, version = Version("1.0.1"))
-//          val member3 = newUpMember("127.0.0.3", upNbr = 3, version = Version("1.0.0"))
-//
-//          // multiple versions to simulate rolling update in progress
-//          override protected def clusterState: CurrentClusterState =
-//            CurrentClusterState(SortedSet(member1, member2, member3))
-//
-//          override protected def selfMember: Member = member1
-//        }
-//      val allocations = Map(regionA -> Vector("0", "1", "2", "3", "10", "14"), regionB -> Vector.empty)
-//      allocationStrategy.rebalance(allocations, Set.empty).futureValue should ===(Set.empty[String])
-//    }
-//
-//    "not rebalance when regions are unreachable" in {
-//      val allocationStrategy =
-//        new SliceRangeShardAllocationStrategy(rebalanceLimit = 0) {
-//
-//          override protected def clusterState: CurrentClusterState =
-//            CurrentClusterState(SortedSet(memberA, memberB, memberC), unreachable = Set(memberB))
-//          override protected def selfMember: Member = memberB
-//        }
-//      val allocations =
-//        Map(regionA -> Vector("0", "1", "2", "3", "10", "14"), regionB -> Vector.empty, regionC -> Vector.empty)
-//      allocationStrategy.rebalance(allocations, Set.empty).futureValue should ===(Set.empty[String])
-//    }
-//    "not rebalance when members are joining dc" in {
-//      val allocationStrategy =
-//        new SliceRangeShardAllocationStrategy(rebalanceLimit = 0) {
-//
-//          val member1 = newUpMember("127.0.0.1", upNbr = 1)
-//          val member2 =
-//            Member(
-//              UniqueAddress(Address("akka", "myapp", "127.0.0.2", 252525), 1L),
-//              Set(ClusterSettings.DcRolePrefix + ClusterSettings.DefaultDataCenter),
-//              member1.appVersion).copyUp(2)
-//          val member3 = newUpMember("127.0.0.3", upNbr = 3)
-//
-//          override protected def clusterState: CurrentClusterState =
-//            CurrentClusterState(SortedSet(member1, member2, member3), unreachable = Set.empty)
-//          override protected def selfMember: Member = member2
-//        }
-//      val allocations =
-//        Map(regionA -> Vector("0", "1", "2", "3", "10", "14"), regionB -> Vector.empty, regionC -> Vector.empty)
-//      allocationStrategy.rebalance(allocations, Set.empty).futureValue should ===(Set.empty[String])
-//
-//    }
 
   }
 
