@@ -163,7 +163,6 @@ class SliceRangeShardAllocationStrategySpec extends AkkaSpec {
       @tailrec def loop(n: Int): Unit = {
         if (n <= 100) {
           val rebalancedSlices = rebalance()
-          println(s"rebalance #$n: ${rebalancedSlices.sorted}")
           if (rebalancedSlices.nonEmpty) {
             allocate(rebalancedSlices)
             loop(n + 1)
@@ -257,17 +256,17 @@ class SliceRangeShardAllocationStrategySpec extends AkkaSpec {
         println(s"$totalSame shards kept at same region")
         println(
           s"old total of ${oldRangesPerRegion8.valuesIterator.sum} connections from ${oldAllocations.size} nodes " +
-          "to 8 backend ranges")
+          s"to 8 backend ranges, reduction by ${oldAllocations.size * 8 - oldRangesPerRegion8.valuesIterator.sum}")
         println(
           s"old total of ${oldRangesPerRegion16.valuesIterator.sum} connections from ${oldAllocations.size} nodes " +
-          "to 16 backend ranges")
+          s"to 16 backend ranges, reduction by ${oldAllocations.size * 16 - oldRangesPerRegion16.valuesIterator.sum}")
       }
       println(
         s"total of ${rangesPerRegion8.valuesIterator.sum} connections from ${_allocations.size} nodes " +
-        "to 8 backend ranges")
+        s"to 8 backend ranges, reduction by ${_allocations.size * 8 - rangesPerRegion8.valuesIterator.sum}")
       println(
         s"total of ${rangesPerRegion16.valuesIterator.sum} connections from ${_allocations.size} nodes " +
-        "to 16 backend ranges")
+        s"to 16 backend ranges, reduction by ${_allocations.size * 16 - rangesPerRegion16.valuesIterator.sum}")
     }
 
   }
@@ -289,6 +288,8 @@ class SliceRangeShardAllocationStrategySpec extends AkkaSpec {
     }
 
     "allocate in almost optimal way when allocated in order" in new Setup(64) {
+      // TODO: maybe we could pre-allocate in order after reaching min-nr-of-members.
+
       // optimal would be 16 per region, but the overfill is needed for rebalance iterations
       allocateAll()
       allocations.foreach {
@@ -301,10 +302,6 @@ class SliceRangeShardAllocationStrategySpec extends AkkaSpec {
       allocation(slice = 512) should ===(allocation(slice = 526))
       allocation(slice = 1008) should ===(allocation(slice = 1019))
     }
-
-    // FIXME when not allocating in order (which is the normal case) it would be good if it would use
-    // the optimal size and understand that it's better to use a later region for higher slices?
-    // Or pre-allocate in order after reaching min-nr-of-members.
 
     "allocate to the other regions when node is removed" in new Setup(3) {
       allocateAll()
@@ -343,8 +340,6 @@ class SliceRangeShardAllocationStrategySpec extends AkkaSpec {
         regionC -> Vector.empty,
         regionD -> Vector.empty)
       allocationStrategy.rebalance(allocations, Set.empty).futureValue should ===(Set("0", "299"))
-      // FIXME it would have been nice if it could understand that 0 isn't a good choice, but 288 and 299, or
-      // 256 and 299
 
       val allocationStrategy2 = createAllocationStrategy(Vector(memberA, memberB, memberC, memberD), absoluteLimit = 2)
       val allocations2 = Map(
@@ -445,9 +440,8 @@ class SliceRangeShardAllocationStrategySpec extends AkkaSpec {
 
   // These are not real tests, but can be useful for exploring the algorithm and tuning
   "SliceRangeShardAllocationStrategy simulations" must {
-    // FIXME mark these as `ignore`
 
-    "try distributions" in {
+    "try distributions" ignore {
       (1 to 100).foreach { N =>
         val setup = new Setup(N, shuffle = true)
 
@@ -462,7 +456,7 @@ class SliceRangeShardAllocationStrategySpec extends AkkaSpec {
       }
     }
 
-    "try member change impact" in new Setup(50, shuffle = true) {
+    "try member change impact" ignore new Setup(50, shuffle = true) {
       info(s"rnd seed $rndSeed")
 
       allocateAll()
@@ -474,20 +468,22 @@ class SliceRangeShardAllocationStrategySpec extends AkkaSpec {
       printAllocations()
     }
 
-    "try rebalance impact" in new Setup(50, shuffle = true) {
+    "try rebalance impact" ignore new Setup(50, shuffle = true) {
       info(s"rnd seed $rndSeed")
 
       allocateAll()
-      repeatRebalanceAndAllocate()
+      val rebalanced1 = repeatRebalanceAndAllocate()
+      println(s"rebalanced #1: $rebalanced1.sorted}")
 
-      (1 to 100).foreach { _ =>
+      (2 to 100).foreach { n =>
         addMember()
-        repeatRebalanceAndAllocate()
+        val rebalanced2 = repeatRebalanceAndAllocate()
+        println(s"rebalanced #$n: $rebalanced2.sorted}")
         printAllocations(verbose = false)
       }
     }
 
-    "try simulation" in new Setup(100, shuffle = true) {
+    "try simulation" ignore new Setup(100, shuffle = true) {
       info(s"rnd seed $rndSeed")
 
       allocateAll()
@@ -511,7 +507,8 @@ class SliceRangeShardAllocationStrategySpec extends AkkaSpec {
 
       allocateMissingSlices(1024)
 
-      repeatRebalanceAndAllocate()
+      val rebalanced = repeatRebalanceAndAllocate()
+      println(s"rebalanced: $rebalanced.sorted}")
 
       printAllocations(verbose = false)
 
