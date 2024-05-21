@@ -57,11 +57,6 @@ class SliceRangeShardAllocationStrategy(absoluteLimit: Int, relativeLimit: Doubl
   private val shardSuitabilityOrdering =
     new ClusterShardAllocationMixin.ShardSuitabilityOrdering(preferLeastShards = false)
 
-  // rebalance will pick from lower/upper slices to make the distribution more optimal,
-  // and therefore there must be room for some overfill, otherwise it would just allocate
-  // without neighbor collocation when reaching full allocation
-  private val overfill = 1
-
   override def start(system: ActorSystem): Unit = {
     cluster = Cluster(system)
     numberOfSlices = Persistence(system).numberOfSlices
@@ -82,30 +77,12 @@ class SliceRangeShardAllocationStrategy(absoluteLimit: Int, relativeLimit: Doubl
 
     val sortedRegionEntries = regionEntriesFor(currentShardAllocations).toVector.sorted(shardSuitabilityOrdering)
 
-    // Prefer a region that already has slices close to the slice to be allocated, so called neighbors.
-    // Also look at the already allocated range from min to max slice in that region, and if the slice
-    // is outside of the optimal range try a to find a region lower/upper slice neighbor instead.
-    // Last resort if not finding neighbors is to allocate to region with least number of shards.
-    val selectedRegion =
-      findRegionWithNeighbor(slice, sortedRegionEntries) match {
-        case Some(regionWithNeighbor) =>
-          val neighborShards = currentShardAllocations(regionWithNeighbor)
-          val neighborSlices = neighborShards.map(_.toInt)
-          val i = sortedRegionEntries.iterator.map(_.region).indexOf(regionWithNeighbor)
-          val optimalSize = optimalNumberOfShards(i, sortedRegionEntries.size)
-          if (slice >= neighborSlices.min + optimalSize + overfill) {
-            findRegionWithUpperNeighbor(slice, sortedRegionEntries).getOrElse(
-              allocateWithoutNeighbor(sortedRegionEntries))
-          } else if (slice <= neighborSlices.max - optimalSize - overfill) {
-            findRegionWithLowerNeighbor(slice, sortedRegionEntries).getOrElse(
-              allocateWithoutNeighbor(sortedRegionEntries))
-          } else {
-            regionWithNeighbor
-          }
-        case None =>
-          allocateWithoutNeighbor(sortedRegionEntries)
-      }
-    Future.successful(selectedRegion)
+    findRegionWithNeighbor(slice, sortedRegionEntries) match {
+      case Some(regionWithNeighbor) =>
+        Future.successful(regionWithNeighbor)
+      case None =>
+        Future.successful(allocateWithoutNeighbor(sortedRegionEntries))
+    }
   }
 
   private def allocateWithoutNeighbor(sortedRegionEntries: Vector[RegionEntry]): ActorRef = {
@@ -183,42 +160,6 @@ class SliceRangeShardAllocationStrategy(absoluteLimit: Int, relativeLimit: Doubl
     find(delta = 1)
   }
 
-  private def findRegionWithUpperNeighbor(slice: Int, sortedRegionEntries: Vector[RegionEntry]): Option[ActorRef] = {
-    val maxDelta = 10
-
-    @tailrec def find(delta: Int): Option[ActorRef] = {
-      if (delta == maxDelta)
-        None
-      else {
-        findRegionWithNeighbor(slice, delta, sortedRegionEntries) match {
-          case found @ Some(_) => found
-          case None =>
-            find(delta + 1)
-        }
-      }
-    }
-
-    find(delta = 1)
-  }
-
-  private def findRegionWithLowerNeighbor(slice: Int, sortedRegionEntries: Vector[RegionEntry]): Option[ActorRef] = {
-    val maxDelta = 10
-
-    @tailrec def find(delta: Int): Option[ActorRef] = {
-      if (delta == maxDelta)
-        None
-      else {
-        findRegionWithNeighbor(slice, -delta, sortedRegionEntries) match {
-          case found @ Some(_) => found
-          case None =>
-            find(delta + 1)
-        }
-      }
-    }
-
-    find(delta = 1)
-  }
-
   private def findRegionWithNeighbor(
       slice: Int,
       diff: Int,
@@ -229,6 +170,10 @@ class SliceRangeShardAllocationStrategy(absoluteLimit: Int, relativeLimit: Doubl
     else {
       val neighbor = (slice + diff).toString
 
+      // rebalance will pick from lower/upper slices to make the distribution more optimal,
+      // and therefore there must be room for some overfill, otherwise it would just allocate
+      // without neighbor collocation when reaching full allocation
+      val overfill = 1
       sortedRegionEntries.zipWithIndex.collectFirst {
         case (RegionEntry(region, _, shards), i)
             if shards.contains(neighbor) && shards.size < optimalNumberOfShards(i, sortedRegionEntries.size) + overfill =>

@@ -257,17 +257,17 @@ class SliceRangeShardAllocationStrategySpec extends AkkaSpec {
         println(s"$totalSame shards kept at same region")
         println(
           s"old total of ${oldRangesPerRegion8.valuesIterator.sum} connections from ${oldAllocations.size} nodes " +
-          s"to 8 backend ranges, reduction by ${oldAllocations.size * 8 - oldRangesPerRegion8.valuesIterator.sum}")
+          "to 8 backend ranges")
         println(
           s"old total of ${oldRangesPerRegion16.valuesIterator.sum} connections from ${oldAllocations.size} nodes " +
-          s"to 16 backend ranges, reduction by ${oldAllocations.size * 16 - oldRangesPerRegion16.valuesIterator.sum}")
+          "to 16 backend ranges")
       }
       println(
         s"total of ${rangesPerRegion8.valuesIterator.sum} connections from ${_allocations.size} nodes " +
-        s"to 8 backend ranges, reduction by ${_allocations.size * 8 - rangesPerRegion8.valuesIterator.sum}")
+        "to 8 backend ranges")
       println(
         s"total of ${rangesPerRegion16.valuesIterator.sum} connections from ${_allocations.size} nodes " +
-        s"to 16 backend ranges, reduction by ${_allocations.size * 16 - rangesPerRegion16.valuesIterator.sum}")
+        "to 16 backend ranges")
     }
 
   }
@@ -288,18 +288,6 @@ class SliceRangeShardAllocationStrategySpec extends AkkaSpec {
       allocationsC should ===((685 to 1023).toVector)
     }
 
-    "allocate close to neighbor" in new Setup(64) {
-      // optimal would be 16 per region
-      allocate((0 until 20).toVector.filterNot(_ == 5))
-      allocation(0).get should ===(regions(0))
-      allocation(15).get should ===(regions(0))
-      allocation(19).get should ===(regions(1))
-      // removing one member leaves room for more in the first region
-      removeMember(2)
-      allocate(5)
-      allocation(5).get should ===(regions(0))
-    }
-
     "allocate in almost optimal way when allocated in order" in new Setup(64) {
       // optimal would be 16 per region, but the overfill is needed for rebalance iterations
       allocateAll()
@@ -314,43 +302,9 @@ class SliceRangeShardAllocationStrategySpec extends AkkaSpec {
       allocation(slice = 1008) should ===(allocation(slice = 1019))
     }
 
-    "pick a region with higher neighbor when slice is greater than optimal range" in new Setup(64) {
-      allocate(Vector(0, 1, 2))
-      allocate(20)
-
-      allocation(0).get should ===(regions(0))
-      allocation(2).get should ===(regions(0))
-      allocation(20).get should ===(regions(1))
-
-      allocate((4 to 16 by 2).toVector)
-      allocation(4).get should ===(regions(0))
-      allocation(16).get should ===(regions(0))
-      // there is still room for more in first region, and it has neighbor, but more optimal to use
-      // other region for 17 because optimal is 0-15 (actually 0-16 due to +1 overfill)
-      allocate(17)
-      allocation(17).get should ===(regions(1))
-    }
-
-    "pick a region with lower neighbor when slice is less than optimal range" in new Setup(64) {
-      allocate(Vector(59))
-      allocate(Vector(70, 71, 72))
-
-      allocation(59).get should ===(regions(0))
-      allocation(70).get should ===(regions(1))
-      allocation(72).get should ===(regions(1))
-
-      allocate((60 to 68 by 2).toVector)
-      allocation(60).get should ===(regions(0))
-      allocation(68).get should ===(regions(0))
-
-      allocate((74 to 86 by 2).toVector)
-      allocation(74).get should ===(regions(1))
-      allocation(86).get should ===(regions(1))
-      // there is still room for more in second region, and it has neighbor, but more optimal to use
-      // other region for 69 because optimal is 71-86 (actually 70-86 due to +1 overfill)
-      allocate(69)
-      allocation(69).get should ===(regions(0))
-    }
+    // FIXME when not allocating in order (which is the normal case) it would be good if it would use
+    // the optimal size and understand that it's better to use a later region for higher slices?
+    // Or pre-allocate in order after reaching min-nr-of-members.
 
     "allocate to the other regions when node is removed" in new Setup(3) {
       allocateAll()
