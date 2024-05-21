@@ -2,7 +2,7 @@
  * Copyright (C) 2024-2023 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.cluster.sharding
+package akka.cluster.sharding.typed
 
 import scala.annotation.tailrec
 import scala.concurrent.Future
