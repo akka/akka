@@ -322,13 +322,13 @@ import akka.util.ccompat.JavaConverters._
 
     val b = ReplicatedEventSourcing.ORSetDeltaGroup.newBuilder()
     deltaGroup.ops.foreach {
-      case ORSet.AddDeltaOp(u) =>
-        b.addEntries(createEntry(ReplicatedEventSourcing.ORSetDeltaOp.Add, u))
-      case ORSet.RemoveDeltaOp(u) =>
-        b.addEntries(createEntry(ReplicatedEventSourcing.ORSetDeltaOp.Remove, u))
-      case ORSet.FullStateDeltaOp(u) =>
-        b.addEntries(createEntry(ReplicatedEventSourcing.ORSetDeltaOp.Full, u))
-      case ORSet.DeltaGroup(_) =>
+      case add: ORSet.AddDeltaOp[_] =>
+        b.addEntries(createEntry(ReplicatedEventSourcing.ORSetDeltaOp.Add, add.underlying))
+      case remove: ORSet.RemoveDeltaOp[_] =>
+        b.addEntries(createEntry(ReplicatedEventSourcing.ORSetDeltaOp.Remove, remove.underlying))
+      case full: ORSet.FullStateDeltaOp[_] =>
+        b.addEntries(createEntry(ReplicatedEventSourcing.ORSetDeltaOp.Full, full.underlying))
+      case _: ORSet.DeltaGroup[_] =>
         throw new IllegalArgumentException("ORSet.DeltaGroup should not be nested")
     }
     b.build()
