@@ -21,6 +21,8 @@ import akka.cluster.Member
 import akka.cluster.MemberStatus
 import akka.cluster.UniqueAddress
 import akka.cluster.sharding.ShardRegion.ShardId
+import akka.cluster.sharding.typed.SliceRangeShardAllocationStrategy.ShardBySliceMessageExtractor
+import akka.persistence.Persistence
 import akka.testkit.AkkaSpec
 import akka.util.Version
 
@@ -429,6 +431,16 @@ class SliceRangeShardAllocationStrategySpec extends AkkaSpec {
 
     }
 
+  }
+
+  "ShardBySliceMessageExtractor" must {
+    "extract slice as shardId" in {
+      val persistence = Persistence(system)
+      val extractor = new ShardBySliceMessageExtractor("TestEntity", persistence)
+      val shardId = extractor.shardId("abc")
+      val slice = shardId.toInt
+      slice should ===(persistence.sliceForPersistenceId("TestEntity|abc"))
+    }
   }
 
   // These are not real tests, but can be useful for exploring the algorithm and tuning

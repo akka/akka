@@ -16,14 +16,27 @@ import akka.cluster.sharding.ShardCoordinator.ActorSystemDependentAllocationStra
 import akka.cluster.sharding.ShardRegion.ShardId
 import akka.cluster.sharding.internal.ClusterShardAllocationMixin
 import akka.cluster.sharding.internal.ClusterShardAllocationMixin.RegionEntry
+import akka.persistence.Persistence
+import akka.persistence.typed.PersistenceId
 
 object SliceRangeShardAllocationStrategy {
-  // Not using Persistence because akka-persistence dependency could be optional
-  private val NumberOfSlices = 1024
-
   private val emptyRebalanceResult = Future.successful(Set.empty[ShardId])
 
-  final class ShardBySliceMessageExtractor // FIXME
+  final class ShardBySliceMessageExtractor[M](entityType: String, persistence: Persistence)
+      extends ShardingMessageExtractor[ShardingEnvelope[M], M] {
+
+    override def entityId(envelope: ShardingEnvelope[M]): String = envelope.entityId
+
+    override def shardId(entityId: String): String = {
+      // FIXME shall we have the Persistence extension dependency here, or re-implement sliceForPersistenceId?
+      // TODO could save an allocation by not using PersistenceId, but re-implement the trivial concatenation
+      val persistenceId = PersistenceId.of(entityType, entityId).id
+      val slice = persistence.sliceForPersistenceId(persistenceId)
+      slice.toString
+    }
+
+    override def unwrapMessage(envelope: ShardingEnvelope[M]): M = envelope.message
+  }
 }
 
 /**
@@ -39,12 +52,14 @@ class SliceRangeShardAllocationStrategy(absoluteLimit: Int, relativeLimit: Doubl
   import SliceRangeShardAllocationStrategy._
 
   private var cluster: Cluster = _
+  private var numberOfSlices = 1024 // initialized for real in start
 
   private val shardSuitabilityOrdering =
     new ClusterShardAllocationMixin.ShardSuitabilityOrdering(preferLeastShards = false)
 
   override def start(system: ActorSystem): Unit = {
     cluster = Cluster(system)
+    numberOfSlices = Persistence(system).numberOfSlices
   }
 
   override protected def clusterState: CurrentClusterState = cluster.state
@@ -57,11 +72,8 @@ class SliceRangeShardAllocationStrategy(absoluteLimit: Int, relativeLimit: Doubl
       shardId: ShardId,
       currentShardAllocations: Map[ActorRef, IndexedSeq[ShardId]]): Future[ActorRef] = {
     val slice = shardId.toInt
-    if (slice >= NumberOfSlices)
+    if (slice >= numberOfSlices)
       throw new IllegalArgumentException("slice must be between 0 and 1023. Use `ShardBySliceMessageExtractor`.")
-
-    // FIXME allow some overfill, rebalance will try to move from the lower/upper slices
-//    val overfill = if ((NumberOfSlices % currentShardAllocations.size) == 0) 0 else 1
 
     val sortedRegionEntries = regionEntriesFor(currentShardAllocations).toVector.sorted(shardSuitabilityOrdering)
 
@@ -118,7 +130,7 @@ class SliceRangeShardAllocationStrategy(absoluteLimit: Int, relativeLimit: Doubl
         val currentNumberOfShards = sortedRegionEntries.map(_.shardIds.size).sum
         val limitedResult = result.take(limit(currentNumberOfShards)).toSet
         previousRebalance = previousRebalance.union(limitedResult)
-        if (previousRebalance.size >= NumberOfSlices / 4)
+        if (previousRebalance.size >= numberOfSlices / 4)
           previousRebalance = Set.empty[ShardId] // start over
         Future.successful(limitedResult)
       }
@@ -153,7 +165,7 @@ class SliceRangeShardAllocationStrategy(absoluteLimit: Int, relativeLimit: Doubl
       diff: Int,
       sortedRegionEntries: Vector[RegionEntry]): Option[ActorRef] = {
     val neighborSlice = slice + diff
-    if (neighborSlice < 0 || neighborSlice > NumberOfSlices - 1)
+    if (neighborSlice < 0 || neighborSlice > numberOfSlices - 1)
       None
     else {
       val neighbor = (slice + diff).toString
@@ -171,8 +183,8 @@ class SliceRangeShardAllocationStrategy(absoluteLimit: Int, relativeLimit: Doubl
   }
 
   private def optimalNumberOfShards(i: Int, numberOfRegions: Int): Int = {
-    val rounding = if (NumberOfSlices % numberOfRegions == 0) 0 else if (i % 2 == 0) 1 else 0
-    NumberOfSlices / numberOfRegions + rounding
+    val rounding = if (numberOfSlices % numberOfRegions == 0) 0 else if (i % 2 == 0) 1 else 0
+    numberOfSlices / numberOfRegions + rounding
   }
 
 }
