@@ -180,8 +180,8 @@ class SliceRangeShardAllocationStrategy(absoluteLimit: Int, relativeLimit: Doubl
     }
   }
 
-  private def optimalNumberOfShards(i: Int, numberOfRegions: Int): Int = {
-    val rounding = if (numberOfSlices % numberOfRegions == 0) 0 else if (i % 2 == 0) 1 else 0
+  private def optimalNumberOfShards(regionIndex: Int, numberOfRegions: Int): Int = {
+    val rounding = if (numberOfSlices % numberOfRegions == 0) 0 else if (regionIndex % 2 == 0) 1 else 0
     numberOfSlices / numberOfRegions + rounding
   }
 
