@@ -28,9 +28,7 @@ object SliceRangeShardAllocationStrategy {
     override def entityId(envelope: ShardingEnvelope[M]): String = envelope.entityId
 
     override def shardId(entityId: String): String = {
-      // FIXME shall we have the Persistence extension dependency here, or re-implement sliceForPersistenceId?
-      // TODO could save an allocation by not using PersistenceId, but re-implement the trivial concatenation
-      val persistenceId = PersistenceId.of(entityType, entityId).id
+      val persistenceId = PersistenceId.concat(entityType, entityId)
       val slice = persistence.sliceForPersistenceId(persistenceId)
       slice.toString
     }
