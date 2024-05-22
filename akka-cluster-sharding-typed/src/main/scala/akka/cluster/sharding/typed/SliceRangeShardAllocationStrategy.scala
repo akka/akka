@@ -159,7 +159,7 @@ class SliceRangeShardAllocationStrategy(absoluteLimit: Int, relativeLimit: Doubl
   }
 
   private def findRegionWithNeighbor(slice: Int, sortedRegionEntries: Vector[RegionEntry]): Option[ActorRef] = {
-    val maxDelta = 10
+    val maxDelta = math.max(8, optimalNumberOfShards(0, sortedRegionEntries.size) / 2)
 
     @tailrec def find(delta: Int): Option[ActorRef] = {
       if (delta == maxDelta)
