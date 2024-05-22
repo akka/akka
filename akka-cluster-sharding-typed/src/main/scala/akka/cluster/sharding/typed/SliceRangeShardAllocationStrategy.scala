@@ -9,6 +9,7 @@ import scala.concurrent.Future
 
 import akka.actor.ActorRef
 import akka.actor.ActorSystem
+import akka.annotation.DoNotInherit
 import akka.cluster.Cluster
 import akka.cluster.ClusterEvent.CurrentClusterState
 import akka.cluster.Member
@@ -22,6 +23,10 @@ import akka.persistence.typed.PersistenceId
 object SliceRangeShardAllocationStrategy {
   private val emptyRebalanceResult = Future.successful(Set.empty[ShardId])
 
+  /**
+   * To be used together with [[SliceRangeShardAllocationStrategy]]. The slice of the entity
+   * is used as shardId.
+   */
   final class ShardBySliceMessageExtractor[M](entityType: String, persistence: Persistence)
       extends ShardingMessageExtractor[ShardingEnvelope[M], M] {
 
@@ -38,12 +43,29 @@ object SliceRangeShardAllocationStrategy {
 }
 
 /**
+ * Intended to be used with database sharding, https://doc.akka.io/docs/akka-persistence-r2dbc/current/data-partition.html,
+ * with a cluster of many Akka nodes. To avoid that each Akka node has database connections to all databases it is
+ * preferred to collocate entities with the same slice and contiguous range of slices to the same Akka node. Thereby
+ * the connections from one Akka node will go to one or a few databases since the database sharding is based on
+ * slice ranges.
+ *
+ * It must be used together with the [[SliceRangeShardAllocationStrategy.ShardBySliceMessageExtractor]].
+ *
+ * Create a new instance of this for each entity type, i.e. a `SliceRangeShardAllocationStrategy`
+ * instance must not be shared between different entity types.
+ *
  * It will not rebalance when there is already an ongoing rebalance in progress.
+ *
+ * Important: Do not change shard allocation strategy in a rolling update. The cluster must be fully stopped and
+ * then started again when changing to a different allocation strategy.
+ *
+ * Not intended for public inheritance/implementation.
  *
  * @param absoluteLimit the maximum number of shards that will be rebalanced in one rebalance round
  * @param relativeLimit fraction (< 1.0) of total number of (known) shards that will be rebalanced
  *                      in one rebalance round
  */
+@DoNotInherit
 class SliceRangeShardAllocationStrategy(absoluteLimit: Int, relativeLimit: Double)
     extends ActorSystemDependentAllocationStrategy
     with ClusterShardAllocationMixin {
