@@ -65,7 +65,7 @@ The Akka library provides an implementation of a circuit breaker called
 
 ### Initialization
 
-Here's how a named @apidoc[CircuitBreaker] would be configured for the name `data-access`:
+Here's how a named @apidoc[CircuitBreaker] is configured with the name `data-access`:
 
 * 5 maximum failures
 * a call timeout of 10 seconds
@@ -73,7 +73,7 @@ Here's how a named @apidoc[CircuitBreaker] would be configured for the name `dat
 
 @@snip [application.conf](/akka-docs/src/test/scala/docs/circuitbreaker/CircuitBreakerDocSpec.scala) { #config }
 
-The breaker is created on first access with the same name, subsequent lookups will return the same circuit breaker
+The circuit breaker is created on first access with the same name, subsequent lookups will return the same circuit breaker
 instance. Looking up the circuit breaker and using it looks like this:
 
 Scala
@@ -86,7 +86,7 @@ Java
 
 Once a circuit breaker actor has been initialized, interacting with that actor is done by either using the Future based API or the synchronous API. Both of these APIs are considered `Call Protection` because whether synchronously or asynchronously, the purpose of the circuit breaker is to protect your system from cascading failures while making a call to another service. 
 
-In the future based API, we use the @scala[@scaladoc[withCircuitBreaker](akka.pattern.CircuitBreaker#withCircuitBreaker[T](body:=%3Escala.concurrent.Future[T]):scala.concurrent.Future[T])]@java[@javadoc[callWithCircuitBreakerCS](akka.pattern.CircuitBreaker#callWithCircuitBreakerCS(java.util.concurrent.Callable))] which takes an asynchronous method (some method wrapped in a @scala[@scaladoc[Future](scala.concurrent.Future)]@java[@javadoc[CompletionState](java.util.concurrent.CompletionStage)]), for instance a call to retrieve data from a service, and we pipe the result back to the sender. If for some reason the service in this example isn't responding, or there is another issue, the circuit breaker will open and stop trying to hit the service again and again until the timeout is over.
+In the future based API, we use the @scala[@scaladoc[withCircuitBreaker](akka.pattern.CircuitBreaker#withCircuitBreaker[T](body:=%3Escala.concurrent.Future[T]):scala.concurrent.Future[T])]@java[@javadoc[callWithCircuitBreakerCS](akka.pattern.CircuitBreaker#callWithCircuitBreakerCS(java.util.concurrent.Callable))] which takes an asynchronous method (some method wrapped in a @scala[@scaladoc[Future](scala.concurrent.Future)]@java[@javadoc[CompletionState](java.util.concurrent.CompletionStage)]), for instance a call to retrieve data from a service, and we pipe the result back to the sender. If for some reason the service in this example isn't responding, or there is another issue, the circuit breaker will open and stop trying to hit the service again and again until the timeout is reached.
 
 Scala
 : @@snip [CircuitBreakerDocSpec.scala](/akka-docs/src/test/scala/docs/circuitbreaker/CircuitBreakerDocSpec.scala) { #circuit-breaker-usage }
@@ -96,7 +96,7 @@ Java
 
 The Synchronous API would also wrap your call with the circuit breaker logic, however, it uses the @scala[@scaladoc[withSyncCircuitBreaker](akka.pattern.CircuitBreaker#withSyncCircuitBreaker[T](body:=%3ET):T)]@java[@javadoc[callWithSyncCircuitBreaker](akka.pattern.CircuitBreaker#callWithSyncCircuitBreaker(java.util.concurrent.Callable))] and receives a method that is not wrapped in a @scala[`Future`]@java[`CompletionState`].
 
-The looked up `CircuitBreaker` will execute callbacks on the default system dispatcher.
+The `CircuitBreaker` will execute all callbacks on the default system dispatcher.
 
 ### Control failure count explicitly
 
@@ -111,7 +111,7 @@ All methods above accept an argument `defineFailureFn`
 Type of `defineFailureFn`: @scala[@scaladoc[Try[T]](scala.util.Try) => @scaladoc[Boolean](scala.Boolean)]@java[@javadoc[BiFunction](java.util.function.BiFunction)[@javadoc[Optional[T]](java.util.Optional), @javadoc[Optional](java.util.Optional)[@javadoc[Throwable](java.lang.Throwable)], @javadoc[Boolean](java.lang.Boolean)]]
 
 @scala[This is a function which takes in a @scaladoc[Try[T]](scala.util.Try) and returns a @scaladoc[Boolean](scala.Boolean). The @scaladoc[Try[T]](scala.util.Try) correspond to the @scaladoc[Future[T]](scala.concurrent.Future) of the protected call.]
-@java[The response of a protected call is modelled using @javadoc[Optional[T]](java.util.Optional) for a successful return value and @javadoc[Optional](java.util.Optional)[@javadoc[Throwable](java.lang.Throwable)] for exceptions.] This function should return `true` if the result of a call should increase the failure count, or false to not affect the count.
+@java[The response of a protected call is modelled using @javadoc[Optional[T]](java.util.Optional) for a successful return value and @javadoc[Optional](java.util.Optional)[@javadoc[Throwable](java.lang.Throwable)] for exceptions.] This function should return `true` if the result of a call should increase the failure count, or `false` to not affect the count.
 
 Scala
 :  @@snip [CircuitBreakerDocSpec.scala](/akka-docs/src/test/scala/docs/circuitbreaker/CircuitBreakerDocSpec.scala) { #even-no-as-failure }
@@ -121,7 +121,7 @@ Java
 
 ### Low level API
 
-Instead of looking up a configured breaker by name, it is also possible to manually construct it:
+Instead of looking up a configured circuit breaker by name, it is also possible to construct it in the source code:
 
 Scala
 :  @@snip [CircuitBreakerDocSpec.scala](/akka-docs/src/test/scala/docs/circuitbreaker/CircuitBreakerDocSpec.scala) { #manual-construction }
@@ -129,7 +129,7 @@ Scala
 Java
 :  @@snip [CircuitBreakerDocTest.java](/akka-docs/src/test/java/jdocs/circuitbreaker/CircuitBreakerDocTest.java) { #manual-construction }
 
-This also allows for creating the breaker with a specific execution context to run callbacks on.
+This also allows for creating the circuit breaker with a specific execution context to run its callbacks on.
 
 The low-level API allows you to describe the behavior of the @apidoc[CircuitBreaker](CircuitBreaker) in detail, including deciding what to return to the calling @apidoc[Actor](Actor) in case of success or failure. This is especially useful when expecting the remote call to send a reply.
 @apidoc[CircuitBreaker](CircuitBreaker) doesn't support `Tell Protection` (protecting against calls that expect a reply) natively at the moment.
