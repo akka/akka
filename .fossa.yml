@@ -11,3 +11,4 @@ paths:
     - ./akka-remote-tests
     - ./akka-stream-tests
     - ./native-image-tests
+    - ./samples
