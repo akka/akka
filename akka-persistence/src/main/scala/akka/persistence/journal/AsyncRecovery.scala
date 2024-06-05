@@ -70,3 +70,47 @@ trait AsyncRecovery {
   def asyncReadHighestSequenceNr(persistenceId: String, fromSequenceNr: Long): Future[Long]
   //#journal-plugin-api
 }
+
+/**
+ * A plugin may implement this trait as an optimization. Combining `asyncReplayMessages` and
+ * `asyncReadHighestSequenceNr` into one method. If this trait is implemented the
+ * methods in [[AsyncRecovery]] will not be called.
+ */
+trait AsyncReplay {
+
+  /**
+   * Plugin API: asynchronously replays persistent messages. Implementations replay
+   * a message by calling `replayCallback`. The returned future must be completed
+   * with the highest sequence number when all messages (matching the sequence number bounds)
+   * have been replayed. Journal must maintain the highest sequence number and never decrease it.
+   * The future must be completed with a failure if any of the persistent messages
+   * could not be replayed.
+   *
+   * The `toSequenceNr` is the lowest of what was returned by [[#asyncReadHighestSequenceNr]]
+   * and what the user specified as recovery [[akka.persistence.Recovery]] parameter.
+   * This does imply that this call is always preceded by reading the highest sequence
+   * number for the given `persistenceId`.
+   *
+   * This call is NOT protected with a circuit-breaker because it may take long time
+   * to replay all events. The plugin implementation itself must protect against
+   * an unresponsive backend store and make sure that the returned Future is
+   * completed with success or failure within reasonable time. It is not allowed
+   * to ignore completing the future.
+   *
+   * Please also note that requests `replayMessages` may be made concurrently
+   * to writes executing for the same `persistenceId`, in particular it is possible that
+   * a restarting actor tries to recover before its outstanding writes have completed.
+   *
+   * @param persistenceId persistent actor id.
+   * @param fromSequenceNr sequence number where replay should start (inclusive).
+   * @param toSequenceNr sequence number where replay should end (inclusive).
+   * @param max maximum number of messages to be replayed.
+   * @param recoveryCallback called to replay a single message. Can be called from any
+   *                       thread.
+   *
+   * @see [[AsyncWriteJournal]]
+   */
+  def replayMessages(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long)(
+      recoveryCallback: PersistentRepr => Unit): Future[Long]
+
+}
