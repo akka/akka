@@ -86,10 +86,17 @@ trait AsyncReplay {
    * The future must be completed with a failure if any of the persistent messages
    * could not be replayed.
    *
-   * The `toSequenceNr` is the lowest of what was returned by [[#asyncReadHighestSequenceNr]]
-   * and what the user specified as recovery [[akka.persistence.Recovery]] parameter.
-   * This does imply that this call is always preceded by reading the highest sequence
-   * number for the given `persistenceId`.
+   * The `toSequenceNr` will either be `Long.MaxValue` to replay all messages or otherwise a limited
+   * upper sequence number. When replaying all messages the returned highest sequence number should
+   * be the same as the last replayed message, and the implementation would typically not have to
+   * read highest sequence number in other way than replaying the messages. With a custom `toSequenceNr`
+   * the implementation would typically have to both replay messages and read the actual highest sequence
+   * number.
+   *
+   * One special case is `toSequenceNr` of 0, which means that no messages should be replayed, but the
+   * returned highest sequence number must still be the highest of all stored messages. In this case
+   * the implementation would typically have to read the actual highest sequence number but can skip
+   * replay of messages.
    *
    * This call is NOT protected with a circuit-breaker because it may take long time
    * to replay all events. The plugin implementation itself must protect against
@@ -97,7 +104,7 @@ trait AsyncReplay {
    * completed with success or failure within reasonable time. It is not allowed
    * to ignore completing the future.
    *
-   * Please also note that requests `replayMessages` may be made concurrently
+   * Please also note that requests to `replayMessages` may be made concurrently
    * to writes executing for the same `persistenceId`, in particular it is possible that
    * a restarting actor tries to recover before its outstanding writes have completed.
    *
@@ -107,6 +114,7 @@ trait AsyncReplay {
    * @param max maximum number of messages to be replayed.
    * @param recoveryCallback called to replay a single message. Can be called from any
    *                       thread.
+   * @return highest sequence number
    *
    * @see [[AsyncWriteJournal]]
    */
