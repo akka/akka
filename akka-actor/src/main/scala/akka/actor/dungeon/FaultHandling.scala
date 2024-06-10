@@ -146,7 +146,7 @@ private[akka] trait FaultHandling { this: ActorCell =>
    */
   protected def faultCreate(): Unit = {
     assert(mailbox.isSuspended, "mailbox must be suspended during failed creation, status=" + mailbox.currentStatus)
-    assert(perpetrator == self)
+    if (!isFailedFatally) assert(perpetrator == self)
 
     cancelReceiveTimeout()
     cancelReceiveTimeoutTask()
