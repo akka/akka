@@ -112,13 +112,13 @@ object ReplicatedEventSourcing {
    *
    * @param queryPluginId A single query plugin used to read the events from other replicas. Must be the query side of your configured journal plugin.
    */
-  def onCommandCommonJournalConfig[Command, Event, State](
+  def commonJournalConfigForEventSourcedOnCommandBehavior[Command, Event, State](
       replicationId: ReplicationId,
       allReplicaIds: JSet[ReplicaId],
       queryPluginId: String,
       behaviorFactory: JFunction[ReplicationContext, EventSourcedOnCommandBehavior[Command, Event, State]])
       : EventSourcedOnCommandBehavior[Command, Event, State] =
-    onCommandPerReplicaJournalConfig(
+    perReplicaJournalConfigForEventSourcedOnCommandBehavior(
       replicationId,
       allReplicaIds.asScala.map(id => id -> queryPluginId).toMap.asJava,
       behaviorFactory)
@@ -164,7 +164,7 @@ object ReplicatedEventSourcing {
    * @param allReplicasAndQueryPlugins All replica ids and a query plugin per replica id. These need to be known to receive events from all replicas
    *                                   and configured with the query plugin for the journal that each replica uses.
    */
-  def onCommandPerReplicaJournalConfig[Command, Event, State](
+  def perReplicaJournalConfigForEventSourcedOnCommandBehavior[Command, Event, State](
       replicationId: ReplicationId,
       allReplicasAndQueryPlugins: JMap[ReplicaId, String],
       eventSourcedBehaviorFactory: JFunction[ReplicationContext, EventSourcedOnCommandBehavior[Command, Event, State]])
