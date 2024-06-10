@@ -391,8 +391,8 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
    * then wait for the `appVersion` to be completed.
    */
   def setAppVersionLater(appVersion: CompletionStage[Version]): Unit = {
-    import scala.compat.java8.FutureConverters._
-    setAppVersionLater(appVersion.toScala)
+    import scala.jdk.FutureConverters._
+    setAppVersionLater(appVersion.asScala)
   }
 
   /**

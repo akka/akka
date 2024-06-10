@@ -12,8 +12,8 @@ import java.util.function.{ BiFunction, Supplier }
 import scala.annotation.{ nowarn, varargs }
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.immutable
-import scala.compat.java8.FutureConverters._
-import scala.compat.java8.OptionConverters.RichOptionalGeneric
+import scala.jdk.FutureConverters._
+import scala.jdk.OptionConverters.RichOptional
 import scala.concurrent.{ Future, Promise }
 import scala.reflect.ClassTag
 
@@ -62,7 +62,7 @@ object Source {
     new Source(scaladsl.Source.maybe[T].mapMaterializedValue { (scalaOptionPromise: Promise[Option[T]]) =>
       val javaOptionPromise = new CompletableFuture[Optional[T]]()
       scalaOptionPromise.completeWith(
-        javaOptionPromise.toScala.map(_.asScala)(akka.dispatch.ExecutionContexts.parasitic))
+        javaOptionPromise.asScala.map(_.toScala)(akka.dispatch.ExecutionContexts.parasitic))
 
       javaOptionPromise
     })
@@ -251,7 +251,7 @@ object Source {
    * a pair of the next state `S` and output elements of type `E`.
    */
   def unfold[S, E](s: S, f: function.Function[S, Optional[Pair[S, E]]]): Source[E, NotUsed] =
-    new Source(scaladsl.Source.unfold(s)((s: S) => f.apply(s).asScala.map(_.toScala)))
+    new Source(scaladsl.Source.unfold(s)((s: S) => f.apply(s).toScala.map(_.toScala)))
 
   /**
    * Same as [[unfold]], but uses an async function to generate the next state-element tuple.
@@ -272,7 +272,7 @@ object Source {
    */
   @deprecated("Use 'Source.lazySource' instead", "2.6.0")
   def lazily[T, M](create: function.Creator[Source[T, M]]): Source[T, CompletionStage[M]] =
-    scaladsl.Source.lazily[T, M](() => create.create().asScala).mapMaterializedValue(_.toJava).asJava
+    scaladsl.Source.lazily[T, M](() => create.create().asScala).mapMaterializedValue(_.asJava).asJava
 
   /**
    * Creates a `Source` from supplied future factory that is not called until downstream demand. When source gets
@@ -283,7 +283,7 @@ object Source {
    */
   @deprecated("Use 'Source.lazyCompletionStage' instead", "2.6.0")
   def lazilyAsync[T](create: function.Creator[CompletionStage[T]]): Source[T, Future[NotUsed]] =
-    scaladsl.Source.lazilyAsync[T](() => create.create().toScala).asJava
+    scaladsl.Source.lazilyAsync[T](() => create.create().asScala).asJava
 
   /**
    * Emits a single value when the given Scala `Future` is successfully completed and then completes the stream.
@@ -306,7 +306,7 @@ object Source {
    * If the `CompletionStage` is completed with a failure the stream is failed.
    */
   def completionStage[T](completionStage: CompletionStage[T]): Source[T, NotUsed] =
-    future(completionStage.toScala)
+    future(completionStage.asScala)
 
   /**
    * Turn a `CompletionStage[Source]` into a source that will emit the values of the source when the future completes successfully.
@@ -314,8 +314,8 @@ object Source {
    */
   def completionStageSource[T, M](completionStageSource: CompletionStage[Source[T, M]]): Source[T, CompletionStage[M]] =
     scaladsl.Source
-      .futureSource(completionStageSource.toScala.map(_.asScala)(ExecutionContexts.parasitic))
-      .mapMaterializedValue(_.toJava)
+      .futureSource(completionStageSource.asScala.map(_.asScala)(ExecutionContexts.parasitic))
+      .mapMaterializedValue(_.asJava)
       .asJava
 
   /**
@@ -350,7 +350,7 @@ object Source {
    */
   def lazyCompletionStage[T](create: Creator[CompletionStage[T]]): Source[T, NotUsed] =
     scaladsl.Source.lazyFuture { () =>
-      create.create().toScala
+      create.create().asScala
     }.asJava
 
   /**
@@ -370,7 +370,7 @@ object Source {
    * is failed with a [[akka.stream.NeverMaterializedException]]
    */
   def lazySource[T, M](create: Creator[Source[T, M]]): Source[T, CompletionStage[M]] =
-    scaladsl.Source.lazySource(() => create.create().asScala).mapMaterializedValue(_.toJava).asJava
+    scaladsl.Source.lazySource(() => create.create().asScala).mapMaterializedValue(_.asJava).asJava
 
   /**
    *  Defers invoking the `create` function to create a future source until there is downstream demand.
@@ -621,7 +621,7 @@ object Source {
    */
   def fromMaterializer[T, M](
       factory: BiFunction[Materializer, Attributes, Source[T, M]]): Source[T, CompletionStage[M]] =
-    scaladsl.Source.fromMaterializer((mat, attr) => factory(mat, attr).asScala).mapMaterializedValue(_.toJava).asJava
+    scaladsl.Source.fromMaterializer((mat, attr) => factory(mat, attr).asScala).mapMaterializedValue(_.asJava).asJava
 
   /**
    * Defers the creation of a [[Source]] until materialization. The `factory` function
@@ -630,7 +630,7 @@ object Source {
    */
   @deprecated("Use 'fromMaterializer' instead", "2.6.0")
   def setup[T, M](factory: BiFunction[ActorMaterializer, Attributes, Source[T, M]]): Source[T, CompletionStage[M]] =
-    scaladsl.Source.setup((mat, attr) => factory(mat, attr).asScala).mapMaterializedValue(_.toJava).asJava
+    scaladsl.Source.setup((mat, attr) => factory(mat, attr).asScala).mapMaterializedValue(_.asJava).asJava
 
   /**
    * Combines several sources with fan-in strategy like [[Merge]] or [[Concat]] into a single [[Source]].
@@ -833,7 +833,7 @@ object Source {
       create: function.Creator[S],
       read: function.Function[S, Optional[T]],
       close: function.Procedure[S]): javadsl.Source[T, NotUsed] =
-    new Source(scaladsl.Source.unfoldResource[T, S](create.create _, (s: S) => read.apply(s).asScala, close.apply))
+    new Source(scaladsl.Source.unfoldResource[T, S](create.create _, (s: S) => read.apply(s).toScala, close.apply))
 
   /**
    * Start a new `Source` from some resource which can be opened, read and closed.
@@ -861,9 +861,9 @@ object Source {
       close: function.Function[S, CompletionStage[Done]]): javadsl.Source[T, NotUsed] =
     new Source(
       scaladsl.Source.unfoldResourceAsync[T, S](
-        () => create.create().toScala,
-        (s: S) => read.apply(s).toScala.map(_.asScala)(akka.dispatch.ExecutionContexts.parasitic),
-        (s: S) => close.apply(s).toScala))
+        () => create.create().asScala,
+        (s: S) => read.apply(s).asScala.map(_.toScala)(akka.dispatch.ExecutionContexts.parasitic),
+        (s: S) => close.apply(s).asScala))
 
   /**
    * Upcast a stream of elements to a stream of supertypes of that element. Useful in combination with
@@ -1057,7 +1057,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    * [[akka.stream.SystemMaterializer]] for running the stream.
    */
   def run(materializer: Materializer): CompletionStage[Done] =
-    delegate.run()(materializer).toJava
+    delegate.run()(materializer).asJava
 
   /**
    * Connect this `Source` to the `Sink.ignore` and run it. Elements from the stream will be consumed and discarded.
@@ -1066,7 +1066,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    * [[akka.stream.SystemMaterializer]] for running the stream.
    */
   def run(systemProvider: ClassicActorSystemProvider): CompletionStage[Done] =
-    delegate.run()(SystemMaterializer(systemProvider.classicSystem).materializer).toJava
+    delegate.run()(SystemMaterializer(systemProvider.classicSystem).materializer).asJava
 
   /**
    * Connect this `Source` to a `Sink` and run it. The returned value is the materialized value
@@ -2481,7 +2481,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
     new Source(
       delegate.statefulMap(() => create.create())(
         (s: S, out: Out) => f.apply(s, out).toScala,
-        (s: S) => onComplete.apply(s).asScala))
+        (s: S) => onComplete.apply(s).toScala))
 
   /**
    * Transform each stream element with the help of a resource.
@@ -2521,7 +2521,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
     new Source(
       delegate.mapWithResource(() => create.get())(
         (resource, out) => f(resource, out),
-        resource => close.apply(resource).asScala))
+        resource => close.apply(resource).toScala))
 
   /**
    * Transform each input element into an `Iterable` of output elements that is
@@ -2589,7 +2589,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    * @see [[#mapAsyncUnordered]]
    */
   def mapAsync[T](parallelism: Int, f: function.Function[Out, CompletionStage[T]]): javadsl.Source[T, Mat] =
-    new Source(delegate.mapAsync(parallelism)(x => f(x).toScala))
+    new Source(delegate.mapAsync(parallelism)(x => f(x).asScala))
 
   /**
    * @see [[akka.stream.javadsl.Flow.mapAsyncPartitioned]]
@@ -2600,7 +2600,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
       partitioner: function.Function[Out, P],
       f: BiFunction[Out, P, CompletionStage[T]]): javadsl.Source[T, Mat] =
     new Source(delegate.mapAsyncPartitioned(parallelism, perPartition)(x => partitioner(x)) { (x, p) =>
-      f(x, p).toScala
+      f(x, p).asScala
     })
 
   /**
@@ -2637,7 +2637,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    * @see [[#mapAsync]]
    */
   def mapAsyncUnordered[T](parallelism: Int, f: function.Function[Out, CompletionStage[T]]): javadsl.Source[T, Mat] =
-    new Source(delegate.mapAsyncUnordered(parallelism)(x => f(x).toScala))
+    new Source(delegate.mapAsyncUnordered(parallelism)(x => f(x).asScala))
 
   /**
    * Use the `ask` pattern to send a request-reply message to the target `ref` actor.
@@ -2947,7 +2947,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    */
   def scanAsync[T](zero: T)(f: function.Function2[T, Out, CompletionStage[T]]): javadsl.Source[T, Mat] =
     new Source(delegate.scanAsync(zero) { (out, in) =>
-      f(out, in).toScala
+      f(out, in).asScala
     })
 
   /**
@@ -2997,7 +2997,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    */
   def foldAsync[T](zero: T)(f: function.Function2[T, Out, CompletionStage[T]]): javadsl.Source[T, Mat] =
     new Source(delegate.foldAsync(zero) { (out, in) =>
-      f(out, in).toScala
+      f(out, in).asScala
     })
 
   /**
@@ -3641,7 +3641,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
       f: function.Function[java.lang.Iterable[Out], javadsl.Flow[Out, Out2, Mat2]],
       matF: function.Function2[Mat, CompletionStage[Mat2], Mat3]): javadsl.Source[Out2, Mat3] = {
     val newDelegate = delegate.flatMapPrefixMat(n)(seq => f(seq.asJava).asScala) { (m1, fm2) =>
-      matF(m1, fm2.toJava)
+      matF(m1, fm2.asJava)
     }
     new javadsl.Source(newDelegate)
   }
@@ -4166,7 +4166,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    * downstream.
    */
   def watchTermination[M]()(matF: function.Function2[Mat, CompletionStage[Done], M]): javadsl.Source[Out, M] =
-    new Source(delegate.watchTermination()((left, right) => matF(left, right.toJava)))
+    new Source(delegate.watchTermination()((left, right) => matF(left, right.asJava)))
 
   /**
    * Materializes to `FlowMonitor[Out]` that allows monitoring of the current flow. All events are propagated
