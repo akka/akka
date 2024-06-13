@@ -58,18 +58,8 @@ object PersistenceId {
    *
    * @throws IllegalArgumentException if the `entityTypeHint` or `entityId` contains `separator`
    */
-  def apply(entityTypeHint: String, entityId: String, separator: String): PersistenceId = {
-    if (separator.nonEmpty) {
-      if (entityId.contains(separator))
-        throw new IllegalArgumentException(s"entityId [$entityId] contains [$separator] which is a reserved character")
-
-      if (entityTypeHint.contains(separator))
-        throw new IllegalArgumentException(
-          s"entityTypeHint [$entityTypeHint] contains [$separator] which is a reserved character")
-    }
-
-    new PersistenceId(entityTypeHint + separator + entityId)
-  }
+  def apply(entityTypeHint: String, entityId: String, separator: String): PersistenceId =
+    new PersistenceId(concat(entityTypeHint, entityId, separator))
 
   /**
    * Constructs a [[PersistenceId]] from the given `entityTypeHint` and `entityId` by
@@ -118,6 +108,34 @@ object PersistenceId {
    */
   def of(entityTypeHint: String, entityId: String, separator: String): PersistenceId =
     apply(entityTypeHint, entityId, separator)
+
+  /**
+   * Constructs a persistence id `String` from the given `entityTypeHint` and `entityId` by
+   * concatenating them with `|` separator.
+   *
+   * @throws IllegalArgumentException if the `entityTypeHint` or `entityId` contains `|`
+   */
+  def concat(entityTypeHint: String, entityId: String): String =
+    concat(entityTypeHint, entityId, DefaultSeparator)
+
+  /**
+   * Constructs a persistence id `String` from the given `entityTypeHint` and `entityId` by
+   * concatenating them with the `separator`.
+   *
+   * @throws IllegalArgumentException if the `entityTypeHint` or `entityId` contains `separator`
+   */
+  def concat(entityTypeHint: String, entityId: String, separator: String): String = {
+    if (separator.nonEmpty) {
+      if (entityId.contains(separator))
+        throw new IllegalArgumentException(s"entityId [$entityId] contains [$separator] which is a reserved character")
+
+      if (entityTypeHint.contains(separator))
+        throw new IllegalArgumentException(
+          s"entityTypeHint [$entityTypeHint] contains [$separator] which is a reserved character")
+    }
+
+    entityTypeHint + separator + entityId
+  }
 
   /**
    * Constructs a [[PersistenceId]] with `id` as the full unique identifier.

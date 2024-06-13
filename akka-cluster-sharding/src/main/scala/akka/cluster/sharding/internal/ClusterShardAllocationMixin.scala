@@ -33,7 +33,9 @@ import akka.cluster.sharding.internal.ClusterShardAllocationMixin.RegionEntry
 
   final case class RegionEntry(region: ActorRef, member: Member, shardIds: immutable.IndexedSeq[ShardId])
 
-  implicit object ShardSuitabilityOrdering extends Ordering[RegionEntry] {
+  implicit object ShardSuitabilityOrdering extends ShardSuitabilityOrdering(preferLeastShards = true)
+
+  class ShardSuitabilityOrdering(preferLeastShards: Boolean) extends Ordering[RegionEntry] {
     override def compare(x: RegionEntry, y: RegionEntry): Int = {
       val RegionEntry(_, memberX, allocatedShardsX) = x
       val RegionEntry(_, memberY, allocatedShardsY) = y
@@ -45,13 +47,18 @@ import akka.cluster.sharding.internal.ClusterShardAllocationMixin.RegionEntry
       } else if (memberX.appVersion != memberY.appVersion) {
         // prefer nodes with the highest rolling update app version
         memberY.appVersion.compareTo(memberX.appVersion)
-      } else {
+      } else if (preferLeastShards && allocatedShardsX.size != allocatedShardsY.size) {
         // prefer the node with the least allocated shards
         JInteger.compare(allocatedShardsX.size, allocatedShardsY.size)
+      } else if (x.member.upNumber != y.member.upNumber) {
+        // prefer older
+        Member.ageOrdering.compare(x.member, y.member)
+      } else {
+        Member.addressOrdering.compare(x.member.address, y.member.address)
       }
     }
-  }
 
+  }
 }
 
 /**
