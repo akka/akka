@@ -163,17 +163,22 @@ private[akka] object Running {
               setup.context.self.ask[Long](replyTo => GetSeenSequenceNr(replicaId, replyTo)).map { seqNr =>
                 replication
                   .eventsByPersistenceId(pid.persistenceId.id, seqNr + 1, Long.MaxValue)
-                  .filter(event =>
-                    event.eventMetadata match {
+                  .mapConcat(eventEnvelope =>
+                    eventEnvelope.eventMetadata match {
                       case Some(replicatedMeta: ReplicatedEventMetadata) =>
                         // skip events originating from self replica (break the cycle)
-                        replicatedMeta.originReplica != replicationSetup.replicaId
+                        if (replicatedMeta.originReplica == replicationSetup.replicaId)
+                          Nil
+                        else
+                          eventEnvelope :: Nil
                       case _ =>
-                        throw new IllegalArgumentException(
-                          s"Replication stream from replica ${replicaId} for ${setup.persistenceId} contains event " +
-                          s"(sequence nr ${event.sequenceNr}) without replication metadata. " +
-                          s"Is the persistence id used by a regular event sourced actor there or the journal for that replica (${queryPluginId}) " +
-                          "used that does not support Replicated Event Sourcing?")
+                        // migrated from non-replicated, fill in metadata
+                        val metadata = ReplicatedEventMetadata(
+                          originReplica = replicaId,
+                          originSequenceNr = eventEnvelope.sequenceNr,
+                          version = VersionVector(replicaId.id, eventEnvelope.sequenceNr),
+                          concurrent = false)
+                        eventEnvelope.withMetadata(metadata) :: Nil
                     })
                   .viaMat(new FastForwardingFilter)(Keep.right)
                   .mapMaterializedValue(streamControl => controlRef.set(streamControl))
@@ -183,8 +188,8 @@ private[akka] object Running {
           // needs to be outside of the restart source so that it actually cancels when terminating the replica
           .via(ActorFlow
             .ask[EventEnvelope, ReplicatedEventEnvelope[E], ReplicatedEventAck.type](ref) { (eventEnvelope, replyTo) =>
-              // Need to handle this not being available migration from non-replicated is supported
               val meta = eventEnvelope.eventMetadata.get.asInstanceOf[ReplicatedEventMetadata]
+
               val re =
                 ReplicatedEvent[E](
                   eventEnvelope.event.asInstanceOf[E],

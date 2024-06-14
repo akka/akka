@@ -66,6 +66,7 @@ private[akka] object ShardingDirectReplication {
 
       Behaviors.receiveMessage {
         case WrappedPublishedEvent(event) =>
+          // FIXME this doesn't support migration from non-replicated
           if (ReplicationId.isReplicationId(event.persistenceId.id)) {
             val replicationId = ReplicationId.fromString(event.persistenceId.id)
             if (replicationId.typeName == typeName) {

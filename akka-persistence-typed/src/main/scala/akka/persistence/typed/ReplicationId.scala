@@ -8,8 +8,12 @@ object ReplicationId {
   private[akka] val Separator = '|'
   def fromString(id: String): ReplicationId = {
     val split = id.split("\\|")
-    require(split.size == 3, s"invalid replication id $id")
-    ReplicationId(split(0), split(1), ReplicaId(split(2)))
+    if (split.length == 3)
+      ReplicationId(split(0), split(1), ReplicaId(split(2)))
+    else if (split.length == 2)
+      ReplicationId(split(0), split(1), ReplicaId("")) // migration from non-replicated
+    else
+      throw new IllegalArgumentException(s"invalid replication id [$id]")
   }
 
   def isReplicationId(id: String): Boolean = {
@@ -43,7 +47,10 @@ final class ReplicationId(val typeName: String, val entityId: String, val replic
     throw new IllegalArgumentException(
       s"replicaId [${replicaId.id}] contains [$Separator] which is a reserved character")
 
-  private val id: String = s"$typeName$Separator$entityId$Separator${replicaId.id}"
+  private val id: String = {
+    if (replicaId.id.isEmpty) s"$typeName$Separator$entityId"
+    else s"$typeName$Separator$entityId$Separator${replicaId.id}"
+  }
 
   def persistenceId: PersistenceId = PersistenceId.ofUniqueId(id)
 
