@@ -113,6 +113,8 @@ private[akka] object Shard {
 
   private final case class EntityTerminated(ref: ActorRef)
 
+  private final case class PassivationTimedOut(ref: ActorRef)
+
   private final case class RememberedEntityIds(ids: Set[EntityId])
   private final case class RememberEntityStoreCrashed(store: ActorRef)
 
@@ -623,6 +625,7 @@ private[akka] class Shard(
     case msg: ShardRegion.ShardsUpdated          => shardsUpdated(msg)
     case Passivate(stopMessage)                  => passivate(sender(), stopMessage)
     case PassivateIntervalTick                   => passivateEntitiesAfterInterval()
+    case PassivationTimedOut(ref)                => passivationTimedOut(ref)
     case msg: ShardQuery                         => receiveShardQuery(msg)
     case msg: LeaseLost                          => receiveLeaseLost(msg)
     case msg: RememberEntityStoreCrashed         => rememberEntityStoreCrashed(msg)
@@ -702,6 +705,7 @@ private[akka] class Shard(
       passivate(sender(), stopMessage)
     case msg: ShardQuery                 => receiveShardQuery(msg)
     case PassivateIntervalTick           => stash()
+    case PassivationTimedOut(ref)        => passivationTimedOut(ref)
     case msg: RememberEntityStoreCrashed => rememberEntityStoreCrashed(msg)
     case msg: ShardsUpdated              => shardsUpdated(msg)
     case msg if extractEntityId.isDefinedAt(msg) =>
@@ -928,6 +932,7 @@ private[akka] class Shard(
             }
 
           case Passivating(_) =>
+            timers.cancel(PassivationTimedOut(ref))
             if (rememberEntitiesStore.isDefined) {
               if (entities.pendingRememberedEntitiesExist()) {
                 // will go in next batch update
@@ -986,10 +991,27 @@ private[akka] class Shard(
             log.debug("{}: Passivation started for [{}]", typeName, id)
           entities.entityPassivating(id)
           entity ! stopMessage
+          val passivationTimeout = PassivationTimedOut(entity)
+          timers.startSingleTimer(
+            passivationTimeout,
+            passivationTimeout,
+            settings.tuningParameters.passivationStopTimeout)
           flightRecorder.entityPassivate(id)
         }
       case _ =>
         log.debug("{}: Unknown entity passivating [{}]. Not sending stopMessage back to entity", typeName, entity)
+    }
+  }
+
+  private def passivationTimedOut(entity: ActorRef): Unit = {
+    entities.entityId(entity) match {
+      case OptionVal.Some(id) =>
+        if (entities.isPassivating(id)) {
+          log.info("{}: Passivation of entity [{}] timed out. Stopping it.", typeName, id)
+          context.stop(entity)
+        }
+      case _ =>
+        log.debug("{}: Unknown entity passivation timeout [{}].", typeName, entity)
     }
   }
 
