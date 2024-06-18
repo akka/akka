@@ -11,7 +11,7 @@ object ReplicationId {
     if (split.length == 3)
       ReplicationId(split(0), split(1), ReplicaId(split(2)))
     else if (split.length == 2)
-      ReplicationId(split(0), split(1), ReplicaId("")) // migration from non-replicated
+      ReplicationId(split(0), split(1), ReplicaId.empty) // migration from non-replicated
     else
       throw new IllegalArgumentException(s"invalid replication id [$id]")
   }
@@ -23,7 +23,8 @@ object ReplicationId {
   /**
    * @param typeName The name of the entity type e.g. account, user. Made part of the persistence id so that entity ids don't need to be unique across different replicated entities
    * @param entityId The unique entity id
-   * @param replicaId The unique identity for this entity. The underlying persistence id will include the replica.
+   * @param replicaId The unique identity for this entity. The underlying persistence id will include the replica,
+   *                  unless the replicaId is `ReplicaId.empty`
    */
   def apply(typeName: String, entityId: String, replicaId: ReplicaId): ReplicationId =
     new ReplicationId(typeName, entityId, replicaId)
@@ -32,7 +33,8 @@ object ReplicationId {
 /**
  * @param typeName The name of the entity type e.g. account, user. Made part of the persistence id so that entity ids don't need to be unique across different replicated entities
  * @param entityId The unique entity id
- * @param replicaId The unique identity for this entity. The underlying persistence id will include the replica.
+ * @param replicaId The unique identity for this entity. The underlying persistence id will include the replica,
+ *                  unless the replicaId is `ReplicaId.empty`
  */
 final class ReplicationId(val typeName: String, val entityId: String, val replicaId: ReplicaId) {
   import ReplicationId._

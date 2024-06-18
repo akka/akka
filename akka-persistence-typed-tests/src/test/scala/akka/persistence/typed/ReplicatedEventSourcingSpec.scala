@@ -507,7 +507,7 @@ class ReplicatedEventSourcingSpec
 
       // then migrate to ReplicatedEventSourced, one replica must keep the same persistenceId
       // as the original EventSourced, i.e. without replicaId
-      val allReplicas = Set(ReplicaId(""), ReplicaId("R2"), ReplicaId("R3"))
+      val allReplicas = Set(ReplicaId.empty, ReplicaId("R2"), ReplicaId("R3"))
       val r1 = spawn(testBehavior(entityId, "", allReplicas = allReplicas))
       val stateProbe = createTestProbe[State]()
       r1 ! GetState(stateProbe.ref)

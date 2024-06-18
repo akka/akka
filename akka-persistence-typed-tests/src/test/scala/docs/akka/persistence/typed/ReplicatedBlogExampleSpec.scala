@@ -26,7 +26,7 @@ object ReplicatedBlogExampleSpec {
   object BlogEntity {
 
     object BlogState {
-      val empty: BlogState = BlogState(None, LwwTime(Long.MinValue, ReplicaId("")), published = false)
+      val empty: BlogState = BlogState(None, LwwTime(Long.MinValue, ReplicaId.empty), published = false)
     }
     final case class BlogState(content: Option[PostContent], contentTimestamp: LwwTime, published: Boolean)
         extends CborSerializable {
