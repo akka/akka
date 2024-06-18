@@ -19,7 +19,7 @@ object IdleSpec {
     """).withFallback(EntityPassivationSpec.config)
 }
 
-class IdleSpec extends AbstractEntityPassivationSpec(IdleSpec.config, expectedEntities = 2) {
+class IdleSpec extends AbstractEntityPassivationSpec(StopTimeoutSpec.config, expectedEntities = 2) {
 
   import EntityPassivationSpec.Entity.Envelope
   import EntityPassivationSpec.Entity.Stop
