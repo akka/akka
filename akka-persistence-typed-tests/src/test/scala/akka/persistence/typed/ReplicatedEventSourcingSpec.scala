@@ -79,11 +79,45 @@ object ReplicatedEventSourcingSpec {
   def testBehavior(
       entityId: String,
       replicaId: String,
-      probe: Option[ActorRef[EventAndContext]] = None): Behavior[Command] =
+      probe: Option[ActorRef[EventAndContext]] = None,
+      allReplicas: Set[ReplicaId] = AllReplicas): Behavior[Command] =
     ReplicatedEventSourcing.commonJournalConfig(
       ReplicationId("ReplicatedEventSourcingSpec", entityId, ReplicaId(replicaId)),
-      AllReplicas,
+      allReplicas,
       PersistenceTestKitReadJournal.Identifier)(replicationContext => eventSourcedBehavior(replicationContext, probe))
+
+  def nonReplicatedEventSourcedBehavior(
+      persistenceId: PersistenceId,
+      probe: Option[ActorRef[String]]): EventSourcedBehavior[Command, String, State] = {
+    EventSourcedBehavior[Command, String, State](
+      persistenceId,
+      State(Nil),
+      (state, command) =>
+        command match {
+          case GetState(replyTo) =>
+            replyTo ! state
+            Effect.none
+          case GetReplica(_) =>
+            Effect.unhandled
+          case StoreMe(evt, ack, latch) =>
+            latch.countDown()
+            latch.await(10, TimeUnit.SECONDS)
+            Effect.persist(evt).thenRun(_ => ack ! Done)
+          case StoreUs(evts, replyTo, latch) =>
+            latch.countDown()
+            latch.await(10, TimeUnit.SECONDS)
+            Effect.persist(evts).thenRun(_ => replyTo ! Done)
+          case Stop =>
+            Effect.stop()
+        },
+      (state, event) => {
+        probe.foreach(_ ! event)
+        state.copy(all = event :: state.all)
+      })
+  }
+
+  def nonReplictedTestBehavior(entityId: String, probe: Option[ActorRef[String]] = None): Behavior[Command] =
+    nonReplicatedEventSourcedBehavior(PersistenceId.of("ReplicatedEventSourcingSpec", entityId), probe)
 
 }
 
@@ -460,6 +494,39 @@ class ReplicatedEventSourcingSpec
       // should restart the replication stream
       r2 ! StoreMe("from r2", probe.ref)
       eventProbeR1.expectMessageType[EventAndContext].event shouldEqual "from r2"
+    }
+
+    "migrate from EventSourcedBehavior to ReplicatedEventSourcedBehavior" in {
+      val entityId = nextEntityId
+      val probe = createTestProbe[Done]()
+      // first ordinary EventSourced
+      val es1 = spawn(nonReplictedTestBehavior(entityId))
+      es1 ! StoreMe("from es1", probe.ref)
+      probe.expectMessage(Done)
+      es1 ! Stop
+
+      // then migrate to ReplicatedEventSourced, one replica must keep the same persistenceId
+      // as the original EventSourced, i.e. without replicaId
+      val allReplicas = Set(ReplicaId.empty, ReplicaId("R2"), ReplicaId("R3"))
+      val r1 = spawn(testBehavior(entityId, "", allReplicas = allReplicas))
+      val stateProbe = createTestProbe[State]()
+      r1 ! GetState(stateProbe.ref)
+      stateProbe.expectMessageType[State].all.reverse shouldEqual List("from es1")
+
+      r1 ! StoreMe("from r1", probe.ref)
+      probe.expectMessage(Done)
+      val r2 = spawn(testBehavior(entityId, "R2", allReplicas = allReplicas))
+      eventually {
+        r2 ! GetState(stateProbe.ref)
+        stateProbe.expectMessageType[State].all.reverse shouldEqual List("from es1", "from r1")
+      }
+
+      r2 ! StoreMe("from r2", probe.ref)
+      probe.expectMessage(Done)
+      eventually {
+        r1 ! GetState(stateProbe.ref)
+        stateProbe.expectMessageType[State].all.reverse shouldEqual List("from es1", "from r1", "from r2")
+      }
     }
   }
 }

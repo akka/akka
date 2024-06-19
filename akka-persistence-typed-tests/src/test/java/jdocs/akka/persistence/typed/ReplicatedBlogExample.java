@@ -153,7 +153,7 @@ interface ReplicatedBlogExample {
     public static class BlogState {
 
       public static final BlogState EMPTY =
-          new BlogState(Optional.empty(), new LwwTime(Long.MIN_VALUE, new ReplicaId("")), false);
+          new BlogState(Optional.empty(), new LwwTime(Long.MIN_VALUE, ReplicaId.empty()), false);
 
       final Optional<PostContent> content;
       final LwwTime contentTimestamp;

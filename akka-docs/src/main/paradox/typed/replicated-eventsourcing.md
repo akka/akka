@@ -266,3 +266,14 @@ The @apidoc[SnapshotStoreSpec] in the Persistence TCK provides a capability flag
 The following plugins support Replicated Event Sourcing over gRPC:
 
 * [Akka Persistence R2DBC](https://doc.akka.io/docs/akka-persistence-r2dbc/current/) versions 1.1.0+
+
+## Migrating from non-replicated
+
+It is possible to migrate from an ordinary single-writer `EventSourcedBehavior` to a `ReplicatedEventSourcedBehavior`.
+The events are stored in the same way, aside from some metadata that is filled in automatically if it's missing.
+
+The `ReplicaId` for the where the original entity was located should be empty. This makes sure that the
+same `PersistenceId` and same events are used for the original replica.
+
+The aspects of @ref[Resolving conflicting updates](#resolving-conflicting-updates) must be considered in the
+logic of the event handler when migrating to Replicated Event Sourcing.
