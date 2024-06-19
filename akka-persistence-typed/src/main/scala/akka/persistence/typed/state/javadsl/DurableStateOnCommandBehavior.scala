@@ -4,8 +4,6 @@
 
 package akka.persistence.typed.state.javadsl
 
-import java.util.Optional
-
 import akka.actor.typed
 import akka.actor.typed.BackoffSupervisorStrategy
 import akka.actor.typed.Behavior
@@ -19,15 +17,18 @@ import akka.persistence.typed.state.internal
 import akka.persistence.typed.state.internal._
 import akka.persistence.typed.state.scaladsl
 
+import java.util.Optional
+
 /**
- * A `Behavior` for a persistent actor with durable storage of its state.
+ * A `Behavior` for a persistent actor with durable storage of its state for projects built with Java 17 or newer where message handling can be done
+ * * using switch pattern match.
  *
- * For projects using Java 17 and newer, also see [[DurableStateOnCommandBehavior]]
+ * For building event sourced actors with Java versions before 17, see [[DurableStateBehavior]]
  *
  * API May Change
  */
 @ApiMayChange
-abstract class DurableStateBehavior[Command, State] private[akka] (
+abstract class DurableStateOnCommandBehavior[Command, State] private[akka] (
     val persistenceId: PersistenceId,
     onPersistFailure: Optional[BackoffSupervisorStrategy])
     extends DeferredBehavior[Command] {
@@ -77,7 +78,7 @@ abstract class DurableStateBehavior[Command, State] private[akka] (
    * While the actor is persisting state, the incoming messages are stashed and only
    * delivered to the handler once persisting them has completed.
    */
-  protected def commandHandler(): CommandHandler[Command, State]
+  protected def onCommand(state: State, command: Command): Effect[State]
 
   /**
    * Override to react on general lifecycle signals and `DurableStateBehavior` specific signals
@@ -92,13 +93,6 @@ abstract class DurableStateBehavior[Command, State] private[akka] (
    */
   protected final def newSignalHandlerBuilder(): SignalHandlerBuilder[State] =
     SignalHandlerBuilder.builder[State]
-
-  /**
-   * @return A new, mutable, command handler builder
-   */
-  protected def newCommandHandlerBuilder(): CommandHandlerBuilder[Command, State] = {
-    CommandHandlerBuilder.builder[Command, State]()
-  }
 
   /**
    * API May Change: Override this and implement the [[ChangeEventHandler]] to store additional change event
@@ -138,7 +132,7 @@ abstract class DurableStateBehavior[Command, State] private[akka] (
     val behavior = new internal.DurableStateBehaviorImpl[Command, State](
       persistenceId,
       emptyState,
-      (state, cmd) => commandHandler()(state, cmd).asInstanceOf[EffectImpl[State]],
+      onCommand(_, _).asInstanceOf[EffectImpl[State]],
       getClass).withTag(tag).snapshotAdapter(snapshotAdapter()).withDurableStateStorePluginId(durableStateStorePluginId)
 
     val behaviorWithSignalHandler = {
@@ -182,53 +176,5 @@ abstract class DurableStateBehavior[Command, State] private[akka] (
    * If not defined, the default `akka.persistence.typed.stash-capacity` will be used.
    */
   def stashCapacity: Optional[java.lang.Integer] = Optional.empty()
-
-}
-
-/**
- * A [[DurableStateBehavior]] that is enforcing that replies to commands are not forgotten.
- * There will be compilation errors if the returned effect isn't a [[ReplyEffect]], which can be
- * created with `Effects().reply`, `Effects().noReply`, [[EffectBuilder.thenReply]], or [[EffectBuilder.thenNoReply]].
- */
-abstract class DurableStateBehaviorWithEnforcedReplies[Command, State](
-    persistenceId: PersistenceId,
-    backoffSupervisorStrategy: Optional[BackoffSupervisorStrategy])
-    extends DurableStateBehavior[Command, State](persistenceId, backoffSupervisorStrategy) {
-
-  def this(persistenceId: PersistenceId) = {
-    this(persistenceId, Optional.empty[BackoffSupervisorStrategy])
-  }
-
-  def this(persistenceId: PersistenceId, backoffSupervisorStrategy: BackoffSupervisorStrategy) = {
-    this(persistenceId, Optional.ofNullable(backoffSupervisorStrategy))
-  }
-
-  /**
-   * Implement by handling incoming commands and return an `Effect()` to persist or signal other effects
-   * of the command handling such as stopping the behavior or others.
-   *
-   * Use [[DurableStateBehaviorWithEnforcedReplies#newCommandHandlerWithReplyBuilder]] to define the command handlers.
-   *
-   * The command handlers are only invoked when the actor is running (i.e. not recovering).
-   * While the actor is persisting state, the incoming messages are stashed and only
-   * delivered to the handler once persisting them has completed.
-   */
-  override protected def commandHandler(): CommandHandlerWithReply[Command, State]
-
-  /**
-   * @return A new, mutable, command handler builder
-   */
-  protected def newCommandHandlerWithReplyBuilder(): CommandHandlerWithReplyBuilder[Command, State] = {
-    CommandHandlerWithReplyBuilder.builder[Command, State]()
-  }
-
-  /**
-   * Use [[DurableStateBehaviorWithEnforcedReplies#newCommandHandlerWithReplyBuilder]] instead, or
-   * extend [[DurableStateBehavior]] instead of [[DurableStateBehaviorWithEnforcedReplies]].
-   *
-   * @throws UnsupportedOperationException use newCommandHandlerWithReplyBuilder instead
-   */
-  override protected def newCommandHandlerBuilder(): CommandHandlerBuilder[Command, State] =
-    throw new UnsupportedOperationException("Use newCommandHandlerWithReplyBuilder instead")
 
 }

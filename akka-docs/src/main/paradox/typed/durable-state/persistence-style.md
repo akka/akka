@@ -30,3 +30,16 @@ Scala
 
 Java
 :  @@snip [AccountExampleWithNullDurableState.java](/akka-cluster-sharding-typed/src/test/java/jdocs/akka/cluster/sharding/typed/AccountExampleWithNullDurableState.java) { #account-entity }
+
+@@@ div { .group-java }
+## Leveraging Java 21 features
+
+When building durable state entities in a project using Java 21 or newer, the @javadoc[DurableStateOnCommandBehavior](akka.persistence.typed.statejavadsl.DurableStateOnCommandBehavior)
+base class provides an API that let you leverage the switch pattern match feature. When combined with `sealed` command
+and event top types this gives you a more direct handling of commands and events as well as a compile time completeness
+check that you have handled all kinds of commands and events in your event sourced behavior handler methods:
+
+Java
+:  @@snip [BlogPostEntityDurableState.java](/akka-persistence-typed-tests/src/test/java-21+/jdocs21/akka/persistence/typed/javadsl/BlogPostEntityDurableState.java) { #behavior }
+
+@@@

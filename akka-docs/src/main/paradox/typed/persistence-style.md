@@ -69,4 +69,14 @@ The above examples are using immutable state classes and below is corresponding 
 Java
 :  @@snip [AccountExampleWithNullState.java](/akka-cluster-sharding-typed/src/test/java/jdocs/akka/cluster/sharding/typed/AccountExampleWithMutableState.java) { #account-entity }
 
+## Leveraging Java 21 features
+
+When building event sourced entities in a project using Java 21 or newer, the @javadoc[EventSourcedOnCommandBehavior](akka.persistence.typed.javadsl.EventSourcedOnCommandBehavior) 
+base class provides an API that let you leverage the switch pattern match feature. When combined with `sealed` command
+and event top types this gives you a more direct handling of commands and events as well as a compile time completeness
+check that you have handled all kinds of commands and events in your event sourced behavior handler methods:
+
+Java
+:  @@snip [AccountBehavior.java](/akka-persistence-typed-tests/src/test/java-21+/jdocs21/akka/persistence/typed/javadsl/AccountBehavior.java) { #account-behavior }
+
 @@@
