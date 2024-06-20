@@ -1272,6 +1272,7 @@ private[stream] object Collect {
  */
 @InternalApi private[akka] final case class MapAsync[In, Out](parallelism: Int, f: In => Future[Out])
     extends GraphStage[FlowShape[In, Out]] {
+  require(parallelism >= 1, "parallelism should >= 1")
 
   import MapAsync._
 
