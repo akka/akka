@@ -14,6 +14,7 @@ import language.implicitConversions
 
 import akka.actor.{ Actor, ActorRef, Status }
 import akka.actor.ActorSelection
+import akka.dispatch.ExecutionContexts
 import akka.util.unused
 
 trait PipeToSupport {
@@ -78,7 +79,6 @@ trait PipeToSupport {
    *
    * {{{
    * import akka.pattern.pipe
-   * // requires implicit ExecutionContext, e.g. by importing `context.dispatcher` inside an Actor
    *
    * Future { doExpensiveCalc() } pipeTo nextActor
    *
@@ -90,16 +90,20 @@ trait PipeToSupport {
    *
    * The successful result of the future is sent as a message to the recipient, or
    * the failure is sent in a [[akka.actor.Status.Failure]] to the recipient.
+   *
+   * By default this uses a [[scala.concurrent.ExecutionContext]] which sends the message on the
+   * calling thread if the future has already completed, or on the thread which completes the future
+   * if the future has not yet completed.
    */
-  implicit def pipe[T](future: Future[T])(implicit executionContext: ExecutionContext): PipeableFuture[T] =
+  implicit def pipe[T](future: Future[T])(
+      implicit executionContext: ExecutionContext = ExecutionContexts.parasitic): PipeableFuture[T] =
     new PipeableFuture(future)
 
   /**
-   * Import this implicit conversion to gain the `pipeTo` method on [[scala.concurrent.Future]]:
+   * Import this implicit conversion to gain the `pipeTo` method on [[java.util.concurrent.CompletionStage]]:
    *
    * {{{
    * import akka.pattern.pipe
-   * // requires implicit ExecutionContext, e.g. by importing `context.dispatcher` inside an Actor
    *
    * Future { doExpensiveCalc() } pipeTo nextActor
    *
@@ -111,7 +115,12 @@ trait PipeToSupport {
    *
    * The successful result of the future is sent as a message to the recipient, or
    * the failure is sent in a [[akka.actor.Status.Failure]] to the recipient.
+   *
+   * Regardless of the passed [[scala.concurrent.ExecutionContext]], the message will be
+   * sent from the calling thread if the future has already completed, or on the thread which
+   * completes the future if the future has not yet completed.
    */
   implicit def pipeCompletionStage[T](future: CompletionStage[T])(
-      implicit executionContext: ExecutionContext): PipeableCompletionStage[T] = new PipeableCompletionStage(future)
+      implicit executionContext: ExecutionContext = ExecutionContexts.parasitic): PipeableCompletionStage[T] =
+    new PipeableCompletionStage(future)
 }
