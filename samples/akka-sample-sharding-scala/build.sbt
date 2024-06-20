@@ -1,4 +1,4 @@
-val AkkaVersion = "2.9.3"
+val AkkaVersion = "2.9.4"
 val AkkaHttpVersion = "10.6.3"
 val AkkaDiagnostics = "2.1.1"
 val LogbackVersion = "1.2.11"
