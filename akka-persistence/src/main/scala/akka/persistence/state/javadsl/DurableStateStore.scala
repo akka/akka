@@ -7,7 +7,7 @@ package akka.persistence.state.javadsl
 import java.util.Optional
 import java.util.concurrent.CompletionStage
 
-import scala.compat.java8.OptionConverters._
+import scala.jdk.OptionConverters._
 
 import akka.persistence.state.scaladsl.{ GetObjectResult => SGetObjectResult }
 
@@ -25,5 +25,5 @@ trait DurableStateStore[A] {
 }
 
 final case class GetObjectResult[A](value: Optional[A], revision: Long) {
-  def toScala: SGetObjectResult[A] = SGetObjectResult(value.asScala, revision)
+  def toScala: SGetObjectResult[A] = SGetObjectResult(value.toScala, revision)
 }

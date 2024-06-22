@@ -6,7 +6,7 @@ package akka.stream.javadsl
 
 import java.util.Optional
 
-import scala.compat.java8.OptionConverters._
+import scala.jdk.OptionConverters._
 
 import akka.japi.Pair
 import akka.stream.scaladsl
@@ -43,7 +43,7 @@ object RetryFlow {
     scaladsl.RetryFlow
       .withBackoff[In, Out, Mat](minBackoff.asScala, maxBackoff.asScala, randomFactor, maxRetries, flow.asScala) {
         (in, out) =>
-          decideRetry.apply(in, out).asScala
+          decideRetry.apply(in, out).toScala
       }
       .asJava
 
@@ -84,7 +84,7 @@ object RetryFlow {
         randomFactor,
         maxRetries,
         flow.asScala) { (in, out) =>
-        decideRetry.apply(Pair(in._1, in._2), Pair(out._1, out._2)).asScala.map(_.toScala)
+        decideRetry.apply(Pair(in._1, in._2), Pair(out._1, out._2)).toScala.map(_.toScala)
       }
       .asJava[In, InCtx, Out, OutCtx, Mat]
 

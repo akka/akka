@@ -11,8 +11,8 @@ import java.util.concurrent.atomic.AtomicReference
 
 import scala.annotation.tailrec
 import scala.collection.immutable
-import scala.compat.java8.FutureConverters
-import scala.compat.java8.OptionConverters._
+import scala.jdk.FutureConverters.FutureOps
+import scala.jdk.OptionConverters._
 import scala.concurrent.{ ExecutionContext, ExecutionContextExecutor, Future, Promise }
 import scala.concurrent.blocking
 import scala.concurrent.duration.Duration
@@ -72,7 +72,7 @@ object BootstrapSetup {
       classLoader: Optional[ClassLoader],
       config: Optional[Config],
       defaultExecutionContext: Optional[ExecutionContext]): BootstrapSetup =
-    apply(classLoader.asScala, config.asScala, defaultExecutionContext.asScala)
+    apply(classLoader.toScala, config.toScala, defaultExecutionContext.toScala)
 
   /**
    * Java  API: Short for using custom config but keeping default classloader and default execution context
@@ -1007,7 +1007,7 @@ private[akka] class ActorSystemImpl(
   private[this] final val terminationCallbacks = new TerminationCallbacks(provider.terminationFuture)(dispatcher)
 
   override def whenTerminated: Future[Terminated] = terminationCallbacks.terminationFuture
-  override def getWhenTerminated: CompletionStage[Terminated] = FutureConverters.toJava(whenTerminated)
+  override def getWhenTerminated: CompletionStage[Terminated] = whenTerminated.asJava
   def lookupRoot: InternalActorRef = provider.rootGuardian
   def guardian: LocalActorRef = provider.guardian
   def systemGuardian: LocalActorRef = provider.systemGuardian

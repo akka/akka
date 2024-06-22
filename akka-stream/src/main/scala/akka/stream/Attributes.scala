@@ -10,7 +10,7 @@ import java.util.Optional
 
 import scala.annotation.nowarn
 import scala.annotation.tailrec
-import scala.compat.java8.OptionConverters._
+import scala.jdk.OptionConverters._
 import scala.concurrent.duration.FiniteDuration
 import scala.reflect.{ classTag, ClassTag }
 import scala.util.control.NonFatal
@@ -100,7 +100,7 @@ final class Attributes private[akka] (
    * This is the expected way for operators to access attributes.
    */
   def getAttribute[T <: Attribute](c: Class[T]): Optional[T] =
-    attributeList.collectFirst { case attr if c.isInstance(attr) => c.cast(attr) }.asJava
+    attributeList.collectFirst { case attr if c.isInstance(attr) => c.cast(attr) }.toJava
 
   /**
    * Scala API: Get the most specific attribute value for a given Attribute type or subclass thereof or

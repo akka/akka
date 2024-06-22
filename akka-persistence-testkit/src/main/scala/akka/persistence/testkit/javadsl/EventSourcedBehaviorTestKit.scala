@@ -217,8 +217,8 @@ final class EventSourcedBehaviorTestKit[Command, Event, State](
 
   private val _persistenceTestKit = new PersistenceTestKit(delegate.persistenceTestKit)
   private val _snapshotTestKit = {
-    import scala.compat.java8.OptionConverters._
-    delegate.snapshotTestKit.map(new SnapshotTestKit(_)).asJava
+    import scala.jdk.OptionConverters._
+    delegate.snapshotTestKit.map(new SnapshotTestKit(_)).toJava
   }
 
   /**

@@ -7,7 +7,7 @@ package akka.persistence.typed.javadsl
 import java.time.Duration
 import java.util.Optional
 
-import scala.compat.java8.OptionConverters._
+import scala.jdk.OptionConverters._
 
 import akka.japi.function.Function3
 import akka.persistence.typed.SnapshotAdapter
@@ -28,5 +28,5 @@ object PersistentFSMMigration {
    */
   def snapshotAdapter[State](adapt: Function3[String, Any, Optional[Duration], State]): SnapshotAdapter[State] =
     akka.persistence.typed.scaladsl.PersistentFSMMigration.snapshotAdapter((stateId, snapshot, timer) =>
-      adapt.apply(stateId, snapshot, timer.map(_.asJava).asJava))
+      adapt.apply(stateId, snapshot, timer.map(_.asJava).toJava))
 }
