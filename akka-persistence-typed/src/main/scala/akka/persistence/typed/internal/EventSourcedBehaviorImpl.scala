@@ -115,6 +115,19 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
   if (persistenceId eq null)
     throw new IllegalArgumentException("persistenceId must not be null")
 
+  if (replication.isDefined) {
+    retention match {
+      case s: SnapshotCountRetentionCriteriaImpl if s.deleteEventsOnSnapshot =>
+        throw new IllegalArgumentException(
+          "Retention criteria with deleteEventsOnSnapshot must not be used together with replication.")
+      case _ => // ok
+    }
+
+    if (snapshotWhen.deleteEventsOnSnapshot)
+      throw new IllegalArgumentException(
+        "snapshotWhen with deleteEventsOnSnapshot must not be used together with replication.")
+  }
+
   // Don't use it directly, but instead call internalLogger() (see below)
   private val loggerForInternal = LoggerFactory.getLogger(this.getClass)
 
