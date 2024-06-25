@@ -87,7 +87,8 @@ object ClusterShardingSettings {
       coordinatorStateWriteMajorityPlus = configMajorityPlus("coordinator-state.write-majority-plus"),
       coordinatorStateReadMajorityPlus = configMajorityPlus("coordinator-state.read-majority-plus"),
       leastShardAllocationAbsoluteLimit = config.getInt("least-shard-allocation-strategy.rebalance-absolute-limit"),
-      leastShardAllocationRelativeLimit = config.getDouble("least-shard-allocation-strategy.rebalance-relative-limit"))
+      leastShardAllocationRelativeLimit = config.getDouble("least-shard-allocation-strategy.rebalance-relative-limit"),
+      passivationStopTimeout = config.getDuration("passivation.stop-timeout", MILLISECONDS).millis)
 
     val coordinatorSingletonSettings = ClusterSingletonManagerSettings(config.getConfig("coordinator-singleton"))
 
@@ -923,7 +924,8 @@ object ClusterShardingSettings {
       val coordinatorStateWriteMajorityPlus: Int,
       val coordinatorStateReadMajorityPlus: Int,
       val leastShardAllocationAbsoluteLimit: Int,
-      val leastShardAllocationRelativeLimit: Double) {
+      val leastShardAllocationRelativeLimit: Double,
+      val passivationStopTimeout: FiniteDuration) {
 
     require(
       entityRecoveryStrategy == "all" || entityRecoveryStrategy == "constant",
@@ -931,7 +933,58 @@ object ClusterShardingSettings {
 
     // included for binary compatibility
     @deprecated(
-      "Use the ClusterShardingSettings factory methods or the constructor including " +
+      "Use the TuningParameters factory methods or the constructor including " +
+      "passivationStopTimeout instead",
+      since = "2.9.4")
+    def this(
+        coordinatorFailureBackoff: FiniteDuration,
+        retryInterval: FiniteDuration,
+        bufferSize: Int,
+        handOffTimeout: FiniteDuration,
+        shardStartTimeout: FiniteDuration,
+        shardFailureBackoff: FiniteDuration,
+        entityRestartBackoff: FiniteDuration,
+        rebalanceInterval: FiniteDuration,
+        snapshotAfter: Int,
+        keepNrOfBatches: Int,
+        leastShardAllocationRebalanceThreshold: Int,
+        leastShardAllocationMaxSimultaneousRebalance: Int,
+        waitingForStateTimeout: FiniteDuration,
+        updatingStateTimeout: FiniteDuration,
+        entityRecoveryStrategy: String,
+        entityRecoveryConstantRateStrategyFrequency: FiniteDuration,
+        entityRecoveryConstantRateStrategyNumberOfEntities: Int,
+        coordinatorStateWriteMajorityPlus: Int,
+        coordinatorStateReadMajorityPlus: Int,
+        leastShardAllocationAbsoluteLimit: Int,
+        leastShardAllocationRelativeLimit: Double) =
+      this(
+        coordinatorFailureBackoff,
+        retryInterval,
+        bufferSize,
+        handOffTimeout,
+        shardStartTimeout,
+        shardFailureBackoff,
+        entityRestartBackoff,
+        rebalanceInterval,
+        snapshotAfter,
+        keepNrOfBatches,
+        leastShardAllocationRebalanceThreshold,
+        leastShardAllocationMaxSimultaneousRebalance,
+        waitingForStateTimeout,
+        updatingStateTimeout,
+        entityRecoveryStrategy,
+        entityRecoveryConstantRateStrategyFrequency,
+        entityRecoveryConstantRateStrategyNumberOfEntities,
+        coordinatorStateWriteMajorityPlus,
+        coordinatorStateReadMajorityPlus,
+        leastShardAllocationAbsoluteLimit = 100,
+        leastShardAllocationRelativeLimit = 0.1,
+        passivationStopTimeout = 10.seconds)
+
+    // included for binary compatibility
+    @deprecated(
+      "Use the TuningParameters factory methods or the constructor including " +
       "leastShardAllocationAbsoluteLimit and leastShardAllocationRelativeLimit instead",
       since = "2.6.10")
     def this(
