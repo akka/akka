@@ -44,6 +44,7 @@ object EntityPassivationSpec {
 
   object Entity {
     case object Stop
+    case object IgnoreStop
     case object ManuallyPassivate
     case class Envelope(shard: Int, id: Int, message: Any)
     case class Received(id: String, message: Any, nanoTime: Long)
@@ -61,6 +62,9 @@ object EntityPassivationSpec {
       case Entity.Stop =>
         received(Entity.Stop)
         context.stop(self)
+      case Entity.IgnoreStop =>
+        received(Entity.IgnoreStop)
+        unhandled(Entity.IgnoreStop)
       case Entity.ManuallyPassivate =>
         received(Entity.ManuallyPassivate)
         context.parent ! ShardRegion.Passivate(Entity.Stop)
@@ -117,7 +121,7 @@ abstract class AbstractEntityPassivationSpec(config: Config, expectedEntities: I
       }
     }
 
-  def start(): ActorRef = {
+  def start(stopMessage: Any = Entity.Stop): ActorRef = {
     // single node cluster
     Cluster(system).join(Cluster(system).selfAddress)
     ClusterSharding(system).start(
@@ -127,7 +131,7 @@ abstract class AbstractEntityPassivationSpec(config: Config, expectedEntities: I
       extractEntityId,
       extractShardId,
       ClusterSharding(system).defaultShardAllocationStrategy(settings),
-      Entity.Stop)
+      stopMessage)
   }
 }
 
