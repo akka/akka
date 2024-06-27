@@ -3,8 +3,8 @@ import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys.MultiJvm
 
 val AkkaVersion = "2.9.4"
 val AkkaDiagnosticsVersion = "2.1.1"
-val LogbackClassicVersion = "1.2.11" 
-val ScalaTestVersion = "3.2.17"
+val LogbackClassicVersion = "1.2.11"
+val ScalaTestVersion = "3.2.19"
 
 lazy val `akka-sample-cluster-scala` = project
   .in(file("."))
@@ -17,17 +17,16 @@ lazy val `akka-sample-cluster-scala` = project
     run / javaOptions ++= Seq("-Xms128m", "-Xmx1024m", "-Djava.library.path=./target/native"),
     resolvers += "Akka library repository".at("https://repo.akka.io/maven"),
     libraryDependencies ++= Seq(
-      "com.typesafe.akka" %% "akka-actor-typed" % AkkaVersion,
-      "com.typesafe.akka" %% "akka-cluster-typed" % AkkaVersion,
-      "com.typesafe.akka" %% "akka-serialization-jackson" % AkkaVersion,
-      "ch.qos.logback"    %  "logback-classic" % LogbackClassicVersion,
-      "com.lightbend.akka" %% "akka-diagnostics" % AkkaDiagnosticsVersion,
-      "com.typesafe.akka" %% "akka-multi-node-testkit" % AkkaVersion % Test,
-      "org.scalatest"     %% "scalatest" % ScalaTestVersion % Test,
-      "com.typesafe.akka" %% "akka-actor-testkit-typed" % AkkaVersion % Test),
+        "com.typesafe.akka" %% "akka-actor-typed" % AkkaVersion,
+        "com.typesafe.akka" %% "akka-cluster-typed" % AkkaVersion,
+        "com.typesafe.akka" %% "akka-serialization-jackson" % AkkaVersion,
+        "ch.qos.logback" % "logback-classic" % LogbackClassicVersion,
+        "com.lightbend.akka" %% "akka-diagnostics" % AkkaDiagnosticsVersion,
+        "com.typesafe.akka" %% "akka-multi-node-testkit" % AkkaVersion % Test,
+        "org.scalatest" %% "scalatest" % ScalaTestVersion % Test,
+        "com.typesafe.akka" %% "akka-actor-testkit-typed" % AkkaVersion % Test),
     run / fork := true,
     // disable parallel tests
     Test / parallelExecution := false,
-    licenses := Seq(("CC0", url("http://creativecommons.org/publicdomain/zero/1.0")))
-  )
-  .configs (MultiJvm)
+    licenses := Seq(("CC0", url("http://creativecommons.org/publicdomain/zero/1.0"))))
+  .configs(MultiJvm)
