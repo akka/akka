@@ -112,7 +112,6 @@ class Slf4jLogger extends Actor with SLF4JLogging with RequiresMessageQueue[Logg
       }
 
     case InitializeLogger(_) =>
-      log.info("Slf4jLogger started")
       sender() ! LoggerInitialized
   }
 
