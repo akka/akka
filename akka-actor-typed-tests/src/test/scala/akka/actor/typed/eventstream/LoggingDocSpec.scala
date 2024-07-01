@@ -5,6 +5,7 @@
 package akka.actor.typed.eventstream
 
 import akka.actor.DeadLetter
+import akka.actor.Terminated
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.TestProbe
@@ -15,6 +16,7 @@ import akka.actor.typed.SpawnProtocol
 import akka.actor.typed.SpawnProtocol.Spawn
 import akka.actor.typed.eventstream.EventStream.Publish
 import akka.actor.typed.eventstream.EventStream.Subscribe
+import akka.actor.typed.scaladsl.adapter._
 import akka.actor.typed.scaladsl.Behaviors
 import org.scalatest.wordspec.AnyWordSpecLike
 
@@ -24,20 +26,25 @@ import scala.concurrent.Future
 object LoggingDocSpec {
 
   //#deadletters
+  import akka.actor.DeadLetter
   import akka.actor.typed.Behavior
   import akka.actor.typed.eventstream.EventStream.Subscribe
   import akka.actor.typed.scaladsl.Behaviors
 
   object DeadLetterListener {
 
-    def apply(): Behavior[String] = Behaviors.setup { context =>
-      // subscribe DeadLetter at startup.
-      val adapter = context.messageAdapter[DeadLetter](d => d.message.toString)
+    def apply(): Behavior[DeadLetter] = Behaviors.setup { context =>
+      // subscribe DeadLetter at start up.
+      val adapter = context.messageAdapter[DeadLetter](d => d)
       context.system.eventStream ! Subscribe(adapter)
 
       Behaviors.receiveMessage {
-        case msg: String =>
-          println(msg)
+        case deadLetter: DeadLetter =>
+          context.log.info(
+            "receive dead letter: {} from <{}> to <{}>",
+            deadLetter.message,
+            deadLetter.sender,
+            deadLetter.recipient)
           Behaviors.same
       }
     }
@@ -71,13 +78,23 @@ class LoggingDocSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with
   import LoggingDocSpec._
   import akka.actor.typed.scaladsl.AskPattern._
 
-  "allow registration to dead letters" in {
+  "allow registration to dead letters from start up" in {
     // #deadletters
     ActorSystem(Behaviors.setup[Void] { context =>
       context.spawn(DeadLetterListener(), "DeadLetterListener", Props.empty)
       Behaviors.empty
     }, "System")
     // #deadletters
+  }
+
+  "allow registration to dead letters" in {
+    // #subscribe-deadletter
+    ActorSystem(Behaviors.setup[Void] { context =>
+      val deadLetterListener = context.spawn(DeadLetterListener(), "DeadLetterListener", Props.empty)
+      context.system.eventStream ! Subscribe[DeadLetter](deadLetterListener)
+      Behaviors.empty
+    }, "System")
+    // #subscribe-deadletter
   }
 
   "demonstrate superclass subscriptions on typed eventStream" in {
@@ -106,17 +123,29 @@ class LoggingDocSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with
   }
 
   "allow registration to suppressed dead letters" in {
-    val listener: ActorRef[Any] = TestProbe().ref
+    val probe: TestProbe[Any] = TestProbe()
+    val listener: ActorRef[Any] = probe.ref
+    val mockRef = listener.toClassic
 
     //#suppressed-deadletters
     import akka.actor.SuppressedDeadLetter
     system.eventStream ! Subscribe[SuppressedDeadLetter](listener)
     //#suppressed-deadletters
+    val suppression = Terminated(mockRef)(existenceConfirmed = false, addressTerminated = false)
+    val suppressionDeadLetter = SuppressedDeadLetter(suppression, mockRef, mockRef)
+    system.eventStream ! Publish(suppressionDeadLetter)
+
+    val receivedSuppression = probe.expectMessageType[SuppressedDeadLetter]
+    receivedSuppression shouldBe suppressionDeadLetter
 
     //#all-deadletters
     import akka.actor.AllDeadLetters
     system.eventStream ! Subscribe[AllDeadLetters](listener)
     //#all-deadletters
+    val deadLetter = DeadLetter("deadLetter", mockRef, mockRef)
+    system.eventStream ! Publish(deadLetter)
+    val receivedDeadLetter = probe.expectMessageType[DeadLetter]
+    receivedDeadLetter shouldBe deadLetter
   }
 
 }
