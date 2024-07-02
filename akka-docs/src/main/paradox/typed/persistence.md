@@ -227,6 +227,8 @@ and can be one of:
 * @scala[@scaladoc[stash](akka.persistence.typed.scaladsl.Effect$#stash[Event,State]():akka.persistence.typed.scaladsl.ReplyEffect[Event,State])]@java[@javadoc[stash](akka.persistence.typed.javadsl.EffectFactories#stash())] the current command is stashed
 * @scala[@scaladoc[unstashAll](akka.persistence.typed.scaladsl.Effect$#unstashAll[Event,State]():akka.persistence.typed.scaladsl.Effect[Event,State])]@java[@javadoc[unstashAll](akka.persistence.typed.javadsl.EffectFactories#unstashAll())] process the commands that were stashed with @scala[`Effect.stash`]@java[`Effect().stash`]
 * @scala[@scaladoc[reply](akka.persistence.typed.scaladsl.Effect$#reply[ReplyMessage,Event,State](replyTo:akka.actor.typed.ActorRef[ReplyMessage])(replyWithMessage:ReplyMessage):akka.persistence.typed.scaladsl.ReplyEffect[Event,State])]@java[@javadoc[reply](akka.persistence.typed.javadsl.EffectFactories#reply(akka.actor.typed.ActorRef,ReplyMessage))] send a reply message to the given @apidoc[typed.ActorRef]
+* @scala[@scaladoc[async](akka.persistence.typed.scaladsl.Effect$#async)]@java[@javadoc[reply](akka.persistence.typed.javadsl.EffectFactories#async)] Asynchronous command handling
+* @scala[@scaladoc[asyncReply](akka.persistence.typed.scaladsl.Effect$#asyncReply)]@java[@javadoc[reply](akka.persistence.typed.javadsl.EffectFactories#asyncReply)] Asynchronous command handling and then reply
 
 Note that only one of those can be chosen per incoming command. It is not possible to both persist and say none/unhandled.
 

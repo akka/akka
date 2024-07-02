@@ -115,6 +115,7 @@ private[akka] final class ReplayingEvents[C, E, S](
       case get: GetSeenSequenceNr                     => stashInternal(get)
       case RecoveryPermitGranted                      => Behaviors.unhandled // should not happen, we already have the permit
       case ContinueUnstash                            => Behaviors.unhandled
+      case _: AsyncEffectCompleted[_, _, _]           => Behaviors.unhandled
     }
   }
 
