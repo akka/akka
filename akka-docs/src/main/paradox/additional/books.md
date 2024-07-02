@@ -12,7 +12,7 @@
  * [Mastering Akka](https://www.packtpub.com/application-development/mastering-akka), by Christian Baxter, PACKT Publishing, ISBN: 9781786465023, October 2016
  * [Learning Akka](https://www.packtpub.com/application-development/learning-akka), by Jason Goodwin, PACKT Publishing, ISBN: 9781784393007, December 2015
  * [Reactive Messaging Patterns with the Actor Model](https://www.informit.com/store/reactive-messaging-patterns-with-the-actor-model-applications-9780133846836), by Vaughn Vernon, Addison-Wesley Professional, ISBN: 0133846830, August 2015
- * [Developing an Akka Edge](https://bleedingedgepress.com/developing-an-akka-edge/), by Thomas Lockney and Raymond Tay, Bleeding Edge Press, ISBN: 9781939902054, April 2014
+ * [Developing an Akka Edge](https://www.researchgate.net/publication/260792615_Developing_an_Akka_Edge), by Thomas Lockney and Raymond Tay, Bleeding Edge Press, ISBN: 9781939902054, April 2014
  * [Effective Akka](https://shop.oreilly.com/product/0636920028789.do), by Jamie Allen, O'Reilly Media, ISBN: 1449360076, August 2013
  * [Akka Concurrency](https://www.artima.com/shop/akka_concurrency), by Derek Wyatt, artima developer, ISBN: 0981531660, May 2013
  * [Akka Essentials](https://www.packtpub.com/application-development/akka-essentials), by Munish K. Gupta, PACKT Publishing, ISBN: 1849518289, October 2012

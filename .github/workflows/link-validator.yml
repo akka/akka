@@ -49,4 +49,4 @@ jobs:
         run: sbt -Dakka.genjavadoc.enabled=true "Javaunidoc/doc; Compile/unidoc; akka-docs/paradox"
 
       - name: Run Link Validator
-        run: cs launch net.runne::site-link-validator:0.2.3 -- scripts/link-validator.conf
+        run: cs launch net.runne::site-link-validator:0.2.5 -- scripts/link-validator.conf
