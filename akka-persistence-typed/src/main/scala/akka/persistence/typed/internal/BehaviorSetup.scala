@@ -305,6 +305,7 @@ private[akka] object PersistenceMdc {
   val ReplayingEvents   = "replay-evt"
   val RunningCmds       = "running-cmd"
   val PersistingEvents  = "persist-evt"
+  val WaitingAsyncEffect = "async-effect"
   val StoringSnapshot   = "storing-snap"
   // format: ON
 

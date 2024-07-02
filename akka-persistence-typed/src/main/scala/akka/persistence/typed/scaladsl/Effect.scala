@@ -5,6 +5,7 @@
 package akka.persistence.typed.scaladsl
 
 import scala.collection.{ immutable => im }
+import scala.concurrent.Future
 
 import akka.actor.typed.ActorRef
 import akka.annotation.DoNotInherit
@@ -108,6 +109,23 @@ object Effect {
    */
   def noReply[Event, State]: ReplyEffect[Event, State] =
     none.thenNoReply()
+
+  /**
+   * Asynchronous command handling. The effect is run when the `Future` has been completed.
+   * Any incoming commands are stashed and processed later, after current command, when the `Future` has
+   * been completed.
+   *
+   * This can for example be used for retrieval of external information before validating the command.
+   */
+  def async[Event, State](effect: Future[Effect[Event, State]]): Effect[Event, State] =
+    AsyncEffect(effect)
+
+  /**
+   * Same as [[Effect.async]] when the `EventSourcedBehavior` is created with
+   * [[EventSourcedBehavior.withEnforcedReplies]].
+   */
+  def asyncReply[Event, State](effect: Future[ReplyEffect[Event, State]]): ReplyEffect[Event, State] =
+    AsyncEffect(effect)
 
 }
 

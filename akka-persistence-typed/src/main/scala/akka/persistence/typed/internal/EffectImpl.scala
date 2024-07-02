@@ -5,11 +5,13 @@
 package akka.persistence.typed.internal
 
 import scala.collection.immutable
+import scala.concurrent.Future
 
 import akka.actor.typed.ActorRef
 import akka.annotation.InternalApi
 import akka.persistence.typed.javadsl
 import akka.persistence.typed.scaladsl
+import akka.persistence.typed.scaladsl.Effect
 
 /** INTERNAL API */
 @InternalApi
@@ -80,6 +82,11 @@ private[akka] final case class PersistAll[Event, State](override val events: imm
 
   override def toString: String = s"PersistAll(${events.map(_.getClass.getName).mkString(",")})"
 }
+
+/** INTERNAL API */
+@InternalApi
+private[akka] final case class AsyncEffect[Event, State](effect: Future[Effect[Event, State]])
+    extends EffectImpl[Event, State]
 
 /** INTERNAL API */
 @InternalApi
