@@ -571,8 +571,6 @@ private[akka] object Running {
 
           events.foreach { event =>
             _currentSequenceNumber += 1
-            if (shouldSnapshotAfterPersist == NoSnapshot)
-              shouldSnapshotAfterPersist = setup.shouldSnapshot(currentState.state, event, _currentSequenceNumber)
             val evtManifest = setup.eventAdapter.manifest(event)
             val eventMetadata = metadataTemplate match {
               case Some(template) =>
@@ -588,6 +586,8 @@ private[akka] object Running {
             }
 
             currentState = currentState.applyEvent(setup, event)
+            if (shouldSnapshotAfterPersist == NoSnapshot)
+              shouldSnapshotAfterPersist = setup.shouldSnapshot(currentState.state, event, _currentSequenceNumber)
 
             val adaptedEvent = adaptEvent(currentState.state, event)
 
