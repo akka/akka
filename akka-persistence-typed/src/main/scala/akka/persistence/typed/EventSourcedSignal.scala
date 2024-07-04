@@ -4,6 +4,8 @@
 
 package akka.persistence.typed
 
+import java.util.Optional
+
 import akka.actor.typed.Signal
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
@@ -27,6 +29,56 @@ final case class RecoveryFailed(failure: Throwable) extends EventSourcedSignal {
    * Java API
    */
   def getFailure(): Throwable = failure
+}
+
+final case class PersistFailed[Command, Event](failure: Throwable, command: Option[Command], event: Event)
+    extends EventSourcedSignal {
+
+  /**
+   * Java API
+   */
+  def getFailure(): Throwable = failure
+
+  /**
+   * Java API
+   */
+  def getCommand(): Optional[Command] = {
+    import scala.compat.java8.OptionConverters._
+    command.asJava
+  }
+
+  /**
+   * Java API
+   */
+  def getEvent(): Event = event
+
+  override def toString: String =
+    s"PersistFailed($failure, ${command.getClass.getName}, ${event.getClass.getName})"
+}
+
+final case class PersistRejected[Command, Event](failure: Throwable, command: Option[Command], event: Event)
+    extends EventSourcedSignal {
+
+  /**
+   * Java API
+   */
+  def getFailure(): Throwable = failure
+
+  /**
+   * Java API
+   */
+  def getCommand(): Optional[Command] = {
+    import scala.compat.java8.OptionConverters._
+    command.asJava
+  }
+
+  /**
+   * Java API
+   */
+  def getEvent(): Event = event
+
+  override def toString: String =
+    s"PersistRejected($failure, ${command.getClass.getName}, ${event.getClass.getName})"
 }
 
 final case class SnapshotCompleted(metadata: SnapshotMetadata) extends EventSourcedSignal {

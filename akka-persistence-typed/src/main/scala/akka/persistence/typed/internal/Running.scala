@@ -9,8 +9,10 @@ import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.concurrent.atomic.AtomicReference
+
 import scala.annotation.tailrec
 import scala.collection.immutable
+
 import akka.Done
 import akka.actor.UnhandledMessage
 import akka.actor.typed.{ Behavior, Signal }
@@ -35,6 +37,8 @@ import akka.persistence.SnapshotProtocol
 import akka.persistence.journal.Tagged
 import akka.persistence.query.{ EventEnvelope, PersistenceQuery }
 import akka.persistence.query.scaladsl.EventsByPersistenceIdQuery
+import akka.persistence.typed.PersistFailed
+import akka.persistence.typed.PersistRejected
 import akka.persistence.typed.{
   DeleteEventsCompleted,
   DeleteEventsFailed,
@@ -470,6 +474,7 @@ private[akka] object Running {
       persistingEvents(
         newState2.copy(seenPerReplica = updatedSeen, version = updatedVersion),
         state,
+        command = OptionVal.none[C],
         numberOfEvents = 1,
         shouldSnapshotAfterPersist,
         shouldPublish = false,
@@ -478,7 +483,7 @@ private[akka] object Running {
 
     private def handleEventPersist(
         event: E,
-        cmd: Any,
+        cmd: C,
         sideEffects: immutable.Seq[SideEffect[S]]): (Behavior[InternalProtocol], Boolean) = {
       try {
         // apply the event before persist so that validation exception is handled before persisting
@@ -523,6 +528,7 @@ private[akka] object Running {
           persistingEvents(
             newState2,
             state,
+            command = OptionVal.Some(cmd),
             numberOfEvents = 1,
             shouldSnapshotAfterPersist,
             shouldPublish = true,
@@ -535,7 +541,7 @@ private[akka] object Running {
 
     private def handleEventPersistAll(
         events: immutable.Seq[E],
-        cmd: Any,
+        cmd: C,
         sideEffects: immutable.Seq[SideEffect[S]]): (Behavior[InternalProtocol], Boolean) = {
       if (events.nonEmpty) {
         try {
@@ -587,6 +593,7 @@ private[akka] object Running {
             persistingEvents(
               newState2,
               state,
+              command = OptionVal.Some(cmd),
               events.size,
               shouldSnapshotAfterPersist,
               shouldPublish = true,
@@ -601,7 +608,7 @@ private[akka] object Running {
       }
     }
     @tailrec def applyEffects(
-        msg: Any,
+        msg: C,
         state: RunningState[S],
         effect: Effect[E, S],
         sideEffects: immutable.Seq[SideEffect[S]] = Nil): (Behavior[InternalProtocol], Boolean) = {
@@ -677,19 +684,28 @@ private[akka] object Running {
   def persistingEvents(
       state: RunningState[S],
       visibleState: RunningState[S], // previous state until write success
+      command: OptionVal[C],
       numberOfEvents: Int,
       shouldSnapshotAfterPersist: SnapshotAfterPersist,
       shouldPublish: Boolean,
       sideEffects: immutable.Seq[SideEffect[S]]): Behavior[InternalProtocol] = {
     setup.setMdcPhase(PersistenceMdc.PersistingEvents)
     recursiveUnstashOne = 0
-    new PersistingEvents(state, visibleState, numberOfEvents, shouldSnapshotAfterPersist, shouldPublish, sideEffects)
+    new PersistingEvents(
+      state,
+      visibleState,
+      command,
+      numberOfEvents,
+      shouldSnapshotAfterPersist,
+      shouldPublish,
+      sideEffects)
   }
 
   /** INTERNAL API */
   @InternalApi private[akka] class PersistingEvents(
       var state: RunningState[S],
       var visibleState: RunningState[S], // previous state until write success
+      command: OptionVal[C],
       numberOfEvents: Int,
       shouldSnapshotAfterPersist: SnapshotAfterPersist,
       shouldPublish: Boolean,
@@ -822,6 +838,10 @@ private[akka] object Running {
               p.sequenceNr,
               state.getInstrumentationContext(p.sequenceNr))
             onWriteRejected(setup.context, cause, p)
+            val signal = PersistRejected(cause, command.toOption, p.payload)
+            if (setup.onSignal(state.state, signal, catchAndLog = false)) {
+              setup.internalLogger.debug("Emitted signal [{}].", signal)
+            }
             throw new EventRejectedException(setup.persistenceId, p.sequenceNr, cause)
           } else this
 
@@ -834,6 +854,10 @@ private[akka] object Running {
               p.sequenceNr,
               state.getInstrumentationContext(p.sequenceNr))
             onWriteFailed(setup.context, cause, p)
+            val signal = PersistFailed(cause, command.toOption, p.payload)
+            if (setup.onSignal(state.state, signal, catchAndLog = false)) {
+              setup.internalLogger.debug("Emitted signal [{}].", signal)
+            }
             throw new JournalFailureException(setup.persistenceId, p.sequenceNr, p.payload.getClass.getName, cause)
           } else this
 
