@@ -289,7 +289,8 @@ The recovery of a persistent actor will therefore never be done partially with o
 a single @scala[@scaladoc[persist](akka.persistence.typed.scaladsl.Effect$#persist[Event,State](event:Event):akka.persistence.typed.scaladsl.EffectBuilder[Event,State])]@java[@javadoc[persist](akka.persistence.typed.javadsl.EffectFactories#persist(Event))] effect.
 
 Some journals may not support atomic writes of several events and they will then reject the `persist` with
-multiple events. This is signalled to an @apidoc[typed.*.EventSourcedBehavior] via an @apidoc[typed.EventRejectedException] (typically with a 
+multiple events. This is signalled to an @apidoc[typed.*.EventSourcedBehavior] via an @apidoc[typed.PersistRejected] signal.
+An @apidoc[typed.EventRejectedException] is also thrown (typically with a 
 @javadoc[UnsupportedOperationException](java.lang.UnsupportedOperationException)) and can be handled with a @ref[supervisor](fault-tolerance.md).
 
 ## Cluster Sharding and EventSourcedBehavior
@@ -605,11 +606,16 @@ If there is a problem with recovering the state of the actor from the journal, a
 emitted to the @scala[@scaladoc[receiveSignal](akka.persistence.typed.scaladsl.EventSourcedBehavior#receiveSignal(signalHandler:PartialFunction[(State,akka.actor.typed.Signal),Unit]):akka.persistence.typed.scaladsl.EventSourcedBehavior[Command,Event,State]) handler] @java[@javadoc[receiveSignal](akka.persistence.typed.javadsl.SignalHandlerBuilder#onSignal(java.lang.Class,java.util.function.BiConsumer)) method] and the actor will be stopped
 (or restarted with backoff).
 
+If there is a problem with persisting an event to the journal, a @apidoc[typed.PersistFailed] signal is
+emitted to the @scala[@scaladoc[receiveSignal](akka.persistence.typed.scaladsl.EventSourcedBehavior#receiveSignal(signalHandler:PartialFunction[(State,akka.actor.typed.Signal),Unit]):akka.persistence.typed.scaladsl.EventSourcedBehavior[Command,Event,State]) handler] @java[@javadoc[receiveSignal](akka.persistence.typed.javadsl.SignalHandlerBuilder#onSignal(java.lang.Class,java.util.function.BiConsumer)) method] and the actor will be stopped
+(or restarted with backoff).
+
 ### Journal rejections
 
 Journals can reject events. The difference from a failure is that the journal must decide to reject an event before
-trying to persist it e.g. because of a serialization exception. If an event is rejected it definitely won't be in the journal. 
-This is signalled to an @apidoc[typed.*.EventSourcedBehavior] via an @apidoc[typed.EventRejectedException] and can be handled with a @ref[supervisor](fault-tolerance.md).
+trying to persist it e.g. because of a serialization exception. If an event is rejected it definitely won't be in the journal.
+This is signalled to an @apidoc[typed.*.EventSourcedBehavior] via an @apidoc[typed.PersistRejected] signal.
+An @apidoc[typed.EventRejectedException] is also thrown and can be handled with a @ref[supervisor](fault-tolerance.md).
 Not all journal implementations use rejections and treat these kind of problems also as journal failures. 
 
 ## Stash
