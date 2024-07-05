@@ -34,7 +34,8 @@ object SupervisionCompileOnly {
 
   //#multiple
   Behaviors
-    .supervise(Behaviors.supervise(behavior).onFailure[IllegalStateException](SupervisorStrategy.restart))
+    .supervise(behavior)
+    .onFailure[IllegalStateException](SupervisorStrategy.restart)
     .onFailure[IllegalArgumentException](SupervisorStrategy.stop)
   //#multiple
 

@@ -215,19 +215,8 @@ object Behaviors {
    *      .onFailure[IndexOutOfBoundsException](SupervisorStrategy.resume) // resume for IndexOutOfBoundsException exceptions
    * }}}
    */
-  def supervise[T](wrapped: Behavior[T]): Supervise[T] =
-    new Supervise[T](wrapped)
-
-  private final val ThrowableClassTag = ClassTag(classOf[Throwable])
-  final class Supervise[T] private[akka] (val wrapped: Behavior[T]) extends AnyVal {
-
-    /** Specify the [[SupervisorStrategy]] to be invoked when the wrapped behavior throws. */
-    def onFailure[Thr <: Throwable](strategy: SupervisorStrategy)(
-        implicit tag: ClassTag[Thr] = ThrowableClassTag): Behavior[T] = {
-      val effectiveTag = if (tag == ClassTag.Nothing) ThrowableClassTag else tag
-      Supervisor(Behavior.validateAsInitial(wrapped), strategy)(effectiveTag)
-    }
-  }
+  def supervise[T](wrapped: Behavior[T]): SuperviseBehavior[T] =
+    new SuperviseBehavior[T](wrapped)
 
   /**
    * Support for scheduled `self` messages in an actor.
