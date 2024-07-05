@@ -124,7 +124,7 @@ public class RouterTest extends JUnitSuite {
               Routers.pool(
                   poolSize,
                   // make sure the workers are restarted if they fail
-                  Behaviors.supervise(Worker.create()).onFailure(SupervisorStrategy.restart()));
+                  Behaviors.supervise(Worker.create()).onAnyFailure(SupervisorStrategy.restart()));
           ActorRef<Worker.Command> router = context.spawn(pool, "worker-pool");
 
           for (int i = 0; i < 10; i++) {
