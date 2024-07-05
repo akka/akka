@@ -289,7 +289,6 @@ object AkkaBuild {
            | > testOnly *.AnySpec         Only run a selected test
            | > verifyCodeStyle            Verify code style
            | > applyCodeStyle             Apply code style
-           | > sortImports                Sort the imports
            | > mimaReportBinaryIssues     Check binary issues
            | > validatePullRequest        Validate pull request
            | > akka-docs/paradox          Build documentation
