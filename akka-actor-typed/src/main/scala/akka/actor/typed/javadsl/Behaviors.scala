@@ -10,13 +10,7 @@ import java.util.function.{ Supplier, Function => JFunction }
 import scala.reflect.ClassTag
 
 import akka.actor.typed._
-import akka.actor.typed.internal.{
-  BehaviorImpl,
-  StashBufferImpl,
-  Supervisor,
-  TimerSchedulerImpl,
-  WithMdcBehaviorInterceptor
-}
+import akka.actor.typed.internal.{ BehaviorImpl, StashBufferImpl, TimerSchedulerImpl, WithMdcBehaviorInterceptor }
 import akka.japi.function.{ Effect, Function2 => JapiFunction2 }
 import akka.japi.pf.PFBuilder
 import akka.util.ccompat.JavaConverters._
