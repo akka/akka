@@ -215,8 +215,10 @@ object Behaviors {
    *      .onFailure[IndexOutOfBoundsException](SupervisorStrategy.resume) // resume for IndexOutOfBoundsException exceptions
    * }}}
    */
-  def supervise[T](wrapped: Behavior[T]): SuperviseBehavior[T] =
-    new SuperviseBehavior[T](wrapped)
+  def supervise[T](wrapped: Behavior[T]): Supervise[T] =
+    new Supervise[T](wrapped)
+
+  final class Supervise[T] private[akka] (wrapped: Behavior[T]) extends SuperviseBehavior(wrapped)
 
   /**
    * Support for scheduled `self` messages in an actor.

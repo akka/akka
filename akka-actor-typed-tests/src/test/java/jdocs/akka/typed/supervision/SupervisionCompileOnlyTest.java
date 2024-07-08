@@ -33,7 +33,7 @@ public class SupervisionCompileOnlyTest {
 
     // #top-level
     public static Behavior<Command> create() {
-      return Behaviors.supervise(counter(1)).onAnyFailure(SupervisorStrategy.restart());
+      return Behaviors.supervise(counter(1)).onFailure(SupervisorStrategy.restart());
     }
     // #top-level
 
@@ -105,7 +105,7 @@ public class SupervisionCompileOnlyTest {
                         return Behaviors.same();
                       });
                 }))
-        .onAnyFailure(SupervisorStrategy.restart());
+        .onFailure(SupervisorStrategy.restart());
   }
   // #restart-stop-children
 
@@ -117,8 +117,8 @@ public class SupervisionCompileOnlyTest {
           final ActorRef<String> child2 = ctx.spawn(child(0), "child2");
 
           // supervision strategy inside the setup to not recreate children on restart
-          return Behaviors.<String>supervise(
-                  Behaviors.receiveMessage(
+          return Behaviors.supervise(
+                  Behaviors.<String>receiveMessage(
                       msg -> {
                         // message handling that might throw an exception
                         String[] parts = msg.split(" ");
@@ -126,7 +126,7 @@ public class SupervisionCompileOnlyTest {
                         child2.tell(parts[1]);
                         return Behaviors.same();
                       }))
-              .onAnyFailure(SupervisorStrategy.restart().withStopChildren(false));
+              .onFailure(SupervisorStrategy.restart().withStopChildren(false));
         });
   }
   // #restart-keep-children
