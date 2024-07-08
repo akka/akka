@@ -3,3 +3,4 @@ ProblemFilters.exclude[MissingClassProblem]("akka.actor.typed.javadsl.Behaviors$
 ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.actor.typed.scaladsl.Behaviors.supervise")
 ProblemFilters.exclude[MissingClassProblem]("akka.actor.typed.scaladsl.Behaviors$Supervise")
 ProblemFilters.exclude[MissingClassProblem]("akka.actor.typed.scaladsl.Behaviors$Supervise$")
+ProblemFilters.exclude[MissingFieldProblem]("akka.actor.typed.scaladsl.Behaviors.Supervise")
