@@ -118,7 +118,7 @@ abstract class ExtensibleBehavior[T] extends Behavior[T](BehaviorTags.Extensible
  * A behavior type that could be supervised, Not for user extension.
  */
 @InternalApi
-final class SuperviseBehavior[T] private[akka] (val wrapped: Behavior[T])
+class SuperviseBehavior[T] private[akka] (val wrapped: Behavior[T])
     extends Behavior[T](BehaviorTags.SuperviseBehavior) {
   private final val ThrowableClassTag = ClassTag(classOf[Throwable])
 

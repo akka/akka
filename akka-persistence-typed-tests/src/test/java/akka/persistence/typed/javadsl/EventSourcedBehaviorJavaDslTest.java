@@ -387,7 +387,7 @@ public class EventSourcedBehaviorJavaDslTest extends JUnitSuite {
   public void workWhenWrappedInOtherBehavior() {
     Behavior<Command> behavior =
         Behaviors.supervise(counter(PersistenceId.ofUniqueId("c6")))
-            .onAnyFailure(
+            .onFailure(
                 SupervisorStrategy.restartWithBackoff(
                     Duration.ofSeconds(1), Duration.ofSeconds(10), 0.1));
     ActorRef<Command> c = testKit.spawn(behavior);
