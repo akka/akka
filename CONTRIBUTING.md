@@ -181,14 +181,6 @@ project akka-actor
 javafmtAll
 ```
 
-To keep the *import*s sorted with:
-
-```shell
-sbt
-project akka-actor
-sortImports
-```
-
 To verify code style with:
 
 ```shell
@@ -460,8 +452,6 @@ PR validation includes checking that the Scala sources are formatted and will fa
 Akka prefers flattened imports rather than grouped, which helps reduce merge conflicts. 
 If you are using IntelliJ IDEA, you can disable it by unchecking: `Preferences` -> `Code Style` -> `Scala` -> `Imports` -> `Merge imports with the same prefix into one statement`.
 
-
-It's recommended to run `sbt +sortImports` to keep the *import*s sorted.
 
 #### Java style
 
