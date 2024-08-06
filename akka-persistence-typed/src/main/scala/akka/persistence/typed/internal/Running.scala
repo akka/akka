@@ -9,8 +9,13 @@ import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.concurrent.atomic.AtomicReference
+
 import scala.annotation.tailrec
 import scala.collection.immutable
+import scala.concurrent.Future
+import scala.util.Failure
+import scala.util.Success
+
 import akka.Done
 import akka.actor.UnhandledMessage
 import akka.actor.typed.{ Behavior, Signal }
@@ -290,9 +295,14 @@ private[akka] object Running {
 
     def onCommand(state: RunningState[S], cmd: C): Behavior[InternalProtocol] = {
       val effect = setup.commandHandler(state.state, cmd)
-      val (next, doUnstash) = applyEffects(cmd, state, effect.asInstanceOf[EffectImpl[E, S]]) // TODO can we avoid the cast?
+      runEffect(cmd, effect)
+    }
+
+    def runEffect(cmd: C, effect: Effect[E, S]): Behavior[InternalProtocol] = {
+      val (next, doUnstash) = applyEffects(cmd, state, effect.asInstanceOf[EffectImpl[E, S]])
       if (doUnstash) tryUnstashOne(next)
       else next
+
     }
 
     def onReplicatedEvent(
@@ -626,6 +636,9 @@ private[akka] object Running {
         case _: PersistNothing.type =>
           (applySideEffects(sideEffects, state), true)
 
+        case AsyncEffect(laterEffect) =>
+          (waitAsyncEffect(msg, state, laterEffect), false)
+
         case _: Unhandled.type =>
           import akka.actor.typed.scaladsl.adapter._
           setup.context.system.toClassic.eventStream
@@ -712,6 +725,7 @@ private[akka] object Running {
         case RecoveryTickEvent(_)                      => Behaviors.unhandled
         case RecoveryPermitGranted                     => Behaviors.unhandled
         case ContinueUnstash                           => Behaviors.unhandled
+        case _: AsyncEffectCompleted[_, _, _]          => Behaviors.unhandled
       }
     }
 
@@ -857,6 +871,94 @@ private[akka] object Running {
         this
       case signal =>
         if (setup.onSignal(visibleState.state, signal, catchAndLog = false)) this
+        else Behaviors.unhandled
+    }
+
+    override def currentSequenceNumber: Long = {
+      _currentSequenceNumber
+    }
+  }
+
+  // ===============================================
+
+  def waitAsyncEffect(
+      msg: Any,
+      state: RunningState[S],
+      laterEffect: Future[Effect[E, S]]): Behavior[InternalProtocol] = {
+    setup.setMdcPhase(PersistenceMdc.WaitingAsyncEffect)
+    recursiveUnstashOne = 0
+    setup.context.pipeToSelf(laterEffect) {
+      case Success(effect) => AsyncEffectCompleted(msg, effect)
+      case Failure(exc) =>
+        setup.internalLogger.debug(s"Async effect failed: $exc")
+        AsyncEffectCompleted(msg, Effect.none[E, S].thenRun(_ => throw exc))
+    }
+    new WaitingAsyncEffect(state)
+  }
+
+  /** INTERNAL API */
+  @InternalApi private[akka] class WaitingAsyncEffect(var state: RunningState[S])
+      extends AbstractBehavior[InternalProtocol](setup.context)
+      with WithSeqNrAccessible {
+
+    override def onMessage(msg: InternalProtocol): Behavior[InternalProtocol] = {
+      msg match {
+        case completed: AsyncEffectCompleted[C @unchecked, E @unchecked, S @unchecked] =>
+          onAsyncEffectCompleted(completed.cmd, completed.effect)
+        case in: IncomingCommand[C @unchecked]         => onCommand(in)
+        case re: ReplicatedEventEnvelope[E @unchecked] => onReplicatedEvent(re)
+        case pe: PublishedEventImpl                    => onPublishedEvent(pe)
+        case JournalResponse(r)                        => onDeleteEventsJournalResponse(r, state.state)
+        case SnapshotterResponse(r)                    => onDeleteSnapshotResponse(r, state.state)
+        case get: GetState[S @unchecked]               => stashInternal(get)
+        case getSeqNr: GetSeenSequenceNr               => onGetSeenSequenceNr(getSeqNr)
+        case _                                         => Behaviors.unhandled
+      }
+    }
+
+    def onAsyncEffectCompleted(cmd: C, effect: Effect[E, S]): Behavior[InternalProtocol] = {
+      val handlingCommands = new HandlingCommands(state)
+      handlingCommands.runEffect(cmd, effect)
+    }
+
+    def onCommand(cmd: IncomingCommand[C]): Behavior[InternalProtocol] = {
+      if (state.receivedPoisonPill) {
+        if (setup.settings.logOnStashing)
+          setup.internalLogger.debug("Discarding message [{}], because actor is to be stopped.", cmd)
+        Behaviors.unhandled
+      } else {
+        stashInternal(cmd)
+      }
+    }
+
+    def onGetSeenSequenceNr(get: GetSeenSequenceNr): WaitingAsyncEffect = {
+      get.replyTo ! state.seenPerReplica.getOrElse(get.replica, 0L)
+      this
+    }
+
+    def onReplicatedEvent(event: InternalProtocol.ReplicatedEventEnvelope[E]): Behavior[InternalProtocol] = {
+      if (state.receivedPoisonPill) {
+        Behaviors.unhandled
+      } else {
+        stashInternal(event)
+      }
+    }
+
+    def onPublishedEvent(event: PublishedEventImpl): Behavior[InternalProtocol] = {
+      if (state.receivedPoisonPill) {
+        Behaviors.unhandled
+      } else {
+        stashInternal(event)
+      }
+    }
+
+    override def onSignal: PartialFunction[Signal, Behavior[InternalProtocol]] = {
+      case PoisonPill =>
+        // wait for completion of async effect before stopping
+        state = state.copy(receivedPoisonPill = true)
+        this
+      case signal =>
+        if (setup.onSignal(state.state, signal, catchAndLog = false)) this
         else Behaviors.unhandled
     }
 
