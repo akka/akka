@@ -838,7 +838,7 @@ private[akka] object Running {
               p.sequenceNr,
               state.getInstrumentationContext(p.sequenceNr))
             onWriteRejected(setup.context, cause, p)
-            val signal = PersistRejected(cause, command.toOption, p.payload)
+            val signal = PersistRejected(cause, command.toOption)
             if (setup.onSignal(state.state, signal, catchAndLog = false)) {
               setup.internalLogger.debug("Emitted signal [{}].", signal)
             }
@@ -854,7 +854,7 @@ private[akka] object Running {
               p.sequenceNr,
               state.getInstrumentationContext(p.sequenceNr))
             onWriteFailed(setup.context, cause, p)
-            val signal = PersistFailed(cause, command.toOption, p.payload)
+            val signal = PersistFailed(cause, command.toOption)
             if (setup.onSignal(state.state, signal, catchAndLog = false)) {
               setup.internalLogger.debug("Emitted signal [{}].", signal)
             }

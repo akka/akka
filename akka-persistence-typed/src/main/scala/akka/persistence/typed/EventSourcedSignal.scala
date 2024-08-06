@@ -31,54 +31,52 @@ final case class RecoveryFailed(failure: Throwable) extends EventSourcedSignal {
   def getFailure(): Throwable = failure
 }
 
-final case class PersistFailed[Command, Event](failure: Throwable, command: Option[Command], event: Event)
+/**
+ * @param failure the original cause
+ * @param command the command that persisted the event, may be undefined if it is a replicated event
+ */
+final case class PersistFailed[Command, Event](failure: Throwable, command: Option[Command])
     extends EventSourcedSignal {
 
   /**
-   * Java API
+   * Java API: the original cause
    */
   def getFailure(): Throwable = failure
 
   /**
-   * Java API
+   * Java API: the command that persisted the event, may be undefined if it is a replicated event
    */
   def getCommand(): Optional[Command] = {
     import scala.compat.java8.OptionConverters._
     command.asJava
   }
 
-  /**
-   * Java API
-   */
-  def getEvent(): Event = event
-
   override def toString: String =
-    s"PersistFailed($failure, ${command.getClass.getName}, ${event.getClass.getName})"
+    s"PersistFailed($failure, ${command.map(_.getClass.getName).getOrElse("replicated")})"
 }
 
-final case class PersistRejected[Command, Event](failure: Throwable, command: Option[Command], event: Event)
+/**
+ * @param failure the original cause
+ * @param command the command that persisted the event, may be undefined if it is a replicated event
+ */
+final case class PersistRejected[Command, Event](failure: Throwable, command: Option[Command])
     extends EventSourcedSignal {
 
   /**
-   * Java API
+   * Java API: the original cause
    */
   def getFailure(): Throwable = failure
 
   /**
-   * Java API
+   * Java API: the command that persisted the event, may be undefined if it is a replicated event
    */
   def getCommand(): Optional[Command] = {
     import scala.compat.java8.OptionConverters._
     command.asJava
   }
 
-  /**
-   * Java API
-   */
-  def getEvent(): Event = event
-
   override def toString: String =
-    s"PersistRejected($failure, ${command.getClass.getName}, ${event.getClass.getName})"
+    s"PersistRejected($failure, ${command.map(_.getClass.getName).getOrElse("replicated")})"
 }
 
 final case class SnapshotCompleted(metadata: SnapshotMetadata) extends EventSourcedSignal {
