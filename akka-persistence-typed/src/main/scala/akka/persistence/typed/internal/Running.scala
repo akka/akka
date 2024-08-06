@@ -299,7 +299,7 @@ private[akka] object Running {
     }
 
     def runEffect(cmd: C, effect: Effect[E, S]): Behavior[InternalProtocol] = {
-      val (next, doUnstash) = applyEffects(cmd, state, effect.asInstanceOf[EffectImpl[E, S]]) // TODO can we avoid the cast?
+      val (next, doUnstash) = applyEffects(cmd, state, effect.asInstanceOf[EffectImpl[E, S]])
       if (doUnstash) tryUnstashOne(next)
       else next
 
@@ -889,7 +889,9 @@ private[akka] object Running {
     recursiveUnstashOne = 0
     setup.context.pipeToSelf(laterEffect) {
       case Success(effect) => AsyncEffectCompleted(msg, effect)
-      case Failure(exc)    => AsyncEffectCompleted(msg, Effect.none[E, S].thenRun(_ => throw exc))
+      case Failure(exc) =>
+        setup.internalLogger.debug(s"Async effect failed: $exc")
+        AsyncEffectCompleted(msg, Effect.none[E, S].thenRun(_ => throw exc))
     }
     new WaitingAsyncEffect(state)
   }
