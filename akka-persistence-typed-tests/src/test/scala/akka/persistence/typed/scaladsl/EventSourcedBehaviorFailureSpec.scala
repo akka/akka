@@ -211,7 +211,7 @@ class EventSourcedBehaviorFailureSpec
     "signal PersistFailure when persist fails" in {
       val probe = TestProbe[String]()
       val behav = failingPersistentActor(PersistenceId.ofUniqueId("fail-persist-2"), probe.ref, {
-        case (_, PersistFailed(_, cmd, _)) =>
+        case (_, PersistFailed(_, cmd)) =>
           probe.ref.tell(s"failed ${cmd.get}")
       })
       val c = spawn(behav)
@@ -267,7 +267,7 @@ class EventSourcedBehaviorFailureSpec
       val behav =
         Behaviors
           .supervise(failingPersistentActor(PersistenceId.ofUniqueId("reject-first"), probe.ref, {
-            case (_, PersistRejected(_, cmd, _)) =>
+            case (_, PersistRejected(_, cmd)) =>
               probe.ref.tell(s"rejected ${cmd.get}")
           }))
           .onFailure[EventRejectedException](
