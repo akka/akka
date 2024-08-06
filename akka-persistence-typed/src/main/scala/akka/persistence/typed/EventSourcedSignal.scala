@@ -4,6 +4,8 @@
 
 package akka.persistence.typed
 
+import java.util.Optional
+
 import akka.actor.typed.Signal
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
@@ -27,6 +29,54 @@ final case class RecoveryFailed(failure: Throwable) extends EventSourcedSignal {
    * Java API
    */
   def getFailure(): Throwable = failure
+}
+
+/**
+ * @param failure the original cause
+ * @param command the command that persisted the event, may be undefined if it is a replicated event
+ */
+final case class PersistFailed[Command, Event](failure: Throwable, command: Option[Command])
+    extends EventSourcedSignal {
+
+  /**
+   * Java API: the original cause
+   */
+  def getFailure(): Throwable = failure
+
+  /**
+   * Java API: the command that persisted the event, may be undefined if it is a replicated event
+   */
+  def getCommand(): Optional[Command] = {
+    import scala.compat.java8.OptionConverters._
+    command.asJava
+  }
+
+  override def toString: String =
+    s"PersistFailed($failure, ${command.map(_.getClass.getName).getOrElse("replicated")})"
+}
+
+/**
+ * @param failure the original cause
+ * @param command the command that persisted the event, may be undefined if it is a replicated event
+ */
+final case class PersistRejected[Command, Event](failure: Throwable, command: Option[Command])
+    extends EventSourcedSignal {
+
+  /**
+   * Java API: the original cause
+   */
+  def getFailure(): Throwable = failure
+
+  /**
+   * Java API: the command that persisted the event, may be undefined if it is a replicated event
+   */
+  def getCommand(): Optional[Command] = {
+    import scala.compat.java8.OptionConverters._
+    command.asJava
+  }
+
+  override def toString: String =
+    s"PersistRejected($failure, ${command.map(_.getClass.getName).getOrElse("replicated")})"
 }
 
 final case class SnapshotCompleted(metadata: SnapshotMetadata) extends EventSourcedSignal {
