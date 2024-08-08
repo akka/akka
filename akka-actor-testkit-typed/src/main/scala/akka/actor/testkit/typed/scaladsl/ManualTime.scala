@@ -5,7 +5,7 @@
 package akka.actor.testkit.typed.scaladsl
 
 import scala.annotation.varargs
-import scala.concurrent.duration.{ Duration, FiniteDuration }
+import scala.concurrent.duration.FiniteDuration
 
 import com.typesafe.config.{ Config, ConfigFactory }
 
@@ -64,7 +64,7 @@ final class ManualTime(delegate: akka.testkit.ExplicitlyTriggeredScheduler) {
   @varargs
   def expectNoMessageFor(duration: FiniteDuration, on: TestProbe[_]*): Unit = {
     delegate.timePasses(duration)
-    on.foreach(_.expectNoMessage(Duration.Zero))
+    on.foreach(_.expectNoMessage())
   }
 
 }
