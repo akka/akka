@@ -166,9 +166,9 @@ class StubbedSupervisionSpec extends AnyWordSpec with Matchers with LogCapturing
 
     "support nesting to handle different exceptions" in {
       val inbox = TestInbox[Event]("evt")
-      val behv =
-        supervise(supervise(targetBehavior(inbox.ref)).onFailure[Exc2](SupervisorStrategy.resume))
-          .onFailure[Exc3](SupervisorStrategy.restart)
+      val behv = supervise(targetBehavior(inbox.ref))
+        .onFailure[Exc2](SupervisorStrategy.resume)
+        .onFailure[Exc3](SupervisorStrategy.restart)
       val testkit = BehaviorTestKit(behv)
       testkit.run(IncrementState)
       testkit.run(GetState)
