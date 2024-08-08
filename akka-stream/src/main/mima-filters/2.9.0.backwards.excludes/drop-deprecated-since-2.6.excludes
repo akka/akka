@@ -1,0 +1,18 @@
+# Dropping APIs deprecated since 2.6
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.fusing.ActorGraphInterpreter#BatchingActorInputBoundary.onDownstreamFinish")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.fusing.PrefixAndTail#PrefixAndTailLogic.onDownstreamFinish")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.ByteStringParser#ParsingLogic.onDownstreamFinish")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.MergeHub#MergedSourceLogic.onDownstreamFinish")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.stage.AbstractInOutHandler.onDownstreamFinish")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.stage.AbstractOutHandler.onDownstreamFinish")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.stage.GraphStageLogic#ConditionalTerminateOutput.onDownstreamFinish")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.stage.GraphStageLogic#EagerTerminateOutput.onDownstreamFinish")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.stage.GraphStageLogic#Emitting.onDownstreamFinish")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.stage.GraphStageLogic#IgnoreTerminateOutput.onDownstreamFinish")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.stage.OutHandler.onDownstreamFinish")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.stage.TimerGraphStageLogic.schedulePeriodicallyWithInitialDelay")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.stage.TimerGraphStageLogic.schedulePeriodically")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.stage.TimerGraphStageLogic.schedulePeriodically")
+
+#for scala 3.2
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.stage.GraphStageLogic.lastCancellationCause_=")
