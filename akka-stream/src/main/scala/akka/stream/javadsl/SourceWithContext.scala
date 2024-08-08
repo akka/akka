@@ -8,7 +8,7 @@ import java.util.concurrent.CompletionStage
 import java.util.function.BiFunction
 
 import scala.annotation.unchecked.uncheckedVariance
-import scala.compat.java8.FutureConverters._
+import scala.jdk.FutureConverters._
 
 import akka.actor.ClassicActorSystemProvider
 import akka.annotation.ApiMayChange
@@ -166,7 +166,7 @@ final class SourceWithContext[Out, Ctx, +Mat](delegate: scaladsl.SourceWithConte
   def mapAsync[Out2](
       parallelism: Int,
       f: function.Function[Out, CompletionStage[Out2]]): SourceWithContext[Out2, Ctx, Mat] =
-    viaScala(_.mapAsync[Out2](parallelism)(o => f.apply(o).toScala))
+    viaScala(_.mapAsync[Out2](parallelism)(o => f.apply(o).asScala))
 
   /**
    * Context-preserving variant of [[akka.stream.javadsl.Source.mapAsyncPartitioned]].
@@ -179,7 +179,7 @@ final class SourceWithContext[Out, Ctx, +Mat](delegate: scaladsl.SourceWithConte
       partitioner: function.Function[Out, P],
       f: BiFunction[Out, P, CompletionStage[Out2]]): SourceWithContext[Out2, Ctx, Mat] =
     viaScala(_.mapAsyncPartitioned[Out2, P](parallelism, perPartition)(x => partitioner(x)) { (x, p) =>
-      f(x, p).toScala
+      f(x, p).asScala
     })
 
   /**

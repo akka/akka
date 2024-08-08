@@ -6,7 +6,7 @@ package akka.cluster.sharding.external.internal
 
 import java.util.concurrent.CompletionStage
 
-import scala.compat.java8.FutureConverters._
+import scala.jdk.FutureConverters._
 import scala.concurrent.Future
 
 import akka.Done
@@ -75,7 +75,7 @@ final private[external] class ExternalShardAllocationClientImpl(system: ActorSys
   }
 
   override def setShardLocation(shard: ShardId, location: Address): CompletionStage[Done] =
-    updateShardLocation(shard, location).toJava
+    updateShardLocation(shard, location).asJava
 
   override def shardLocations(): Future[ShardLocations] = {
     (replicator ? Get(Key, ReadMajority(timeout)))
@@ -94,7 +94,7 @@ final private[external] class ExternalShardAllocationClientImpl(system: ActorSys
       }
   }
 
-  override def getShardLocations(): CompletionStage[ShardLocations] = shardLocations().toJava
+  override def getShardLocations(): CompletionStage[ShardLocations] = shardLocations().asJava
 
   override def updateShardLocations(locations: Map[ShardId, Address]): Future[Done] = {
     log.debug("updateShardLocations {} for {}", locations, Key)
@@ -111,6 +111,6 @@ final private[external] class ExternalShardAllocationClientImpl(system: ActorSys
   }
 
   override def setShardLocations(locations: java.util.Map[ShardId, Address]): CompletionStage[Done] = {
-    updateShardLocations(locations.asScala.toMap).toJava
+    updateShardLocations(locations.asScala.toMap).asJava
   }
 }

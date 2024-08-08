@@ -6,7 +6,7 @@ package akka.actor.typed.internal.adapter
 
 import java.util.concurrent.CompletionStage
 
-import scala.compat.java8.FutureConverters
+import scala.jdk.FutureConverters._
 import scala.concurrent.ExecutionContextExecutor
 
 import org.slf4j.{ Logger, LoggerFactory }
@@ -112,7 +112,7 @@ import akka.util.OptionVal
   override lazy val whenTerminated: scala.concurrent.Future[akka.Done] =
     system.whenTerminated.map(_ => Done)(parasitic)
   override lazy val getWhenTerminated: CompletionStage[akka.Done] =
-    FutureConverters.toJava(whenTerminated)
+    whenTerminated.asJava
 
   override def systemActorOf[U](behavior: Behavior[U], name: String, props: Props): ActorRef[U] = {
     val ref = system.systemActorOf(

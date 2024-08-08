@@ -13,7 +13,7 @@ import akka.util.Timeout;
 import jdocs.AbstractJavaTest;
 import org.junit.ClassRule;
 import org.junit.Test;
-import scala.compat.java8.FutureConverters;
+import scala.jdk.javaapi.FutureConverters;
 import scala.concurrent.Await;
 import scala.concurrent.ExecutionContext;
 import scala.concurrent.Future;
@@ -61,7 +61,7 @@ public class FutureDocTest extends AbstractJavaTest {
             ec);
     Future<String> result =
         Futures.firstCompletedOf(
-            Arrays.<Future<String>>asList(future, FutureConverters.toScala(delayed)), ec);
+            Arrays.<Future<String>>asList(future, FutureConverters.asScala(delayed)), ec);
     Timeout timeout = Timeout.create(Duration.ofSeconds(2));
     Await.result(result, timeout.duration());
   }

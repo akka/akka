@@ -7,7 +7,7 @@ package akka.actor.testkit.typed.internal
 import java.util.concurrent.{ CompletionStage, ThreadFactory }
 
 import scala.annotation.nowarn
-import scala.compat.java8.FutureConverters
+import scala.jdk.FutureConverters.FutureOps
 import scala.concurrent._
 
 import com.typesafe.config.{ Config, ConfigFactory }
@@ -101,7 +101,7 @@ import akka.annotation.InternalApi
   private val terminationPromise = Promise[Done]()
   override def terminate(): Unit = terminationPromise.trySuccess(Done)
   override def whenTerminated: Future[Done] = terminationPromise.future
-  override def getWhenTerminated: CompletionStage[Done] = FutureConverters.toJava(whenTerminated)
+  override def getWhenTerminated: CompletionStage[Done] = whenTerminated.asJava
   override val startTime: Long = System.currentTimeMillis()
   override def uptime: Long = System.currentTimeMillis() - startTime
   override def threadFactory: java.util.concurrent.ThreadFactory = new ThreadFactory {

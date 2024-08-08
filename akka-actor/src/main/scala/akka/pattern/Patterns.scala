@@ -8,7 +8,7 @@ import java.util.Optional
 import java.util.concurrent.{ Callable, CompletionStage, TimeUnit }
 import java.util.function.Predicate
 
-import scala.compat.java8.FutureConverters._
+import scala.jdk.FutureConverters._
 import scala.concurrent.ExecutionContext
 
 import akka.actor.{ ActorSelection, ClassicActorSystemProvider, Scheduler }
@@ -95,7 +95,7 @@ object Patterns {
    * }}}
    */
   def ask(actor: ActorRef, message: Any, timeout: java.time.Duration): CompletionStage[AnyRef] =
-    scalaAsk(actor, message)(timeout.asScala).toJava.asInstanceOf[CompletionStage[AnyRef]]
+    scalaAsk(actor, message)(timeout.asScala).asJava.asInstanceOf[CompletionStage[AnyRef]]
 
   /**
    * Use for messages whose response is known to be a [[akka.pattern.StatusReply]]. When a [[akka.pattern.StatusReply#success]] response
@@ -103,7 +103,7 @@ object Patterns {
    * failed.
    */
   def askWithStatus(actor: ActorRef, message: Any, timeout: java.time.Duration): CompletionStage[AnyRef] =
-    scalaAskWithStatus(actor, message)(timeout.asScala).toJava.asInstanceOf[CompletionStage[AnyRef]]
+    scalaAskWithStatus(actor, message)(timeout.asScala).asJava.asInstanceOf[CompletionStage[AnyRef]]
 
   /**
    * A variation of ask which allows to implement "replyTo" pattern by including
@@ -138,7 +138,7 @@ object Patterns {
       actor: ActorRef,
       messageFactory: japi.function.Function[ActorRef, Any],
       timeout: java.time.Duration): CompletionStage[AnyRef] =
-    extended.ask(actor, messageFactory.apply _)(Timeout.create(timeout)).toJava.asInstanceOf[CompletionStage[AnyRef]]
+    extended.ask(actor, messageFactory.apply _)(Timeout.create(timeout)).asJava.asInstanceOf[CompletionStage[AnyRef]]
 
   /**
    * <i>Java API for `akka.pattern.ask`:</i>
@@ -253,7 +253,7 @@ object Patterns {
    * }}}
    */
   def ask(selection: ActorSelection, message: Any, timeout: java.time.Duration): CompletionStage[AnyRef] =
-    scalaAsk(selection, message)(timeout.asScala).toJava.asInstanceOf[CompletionStage[AnyRef]]
+    scalaAsk(selection, message)(timeout.asScala).asJava.asInstanceOf[CompletionStage[AnyRef]]
 
   /**
    * <i>Java API for `akka.pattern.ask`:</i>
@@ -321,7 +321,7 @@ object Patterns {
       selection: ActorSelection,
       messageFactory: japi.Function[ActorRef, Any],
       timeout: java.time.Duration): CompletionStage[AnyRef] =
-    extended.ask(selection, messageFactory.apply _)(timeout.asScala).toJava.asInstanceOf[CompletionStage[AnyRef]]
+    extended.ask(selection, messageFactory.apply _)(timeout.asScala).asJava.asInstanceOf[CompletionStage[AnyRef]]
 
   /**
    * Register an onComplete callback on this [[scala.concurrent.Future]] to send
@@ -386,7 +386,7 @@ object Patterns {
    * is completed with failure [[akka.pattern.AskTimeoutException]].
    */
   def gracefulStop(target: ActorRef, timeout: java.time.Duration): CompletionStage[java.lang.Boolean] =
-    scalaGracefulStop(target, timeout.asScala).toJava.asInstanceOf[CompletionStage[java.lang.Boolean]]
+    scalaGracefulStop(target, timeout.asScala).asJava.asInstanceOf[CompletionStage[java.lang.Boolean]]
 
   /**
    * Returns a [[scala.concurrent.Future]] that will be completed with success (value `true`) when
@@ -421,7 +421,7 @@ object Patterns {
       target: ActorRef,
       timeout: java.time.Duration,
       stopMessage: Any): CompletionStage[java.lang.Boolean] =
-    scalaGracefulStop(target, timeout.asScala, stopMessage).toJava.asInstanceOf[CompletionStage[java.lang.Boolean]]
+    scalaGracefulStop(target, timeout.asScala, stopMessage).asJava.asInstanceOf[CompletionStage[java.lang.Boolean]]
 
   /**
    * Returns a [[scala.concurrent.Future]] that will be completed with the success or failure of the provided Callable
@@ -466,7 +466,7 @@ object Patterns {
    */
   def retry[T](attempt: Callable[CompletionStage[T]], attempts: Int, ec: ExecutionContext): CompletionStage[T] = {
     require(attempt != null, "Parameter attempt should not be null.")
-    scalaRetry(() => attempt.call().toScala, attempts)(ec).toJava
+    scalaRetry(() => attempt.call().asScala, attempts)(ec).asJava
   }
 
   /**
@@ -486,7 +486,7 @@ object Patterns {
       shouldRetry: Predicate[Throwable],
       attempts: Int,
       ec: ExecutionContext): CompletionStage[T] =
-    scalaRetry(() => attempt.call().toScala, (ex) => shouldRetry.test(ex), attempts)(ec).toJava
+    scalaRetry(() => attempt.call().asScala, (ex) => shouldRetry.test(ex), attempts)(ec).asJava
 
   /**
    * Returns an internally retrying [[java.util.concurrent.CompletionStage]]
@@ -576,9 +576,9 @@ object Patterns {
     require(attempt != null, "Parameter attempt should not be null.")
     require(minBackoff != null, "Parameter minBackoff should not be null.")
     require(maxBackoff != null, "Parameter minBackoff should not be null.")
-    scalaRetry(() => attempt.call().toScala, attempts, minBackoff.asScala, maxBackoff.asScala, randomFactor)(
+    scalaRetry(() => attempt.call().asScala, attempts, minBackoff.asScala, maxBackoff.asScala, randomFactor)(
       ec,
-      scheduler).toJava
+      scheduler).asJava
   }
 
   /**
@@ -603,12 +603,12 @@ object Patterns {
       scheduler: Scheduler,
       ec: ExecutionContext): CompletionStage[T] =
     scalaRetry(
-      () => attempt.call().toScala,
+      () => attempt.call().asScala,
       (ex) => shouldRetry.test(ex),
       attempts,
       minBackoff.asScala,
       maxBackoff.asScala,
-      randomFactor)(ec, scheduler).toJava
+      randomFactor)(ec, scheduler).asJava
 
   /**
    * Returns an internally retrying [[scala.concurrent.Future]]
@@ -661,7 +661,7 @@ object Patterns {
       scheduler: Scheduler,
       ec: ExecutionContext): CompletionStage[T] = {
     require(attempt != null, "Parameter attempt should not be null.")
-    scalaRetry(() => attempt.call().toScala, attempts, delay.asScala)(ec, scheduler).toJava
+    scalaRetry(() => attempt.call().asScala, attempts, delay.asScala)(ec, scheduler).asJava
   }
 
   /**
@@ -683,12 +683,12 @@ object Patterns {
       delayFunction: java.util.function.IntFunction[Optional[java.time.Duration]],
       scheduler: Scheduler,
       context: ExecutionContext): CompletionStage[T] = {
-    import scala.compat.java8.OptionConverters._
+    import scala.jdk.OptionConverters._
     require(attempt != null, "Parameter attempt should not be null.")
     scalaRetry(
-      () => attempt.call().toScala,
+      () => attempt.call().asScala,
       attempts,
-      attempted => delayFunction.apply(attempted).asScala.map(_.asScala))(context, scheduler).toJava
+      attempted => delayFunction.apply(attempted).toScala.map(_.asScala))(context, scheduler).asJava
   }
 
   /**
@@ -714,12 +714,12 @@ object Patterns {
       shouldRetry: Predicate[Throwable],
       scheduler: Scheduler,
       context: ExecutionContext): CompletionStage[T] = {
-    import scala.compat.java8.OptionConverters._
+    import scala.jdk.OptionConverters._
 
     scalaRetry(
-      () => attempt.call().toScala,
+      () => attempt.call().asScala,
       (ex) => shouldRetry.test(ex),
       attempts,
-      (attempted) => delayFunction.apply(attempted).asScala.map(_.asScala))(context, scheduler).toJava
+      (attempted) => delayFunction.apply(attempted).toScala.map(_.asScala))(context, scheduler).asJava
   }
 }

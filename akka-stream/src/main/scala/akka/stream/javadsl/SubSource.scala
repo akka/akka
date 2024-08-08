@@ -11,8 +11,8 @@ import java.util.function.{ BiFunction, Supplier }
 import scala.annotation.unchecked.uncheckedVariance
 import scala.annotation.varargs
 import scala.collection.immutable
-import scala.compat.java8.FutureConverters._
-import scala.compat.java8.OptionConverters.RichOptionalGeneric
+import scala.jdk.FutureConverters._
+import scala.jdk.OptionConverters.RichOptional
 import scala.reflect.ClassTag
 
 import akka.NotUsed
@@ -223,7 +223,7 @@ final class SubSource[Out, Mat](
     new SubSource(
       delegate.statefulMap(() => create.create())(
         (s: S, out: Out) => f.apply(s, out).toScala,
-        (s: S) => onComplete.apply(s).asScala))
+        (s: S) => onComplete.apply(s).toScala))
 
   /**
    * Transform each stream element with the help of a resource.
@@ -263,7 +263,7 @@ final class SubSource[Out, Mat](
     new SubSource(
       delegate.mapWithResource(() => create.get())(
         (resource, out) => f(resource, out),
-        resource => close.apply(resource).asScala))
+        resource => close.apply(resource).toScala))
 
   /**
    * Transform each input element into an `Iterable` of output elements that is
@@ -331,7 +331,7 @@ final class SubSource[Out, Mat](
    * @see [[#mapAsyncUnordered]]
    */
   def mapAsync[T](parallelism: Int, f: function.Function[Out, CompletionStage[T]]): SubSource[T, Mat] =
-    new SubSource(delegate.mapAsync(parallelism)(x => f(x).toScala))
+    new SubSource(delegate.mapAsync(parallelism)(x => f(x).asScala))
 
   /**
    * @see [[akka.stream.javadsl.Source.mapAsyncPartitioned]]
@@ -342,7 +342,7 @@ final class SubSource[Out, Mat](
       partitioner: function.Function[Out, P],
       f: BiFunction[Out, P, CompletionStage[T]]): SubSource[T, Mat] =
     new SubSource(delegate.mapAsyncPartitioned(parallelism, perPartition)(x => partitioner(x)) { (x, p) =>
-      f(x, p).toScala
+      f(x, p).asScala
     })
 
   /**
@@ -379,7 +379,7 @@ final class SubSource[Out, Mat](
    * @see [[#mapAsync]]
    */
   def mapAsyncUnordered[T](parallelism: Int, f: function.Function[Out, CompletionStage[T]]): SubSource[T, Mat] =
-    new SubSource(delegate.mapAsyncUnordered(parallelism)(x => f(x).toScala))
+    new SubSource(delegate.mapAsyncUnordered(parallelism)(x => f(x).asScala))
 
   /**
    * Only pass on those elements that satisfy the given predicate.
@@ -613,7 +613,7 @@ final class SubSource[Out, Mat](
    */
   def scanAsync[T](zero: T)(f: function.Function2[T, Out, CompletionStage[T]]): SubSource[T, Mat] =
     new SubSource(delegate.scanAsync(zero) { (out, in) =>
-      f(out, in).toScala
+      f(out, in).asScala
     })
 
   /**
@@ -661,7 +661,7 @@ final class SubSource[Out, Mat](
    */
   def foldAsync[T](zero: T)(f: function.Function2[T, Out, CompletionStage[T]]): SubSource[T, Mat] =
     new SubSource(delegate.foldAsync(zero) { (out, in) =>
-      f(out, in).toScala
+      f(out, in).asScala
     })
 
   /**
