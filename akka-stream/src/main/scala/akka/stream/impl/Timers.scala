@@ -151,7 +151,14 @@ import akka.stream.stage._
 
   }
 
-  final class IdleTimeoutBidi[I, O](val timeout: FiniteDuration) extends GraphStage[BidiShape[I, I, O, O]] {
+  private object IdleTimeoutBidi {
+    val defaultFailureCreator: FiniteDuration => Throwable = timeout =>
+      new StreamIdleTimeoutException(s"No elements passed in the last ${timeout.toCoarsest}.")
+  }
+  final class IdleTimeoutBidi[I, O](
+      val timeout: FiniteDuration,
+      failureCreator: FiniteDuration => Throwable = IdleTimeoutBidi.defaultFailureCreator)
+      extends GraphStage[BidiShape[I, I, O, O]] {
     val in1 = Inlet[I]("in1")
     val in2 = Inlet[O]("in2")
     val out1 = Outlet[I]("out1")
@@ -170,7 +177,7 @@ import akka.stream.stage._
 
       final override def onTimer(key: Any): Unit =
         if (nextDeadline - System.nanoTime < 0)
-          failStage(new StreamIdleTimeoutException(s"No elements passed in the last ${timeout.toCoarsest}."))
+          failStage(failureCreator(timeout))
 
       override def preStart(): Unit =
         scheduleWithFixedDelay(GraphStageLogicTimer, timeoutCheckInterval(timeout), timeoutCheckInterval(timeout))
