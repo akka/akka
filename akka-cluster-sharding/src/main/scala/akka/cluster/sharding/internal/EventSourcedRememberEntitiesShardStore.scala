@@ -52,6 +52,19 @@ private[akka] object EventSourcedRememberEntitiesShardStore {
 
   def props(typeName: String, shardId: ShardRegion.ShardId, settings: ClusterShardingSettings): Props =
     Props(new EventSourcedRememberEntitiesShardStore(typeName, shardId, settings))
+
+  def createEntityEvents(
+      entityIds: Set[EntityId],
+      eventConstructor: Set[EntityId] => StateChange,
+      batchSize: Int): List[StateChange] = {
+    if (entityIds.size <= batchSize)
+      // optimized when entity count is small
+      eventConstructor(entityIds) :: Nil
+    else {
+      // split up in several writes so we don't hit journal limit
+      entityIds.grouped(batchSize).map(eventConstructor).toList
+    }
+  }
 }
 
 /**
@@ -93,29 +106,20 @@ private[akka] final class EventSourcedRememberEntitiesShardStore(
 
     case RememberEntitiesShardStore.Update(started, stopped) =>
       val events =
-        (if (started.nonEmpty) EntitiesStarted(started) :: Nil else Nil) :::
-        (if (stopped.nonEmpty) EntitiesStopped(stopped) :: Nil else Nil)
+        (if (started.nonEmpty) createEntityEvents(started, EntitiesStarted, maxUpdatesPerWrite) else Nil) :::
+        (if (stopped.nonEmpty) createEntityEvents(stopped, EntitiesStopped, maxUpdatesPerWrite) else Nil)
       var left = events.size
       var saveSnap = false
-      def persistEventsAndHandleComplete(evts: List[StateChange]): Unit = {
-        persistAll(evts) { _ =>
-          left -= 1
-          saveSnap = saveSnap || isSnapshotNeeded
-          if (left == 0) {
-            sender() ! RememberEntitiesShardStore.UpdateDone(started, stopped)
-            state = state.copy(state.entities.union(started).diff(stopped))
-            if (saveSnap) {
-              saveSnapshot()
-            }
+      persistAll(events) { _ =>
+        left -= 1
+        saveSnap = saveSnap || isSnapshotNeeded
+        if (left == 0) {
+          sender() ! RememberEntitiesShardStore.UpdateDone(started, stopped)
+          state = state.copy(state.entities.union(started).diff(stopped))
+          if (saveSnap) {
+            saveSnapshot()
           }
         }
-      }
-      if (left <= maxUpdatesPerWrite) {
-        // optimized when batches are small
-        persistEventsAndHandleComplete(events)
-      } else {
-        // split up in several writes so we don't hit journal limit
-        events.grouped(maxUpdatesPerWrite).foreach(persistEventsAndHandleComplete)
       }
 
     case RememberEntitiesShardStore.GetEntities =>
