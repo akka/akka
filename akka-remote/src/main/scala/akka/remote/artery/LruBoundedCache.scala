@@ -59,6 +59,9 @@ private[akka] abstract class LruBoundedCache[K <: AnyRef: ClassTag, V <: AnyRef:
     find(position = h & Mask, probeDistance = 0)
   }
 
+  final def valuesIterator(): Iterator[V] =
+    values.iterator.filterNot(_ eq null)
+
   final def stats: CacheStatistics = {
     var i = 0
     var sum = 0
