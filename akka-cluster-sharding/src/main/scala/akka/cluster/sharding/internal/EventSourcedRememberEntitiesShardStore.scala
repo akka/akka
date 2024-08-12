@@ -106,8 +106,8 @@ private[akka] final class EventSourcedRememberEntitiesShardStore(
 
     case RememberEntitiesShardStore.Update(started, stopped) =>
       val events =
-        (if (started.nonEmpty) createEntityEvents(started, EntitiesStarted, maxUpdatesPerWrite) else Nil) :::
-        (if (stopped.nonEmpty) createEntityEvents(stopped, EntitiesStopped, maxUpdatesPerWrite) else Nil)
+        (if (started.nonEmpty) createEntityEvents(started, EntitiesStarted.apply _, maxUpdatesPerWrite) else Nil) :::
+        (if (stopped.nonEmpty) createEntityEvents(stopped, EntitiesStopped.apply _, maxUpdatesPerWrite) else Nil)
       var left = events.size
       var saveSnap = false
       persistAll(events) { _ =>
