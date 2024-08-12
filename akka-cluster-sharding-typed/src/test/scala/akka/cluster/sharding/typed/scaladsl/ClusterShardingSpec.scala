@@ -240,6 +240,27 @@ class ClusterShardingSpec
       p.expectMessage("Hello!")
     }
 
+    "be able to passivate via extension shard" in {
+      val stopProbe = TestProbe[String]()
+      val p = TestProbe[String]()
+      val typeKey5 = EntityTypeKey[TestProtocol]("ext-passivate-test")
+
+      val shardingRef5: ActorRef[ShardingEnvelope[TestProtocol]] =
+        sharding.init(
+          Entity(typeKey5)(_ => behavior(ClusterSharding(system).shard(typeKey5), Some(stopProbe.ref)))
+            .withStopMessage(StopPlz()))
+
+      shardingRef5 ! ShardingEnvelope(s"test1", ReplyPlz(p.ref))
+      p.expectMessage("Hello!")
+
+      shardingRef5 ! ShardingEnvelope(s"test1", PassivatePlz())
+      stopProbe.expectMessage("StopPlz")
+      stopProbe.expectMessage("PostStop")
+
+      shardingRef5 ! ShardingEnvelope(s"test1", ReplyPlz(p.ref))
+      p.expectMessage("Hello!")
+    }
+
     "fail if init sharding for already used typeName, but with a different type" in {
       // sharding has been already initialized with EntityTypeKey[TestProtocol]("envelope-shard")
       val ex = intercept[Exception] {

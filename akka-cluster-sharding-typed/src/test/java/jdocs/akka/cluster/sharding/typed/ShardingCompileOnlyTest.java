@@ -204,6 +204,8 @@ interface ShardingCompileOnlyTest {
 
     shardRegion.tell(new ShardingEnvelope<>("counter-1", Counter.Increment.INSTANCE));
     // #send
+
+    ActorRef<ClusterSharding.ShardCommand> shard = sharding.shard(typeKey);
   }
 
   public static void roleExample() {
