@@ -137,7 +137,7 @@ class EventSourcedRememberEntitiesShardStoreSpec extends RememberEntitiesShardSt
   it must {
     "create entity events in correct batches when entity counts exceed limits" in {
       val entityIds = (1 to 20).map(_.toString).toSet
-      val entityEvents = createEntityEvents(entityIds, EntitiesStarted, batchSize = 7)
+      val entityEvents = createEntityEvents(entityIds, EntitiesStarted.apply _, batchSize = 7)
       entityEvents.size shouldBe 3
       val entities = entityEvents.map(_.asInstanceOf[EntitiesStarted].entities.toSeq)
       entities.map(_.size) should contain theSameElementsAs Seq(7, 7, 6)
@@ -146,7 +146,7 @@ class EventSourcedRememberEntitiesShardStoreSpec extends RememberEntitiesShardSt
 
     "create single entity event when entity counts under limits" in {
       val entityIds = (1 to 7).map(_.toString).toSet
-      val entityEvents = createEntityEvents(entityIds, EntitiesStarted, batchSize = 7)
+      val entityEvents = createEntityEvents(entityIds, EntitiesStarted.apply _, batchSize = 7)
       entityEvents.size shouldBe 1
       val entities = entityEvents.map(_.asInstanceOf[EntitiesStarted].entities.toSeq)
       entities.map(_.size) should contain theSameElementsAs Seq(7)
