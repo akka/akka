@@ -7,6 +7,7 @@ package akka.persistence.typed.scaladsl
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
 
+import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import scala.concurrent.Promise
 import scala.concurrent.duration._
@@ -104,6 +105,7 @@ object EventSourcedBehaviorSpec {
   case object IncrementAfterReceiveTimeout extends Command
   case object IncrementTwiceAndThenLog extends Command
   final case class IncrementWithConfirmation(replyTo: ActorRef[Done]) extends Command
+  final case class AsyncIncrement(when: Future[Done]) extends Command
   case object DoNothingAndThenLog extends Command
   case object EmptyEventsListAndThenLog extends Command
   final case class GetValue(replyTo: ActorRef[State]) extends Command
@@ -224,6 +226,10 @@ object EventSourcedBehaviorSpec {
 
           case DelayFinished =>
             Effect.persist(Incremented(10))
+
+          case AsyncIncrement(when) =>
+            implicit val ec: ExecutionContext = ctx.executionContext
+            Effect.async(when.map(_ => Effect.persist(Incremented(1))))
 
           case IncrementAfterReceiveTimeout =>
             ctx.setReceiveTimeout(10.millis, Timeout)
@@ -552,6 +558,61 @@ class EventSourcedBehaviorSpec
       c ! GetValue(probe.ref)
       probe.expectMessage(State(0, Vector.empty))
       loggingProbe.expectMessage(firstLogging)
+    }
+
+    "handle async effect" in {
+      val c = spawn(counter(nextPid()))
+      val probe = TestProbe[State]()
+      c ! AsyncIncrement(Future.successful(Done))
+      probe.expectNoMessage()
+      c ! GetValue(probe.ref)
+      probe.expectMessage(State(1, Vector(0)))
+    }
+
+    "handle async effect and stash incoming commands while waiting" in {
+      val c = spawn(counter(nextPid()))
+      val probe = TestProbe[State]()
+      val later = Promise[Done]()
+      c ! AsyncIncrement(later.future)
+      c ! Increment
+      c ! GetValue(probe.ref)
+      probe.expectNoMessage()
+      later.success(Done)
+      probe.expectMessage(State(2, Vector(0, 1)))
+
+      c ! Increment
+      c ! GetValue(probe.ref)
+      probe.expectMessage(State(3, Vector(0, 1, 2)))
+    }
+
+    "handle async effect from stashed command" in {
+      val c = spawn(counter(nextPid()))
+      val probe = TestProbe[State]()
+      c ! Increment
+      c ! Increment
+      c ! Increment
+      // not guaranteed that the AsyncIncrement is stashed here,
+      // but likely, and test outcome should be the same
+      c ! AsyncIncrement(Future.successful(Done))
+      probe.expectNoMessage()
+      c ! GetValue(probe.ref)
+      probe.expectMessage(State(4, Vector(0, 1, 2, 3)))
+    }
+
+    "handle async effect failure" in {
+      val c = spawn(counter(nextPid()))
+      val probe = TestProbe[State]()
+      val later = Promise[Done]()
+      c ! AsyncIncrement(later.future)
+      c ! Increment
+      c ! GetValue(probe.ref)
+      probe.expectNoMessage()
+      later.failure(TestException("async boom"))
+      // stashed Increment and GetValue are discarded, but that is the case
+      // for stashing when persisting too
+      probe.expectNoMessage()
+
+      probe.expectTerminated(c)
     }
 
     "work when wrapped in other behavior" in {

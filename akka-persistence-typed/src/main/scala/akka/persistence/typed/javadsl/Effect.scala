@@ -4,9 +4,12 @@
 
 package akka.persistence.typed.javadsl
 
+import java.util.concurrent.CompletionStage
+
 import akka.actor.typed.ActorRef
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
+import akka.dispatch.ExecutionContexts
 import akka.japi.function
 import akka.persistence.typed.internal._
 import akka.persistence.typed.internal.SideEffect
@@ -102,6 +105,27 @@ import akka.util.ccompat.JavaConverters._
    */
   def noReply(): ReplyEffect[Event, State] =
     none().thenNoReply()
+
+  /**
+   * Asynchronous command handling. The effect is run when the `CompletionStage` has been completed.
+   * Any incoming commands are stashed and processed later, after current command, when the `CompletionStage` has
+   * been completed.
+   *
+   * This can for example be used for retrieval of external information before validating the command.
+   */
+  def async(effect: CompletionStage[Effect[Event, State]]): Effect[Event, State] = {
+    import scala.compat.java8.FutureConverters._
+    AsyncEffect[Event, State](effect.toScala.map(_.asInstanceOf[EffectImpl[Event, State]])(ExecutionContexts.parasitic))
+  }
+
+  /**
+   * Same as [[EffectFactories.async]] when the `EventSourcedBehavior` is created with
+   * [[EventSourcedBehaviorWithEnforcedReplies]].
+   */
+  def asyncReply(effect: CompletionStage[ReplyEffect[Event, State]]): ReplyEffect[Event, State] = {
+    import scala.compat.java8.FutureConverters._
+    AsyncEffect[Event, State](effect.toScala.map(_.asInstanceOf[EffectImpl[Event, State]])(ExecutionContexts.parasitic))
+  }
 }
 
 /**
