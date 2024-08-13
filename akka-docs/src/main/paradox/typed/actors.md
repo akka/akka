@@ -45,7 +45,13 @@ concurrent and parallel systems. Actors were defined in the 1973 paper by Carl
 Hewitt but have been popularized by the Erlang language, and used for example at
 Ericsson with great success to build highly concurrent and reliable telecom
 systems. The API of Akka’s Actors has borrowed some of its syntax from Erlang.
- 
+
+@@@note
+
+🎓 For a deeper understanding of the Actor Model, consider the free online course [**Actor Fundamentals**](https://akkademy.akka.io/learn/courses/21/actor-fundamentals) in Akkademy.
+
+@@@
+
 ## First example
 
 If you are new to Akka we recommend watching the short [introduction video to Akka actors](https://akka.io/blog/news/2019/12/03/akka-typed-actor-intro-video).
