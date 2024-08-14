@@ -241,6 +241,18 @@ import akka.util.JavaDurationConverters._
     ActorRefAdapter(ref)
   }
 
+  override def shard(typeKey: scaladsl.EntityTypeKey[_]): ActorRef[scaladsl.ClusterSharding.ShardCommand] =
+    shardCommandActors.get(typeKey.name) match {
+      case null  => throw new IllegalStateException(s"Entity type [${typeKey.name}] must first be initialized")
+      case shard => shard
+    }
+
+  override def shard(typeKey: javadsl.EntityTypeKey[_]): ActorRef[javadsl.ClusterSharding.ShardCommand] =
+    shardCommandActors.get(typeKey.name) match {
+      case null  => throw new IllegalStateException(s"Entity type [${typeKey.name}] must first be initialized")
+      case shard => shard
+    }
+
   override def entityRefFor[M](typeKey: scaladsl.EntityTypeKey[M], entityId: String): scaladsl.EntityRef[M] = {
     new EntityRefImpl[M](
       classicSharding.shardRegion(typeKey.name),

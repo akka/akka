@@ -69,6 +69,10 @@ class TestEntityRefSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike w
         override def entityRefFor[M](typeKey: EntityTypeKey[M], entityId: String): EntityRef[M] =
           entityRefFor(typeKey, entityId, "default")
 
+        override def shard(typeKey: EntityTypeKey[_]): ActorRef[ClusterSharding.ShardCommand] = ???
+
+        override def shard(typeKey: javadsl.EntityTypeKey[_]): ActorRef[javadsl.ClusterSharding.ShardCommand] = ???
+
         override def shardState: ActorRef[ClusterShardingQuery] = ???
 
         override def defaultShardAllocationStrategy(

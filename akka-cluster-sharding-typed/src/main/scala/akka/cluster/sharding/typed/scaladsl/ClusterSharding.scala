@@ -214,6 +214,14 @@ trait ClusterSharding extends Extension { javadslSelf: javadsl.ClusterSharding =
   def shardState: ActorRef[ClusterShardingQuery]
 
   /**
+   * Access to the `ActorRef` to send `ShardCommand` for a given entity type. For example
+   * [[ClusterSharding.Passivate]] can be sent to this `ActorRef`. Note that this `ActorRef`
+   * is also available in the [[EntityContext]]. The entity type must first be initialized
+   * with the [[ClusterSharding.init]] method.
+   */
+  def shard(typeKey: EntityTypeKey[_]): ActorRef[ClusterSharding.ShardCommand]
+
+  /**
    * The default `ShardAllocationStrategy` is configured by `least-shard-allocation-strategy` properties.
    */
   def defaultShardAllocationStrategy(settings: ClusterShardingSettings): ShardAllocationStrategy
