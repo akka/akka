@@ -57,7 +57,7 @@ object ClusterShardingSpec {
   sealed trait IdTestProtocol extends CborSerializable
   final case class IdReplyPlz(id: String, toMe: ActorRef[String]) extends IdTestProtocol
   final case class IdWhoAreYou(id: String, replyTo: ActorRef[String]) extends IdTestProtocol
-  final case class IdStopPlz() extends IdTestProtocol
+  final case class IdStopPlz(id: String) extends IdTestProtocol
 
   final case class TheReply(s: String)
 
@@ -91,12 +91,12 @@ object ClusterShardingSpec {
       }
 
   def behaviorWithId() = Behaviors.receive[IdTestProtocol] {
-    case (_, IdStopPlz()) =>
+    case (_, IdStopPlz(_)) =>
       Behaviors.stopped
 
     case (ctx, IdWhoAreYou(_, replyTo)) =>
       val address = Cluster(ctx.system).selfMember.address
-      replyTo ! s"I'm ${ctx.self.path.name} at ${address.host.get}:${address.port.get}"
+      replyTo ! s"I'm ${ctx.self.path.name} at ${address.host.get}:${address.port.get} responding to $replyTo"
       Behaviors.same
 
     case (_, IdReplyPlz(_, toMe)) =>
@@ -104,9 +104,10 @@ object ClusterShardingSpec {
       Behaviors.same
   }
 
-  val idTestProtocolMessageExtractor = ShardingMessageExtractor.noEnvelope[IdTestProtocol](10, IdStopPlz()) {
+  val idTestProtocolMessageExtractor = ShardingMessageExtractor.noEnvelope[IdTestProtocol](10) {
     case IdReplyPlz(id, _)  => id
     case IdWhoAreYou(id, _) => id
+    case IdStopPlz(id)      => id
     case other              => throw new IllegalArgumentException(s"Unexpected message $other")
   }
 }
@@ -136,17 +137,13 @@ class ClusterShardingSpec
 
   private val shardingRefSystem1WithoutEnvelope: ActorRef[IdTestProtocol] = sharding.init(
     Entity(typeKeyWithoutEnvelopes)(_ => behaviorWithId())
-      .withMessageExtractor(ShardingMessageExtractor.noEnvelope[IdTestProtocol](10, IdStopPlz()) {
-        case IdReplyPlz(id, _)  => id
-        case IdWhoAreYou(id, _) => id
-        case other              => throw new IllegalArgumentException(s"Unexpected message $other")
-      })
-      .withStopMessage(IdStopPlz()))
+      .withMessageExtractor(idTestProtocolMessageExtractor)
+      .withStopMessage(IdStopPlz("")))
 
   private val shardingRefSystem2WithoutEnvelope: ActorRef[IdTestProtocol] = sharding2.init(
     Entity(typeKeyWithoutEnvelopes)(_ => behaviorWithId())
       .withMessageExtractor(idTestProtocolMessageExtractor)
-      .withStopMessage(IdStopPlz()))
+      .withStopMessage(IdStopPlz("")))
 
   def totalEntityCount1(): Int = {
     import akka.pattern.ask
@@ -265,7 +262,7 @@ class ClusterShardingSpec
       // sharding has been already initialized with EntityTypeKey[TestProtocol]("envelope-shard")
       val ex = intercept[Exception] {
         sharding.init(
-          Entity(EntityTypeKey[IdTestProtocol]("envelope-shard"))(_ => behaviorWithId()).withStopMessage(IdStopPlz()))
+          Entity(EntityTypeKey[IdTestProtocol]("envelope-shard"))(_ => behaviorWithId()).withStopMessage(IdStopPlz("")))
       }
 
       ex.getMessage should include("already initialized")
@@ -285,20 +282,50 @@ class ClusterShardingSpec
       charlieRef ! StopPlz()
     }
 
+    "EntityRef without envelope - tell" in {
+      val charlieRef = sharding.entityRefFor(typeKeyWithoutEnvelopes, "charlie")
+
+      val p = TestProbe[String]()
+
+      charlieRef ! IdWhoAreYou("charlie", p.ref)
+      p.receiveMessage() should startWith("I'm charlie")
+
+      charlieRef.tell(IdWhoAreYou("charlie", p.ref))
+      p.receiveMessage() should startWith("I'm charlie")
+
+      charlieRef ! IdStopPlz("charlie")
+    }
+
     "EntityRef - ask" in {
       val bobRef = sharding.entityRefFor(typeKeyWithEnvelopes, "bob")
       val aliceRef = sharding.entityRefFor(typeKeyWithEnvelopes, "alice")
 
       val reply1 = bobRef.ask(WhoAreYou(_))
-      val response = reply1.futureValue.asInstanceOf[String]
+      val response = reply1.futureValue
       response should startWith("I'm bob")
       // typekey and entity id encoded in promise ref path
       response should include(s"${typeKeyWithEnvelopes.name}-bob")
 
       val reply2 = aliceRef.ask(WhoAreYou(_))
-      reply2.futureValue.asInstanceOf[String] should startWith("I'm alice")
+      reply2.futureValue should startWith("I'm alice")
 
       bobRef ! StopPlz()
+    }
+
+    "EntityRef without envelope - ask" in {
+      val bobRef = sharding.entityRefFor(typeKeyWithoutEnvelopes, "bob")
+      val aliceRef = sharding.entityRefFor(typeKeyWithoutEnvelopes, "alice")
+
+      val reply1 = bobRef.ask(IdWhoAreYou("bob", _))
+      val response = reply1.futureValue
+      response should startWith("I'm bob")
+      // typekey and entity id encoded in promise ref path
+      response should include(s"${typeKeyWithoutEnvelopes.name}-bob")
+
+      val reply2 = aliceRef.ask(IdWhoAreYou("alice", _))
+      reply2.futureValue should startWith("I'm alice")
+
+      bobRef ! IdStopPlz("bob")
     }
 
     "EntityRef - ActorContext.ask" in {

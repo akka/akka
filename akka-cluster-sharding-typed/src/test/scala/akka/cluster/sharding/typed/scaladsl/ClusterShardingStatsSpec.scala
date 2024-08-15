@@ -49,7 +49,7 @@ class ClusterShardingStatsSpec
     "allow querying of statistics of the currently running sharded entities in the entire cluster" in {
       val shardingRef: ActorRef[IdTestProtocol] = sharding.init(
         Entity(typeKey)(_ => ClusterShardingSpec.behaviorWithId())
-          .withStopMessage(IdStopPlz())
+          .withStopMessage(IdStopPlz(""))
           .withMessageExtractor(idTestProtocolMessageExtractor))
 
       val replyProbe = createTestProbe[String]()

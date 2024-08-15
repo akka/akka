@@ -110,6 +110,7 @@ import akka.util.JavaDurationConverters._
   private val proxies: ConcurrentHashMap[String, String] = new ConcurrentHashMap
   private val shardCommandActors: ConcurrentHashMap[String, ActorRef[scaladsl.ClusterSharding.ShardCommand]] =
     new ConcurrentHashMap
+  private val useShardingEnvelope: ConcurrentHashMap[String, Boolean] = new ConcurrentHashMap
 
   // scaladsl impl
   override def init[M, E](entity: scaladsl.Entity[M, E]): ActorRef[E] = {
@@ -238,6 +239,8 @@ import akka.util.JavaDurationConverters._
       case _ => ()
     }
 
+    useShardingEnvelope.putIfAbsent(typeKey.name, !extractor.isInstanceOf[NoEnvelopeShardingMessageExtractor[_]])
+
     ActorRefAdapter(ref)
   }
 
@@ -256,6 +259,7 @@ import akka.util.JavaDurationConverters._
   override def entityRefFor[M](typeKey: scaladsl.EntityTypeKey[M], entityId: String): scaladsl.EntityRef[M] = {
     new EntityRefImpl[M](
       classicSharding.shardRegion(typeKey.name),
+      useShardingEnvelope.get(typeKey.name),
       entityId,
       typeKey.asInstanceOf[EntityTypeKeyImpl[M]])
   }
@@ -269,6 +273,7 @@ import akka.util.JavaDurationConverters._
     else
       new EntityRefImpl[M](
         classicSharding.shardRegionProxy(typeKey.name, dataCenter),
+        useShardingEnvelope.get(typeKey.name),
         entityId,
         typeKey.asInstanceOf[EntityTypeKeyImpl[M]],
         Some(dataCenter))
@@ -277,6 +282,7 @@ import akka.util.JavaDurationConverters._
   override def entityRefFor[M](typeKey: javadsl.EntityTypeKey[M], entityId: String): javadsl.EntityRef[M] = {
     new EntityRefImpl[M](
       classicSharding.shardRegion(typeKey.name),
+      useShardingEnvelope.get(typeKey.name),
       entityId,
       typeKey.asInstanceOf[EntityTypeKeyImpl[M]])
   }
@@ -290,6 +296,7 @@ import akka.util.JavaDurationConverters._
     else
       new EntityRefImpl[M](
         classicSharding.shardRegionProxy(typeKey.name, dataCenter),
+        useShardingEnvelope.get(typeKey.name),
         entityId,
         typeKey.asInstanceOf[EntityTypeKeyImpl[M]],
         Some(dataCenter))
@@ -322,6 +329,7 @@ import akka.util.JavaDurationConverters._
  */
 @InternalApi private[akka] final class EntityRefImpl[M](
     shardRegion: akka.actor.ActorRef,
+    useShardingEnvelope: Boolean,
     override val entityId: String,
     override val typeKey: EntityTypeKeyImpl[M],
     override val dataCenter: Option[String] = None)
@@ -344,8 +352,12 @@ import akka.util.JavaDurationConverters._
 
   override val refPrefix = URLEncoder.encode(s"${typeKey.name}-$entityId", ByteString.UTF_8)
 
-  override def tell(msg: M): Unit =
-    shardRegion ! ShardingEnvelope(entityId, msg)
+  override def tell(msg: M): Unit = {
+    if (useShardingEnvelope)
+      shardRegion ! ShardingEnvelope(entityId, msg)
+    else
+      shardRegion ! msg
+  }
 
   override def ask[U](message: ActorRef[U] => M)(implicit timeout: Timeout): Future[U] = {
     val replyTo = new EntityPromiseRef[U](shardRegion.asInstanceOf[InternalActorRef], timeout, refPrefix)
@@ -406,7 +418,10 @@ import akka.util.JavaDurationConverters._
         entityId: String,
         message: T,
         @unused timeout: Timeout): Future[U] = {
-      shardRegion ! ShardingEnvelope(entityId, message)
+      if (useShardingEnvelope)
+        shardRegion ! ShardingEnvelope(entityId, message)
+      else
+        shardRegion ! message
       future
     }
   }
@@ -431,7 +446,7 @@ import akka.util.JavaDurationConverters._
   override private[akka] def asJava: javadsl.EntityRef[M] = this
 
   private[internal] def withDataCenter(dataCenter: Option[String]): EntityRefImpl[M] =
-    new EntityRefImpl[M](shardRegion, entityId, typeKey, dataCenter)
+    new EntityRefImpl[M](shardRegion, useShardingEnvelope, entityId, typeKey, dataCenter)
 }
 
 /**

@@ -24,11 +24,18 @@ object ShardingMessageExtractor {
   /**
    * Scala API: Create a message extractor for a protocol where the entity id is available in each message.
    */
+  def noEnvelope[M](numberOfShards: Int)(extractEntityId: M => String): ShardingMessageExtractor[M, M] =
+    new HashCodeNoEnvelopeMessageExtractor[M](numberOfShards) {
+      override def entityId(message: M): String = extractEntityId(message)
+    }
+
+  /**
+   * Scala API: Create a message extractor for a protocol where the entity id is available in each message.
+   */
+  @deprecated("Use noEnvelope without stopMessage parameter", since = "2.9.5")
   def noEnvelope[M](numberOfShards: Int, @unused stopMessage: M)(
       extractEntityId: M => String): ShardingMessageExtractor[M, M] =
-    new HashCodeNoEnvelopeMessageExtractor[M](numberOfShards) {
-      def entityId(message: M) = extractEntityId(message)
-    }
+    noEnvelope(numberOfShards)(extractEntityId)
 }
 
 /**
@@ -64,6 +71,33 @@ abstract class ShardingMessageExtractor[E, M] {
 }
 
 /**
+ * Entirely customizable typed message extractor when the message isn't wrapped in an envelope.
+ * Prefer [[HashCodeMessageExtractor]] or [[HashCodeNoEnvelopeMessageExtractor]]if possible.
+ *
+ * @tparam M The type of message accepted by the entity actor
+ */
+abstract class NoEnvelopeShardingMessageExtractor[M] extends ShardingMessageExtractor[M, M] {
+
+  /**
+   * Extract the entity id from an incoming `message`. If `null` is returned
+   * the message will be `unhandled`, i.e. posted as `Unhandled` messages on the event stream
+   */
+  def entityId(message: M): String
+
+  /**
+   * The shard identifier for a given entity id. Only messages that passed the [[NoEnvelopeShardingMessageExtractor#entityId]]
+   * function will be used as input to this function.
+   */
+  def shardId(entityId: String): String
+
+  /**
+   * No wrapping.
+   */
+  final def unwrapMessage(message: M): M = message
+
+}
+
+/**
  * Default message extractor type, using envelopes to identify what entity a message is for
  * and the hashcode of the entityId to decide which shard an entity belongs to.
  *
@@ -88,11 +122,11 @@ final class HashCodeMessageExtractor[M](val numberOfShards: Int)
  *
  * @tparam M The type of message accepted by the entity actor
  */
-abstract class HashCodeNoEnvelopeMessageExtractor[M](val numberOfShards: Int) extends ShardingMessageExtractor[M, M] {
+abstract class HashCodeNoEnvelopeMessageExtractor[M](val numberOfShards: Int)
+    extends NoEnvelopeShardingMessageExtractor[M] {
 
   override def shardId(entityId: String): String =
     akka.cluster.sharding.ShardRegion.HashCodeMessageExtractor.shardId(entityId, numberOfShards)
-  override final def unwrapMessage(message: M): M = message
 
   override def toString = s"HashCodeNoEnvelopeMessageExtractor($numberOfShards)"
 }

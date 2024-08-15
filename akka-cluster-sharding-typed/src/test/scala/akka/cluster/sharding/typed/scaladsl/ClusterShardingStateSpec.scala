@@ -21,9 +21,10 @@ class ClusterShardingStateSpec
 
   private val sharding = ClusterSharding(system)
 
-  private val shardExtractor = ShardingMessageExtractor.noEnvelope[IdTestProtocol](10, IdStopPlz()) {
+  private val shardExtractor = ShardingMessageExtractor.noEnvelope[IdTestProtocol](10) {
     case IdReplyPlz(id, _)  => id
     case IdWhoAreYou(id, _) => id
+    case IdStopPlz(id)      => id
     case other              => throw new IllegalArgumentException(s"Unexpected message $other")
   }
 
@@ -42,7 +43,7 @@ class ClusterShardingStateSpec
 
       val shardingRef: ActorRef[IdTestProtocol] = sharding.init(
         Entity(typeKey)(_ => ClusterShardingSpec.behaviorWithId())
-          .withStopMessage(IdStopPlz())
+          .withStopMessage(IdStopPlz(""))
           .withMessageExtractor(idTestProtocolMessageExtractor))
 
       sharding.shardState ! GetShardRegionState(typeKey, probe.ref)
