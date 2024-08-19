@@ -181,6 +181,12 @@ The console output may look like this:
 
 You will also need to add a @ref:[logging dependency](logging.md) to see that output when running.
 
+@@@note
+
+🎓 For a deeper introduction to actors, consider the free online courses @java[[**Akka Basics for Java**](https://akkademy.akka.io/learn/courses/23/akka-basics-for-java)]@scala[[**Akka Basics for Scala**](https://akkademy.akka.io/learn/courses/22/akka-basics-for-scala)]) in Akkademy.
+
+@@@
+
 ## A More Complex Example
 
 The next example is more realistic and demonstrates some important patterns:
@@ -487,3 +493,9 @@ the `Main` Actor terminates there is nothing more to do.
 Therefore after creating the Actor system with the `Main` Actor’s
 @apidoc[typed.Behavior] we can let the `main` method return, the @apidoc[typed.ActorSystem] will continue running and 
 the JVM alive until the root actor stops.
+
+@@@note
+
+🎓 For a deeper introduction to actors, consider the free online courses @java[[**Akka Basics for Java**](https://akkademy.akka.io/learn/courses/23/akka-basics-for-java)]@scala[[**Akka Basics for Scala**](https://akkademy.akka.io/learn/courses/22/akka-basics-for-scala)] in Akkademy.
+
+@@@
