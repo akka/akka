@@ -183,7 +183,7 @@ You will also need to add a @ref:[logging dependency](logging.md) to see that ou
 
 @@@note
 
-🎓 For a deeper introduction to actors, consider the free online courses [**Akka Basics for Java**](https://akkademy.akka.io/learn/courses/23/akka-basics-for-java) or [**Akka Basics for Scala**](https://akkademy.akka.io/learn/courses/22/akka-basics-for-scala) in Akkademy.
+🎓 For a deeper introduction to actors, consider the free online courses @java[[**Akka Basics for Java**](https://akkademy.akka.io/learn/courses/23/akka-basics-for-java)]@scala[[**Akka Basics for Scala**](https://akkademy.akka.io/learn/courses/22/akka-basics-for-scala)]) in Akkademy.
 
 @@@
 
@@ -496,6 +496,6 @@ the JVM alive until the root actor stops.
 
 @@@note
 
-🎓 For a deeper introduction to actors, consider the free online courses [**Akka Basics for Java**](https://akkademy.akka.io/learn/courses/23/akka-basics-for-java) or [**Akka Basics for Scala**](https://akkademy.akka.io/learn/courses/22/akka-basics-for-scala) in Akkademy.
+🎓 For a deeper introduction to actors, consider the free online courses @java[[**Akka Basics for Java**](https://akkademy.akka.io/learn/courses/23/akka-basics-for-java)]@scala[[**Akka Basics for Scala**](https://akkademy.akka.io/learn/courses/22/akka-basics-for-scala)] in Akkademy.
 
 @@@
