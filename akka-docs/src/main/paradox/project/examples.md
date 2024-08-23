@@ -13,15 +13,15 @@ messages.
 
 ## FSM
 
-* Scala [Dining hackers with FSM](https://github.com/akka/akka/tree/main/samples/akka-sample-fsm-scala) ([akka-samples-fsm-scala.zip](../attachments/akka-samples-fsm-scala.zip))
-* Java [Dining hackers with FSM](https://github.com/akka/akka/tree/main/samples/akka-sample-fsm-java) ([akka-samples-fsm-java.zip](../attachments/akka-samples-fsm-java.zip))
+* Scala [Dining hackers with FSM](https://github.com/akka/akka/tree/main/samples/akka-sample-fsm-scala) ([akka-sample-fsm-scala.zip](../attachments/akka-sample-fsm-scala.zip))
+* Java [Dining hackers with FSM](https://github.com/akka/akka/tree/main/samples/akka-sample-fsm-java) ([akka-sample-fsm-java.zip](../attachments/akka-sample-fsm-java.zip))
 
 This project contains a Dining Hakkers sample illustrating how to model a Finite State Machine (FSM) with actors.
 
 ## Cluster
 
-* Scala [Cluster example project](https://github.com/akka/akka/tree/main/samples/akka-sample-cluster-scala#readme) ([akka-samples-cluster-scala.zip](../attachments/akka-samples-cluster-scala.zip))
-* Java [Cluster example project](https://github.com/akka/akka/tree/main/samples/akka-sample-cluster-java#readme) ([akka-samples-cluster-java.zip](../attachments/akka-samples-cluster-java.zip))
+* Scala [Cluster example project](https://github.com/akka/akka/tree/main/samples/akka-sample-cluster-scala#readme) ([akka-sample-cluster-scala.zip](../attachments/akka-sample-cluster-scala.zip))
+* Java [Cluster example project](https://github.com/akka/akka/tree/main/samples/akka-sample-cluster-java#readme) ([akka-sample-cluster-java.zip](../attachments/akka-sample-cluster-java.zip))
 
 This project contains samples illustrating different Cluster features, such as
 subscribing to cluster membership events, and sending messages to actors running on nodes in the cluster
