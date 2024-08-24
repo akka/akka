@@ -33,18 +33,14 @@ object LoggingDocSpec {
 
   object DeadLetterListener {
 
-    def apply(): Behavior[DeadLetter] = Behaviors.setup { context =>
-      // subscribe DeadLetter at start up.
-      val adapter = context.messageAdapter[DeadLetter](d => d)
+    def apply(): Behavior[String] = Behaviors.setup { context =>
+      // subscribe DeadLetter at startup.
+      val adapter = context.messageAdapter[DeadLetter](d => d.message.toString)
       context.system.eventStream ! Subscribe(adapter)
 
       Behaviors.receiveMessage {
-        case deadLetter: DeadLetter =>
-          context.log.info(
-            "receive dead letter: {} from <{}> to <{}>",
-            deadLetter.message,
-            deadLetter.sender,
-            deadLetter.recipient)
+        case msg: String =>
+          context.log.info("receive dead letter: {}", msg)
           Behaviors.same
       }
     }
@@ -78,7 +74,7 @@ class LoggingDocSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with
   import LoggingDocSpec._
   import akka.actor.typed.scaladsl.AskPattern._
 
-  "allow registration to dead letters from start up" in {
+  "allow registration to dead letters" in {
     // #deadletters
     ActorSystem(Behaviors.setup[Void] { context =>
       context.spawn(DeadLetterListener(), "DeadLetterListener", Props.empty)
@@ -88,13 +84,15 @@ class LoggingDocSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with
   }
 
   "allow registration to dead letters" in {
-    // #subscribe-deadletter
     ActorSystem(Behaviors.setup[Void] { context =>
-      val deadLetterListener = context.spawn(DeadLetterListener(), "DeadLetterListener", Props.empty)
-      context.system.eventStream ! Subscribe[DeadLetter](deadLetterListener)
+      val deadLetterListener = Behaviors.empty[DeadLetter]
+      // #subscribe-deadletter
+      val listenerRef: ActorRef[DeadLetter] = context.spawn(DeadLetterListener(), "DeadLetterListener")
+      context.system.eventStream ! Subscribe[DeadLetter](listenerRef)
+      // #subscribe-deadletter
+
       Behaviors.empty
     }, "System")
-    // #subscribe-deadletter
   }
 
   "demonstrate superclass subscriptions on typed eventStream" in {

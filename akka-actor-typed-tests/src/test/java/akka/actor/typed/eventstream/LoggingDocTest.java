@@ -15,8 +15,13 @@ import akka.actor.typed.Props;
 import akka.actor.typed.SpawnProtocol;
 import akka.actor.typed.SpawnProtocol.Spawn;
 import akka.actor.typed.eventstream.EventStream.Publish;
+import akka.actor.typed.eventstream.EventStream.Subscribe;
+import akka.actor.typed.javadsl.AbstractBehavior;
+import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Adapter;
 import akka.actor.typed.javadsl.AskPattern;
+import akka.actor.typed.javadsl.Behaviors;
+import akka.actor.typed.javadsl.Receive;
 import java.time.Duration;
 import java.util.concurrent.CompletionStage;
 import org.junit.Assert;
@@ -26,56 +31,47 @@ import org.scalatestplus.junit.JUnitSuite;
 import akka.actor.DeadLetter;
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.ActorSystem;
-import akka.actor.typed.eventstream.EventStream.Subscribe;
-import akka.actor.typed.javadsl.AbstractBehavior;
-import akka.actor.typed.javadsl.ActorContext;
-import akka.actor.typed.javadsl.Behaviors;
-import akka.actor.typed.javadsl.Receive;
-import org.slf4j.Logger;
 // #imports-deadletter
 
 public class LoggingDocTest extends JUnitSuite {
 
     @Test
     public void subscribeToDeadLetters() {
-        ActorSystem<SpawnProtocol.Command> system = ActorSystem.create(SpawnProtocol.create(),
-            "DeadLettersSystem");
-        // #subscribe-deadletter
-        ActorSystem.create(Behaviors.setup(ctx -> {
-            ActorRef<DeadLetter> listener = ctx.spawn(DeadLetterActor.create(), "listener");
-            ctx.getSystem().eventStream().tell(new Subscribe<>(DeadLetter.class, listener));
-            return Behaviors.empty();
-        }), "DeadLettersSystem");
-        // #subscribe-deadletter
+        ActorSystem<SpawnProtocol.Command> system = ActorSystem.create(
+            Behaviors.setup(ctx -> {
+                Behavior<DeadLetter> deadLetterListener = Behaviors.empty();
+                // #subscribe-deadletter
+                ActorRef<DeadLetter> listener = ctx.spawn(deadLetterListener, "listener");
+                ctx.getSystem().eventStream().tell(new Subscribe<>(DeadLetter.class, listener));
+                // #subscribe-deadletter
+                return SpawnProtocol.create();
+            }), "DeadLettersSystem");
         ActorTestKit.shutdown(system);
     }
 
     public
     // #deadletter-actor
-    static class DeadLetterActor extends AbstractBehavior<DeadLetter> {
+    static class DeadLetterActor extends AbstractBehavior<String> {
 
-        final Logger log = getContext().getLog();
-
-        public static Behavior<DeadLetter> create() {
+        public static Behavior<String> create() {
             return Behaviors.setup(DeadLetterActor::new);
         }
 
-        public DeadLetterActor(ActorContext<DeadLetter> context) {
+        public DeadLetterActor(ActorContext<String> context) {
             super(context);
             ActorRef<DeadLetter> messageAdapter = context.messageAdapter(
                 DeadLetter.class,
-                d -> d
+                d -> d.message().toString()
             );
-            // subscribe DeadLetter at start up.
+            // subscribe DeadLetter at startup.
             context.getSystem().eventStream()
                 .tell(new Subscribe<>(DeadLetter.class, messageAdapter));
         }
 
         @Override
-        public Receive<DeadLetter> createReceive() {
-            return newReceiveBuilder().onMessage(DeadLetter.class, msg -> {
-                log.info("receive dead letter: {} from <{}> to <{}>", msg, msg.sender(),
-                    msg.recipient());
+        public Receive<String> createReceive() {
+            return newReceiveBuilder().onMessage(String.class, msg -> {
+                getContext().getLog().info("receive dead letter: {}", msg);
                 return Behaviors.same();
             }).build();
         }
@@ -107,8 +103,6 @@ public class LoggingDocTest extends JUnitSuite {
 
     static class Listener extends AbstractBehavior<AllKindsOfMusic> {
 
-        final Logger log = getContext().getLog();
-
         public static Behavior<AllKindsOfMusic> create() {
             return Behaviors.setup(Listener::new);
         }
@@ -122,12 +116,12 @@ public class LoggingDocTest extends JUnitSuite {
         public Receive<AllKindsOfMusic> createReceive() {
             return newReceiveBuilder()
                 .onMessage(Jazz.class, msg -> {
-                    log.info("{} is listening to Jazz: {}", getContext().getSelf().path().name(),
+                    getContext().getLog().info("{} is listening to Jazz: {}", getContext().getSelf().path().name(),
                         msg);
                     return Behaviors.same();
                 })
                 .onMessage(Electronic.class, msg -> {
-                    log.info("{} is listening to Electronic: {}",
+                    getContext().getLog().info("{} is listening to Electronic: {}",
                         getContext().getSelf().path().name(), msg);
                     return Behaviors.same();
                 }).build();

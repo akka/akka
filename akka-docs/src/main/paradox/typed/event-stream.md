@@ -36,7 +36,7 @@ It uses @ref:[Subchannel Classification](#subchannel-classification) which enabl
 
 ## How to use
 
-The following example demonstrates how a subscription works. Given an actor will subscribe DeadLetter from start up:
+The following example demonstrates how a subscription works. Given an actor will subscribe DeadLetter from startup:
 
 Scala
 :  @@snip [LoggingDocSpec.scala](/akka-actor-typed-tests/src/test/scala/akka/actor/typed/eventstream/LoggingDocSpec.scala) { #deadletters }
