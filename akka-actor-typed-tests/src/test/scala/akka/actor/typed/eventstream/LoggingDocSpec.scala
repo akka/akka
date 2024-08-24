@@ -87,7 +87,7 @@ class LoggingDocSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with
     ActorSystem(Behaviors.setup[Void] { context =>
       val deadLetterListener = Behaviors.empty[DeadLetter]
       // #subscribe-deadletter
-      val listenerRef: ActorRef[DeadLetter] = context.spawn(DeadLetterListener(), "DeadLetterListener")
+      val listenerRef: ActorRef[DeadLetter] = context.spawn(deadLetterListener, "DeadLetterListener")
       context.system.eventStream ! Subscribe[DeadLetter](listenerRef)
       // #subscribe-deadletter
 
