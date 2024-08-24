@@ -7,6 +7,7 @@ package akka.actor.typed
 import scala.annotation.switch
 import scala.annotation.tailrec
 import scala.reflect.ClassTag
+
 import akka.actor.InvalidMessageException
 import akka.actor.typed.internal.BehaviorImpl
 import akka.actor.typed.internal.BehaviorImpl.DeferredBehavior
@@ -130,24 +131,12 @@ class SuperviseBehavior[T] private[akka] (val wrapped: Behavior[T])
   }
 
   /**
-   * Java API:
    * Specify the [[SupervisorStrategy]] to be invoked when the wrapped behavior throws.
    *
    * Only exceptions of the given type (and their subclasses) will be handled by this supervision behavior.
    */
-  def onFailure[Thr <: Throwable](clazz: Class[Thr], strategy: SupervisorStrategy): SuperviseBehavior[T] = {
+  def onFailure[Thr <: Throwable](clazz: Class[Thr], strategy: SupervisorStrategy): SuperviseBehavior[T] =
     onFailure(strategy)(ClassTag(clazz))
-  }
-
-  /**
-   * Java API:
-   * Specify the [[SupervisorStrategy]] to be invoked when the wrapped behavior throws.
-   *
-   * Only exceptions of the given type (and their subclasses) will be handled by this supervision behavior.
-   */
-  def onAnyFailure[Thr <: Throwable](strategy: SupervisorStrategy): SuperviseBehavior[T] = {
-    onFailure(classOf[Exception], strategy)
-  }
 
   private[akka] def unwrap: Behavior[T] = wrapped
 }

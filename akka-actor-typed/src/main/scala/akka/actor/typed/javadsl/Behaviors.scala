@@ -247,7 +247,15 @@ object Behaviors {
   def supervise[T](wrapped: Behavior[T]): Supervise[T] =
     new Supervise[T](wrapped)
 
-  final class Supervise[T] private[akka] (wrapped: Behavior[T]) extends SuperviseBehavior(wrapped) {
+  final class Supervise[T] private[akka] (wrapped: Behavior[T]) {
+
+    /**
+     * Specify the [[SupervisorStrategy]] to be invoked when the wrapped behavior throws.
+     *
+     * Only exceptions of the given type (and their subclasses) will be handled by this supervision behavior.
+     */
+    def onFailure[Thr <: Throwable](clazz: Class[Thr], strategy: SupervisorStrategy): SuperviseBehavior[T] =
+      new SuperviseBehavior[T](wrapped).onFailure(clazz, strategy)
 
     /**
      * Specify the [[SupervisorStrategy]] to be invoked when the wrapped behavior throws.
@@ -255,7 +263,7 @@ object Behaviors {
      * All non-fatal (see [[scala.util.control.NonFatal]]) exceptions types will be handled using the given strategy.
      */
     def onFailure(strategy: SupervisorStrategy): Behavior[T] =
-      onFailure(classOf[Exception], strategy)
+      new SuperviseBehavior[T](wrapped).onFailure(strategy)
   }
 
   /**

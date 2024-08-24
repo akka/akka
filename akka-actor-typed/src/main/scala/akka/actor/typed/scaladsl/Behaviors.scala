@@ -6,7 +6,6 @@ package akka.actor.typed
 package scaladsl
 
 import scala.reflect.ClassTag
-
 import akka.actor.typed.internal._
 import akka.annotation.{ DoNotInherit, InternalApi }
 
@@ -218,7 +217,13 @@ object Behaviors {
   def supervise[T](wrapped: Behavior[T]): Supervise[T] =
     new Supervise[T](wrapped)
 
-  final class Supervise[T] private[akka] (wrapped: Behavior[T]) extends SuperviseBehavior(wrapped)
+  final class Supervise[T] private[akka] (val wrapped: Behavior[T]) extends AnyVal {
+
+    /** Specify the [[SupervisorStrategy]] to be invoked when the wrapped behavior throws. */
+    def onFailure[Thr <: Throwable](strategy: SupervisorStrategy)(implicit tag: ClassTag[Thr]): SuperviseBehavior[T] = {
+      new SuperviseBehavior[T](wrapped).onFailure(strategy)(tag)
+    }
+  }
 
   /**
    * Support for scheduled `self` messages in an actor.
