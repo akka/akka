@@ -15,7 +15,7 @@ import akka.annotation.DoNotInherit
  * Not for user extension
  */
 @DoNotInherit
-sealed class StreamTimeoutException(msg: String) extends TimeoutException(msg) with NoStackTrace
+class StreamTimeoutException(msg: String) extends TimeoutException(msg) with NoStackTrace
 
 final class InitialTimeoutException(msg: String) extends StreamTimeoutException(msg)
 
