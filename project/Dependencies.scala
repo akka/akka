@@ -19,10 +19,12 @@ object Dependencies {
   val junitVersion = "4.13.2"
   val slf4jVersion = "1.7.36"
   // check agrona version when updating this
+  // Note: 1.46 is JDK 17 only so we cannot bump until we stop supporting JDK 11
   val aeronVersion = "1.44.1"
   // needs to be inline with the aeron version, check
   // https://github.com/real-logic/aeron/blob/1.x.y/build.gradle
-  val agronaVersion = "1.19.2"
+  // Note: 1.23+ is JDK 17 only so we cannot bump until we stop supporting JDK 11
+  val agronaVersion = "1.22.0"
   val nettyVersion = "4.1.112.Final"
   val protobufJavaVersion = "3.24.0" // also sync with protocVersion in Protobuf.scala
   val logbackVersion = "1.2.13"
