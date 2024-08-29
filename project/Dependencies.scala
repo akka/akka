@@ -17,7 +17,7 @@ object Dependencies {
   val java8CompatVersion = "1.0.2"
 
   val junitVersion = "4.13.2"
-  val slf4jVersion = "1.7.36"
+  val slf4jVersion = "2.0.16"
   // check agrona version when updating this
   // Note: 1.46 is JDK 17 only so we cannot bump until we stop supporting JDK 11
   val aeronVersion = "1.44.1"
