@@ -20,7 +20,7 @@ object Dependencies {
   val slf4jVersion = "1.7.36"
   // check agrona version when updating this
   // Note: 1.46 is JDK 17 only so we cannot bump until we stop supporting JDK 11
-  val aeronVersion = "1.44.1"
+  val aeronVersion = "1.46.0"
   // needs to be inline with the aeron version, check
   // https://github.com/real-logic/aeron/blob/1.x.y/build.gradle
   // Note: 1.23+ is JDK 17 only so we cannot bump until we stop supporting JDK 11
