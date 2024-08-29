@@ -1,4 +1,0 @@
-# Change the return type of `Behaviors.supervise` to support flattened supervision
-ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.actor.typed.javadsl.Behaviors#Supervise.onFailure")
-ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.actor.typed.scaladsl.Behaviors#Supervise.onFailure")
-ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.actor.typed.scaladsl.Behaviors#Supervise.onFailure$extension")

@@ -220,8 +220,14 @@ object Behaviors {
   final class Supervise[T] private[akka] (val wrapped: Behavior[T]) extends AnyVal {
 
     /** Specify the [[SupervisorStrategy]] to be invoked when the wrapped behavior throws. */
-    def onFailure[Thr <: Throwable](strategy: SupervisorStrategy)(implicit tag: ClassTag[Thr]): SuperviseBehavior[T] = {
-      new SuperviseBehavior[T](wrapped).onFailure(strategy)(tag)
+    def onFailure[Thr <: Throwable](strategy: SupervisorStrategy)(implicit tag: ClassTag[Thr]): Behavior[T] = {
+      whenFailure(strategy)(tag).unwrap
+    }
+
+    /** Specify the [[SupervisorStrategy]] to be invoked when the wrapped behavior throws by use flatten ways. */
+    def whenFailure[Thr <: Throwable](strategy: SupervisorStrategy)(
+        implicit tag: ClassTag[Thr]): SuperviseBehavior[T] = {
+      new SuperviseBehavior[T](wrapped).whenFailure(strategy)(tag)
     }
   }
 

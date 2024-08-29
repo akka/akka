@@ -124,7 +124,7 @@ class SuperviseBehavior[T] private[akka] (val wrapped: Behavior[T])
   private final val ThrowableClassTag = ClassTag(classOf[Throwable])
 
   /** Specify the [[SupervisorStrategy]] to be invoked when the wrapped behavior throws. */
-  def onFailure[Thr <: Throwable](strategy: SupervisorStrategy)(
+  def whenFailure[Thr <: Throwable](strategy: SupervisorStrategy)(
       implicit tag: ClassTag[Thr] = ThrowableClassTag): SuperviseBehavior[T] = {
     val effectiveTag = if (tag == ClassTag.Nothing) ThrowableClassTag else tag
     new SuperviseBehavior[T](Supervisor(Behavior.validateAsInitial(wrapped), strategy)(effectiveTag))
@@ -135,8 +135,8 @@ class SuperviseBehavior[T] private[akka] (val wrapped: Behavior[T])
    *
    * Only exceptions of the given type (and their subclasses) will be handled by this supervision behavior.
    */
-  def onFailure[Thr <: Throwable](clazz: Class[Thr], strategy: SupervisorStrategy): SuperviseBehavior[T] =
-    onFailure(strategy)(ClassTag(clazz))
+  def whenFailure[Thr <: Throwable](clazz: Class[Thr], strategy: SupervisorStrategy): SuperviseBehavior[T] =
+    whenFailure(strategy)(ClassTag(clazz))
 
   private[akka] def unwrap: Behavior[T] = wrapped
 }

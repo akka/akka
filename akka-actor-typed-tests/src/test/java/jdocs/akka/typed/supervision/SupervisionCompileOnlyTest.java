@@ -117,8 +117,8 @@ public class SupervisionCompileOnlyTest {
           final ActorRef<String> child2 = ctx.spawn(child(0), "child2");
 
           // supervision strategy inside the setup to not recreate children on restart
-          return Behaviors.supervise(
-                  Behaviors.<String>receiveMessage(
+          return Behaviors.<String>supervise(
+                  Behaviors.receiveMessage(
                       msg -> {
                         // message handling that might throw an exception
                         String[] parts = msg.split(" ");
