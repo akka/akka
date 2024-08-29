@@ -124,8 +124,7 @@ class SuperviseBehavior[T] private[akka] (val wrapped: Behavior[T])
   private final val ThrowableClassTag = ClassTag(classOf[Throwable])
 
   /** Specify the [[SupervisorStrategy]] to be invoked when the wrapped behavior throws. */
-  def whenFailure[Thr <: Throwable](strategy: SupervisorStrategy)(
-      implicit tag: ClassTag[Thr] = ThrowableClassTag): SuperviseBehavior[T] = {
+  def whenFailure[Thr <: Throwable](strategy: SupervisorStrategy)(implicit tag: ClassTag[Thr]): SuperviseBehavior[T] = {
     val effectiveTag = if (tag == ClassTag.Nothing) ThrowableClassTag else tag
     new SuperviseBehavior[T](Supervisor(Behavior.validateAsInitial(wrapped), strategy)(effectiveTag))
   }
