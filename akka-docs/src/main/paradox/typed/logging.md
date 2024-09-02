@@ -175,7 +175,7 @@ in the `ActorContext`.
 
 Since Akka 2.10.0, only SLF4j version `2.0` is supported. 
 
-It is not possible to mix a logger backend supporting one version with SLF4J API of other version, that will lead
+It is not possible to mix a logger backend supporting one version with SLF4J API of older versions, that will lead
 to no logging to output like this:  
 
 ```
