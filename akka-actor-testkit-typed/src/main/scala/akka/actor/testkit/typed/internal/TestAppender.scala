@@ -84,11 +84,19 @@ import akka.annotation.InternalApi
       loggerName = event.getLoggerName,
       threadName = event.getThreadName,
       timeStamp = event.getTimeStamp,
-      marker = Option(event.getMarker),
+      marker = getMarker(event),
       throwable = throwable,
       mdc = event.getMDCPropertyMap.asScala.toMap)
 
     filter(loggingEvent)
+  }
+
+  private def getMarker(event: ILoggingEvent) = {
+    val markers = event.getMarkerList
+    if ((markers eq null) || markers.isEmpty)
+      None
+    else
+      Option(markers.get(0))
   }
 
   private def filter(event: LoggingEvent): Boolean = {
