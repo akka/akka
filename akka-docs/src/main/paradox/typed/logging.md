@@ -175,41 +175,7 @@ in the `ActorContext`.
 
 Since Akka 2.10.0, only SLF4j version `2.0` is supported. 
 
-It is not possible to mix a logger backend supporting one version with SLF4J API of older versions, that will lead
-to no logging to output like this:  
-
-```
-SLF4J(W): No SLF4J providers were found.
-SLF4J(W): Defaulting to no-operation (NOP) logger implementation
-SLF4J(W): See https://www.slf4j.org/codes.html#noProviders for further details.
-SLF4J(W): Class path contains SLF4J bindings targeting slf4j-api versions 1.7.x or earlier.
-SLF4J(W): Ignoring binding found at [jar:file:/../../../logback-classic-1.2.13.jar!/org/slf4j/impl/StaticLoggerBinder.class]
-```
-
-@@@ div { .group-scala }
-
-Working around this for sbt based projects can either be done by depending on a newer version of the chosen logging backend,
-for example logback 1.4.0+ which support slf4j-api 2.0, or pinning `slf4j-api` to the older version using `dependencyOverrides`:
-```
-dependencyOverrides += "org.slf4j" % "slf4j-api" % "1.7.36"
-```
-
-@@@
-
-@@@ div { .group-java }
-
-Working around this for maven based projects can either be done by depending on a newer version of the chosen logging backend,
-for example logback 1.4.0+ which support slf4j-api 2.0, or pin `slf4j-api` to the older version using a direct dependency on the `slf4j-api` module:
-
-```xml
-<dependency>
-  <groupId>org.slf4j</groupId>
-  <artifactId>slf4j-api</artifactId>
-  <version>1.7.36</version>
-</dependency>
-```
-
-@@@
+It is not possible to mix a logger backend supporting one version with SLF4J API of older versions.
 
 ## SLF4J backend
 
