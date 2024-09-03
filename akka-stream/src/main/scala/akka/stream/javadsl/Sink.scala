@@ -12,8 +12,8 @@ import java.util.stream.Collector
 import scala.annotation.nowarn
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.immutable
-import scala.compat.java8.FutureConverters._
-import scala.compat.java8.OptionConverters._
+import scala.jdk.FutureConverters._
+import scala.jdk.OptionConverters._
 import scala.util.Try
 import org.reactivestreams.Publisher
 import org.reactivestreams.Subscriber
@@ -55,7 +55,7 @@ object Sink {
   def foldAsync[U, In](
       zero: U,
       f: function.Function2[U, In, CompletionStage[U]]): javadsl.Sink[In, CompletionStage[U]] =
-    new Sink(scaladsl.Sink.foldAsync[U, In](zero)(f(_, _).toScala).toCompletionStage())
+    new Sink(scaladsl.Sink.foldAsync[U, In](zero)(f(_, _).asScala).toCompletionStage())
 
   /**
    * Creates a sink which materializes into a ``CompletionStage`` which will be completed with a result of the Java ``Collector``
@@ -139,7 +139,7 @@ object Sink {
       f: function.Function[T, CompletionStage[Void]]): Sink[T, CompletionStage[Done]] =
     new Sink(
       scaladsl.Sink
-        .foreachAsync(parallelism)((x: T) => f(x).toScala.map(_ => ())(ExecutionContexts.parasitic))
+        .foreachAsync(parallelism)((x: T) => f(x).asScala.map(_ => ())(ExecutionContexts.parasitic))
         .toCompletionStage())
 
   /**
@@ -168,7 +168,7 @@ object Sink {
    * See also [[head]].
    */
   def headOption[In](): Sink[In, CompletionStage[Optional[In]]] =
-    new Sink(scaladsl.Sink.headOption[In].mapMaterializedValue(_.map(_.asJava)(ExecutionContexts.parasitic).toJava))
+    new Sink(scaladsl.Sink.headOption[In].mapMaterializedValue(_.map(_.toJava)(ExecutionContexts.parasitic).asJava))
 
   /**
    * A `Sink` that materializes into a `CompletionStage` of the last value received.
@@ -188,7 +188,7 @@ object Sink {
    * See also [[head]], [[takeLast]].
    */
   def lastOption[In](): Sink[In, CompletionStage[Optional[In]]] =
-    new Sink(scaladsl.Sink.lastOption[In].mapMaterializedValue(_.map(_.asJava)(ExecutionContexts.parasitic).toJava))
+    new Sink(scaladsl.Sink.lastOption[In].mapMaterializedValue(_.map(_.toJava)(ExecutionContexts.parasitic).asJava))
 
   /**
    * A `Sink` that materializes into a a `CompletionStage` of `List<In>` containing the last `n` collected elements.
@@ -202,7 +202,7 @@ object Sink {
     new Sink(
       scaladsl.Sink
         .takeLast[In](n)
-        .mapMaterializedValue(fut => fut.map(sq => sq.asJava)(ExecutionContexts.parasitic).toJava))
+        .mapMaterializedValue(fut => fut.map(sq => sq.asJava)(ExecutionContexts.parasitic).asJava))
   }
 
   /**
@@ -218,7 +218,7 @@ object Sink {
   def seq[In]: Sink[In, CompletionStage[java.util.List[In]]] = {
     import akka.util.ccompat.JavaConverters._
     new Sink(
-      scaladsl.Sink.seq[In].mapMaterializedValue(fut => fut.map(sq => sq.asJava)(ExecutionContexts.parasitic).toJava))
+      scaladsl.Sink.seq[In].mapMaterializedValue(fut => fut.map(sq => sq.asJava)(ExecutionContexts.parasitic).asJava))
   }
 
   /**
@@ -327,7 +327,7 @@ object Sink {
    * [[Attributes]] of the [[Sink]] returned by this method.
    */
   def fromMaterializer[T, M](factory: BiFunction[Materializer, Attributes, Sink[T, M]]): Sink[T, CompletionStage[M]] =
-    scaladsl.Sink.fromMaterializer((mat, attr) => factory(mat, attr).asScala).mapMaterializedValue(_.toJava).asJava
+    scaladsl.Sink.fromMaterializer((mat, attr) => factory(mat, attr).asScala).mapMaterializedValue(_.asJava).asJava
 
   /**
    * Defers the creation of a [[Sink]] until materialization. The `factory` function
@@ -336,7 +336,7 @@ object Sink {
    */
   @deprecated("Use 'fromMaterializer' instead", "2.6.0")
   def setup[T, M](factory: BiFunction[ActorMaterializer, Attributes, Sink[T, M]]): Sink[T, CompletionStage[M]] =
-    scaladsl.Sink.setup((mat, attr) => factory(mat, attr).asScala).mapMaterializedValue(_.toJava).asJava
+    scaladsl.Sink.setup((mat, attr) => factory(mat, attr).asScala).mapMaterializedValue(_.asJava).asJava
 
   /**
    * Combine several sinks with fan-out strategy like `Broadcast` or `Balance` and returns `Sink`.
@@ -439,9 +439,9 @@ object Sink {
     new Sink(
       scaladsl.Sink
         .lazyInit[T, M](
-          t => sinkFactory.apply(t).toScala.map(_.asScala)(ExecutionContexts.parasitic),
+          t => sinkFactory.apply(t).asScala.map(_.asScala)(ExecutionContexts.parasitic),
           () => fallback.create())
-        .mapMaterializedValue(_.toJava))
+        .mapMaterializedValue(_.asJava))
 
   /**
    * Creates a real `Sink` upon receiving the first element. Internal `Sink` will not be created if there are no elements,
@@ -456,9 +456,9 @@ object Sink {
   def lazyInitAsync[T, M](
       sinkFactory: function.Creator[CompletionStage[Sink[T, M]]]): Sink[T, CompletionStage[Optional[M]]] = {
     val sSink = scaladsl.Sink
-      .lazyInitAsync[T, M](() => sinkFactory.create().toScala.map(_.asScala)(ExecutionContexts.parasitic))
+      .lazyInitAsync[T, M](() => sinkFactory.create().asScala.map(_.asScala)(ExecutionContexts.parasitic))
       .mapMaterializedValue(fut =>
-        fut.map(_.fold(Optional.empty[M]())(m => Optional.ofNullable(m)))(ExecutionContexts.parasitic).toJava)
+        fut.map(_.fold(Optional.empty[M]())(m => Optional.ofNullable(m)))(ExecutionContexts.parasitic).asJava)
     new Sink(sSink)
   }
 
@@ -495,8 +495,8 @@ object Sink {
    */
   def lazyCompletionStageSink[T, M](create: Creator[CompletionStage[Sink[T, M]]]): Sink[T, CompletionStage[M]] =
     new Sink(scaladsl.Sink.lazyFutureSink { () =>
-      create.create().toScala.map(_.asScala)((ExecutionContexts.parasitic))
-    }).mapMaterializedValue(_.toJava)
+      create.create().asScala.map(_.asScala)((ExecutionContexts.parasitic))
+    }).mapMaterializedValue(_.asJava)
 }
 
 /**

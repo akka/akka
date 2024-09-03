@@ -63,8 +63,8 @@ final class EventEnvelope(
    * Java API
    */
   def getEventMetaData(): Optional[Any] = {
-    import scala.compat.java8.OptionConverters._
-    eventMetadata.asJava
+    import scala.jdk.OptionConverters._
+    eventMetadata.toJava
   }
 
   override def hashCode(): Int = {

@@ -8,8 +8,8 @@ import java.util.Optional
 import java.util.concurrent.CompletionStage
 import java.util.function.Consumer
 
-import scala.compat.java8.FutureConverters._
-import scala.compat.java8.OptionConverters._
+import scala.jdk.FutureConverters._
+import scala.jdk.OptionConverters._
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 
@@ -24,13 +24,13 @@ import akka.coordination.lease.scaladsl.{ Lease => ScalaLease }
 @InternalApi
 final private[akka] class LeaseAdapter(delegate: ScalaLease)(implicit val ec: ExecutionContext) extends JavaLease {
 
-  override def acquire(): CompletionStage[java.lang.Boolean] = delegate.acquire().map(Boolean.box).toJava
+  override def acquire(): CompletionStage[java.lang.Boolean] = delegate.acquire().map(Boolean.box).asJava
 
   override def acquire(leaseLostCallback: Consumer[Optional[Throwable]]): CompletionStage[java.lang.Boolean] = {
-    delegate.acquire(o => leaseLostCallback.accept(o.asJava)).map(Boolean.box).toJava
+    delegate.acquire(o => leaseLostCallback.accept(o.toJava)).map(Boolean.box).asJava
   }
 
-  override def release(): CompletionStage[java.lang.Boolean] = delegate.release().map(Boolean.box).toJava
+  override def release(): CompletionStage[java.lang.Boolean] = delegate.release().map(Boolean.box).asJava
   override def checkLease(): Boolean = delegate.checkLease()
   override def getSettings(): LeaseSettings = delegate.settings
 }
@@ -43,13 +43,13 @@ final private[akka] class LeaseAdapterToScala(val delegate: JavaLease)(implicit 
     extends ScalaLease(delegate.getSettings()) {
 
   override def acquire(): Future[Boolean] =
-    delegate.acquire().toScala.map(Boolean.unbox)
+    delegate.acquire().asScala.map(Boolean.unbox)
 
   override def acquire(leaseLostCallback: Option[Throwable] => Unit): Future[Boolean] =
-    delegate.acquire(o => leaseLostCallback(o.asScala)).toScala.map(Boolean.unbox)
+    delegate.acquire(o => leaseLostCallback(o.toScala)).asScala.map(Boolean.unbox)
 
   override def release(): Future[Boolean] =
-    delegate.release().toScala.map(Boolean.unbox)
+    delegate.release().asScala.map(Boolean.unbox)
 
   override def checkLease(): Boolean =
     delegate.checkLease()

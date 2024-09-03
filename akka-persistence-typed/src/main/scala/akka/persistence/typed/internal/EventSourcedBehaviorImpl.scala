@@ -413,7 +413,7 @@ private[akka] final case class PublishedEventImpl(
     replyTo: Option[ActorRef[Done]])
     extends PublishedEvent
     with InternalProtocol {
-  import scala.compat.java8.OptionConverters._
+  import scala.jdk.OptionConverters._
 
   def tags: Set[String] = payload match {
     case t: Tagged => t.tags
@@ -432,5 +432,5 @@ private[akka] final case class PublishedEventImpl(
 
   def lossyTransport: Boolean = replyTo.isEmpty
 
-  override def getReplicatedMetaData: Optional[ReplicatedPublishedEventMetaData] = replicatedMetaData.asJava
+  override def getReplicatedMetaData: Optional[ReplicatedPublishedEventMetaData] = replicatedMetaData.toJava
 }

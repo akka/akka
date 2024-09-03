@@ -8,7 +8,7 @@ package javadsl
 import java.time.Duration
 import java.util.concurrent.CompletionStage
 
-import scala.compat.java8.FutureConverters._
+import scala.jdk.FutureConverters._
 
 import akka.actor.typed.Scheduler
 import akka.actor.typed.scaladsl.AskPattern._
@@ -41,7 +41,7 @@ object AskPattern {
       messageFactory: JFunction[ActorRef[Res], Req],
       timeout: Duration,
       scheduler: Scheduler): CompletionStage[Res] =
-    (actor.ask(messageFactory.apply)(timeout.asScala, scheduler)).toJava
+    (actor.ask(messageFactory.apply)(timeout.asScala, scheduler)).asJava
 
   /**
    * The same as [[ask]] but only for requests that result in a response of type [[akka.pattern.StatusReply]].
@@ -54,6 +54,6 @@ object AskPattern {
       messageFactory: JFunction[ActorRef[StatusReply[Res]], Req],
       timeout: Duration,
       scheduler: Scheduler): CompletionStage[Res] =
-    (actor.askWithStatus(messageFactory.apply)(timeout.asScala, scheduler).toJava)
+    (actor.askWithStatus(messageFactory.apply)(timeout.asScala, scheduler).asJava)
 
 }

@@ -523,10 +523,6 @@ Scala has proven the most viable way to do it, as long as you keep the following
 1. If the underlying Scala code requires an `ExecutionContext`, make the Java API take an `Executor` and use
    `ExecutionContext.fromExecutor(executor)` for conversion.
 
-1. Make use of `scala-java8-compat` conversions, see [GitHub](https://github.com/scala/scala-java8-compat)
-   (eg. `scala.compat.java8.FutureConverters` to translate Futures to `CompletionStage`s).
-   Note that we cannot upgrade to a newer version scala-java8-compat because of binary compatibility issues.
-
 1. Make sure there are Java tests or sample code touching all parts of the API
 
 1. Do not use lower type bounds: `trait[T] { def method[U >: Something]: U }` as they do not work with Java

@@ -18,8 +18,8 @@ import java.util.function.BiFunction;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.scalatestplus.junit.JUnitSuite;
-import scala.compat.java8.FutureConverters;
 import scala.concurrent.Await;
+import scala.jdk.javaapi.FutureConverters;
 
 public class CircuitBreakerTest extends JUnitSuite {
 
@@ -43,7 +43,7 @@ public class CircuitBreakerTest extends JUnitSuite {
     assertEquals(
         "hello",
         Await.result(
-            FutureConverters.toScala(res), JavaDurationConverters.asFiniteDuration(fiveSeconds)));
+            FutureConverters.asScala(res), JavaDurationConverters.asFiniteDuration(fiveSeconds)));
   }
 
   @Test
@@ -63,7 +63,7 @@ public class CircuitBreakerTest extends JUnitSuite {
     assertEquals(
         "hello",
         Await.result(
-            FutureConverters.toScala(res), JavaDurationConverters.asFiniteDuration(fiveSeconds)));
+            FutureConverters.asScala(res), JavaDurationConverters.asFiniteDuration(fiveSeconds)));
     assertEquals(1, breaker.currentFailureCount());
   }
 }

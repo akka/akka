@@ -141,8 +141,8 @@ object SetAppVersionLater {
    * then wait for the `appVersion` to be completed.
    */
   def create(appVersion: CompletionStage[Version]): SetAppVersionLater = {
-    import scala.compat.java8.FutureConverters._
-    SetAppVersionLater(appVersion.toScala)
+    import scala.jdk.FutureConverters._
+    SetAppVersionLater(appVersion.asScala)
   }
 }
 

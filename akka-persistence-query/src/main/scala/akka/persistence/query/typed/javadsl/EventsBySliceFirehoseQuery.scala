@@ -9,8 +9,8 @@ import java.util
 import java.util.Optional
 import java.util.concurrent.CompletionStage
 
-import scala.compat.java8.FutureConverters._
-import scala.compat.java8.OptionConverters._
+import scala.jdk.FutureConverters._
+import scala.jdk.OptionConverters._
 
 import akka.NotUsed
 import akka.dispatch.ExecutionContexts
@@ -77,9 +77,9 @@ final class EventsBySliceFirehoseQuery(delegate: scaladsl.EventsBySliceFirehoseQ
   }
 
   override def timestampOf(persistenceId: String, sequenceNr: Long): CompletionStage[Optional[Instant]] =
-    delegate.timestampOf(persistenceId, sequenceNr).map(_.asJava)(ExecutionContexts.parasitic).toJava
+    delegate.timestampOf(persistenceId, sequenceNr).map(_.toJava)(ExecutionContexts.parasitic).asJava
 
   override def loadEnvelope[Event](persistenceId: String, sequenceNr: Long): CompletionStage[EventEnvelope[Event]] =
-    delegate.loadEnvelope[Event](persistenceId, sequenceNr).toJava
+    delegate.loadEnvelope[Event](persistenceId, sequenceNr).asJava
 
 }

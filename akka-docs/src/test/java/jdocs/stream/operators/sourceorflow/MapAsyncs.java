@@ -18,7 +18,7 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import scala.compat.java8.FutureConverters;
+import scala.jdk.javaapi.FutureConverters;
 
 public class MapAsyncs {
 
@@ -239,7 +239,7 @@ public class MapAsyncs {
       return CommonMapAsync.committer()
           .sink(prependTo)
           .asJava()
-          .mapMaterializedValue(scalaFuture -> FutureConverters.toJava(scalaFuture));
+          .mapMaterializedValue(FutureConverters::asJava);
     }
   }
 }

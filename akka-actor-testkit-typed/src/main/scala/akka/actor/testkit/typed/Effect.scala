@@ -6,7 +6,7 @@ package akka.actor.testkit.typed
 
 import java.util.concurrent.TimeoutException
 
-import scala.compat.java8.FunctionConverters._
+import scala.jdk.FunctionConverters._
 import scala.concurrent.duration.FiniteDuration
 import scala.util.{ Failure, Success, Try }
 

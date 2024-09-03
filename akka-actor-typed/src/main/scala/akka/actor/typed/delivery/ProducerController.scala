@@ -7,7 +7,7 @@ package akka.actor.typed.delivery
 import java.time.{ Duration => JavaDuration }
 import java.util.Optional
 
-import scala.compat.java8.OptionConverters._
+import scala.jdk.OptionConverters._
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
 
@@ -284,7 +284,7 @@ object ProducerController {
       messageClass: Class[A],
       producerId: String,
       durableQueueBehavior: Optional[Behavior[DurableProducerQueue.Command[A]]]): Behavior[Command[A]] = {
-    apply(producerId, durableQueueBehavior.asScala)(ClassTag(messageClass))
+    apply(producerId, durableQueueBehavior.toScala)(ClassTag(messageClass))
   }
 
   /**
@@ -295,7 +295,7 @@ object ProducerController {
       producerId: String,
       durableQueueBehavior: Optional[Behavior[DurableProducerQueue.Command[A]]],
       settings: Settings): Behavior[Command[A]] = {
-    apply(producerId, durableQueueBehavior.asScala, settings)(ClassTag(messageClass))
+    apply(producerId, durableQueueBehavior.toScala, settings)(ClassTag(messageClass))
   }
 
 }

@@ -47,8 +47,8 @@ final case class PersistFailed[Command, Event](failure: Throwable, command: Opti
    * Java API: the command that persisted the event, may be undefined if it is a replicated event
    */
   def getCommand(): Optional[Command] = {
-    import scala.compat.java8.OptionConverters._
-    command.asJava
+    import scala.jdk.OptionConverters._
+    command.toJava
   }
 
   override def toString: String =
@@ -71,8 +71,8 @@ final case class PersistRejected[Command, Event](failure: Throwable, command: Op
    * Java API: the command that persisted the event, may be undefined if it is a replicated event
    */
   def getCommand(): Optional[Command] = {
-    import scala.compat.java8.OptionConverters._
-    command.asJava
+    import scala.jdk.OptionConverters._
+    command.toJava
   }
 
   override def toString: String =

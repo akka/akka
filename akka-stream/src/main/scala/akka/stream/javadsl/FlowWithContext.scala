@@ -8,7 +8,7 @@ import java.util.concurrent.CompletionStage
 import java.util.function.BiFunction
 
 import scala.annotation.unchecked.uncheckedVariance
-import scala.compat.java8.FutureConverters._
+import scala.jdk.FutureConverters._
 
 import akka.annotation.ApiMayChange
 import akka.event.{ LogMarker, LoggingAdapter, MarkerLoggingAdapter }
@@ -175,7 +175,7 @@ final class FlowWithContext[In, CtxIn, Out, CtxOut, +Mat](
   def mapAsync[Out2](
       parallelism: Int,
       f: function.Function[Out, CompletionStage[Out2]]): FlowWithContext[In, CtxIn, Out2, CtxOut, Mat] =
-    viaScala(_.mapAsync[Out2](parallelism)(o => f.apply(o).toScala))
+    viaScala(_.mapAsync[Out2](parallelism)(o => f.apply(o).asScala))
 
   /**
    * Context-preserving variant of [[akka.stream.javadsl.Flow.mapAsyncPartitioned]]
@@ -188,7 +188,7 @@ final class FlowWithContext[In, CtxIn, Out, CtxOut, +Mat](
       partitioner: function.Function[Out, P],
       f: BiFunction[Out, P, CompletionStage[Out2]]): FlowWithContext[In, CtxIn, Out2, CtxOut, Mat] =
     viaScala(_.mapAsyncPartitioned[Out2, P](parallelism, perPartition)(x => partitioner(x)) { (x, p) =>
-      f(x, p).toScala
+      f(x, p).asScala
     })
 
   /**
