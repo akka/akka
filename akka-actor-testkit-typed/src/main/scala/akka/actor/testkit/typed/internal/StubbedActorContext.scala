@@ -245,23 +245,12 @@ private[akka] final class FunctionRef[-T](override val path: ActorPath, send: (T
       .toList
   }
 
-  /**
-   * SL4FJ changed the API in SubstituteLoggingEvent from getMarker in 1.7 to getMarkers in 2.0.
-   * Using reflection to be able to support both.
-   */
   private def marker(evt: SubstituteLoggingEvent): Option[Marker] = {
-    try {
-      val slf4j1Method = evt.getClass.getMethod("getMarker")
-      Option(slf4j1Method.invoke(evt).asInstanceOf[Marker])
-    } catch {
-      case _: NoSuchMethodException =>
-        val slf4j2Method = evt.getClass.getMethod("getMarkers")
-        val markers = slf4j2Method.invoke(evt).asInstanceOf[java.util.List[Marker]]
-        if ((markers eq null) || markers.isEmpty)
-          None
-        else
-          Option(markers.get(0))
-    }
+    val markers = evt.getMarkers
+    if ((markers eq null) || markers.isEmpty)
+      None
+    else
+      Option(markers.get(0))
   }
 
   /**
