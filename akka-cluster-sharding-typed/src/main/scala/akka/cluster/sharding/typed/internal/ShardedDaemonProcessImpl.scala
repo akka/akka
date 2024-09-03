@@ -7,7 +7,7 @@ package akka.cluster.sharding.typed.internal
 import java.util.Optional
 import java.util.function.IntFunction
 
-import scala.compat.java8.OptionConverters._
+import scala.jdk.OptionConverters._
 import scala.reflect.ClassTag
 
 import akka.actor.typed.ActorRef
@@ -228,7 +228,7 @@ private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
       behaviorFactory: IntFunction[Behavior[T]],
       settings: ShardedDaemonProcessSettings,
       stopMessage: Optional[T]): Unit =
-    init(name, numberOfInstances, n => behaviorFactory(n), settings, stopMessage.asScala, None)(ClassTag(messageClass))
+    init(name, numberOfInstances, n => behaviorFactory(n), settings, stopMessage.toScala, None)(ClassTag(messageClass))
 
   override def init[T](
       messageClass: Class[T],
@@ -243,8 +243,8 @@ private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
       numberOfInstances,
       n => behaviorFactory(n),
       settings,
-      stopMessage.asScala,
-      shardAllocationStrategy.asScala)(ClassTag(messageClass))
+      stopMessage.toScala,
+      shardAllocationStrategy.toScala)(ClassTag(messageClass))
 
   override def initWithContext[T](
       messageClass: Class[T],
@@ -293,8 +293,8 @@ private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
       initialNumberOfInstances,
       behaviorFactory.apply,
       Some(settings),
-      stopMessage.asScala,
-      shardAllocationStrategy.asScala,
+      stopMessage.toScala,
+      shardAllocationStrategy.toScala,
       supportsRescale = true)(classTag)
   }
 }

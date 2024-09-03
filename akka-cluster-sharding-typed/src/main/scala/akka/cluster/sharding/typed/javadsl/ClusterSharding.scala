@@ -10,7 +10,7 @@ import java.util.Optional
 import java.util.concurrent.CompletionStage
 
 import scala.annotation.nowarn
-import scala.compat.java8.OptionConverters._
+import scala.jdk.OptionConverters._
 
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
@@ -358,13 +358,13 @@ final class Entity[M, E] private (
     new akka.cluster.sharding.typed.scaladsl.Entity(
       eCtx => createBehavior(eCtx.toJava),
       typeKey.asScala,
-      stopMessage.asScala,
+      stopMessage.toScala,
       entityProps,
-      settings.asScala,
-      messageExtractor.asScala,
-      allocationStrategy.asScala,
-      role.asScala,
-      dataCenter.asScala)
+      settings.toScala,
+      messageExtractor.toScala,
+      allocationStrategy.toScala,
+      role.toScala,
+      dataCenter.toScala)
 
 }
 

@@ -10,7 +10,7 @@ import java.util.concurrent.atomic.{ AtomicBoolean, AtomicInteger, AtomicLong }
 import java.util.function.BiFunction
 import java.util.function.Consumer
 import scala.annotation.nowarn
-import scala.compat.java8.FutureConverters
+import scala.jdk.FutureConverters._
 import scala.concurrent.{ Await, ExecutionContext, Future, Promise }
 import scala.concurrent.TimeoutException
 import scala.concurrent.duration._
@@ -358,9 +358,9 @@ class CircuitBreaker(
    *   `scala.concurrent.TimeoutException` if the call timed out
    */
   def callWithCircuitBreakerCS[T](body: Callable[CompletionStage[T]]): CompletionStage[T] =
-    FutureConverters.toJava[T](callWithCircuitBreaker(new Callable[Future[T]] {
-      override def call(): Future[T] = FutureConverters.toScala(body.call())
-    }))
+    callWithCircuitBreaker(new Callable[Future[T]] {
+      override def call(): Future[T] = body.call().asScala
+    }).asJava
 
   /**
    * Java API (8) for [[#withCircuitBreaker]].
@@ -373,9 +373,9 @@ class CircuitBreaker(
   def callWithCircuitBreakerCS[T](
       body: Callable[CompletionStage[T]],
       defineFailureFn: BiFunction[Optional[T], Optional[Throwable], java.lang.Boolean]): CompletionStage[T] =
-    FutureConverters.toJava[T](callWithCircuitBreaker(new Callable[Future[T]] {
-      override def call(): Future[T] = FutureConverters.toScala(body.call())
-    }, defineFailureFn))
+    callWithCircuitBreaker(new Callable[Future[T]] {
+      override def call(): Future[T] = body.call().asScala
+    }, defineFailureFn).asJava
 
   /**
    * Wraps invocations of synchronous calls that need to be protected.

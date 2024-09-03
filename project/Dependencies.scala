@@ -12,10 +12,6 @@ import scala.language.implicitConversions
 object Dependencies {
   import DependencyHelpers._
 
-  // java8-compat is only used in a couple of places for 2.13,
-  // it is probably possible to remove the dependency if needed.
-  val java8CompatVersion = "1.0.2"
-
   val junitVersion = "4.13.2"
   val slf4jVersion = "2.0.16"
   // check agrona version when updating this
@@ -72,9 +68,6 @@ object Dependencies {
     val lmdb = "org.lmdbjava" % "lmdbjava" % "0.8.3" // ApacheV2, OpenLDAP Public License
 
     val junit = "junit" % "junit" % junitVersion // Common Public License 1.0
-
-    // For Java 8 Conversions
-    val java8Compat = "org.scala-lang.modules" %% "scala-java8-compat" % java8CompatVersion // Scala License
 
     val aeronDriver = "io.aeron" % "aeron-driver" % aeronVersion // ApacheV2
     val aeronClient = "io.aeron" % "aeron-client" % aeronVersion // ApacheV2
@@ -180,7 +173,7 @@ object Dependencies {
   // TODO check if `l ++=` everywhere expensive?
   val l = libraryDependencies
 
-  val actor = l ++= Seq(config, java8Compat)
+  val actor = l += config
 
   val actorTyped = l ++= Seq(slf4jApi)
 

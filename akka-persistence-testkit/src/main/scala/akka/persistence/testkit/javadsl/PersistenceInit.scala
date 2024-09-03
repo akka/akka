@@ -7,7 +7,7 @@ package akka.persistence.testkit.javadsl
 import java.time.Duration
 import java.util.concurrent.CompletionStage
 
-import scala.compat.java8.FutureConverters._
+import scala.jdk.FutureConverters._
 
 import akka.Done
 import akka.actor.ClassicActorSystemProvider
@@ -40,6 +40,6 @@ object PersistenceInit {
       journalPluginId: String,
       snapshotPluginId: String,
       timeout: Duration): CompletionStage[Done] =
-    scaladsl.PersistenceInit.initializePlugins(system, journalPluginId, snapshotPluginId, timeout.asScala).toJava
+    scaladsl.PersistenceInit.initializePlugins(system, journalPluginId, snapshotPluginId, timeout.asScala).asJava
 
 }

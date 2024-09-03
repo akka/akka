@@ -10,7 +10,7 @@ import scala.annotation.nowarn
 import scala.annotation.tailrec
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.immutable
-import scala.compat.java8.FutureConverters._
+import scala.jdk.FutureConverters._
 import scala.concurrent.{ Future, Promise }
 import scala.concurrent.duration.FiniteDuration
 
@@ -373,7 +373,7 @@ object Source {
    */
   @deprecated("Use 'Source.completionStage' instead", "2.6.0")
   def fromCompletionStage[T](future: CompletionStage[T]): Source[T, NotUsed] =
-    fromGraph(new FutureSource(future.toScala))
+    fromGraph(new FutureSource(future.asScala))
 
   /**
    * Streams the elements of the given future source once it successfully completes.
@@ -393,7 +393,7 @@ object Source {
   @deprecated("Use scala-compat CompletionStage to future converter and 'Source.futureSource' instead", "2.6.0")
   def fromSourceCompletionStage[T, M](
       completion: CompletionStage[_ <: Graph[SourceShape[T], M]]): Source[T, CompletionStage[M]] =
-    fromFutureSource(completion.toScala).mapMaterializedValue(_.toJava)
+    fromFutureSource(completion.asScala).mapMaterializedValue(_.asJava)
 
   /**
    * Elements are emitted periodically with the specified interval.
@@ -521,7 +521,7 @@ object Source {
    * Here for Java interoperability, the normal use from Scala should be [[Source.future]]
    */
   def completionStage[T](completionStage: CompletionStage[T]): Source[T, NotUsed] =
-    future(completionStage.toScala)
+    future(completionStage.asScala)
 
   /**
    * Turn a `Future[Source]` into a source that will emit the values of the source when the future completes successfully.

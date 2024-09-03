@@ -114,8 +114,8 @@ import akka.util.ccompat.JavaConverters._
    * This can for example be used for retrieval of external information before validating the command.
    */
   def async(effect: CompletionStage[Effect[Event, State]]): Effect[Event, State] = {
-    import scala.compat.java8.FutureConverters._
-    AsyncEffect[Event, State](effect.toScala.map(_.asInstanceOf[EffectImpl[Event, State]])(ExecutionContexts.parasitic))
+    import scala.jdk.FutureConverters._
+    AsyncEffect[Event, State](effect.asScala.map(_.asInstanceOf[EffectImpl[Event, State]])(ExecutionContexts.parasitic))
   }
 
   /**
@@ -123,8 +123,8 @@ import akka.util.ccompat.JavaConverters._
    * [[EventSourcedBehaviorWithEnforcedReplies]].
    */
   def asyncReply(effect: CompletionStage[ReplyEffect[Event, State]]): ReplyEffect[Event, State] = {
-    import scala.compat.java8.FutureConverters._
-    AsyncEffect[Event, State](effect.toScala.map(_.asInstanceOf[EffectImpl[Event, State]])(ExecutionContexts.parasitic))
+    import scala.jdk.FutureConverters._
+    AsyncEffect[Event, State](effect.asScala.map(_.asInstanceOf[EffectImpl[Event, State]])(ExecutionContexts.parasitic))
   }
 }
 

@@ -10,8 +10,8 @@ import java.util.concurrent.CompletionStage
 import java.util.concurrent.TimeUnit
 
 import scala.collection.immutable
-import scala.compat.java8.FutureConverters._
-import scala.compat.java8.OptionConverters._
+import scala.jdk.FutureConverters._
+import scala.jdk.OptionConverters._
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 
@@ -100,13 +100,13 @@ object ServiceDiscovery {
      * Java API
      */
     def getPort: Optional[Int] =
-      port.asJava
+      port.toJava
 
     /**
      * Java API
      */
     def getAddress: Optional[InetAddress] =
-      address.asJava
+      address.toJava
 
     override def toString: String = s"ResolvedTarget($host,$port,$address)"
 
@@ -172,13 +172,13 @@ final class Lookup(
    * Java API
    */
   def getPortName: Optional[String] =
-    portName.asJava
+    portName.toJava
 
   /**
    * Java API
    */
   def getProtocol: Optional[String] =
-    protocol.asJava
+    protocol.toJava
 
   private def copy(
       serviceName: String = serviceName,
@@ -338,8 +338,8 @@ abstract class ServiceDiscovery {
    *
    */
   def lookup(query: Lookup, resolveTimeout: java.time.Duration): CompletionStage[Resolved] = {
-    import scala.compat.java8.FutureConverters._
-    lookup(query, FiniteDuration(resolveTimeout.toMillis, TimeUnit.MILLISECONDS)).toJava
+    import scala.jdk.FutureConverters._
+    lookup(query, FiniteDuration(resolveTimeout.toMillis, TimeUnit.MILLISECONDS)).asJava
   }
 
   /**
@@ -353,6 +353,6 @@ abstract class ServiceDiscovery {
    *                                [DiscoveryTimeoutException]
    */
   def lookup(serviceName: String, resolveTimeout: java.time.Duration): CompletionStage[Resolved] =
-    lookup(serviceName, resolveTimeout.asScala).toJava
+    lookup(serviceName, resolveTimeout.asScala).asJava
 
 }

@@ -11,7 +11,7 @@ import java.util.regex.Pattern
 import scala.annotation.nowarn
 import scala.annotation.tailrec
 import scala.collection.immutable
-import scala.compat.java8.FutureConverters
+import scala.jdk.FutureConverters.FutureOps
 import scala.concurrent.Future
 import scala.concurrent.Promise
 import scala.concurrent.duration._
@@ -99,7 +99,7 @@ abstract class ActorSelection extends Serializable {
    */
   def resolveOne(timeout: java.time.Duration): CompletionStage[ActorRef] = {
     import JavaDurationConverters._
-    FutureConverters.toJava[ActorRef](resolveOne(timeout.asScala))
+    resolveOne(timeout.asScala).asJava
   }
 
   override def toString: String = {
