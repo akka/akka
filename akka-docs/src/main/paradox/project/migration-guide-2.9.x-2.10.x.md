@@ -7,6 +7,12 @@ project.description: Migrating to Akka 2.9.
 
 This is the first release that only supports slf4j 2.0.x and logback 1.5.x.
 
+## Changes to Java Flight Recorder (JFR)
+
+The config `akka.java-flight-recorder.enabled` was removed. Instead, the JFR interactions are recorded directly.
+
+Please use the jvm native flags to take advantage of the JFR recorded events.
+
 ## Remove dependency to scala-java8-compat
 
 The transitive dependency on `scala-java8-compat` has been removed.
