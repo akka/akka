@@ -6,3 +6,7 @@ project.description: Migrating to Akka 2.9.
 ## Support for slf4j 1.7.x and logback 1.2.x removed
 
 This is the first release that only supports slf4j 2.0.x and logback 1.5.x.
+
+## Remove dependency to scala-java8-compat
+
+The transitive dependency on `scala-java8-compat` has been removed.
