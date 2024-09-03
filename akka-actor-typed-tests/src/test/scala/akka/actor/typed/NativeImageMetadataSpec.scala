@@ -25,7 +25,7 @@ object NativeImageMetadataSpec {
       fields = Seq(ModuleField)),
     // Flight recording (JFR additionally enabled in akka-actor native-image.properties)
     ReflectConfigEntry(
-      classOf[akka.actor.typed.internal.jfr.JFRActorFlightRecorder].getName,
+      classOf[akka.actor.typed.internal.ActorFlightRecorder.type].getName,
       methods = Seq(ReflectMethod(Constructor))))
 
   val nativeImageUtils = new NativeImageUtils("akka-actor-typed", additionalEntries, Seq("akka.actor.typed"))

@@ -59,8 +59,7 @@ import akka.util.ByteString
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] class TcpFraming(flightRecorder: RemotingFlightRecorder = NoOpRemotingFlightRecorder)
-    extends ByteStringParser[EnvelopeBuffer] {
+@InternalApi private[akka] class TcpFraming extends ByteStringParser[EnvelopeBuffer] {
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new ParsingLogic {
 
@@ -96,7 +95,7 @@ import akka.util.ByteString
       private def createBuffer(bs: ByteString): EnvelopeBuffer = {
         val buffer = ByteBuffer.wrap(bs.toArray)
         buffer.order(ByteOrder.LITTLE_ENDIAN)
-        flightRecorder.tcpInboundReceived(buffer.limit)
+        RemotingFlightRecorder.tcpInboundReceived(buffer.limit)
         val res = new EnvelopeBuffer(buffer)
         res.setStreamId(streamId)
         res
