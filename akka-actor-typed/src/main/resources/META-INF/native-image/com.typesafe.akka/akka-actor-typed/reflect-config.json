@@ -9,7 +9,7 @@
     "name" : "MODULE$"
   } ]
 }, {
-  "name" : "akka.actor.typed.internal.jfr.JFRActorFlightRecorder",
+  "name" : "akka.actor.typed.internal.ActorFlightRecorder$",
   "methods" : [ {
     "name" : "<init>"
   } ]

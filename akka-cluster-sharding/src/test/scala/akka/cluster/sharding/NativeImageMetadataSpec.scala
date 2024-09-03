@@ -21,7 +21,7 @@ object NativeImageMetadataSpec {
       methods = Seq(ReflectMethod(Constructor, parameterTypes = Seq(classOf[ActorSystem].getName)))),
     // Flight recording (JFR additionally enabled in akka-actor native-image.properties)
     ReflectConfigEntry(
-      classOf[akka.cluster.sharding.internal.jfr.JFRShardingFlightRecorder].getName,
+      classOf[akka.cluster.sharding.internal.ShardingFlightRecorder.type].getName,
       methods = Seq(ReflectMethod(Constructor))))
 
   val nativeImageUtils = new NativeImageUtils("akka-cluster-sharding", additionalEntries, Seq("akka.cluster.sharding"))
@@ -39,6 +39,8 @@ class NativeImageMetadataSpec extends AnyWordSpec with Matchers {
 
     "be up to date" in {
       val (existing, current) = nativeImageUtils.verifyMetadata()
+      println(existing == current)
+      println(existing.equals(current))
       existing should ===(current)
     }
   }
