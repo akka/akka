@@ -6,8 +6,9 @@ package akka.cluster.sharding.typed.delivery
 
 import java.util.Optional
 
-import scala.jdk.OptionConverters._
 import scala.concurrent.duration.FiniteDuration
+import scala.jdk.DurationConverters._
+import scala.jdk.OptionConverters._
 import scala.reflect.ClassTag
 
 import com.typesafe.config.Config
@@ -23,7 +24,6 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.ApiMayChange
 import akka.cluster.sharding.typed.ShardingEnvelope
 import akka.cluster.sharding.typed.delivery.internal.ShardingProducerControllerImpl
-import akka.util.JavaDurationConverters._
 
 /**
  * Reliable delivery between a producer actor sending messages to sharded consumer
@@ -175,9 +175,9 @@ object ShardingProducerController {
     def apply(config: Config): Settings = {
       new Settings(
         bufferSize = config.getInt("buffer-size"),
-        config.getDuration("internal-ask-timeout").asScala,
-        config.getDuration("cleanup-unused-after").asScala,
-        config.getDuration("resend-first-unconfirmed-idle-timeout").asScala,
+        config.getDuration("internal-ask-timeout").toScala,
+        config.getDuration("cleanup-unused-after").toScala,
+        config.getDuration("resend-first-unconfirmed-idle-timeout").toScala,
         ProducerController.Settings(config))
     }
 
@@ -217,19 +217,19 @@ object ShardingProducerController {
       copy(internalAskTimeout = newInternalAskTimeout)
 
     def withInternalAskTimeout(newInternalAskTimeout: java.time.Duration): Settings =
-      copy(internalAskTimeout = newInternalAskTimeout.asScala)
+      copy(internalAskTimeout = newInternalAskTimeout.toScala)
 
     def withCleanupUnusedAfter(newCleanupUnusedAfter: FiniteDuration): Settings =
       copy(cleanupUnusedAfter = newCleanupUnusedAfter)
 
     def withCleanupUnusedAfter(newCleanupUnusedAfter: java.time.Duration): Settings =
-      copy(cleanupUnusedAfter = newCleanupUnusedAfter.asScala)
+      copy(cleanupUnusedAfter = newCleanupUnusedAfter.toScala)
 
     def withResendFirstUnconfirmedIdleTimeout(newResendFirstUnconfirmedIdleTimeout: FiniteDuration): Settings =
       copy(resendFirstUnconfirmedIdleTimeout = newResendFirstUnconfirmedIdleTimeout)
 
     def withResendFirstUnconfirmedIdleTimeout(newResendFirstUnconfirmedIdleTimeout: java.time.Duration): Settings =
-      copy(resendFirstUnconfirmedIdleTimeout = newResendFirstUnconfirmedIdleTimeout.asScala)
+      copy(resendFirstUnconfirmedIdleTimeout = newResendFirstUnconfirmedIdleTimeout.toScala)
 
     @deprecated("use resendFirstUnconfirmedIdleTimeout", "2.6.19")
     def withResendFirsUnconfirmedIdleTimeout(newResendFirstUnconfirmedIdleTimeout: FiniteDuration): Settings =
@@ -237,7 +237,7 @@ object ShardingProducerController {
 
     @Deprecated
     def withResendFirsUnconfirmedIdleTimeout(newResendFirstUnconfirmedIdleTimeout: java.time.Duration): Settings =
-      copy(resendFirstUnconfirmedIdleTimeout = newResendFirstUnconfirmedIdleTimeout.asScala)
+      copy(resendFirstUnconfirmedIdleTimeout = newResendFirstUnconfirmedIdleTimeout.toScala)
 
     def withProducerControllerSettings(newProducerControllerSettings: ProducerController.Settings): Settings =
       copy(producerControllerSettings = newProducerControllerSettings)

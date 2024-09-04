@@ -5,9 +5,12 @@
 package akka.persistence.journal.inmem
 
 import scala.collection.immutable
+import scala.concurrent.duration.Duration
 import scala.concurrent.Future
+import scala.jdk.DurationConverters._
 import scala.util.Try
 import scala.util.control.NonFatal
+
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import akka.actor.ActorRef
@@ -22,10 +25,7 @@ import akka.persistence.journal.inmem.InmemJournal.{ MessageWithMeta, ReplayWith
 import akka.serialization.SerializationExtension
 import akka.serialization.Serializers
 import akka.util.OptionVal
-import akka.util.JavaDurationConverters._
 import akka.pattern.after
-
-import scala.concurrent.duration.Duration
 
 /**
  * The InmemJournal publishes writes and deletes to the `eventStream`, which tests may use to
@@ -65,7 +65,7 @@ object InmemJournal {
 
   private val delayWrites = {
     val key = "delay-writes"
-    if (cfg.hasPath(key)) cfg.getDuration(key).asScala
+    if (cfg.hasPath(key)) cfg.getDuration(key).toScala
     else Duration.Zero
   }
   private val testSerialization = {

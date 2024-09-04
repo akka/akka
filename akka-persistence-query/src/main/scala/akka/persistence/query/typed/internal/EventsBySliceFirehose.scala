@@ -12,6 +12,7 @@ import java.util.concurrent.ConcurrentHashMap
 import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.concurrent.duration._
+import scala.jdk.DurationConverters._
 import scala.util.control.NoStackTrace
 
 import com.typesafe.config.Config
@@ -49,7 +50,6 @@ import akka.stream.stage.GraphStageLogic
 import akka.stream.stage.InHandler
 import akka.stream.stage.OutHandler
 import akka.stream.stage.StageLogging
-import akka.util.JavaDurationConverters._
 import akka.util.OptionVal
 import akka.util.unused
 
@@ -99,10 +99,10 @@ import akka.util.unused
       Settings(
         delegateQueryPluginId = delegateQueryPluginId(config),
         broadcastBufferSize = config.getInt("broadcast-buffer-size"),
-        firehoseLingerTimeout = config.getDuration("firehose-linger-timeout").asScala,
+        firehoseLingerTimeout = config.getDuration("firehose-linger-timeout").toScala,
         catchupOverlap = config.getDuration("catchup-overlap"),
         deduplicationCapacity = config.getInt("deduplication-capacity"),
-        slowConsumerReaperInterval = config.getDuration("slow-consumer-reaper-interval").asScala,
+        slowConsumerReaperInterval = config.getDuration("slow-consumer-reaper-interval").toScala,
         slowConsumerLagThreshold = config.getDuration("slow-consumer-lag-threshold"),
         abortSlowConsumerAfter = config.getDuration("abort-slow-consumer-after"),
         verboseLogging = config.getBoolean("verbose-debug-logging"))

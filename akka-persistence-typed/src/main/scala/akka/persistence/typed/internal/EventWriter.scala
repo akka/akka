@@ -9,6 +9,7 @@ import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
 import scala.concurrent.duration.FiniteDuration
+import scala.jdk.DurationConverters._
 import scala.util.Failure
 import scala.util.Success
 
@@ -30,7 +31,6 @@ import akka.persistence.JournalProtocol
 import akka.persistence.Persistence
 import akka.persistence.PersistentRepr
 import akka.persistence.journal.Tagged
-import akka.util.JavaDurationConverters.JavaDurationOps
 import akka.util.Timeout
 
 /**
@@ -76,7 +76,7 @@ private[akka] object EventWriter {
       val config = system.settings.config.getConfig("akka.persistence.typed.event-writer")
       EventWriterSettings(
         maxBatchSize = config.getInt("max-batch-size"),
-        askTimeout = config.getDuration("ask-timeout").asScala,
+        askTimeout = config.getDuration("ask-timeout").toScala,
         latestSequenceNumberCacheCapacity = config.getInt("latest-sequence-number-cache-capacity"))
     }
 

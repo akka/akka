@@ -13,9 +13,10 @@ import java.util.function.Supplier
 import javax.net.ssl.SSLEngine
 import javax.net.ssl.SSLSession
 
+import scala.concurrent.duration._
+import scala.jdk.DurationConverters._
 import scala.jdk.FutureConverters._
 import scala.jdk.OptionConverters._
-import scala.concurrent.duration._
 import scala.util.Failure
 import scala.util.Success
 
@@ -33,7 +34,6 @@ import akka.stream.SystemMaterializer
 import akka.stream.TLSClosing
 import akka.stream.scaladsl
 import akka.util.ByteString
-import akka.util.JavaDurationConverters._
 
 object Tcp extends ExtensionId[Tcp] with ExtensionIdProvider {
 
@@ -413,10 +413,11 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
   }
 
   private def optionalDurationToScala(duration: Optional[java.time.Duration]) = {
-    if (duration.isPresent) duration.get.asScala else Duration.Inf
+    if (duration.isPresent) duration.get.toScala else Duration.Inf
   }
 
   private def durationToJavaOptional(duration: Duration): Optional[java.time.Duration] = {
+    import akka.util.JavaDurationConverters._
     if (duration.isFinite) Optional.ofNullable(duration.asJava) else Optional.empty()
   }
 }

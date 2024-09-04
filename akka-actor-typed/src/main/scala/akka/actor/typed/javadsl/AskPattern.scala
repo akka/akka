@@ -9,12 +9,12 @@ import java.time.Duration
 import java.util.concurrent.CompletionStage
 
 import scala.jdk.FutureConverters._
+import scala.jdk.DurationConverters._
 
 import akka.actor.typed.Scheduler
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.japi.function.{ Function => JFunction }
 import akka.pattern.StatusReply
-import akka.util.JavaDurationConverters._
 
 /**
  * The ask-pattern implements the initiator side of a request–reply protocol.
@@ -41,7 +41,7 @@ object AskPattern {
       messageFactory: JFunction[ActorRef[Res], Req],
       timeout: Duration,
       scheduler: Scheduler): CompletionStage[Res] =
-    (actor.ask(messageFactory.apply)(timeout.asScala, scheduler)).asJava
+    (actor.ask(messageFactory.apply)(timeout.toScala, scheduler)).asJava
 
   /**
    * The same as [[ask]] but only for requests that result in a response of type [[akka.pattern.StatusReply]].
@@ -54,6 +54,6 @@ object AskPattern {
       messageFactory: JFunction[ActorRef[StatusReply[Res]], Req],
       timeout: Duration,
       scheduler: Scheduler): CompletionStage[Res] =
-    (actor.askWithStatus(messageFactory.apply)(timeout.asScala, scheduler).asJava)
+    (actor.askWithStatus(messageFactory.apply)(timeout.toScala, scheduler).asJava)
 
 }

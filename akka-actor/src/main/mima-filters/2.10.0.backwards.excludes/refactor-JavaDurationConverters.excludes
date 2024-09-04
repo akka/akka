@@ -1,0 +1,3 @@
+# #32501 try to remove akka.util.JavaDurationConverters
+ProblemFilters.exclude[MissingClassProblem]("akka.util.JavaDurationConverters$JavaDurationOps")
+ProblemFilters.exclude[MissingClassProblem]("akka.util.JavaDurationConverters$JavaDurationOps$")

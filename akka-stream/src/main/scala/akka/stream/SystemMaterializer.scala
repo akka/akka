@@ -7,6 +7,7 @@ package akka.stream
 import scala.annotation.nowarn
 import scala.concurrent.Await
 import scala.concurrent.Promise
+import scala.jdk.DurationConverters._
 
 import akka.actor.ActorSystem
 import akka.actor.ClassicActorSystemProvider
@@ -19,7 +20,6 @@ import akka.annotation.InternalApi
 import akka.dispatch.Dispatchers
 import akka.pattern.ask
 import akka.stream.impl.MaterializerGuardian
-import akka.util.JavaDurationConverters._
 import akka.util.Timeout
 
 /**
@@ -49,7 +49,7 @@ final class SystemMaterializer(system: ExtendedActorSystem) extends Extension {
   private[akka] val materializerSettings = ActorMaterializerSettings(system)
 
   private implicit val materializerTimeout: Timeout =
-    system.settings.config.getDuration("akka.stream.materializer.creation-timeout").asScala
+    system.settings.config.getDuration("akka.stream.materializer.creation-timeout").toScala
 
   @InternalApi
   private val materializerGuardian = system.systemActorOf(

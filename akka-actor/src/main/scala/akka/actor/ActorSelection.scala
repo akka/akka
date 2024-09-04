@@ -15,12 +15,13 @@ import scala.jdk.FutureConverters.FutureOps
 import scala.concurrent.Future
 import scala.concurrent.Promise
 import scala.concurrent.duration._
+import scala.jdk.DurationConverters._
 import scala.language.implicitConversions
 import scala.util.Success
 import akka.dispatch.ExecutionContexts
 import akka.pattern.ask
 import akka.routing.MurmurHash
-import akka.util.{ Helpers, JavaDurationConverters, Timeout }
+import akka.util.{ Helpers, Timeout }
 import akka.util.ccompat._
 
 /**
@@ -98,8 +99,7 @@ abstract class ActorSelection extends Serializable {
    *
    */
   def resolveOne(timeout: java.time.Duration): CompletionStage[ActorRef] = {
-    import JavaDurationConverters._
-    resolveOne(timeout.asScala).asJava
+    resolveOne(timeout.toScala).asJava
   }
 
   override def toString: String = {

@@ -8,6 +8,7 @@ import java.util.concurrent.CompletionStage
 import java.util.function.BiFunction
 
 import scala.annotation.unchecked.uncheckedVariance
+import scala.jdk.DurationConverters._
 import scala.jdk.FutureConverters._
 
 import akka.actor.ClassicActorSystemProvider
@@ -17,7 +18,6 @@ import akka.japi.Pair
 import akka.japi.function
 import akka.stream._
 import akka.util.ConstantFun
-import akka.util.JavaDurationConverters._
 import akka.util.ccompat.JavaConverters._
 
 object SourceWithContext {
@@ -310,7 +310,7 @@ final class SourceWithContext[Out, Ctx, +Mat](delegate: scaladsl.SourceWithConte
    * @see [[akka.stream.javadsl.Source.throttle]]
    */
   def throttle(elements: Int, per: java.time.Duration): SourceWithContext[Out, Ctx, Mat] =
-    viaScala(_.throttle(elements, per.asScala))
+    viaScala(_.throttle(elements, per.toScala))
 
   /**
    * Context-preserving variant of [[akka.stream.javadsl.Source.throttle]].
@@ -322,7 +322,7 @@ final class SourceWithContext[Out, Ctx, +Mat](delegate: scaladsl.SourceWithConte
       per: java.time.Duration,
       maximumBurst: Int,
       mode: ThrottleMode): SourceWithContext[Out, Ctx, Mat] =
-    viaScala(_.throttle(elements, per.asScala, maximumBurst, mode))
+    viaScala(_.throttle(elements, per.toScala, maximumBurst, mode))
 
   /**
    * Context-preserving variant of [[akka.stream.javadsl.Source.throttle]].
@@ -333,7 +333,7 @@ final class SourceWithContext[Out, Ctx, +Mat](delegate: scaladsl.SourceWithConte
       cost: Int,
       per: java.time.Duration,
       costCalculation: function.Function[Out, Integer]): SourceWithContext[Out, Ctx, Mat] =
-    viaScala(_.throttle(cost, per.asScala, costCalculation.apply))
+    viaScala(_.throttle(cost, per.toScala, costCalculation.apply))
 
   /**
    * Context-preserving variant of [[akka.stream.javadsl.Source.throttle]].
@@ -346,7 +346,7 @@ final class SourceWithContext[Out, Ctx, +Mat](delegate: scaladsl.SourceWithConte
       maximumBurst: Int,
       costCalculation: function.Function[Out, Integer],
       mode: ThrottleMode): SourceWithContext[Out, Ctx, Mat] =
-    viaScala(_.throttle(cost, per.asScala, maximumBurst, costCalculation.apply, mode))
+    viaScala(_.throttle(cost, per.toScala, maximumBurst, costCalculation.apply, mode))
 
   /**
    * Connect this [[akka.stream.javadsl.SourceWithContext]] to a [[akka.stream.javadsl.Sink]],

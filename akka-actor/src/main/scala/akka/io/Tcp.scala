@@ -12,6 +12,7 @@ import java.nio.file.{ Path, Paths }
 import scala.annotation.nowarn
 import scala.collection.immutable
 import scala.concurrent.duration._
+import scala.jdk.DurationConverters._
 
 import com.typesafe.config.Config
 
@@ -20,7 +21,6 @@ import akka.annotation.InternalApi
 import akka.io.Inet._
 import akka.util.{ ByteString, Helpers }
 import akka.util.Helpers.Requiring
-import akka.util.JavaDurationConverters._
 import akka.util.ccompat.JavaConverters._
 
 /**
@@ -732,7 +732,7 @@ object TcpMessage {
       localAddress: InetSocketAddress,
       options: JIterable[SocketOption],
       timeout: java.time.Duration,
-      pullMode: Boolean): Command = connect(remoteAddress, localAddress, options, timeout.asScala, pullMode)
+      pullMode: Boolean): Command = connect(remoteAddress, localAddress, options, timeout.toScala, pullMode)
 
   /**
    * Connect to the given `remoteAddress` without binding to a local address and without

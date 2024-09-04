@@ -8,6 +8,7 @@ import java.time.Duration
 import java.util.function.{ Function => JFunction }
 
 import scala.annotation.nowarn
+import scala.jdk.DurationConverters._
 import scala.util.Failure
 import scala.util.Success
 
@@ -15,7 +16,6 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.javadsl.ActorContext
 import akka.cluster.ddata.Key
 import akka.cluster.ddata.ReplicatedData
-import akka.util.JavaDurationConverters._
 import akka.util.Timeout
 
 /**
@@ -55,7 +55,7 @@ class ReplicatorMessageAdapter[A, B <: ReplicatedData](
     replicator: ActorRef[Replicator.Command],
     unexpectedAskTimeout: Duration) {
 
-  private implicit val askTimeout: Timeout = Timeout(unexpectedAskTimeout.asScala)
+  private implicit val askTimeout: Timeout = Timeout(unexpectedAskTimeout.toScala)
 
   private var changedMessageAdapters: Map[Key[B], ActorRef[Replicator.SubscribeResponse[B]]] = Map.empty
 

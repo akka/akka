@@ -179,8 +179,8 @@ object AbstractActor {
      * than the ordinary actor message processing thread, such as [[java.util.concurrent.CompletionStage]] and [[scala.concurrent.Future]] callbacks.
      */
     def setReceiveTimeout(timeout: java.time.Duration): Unit = {
-      import JavaDurationConverters._
-      setReceiveTimeout(timeout.asScala)
+      import scala.jdk.DurationConverters._
+      setReceiveTimeout(timeout.toScala)
     }
 
     /**

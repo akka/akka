@@ -15,7 +15,7 @@ import language.implicitConversions
 
 import akka.annotation.InternalApi
 import akka.routing.{ Deafen, Listen, Listeners }
-import akka.util.{ unused, JavaDurationConverters }
+import akka.util.unused
 
 object FSM {
 
@@ -284,8 +284,8 @@ object FSM {
      * Use Duration.Inf to deactivate an existing timeout.
      */
     def forMax(timeout: java.time.Duration): State[S, D] = {
-      import JavaDurationConverters._
-      forMax(timeout.asScala)
+      import scala.jdk.DurationConverters._
+      forMax(timeout.toScala)
     }
 
     /**
