@@ -17,6 +17,7 @@ import scala.concurrent.duration._
 import scala.jdk.DurationConverters._
 import scala.jdk.FutureConverters._
 import scala.jdk.OptionConverters._
+import scala.jdk.javaapi.DurationConverters
 import scala.util.Failure
 import scala.util.Success
 
@@ -417,7 +418,9 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
   }
 
   private def durationToJavaOptional(duration: Duration): Optional[java.time.Duration] = {
-    import akka.util.JavaDurationConverters._
-    if (duration.isFinite) Optional.ofNullable(duration.asJava) else Optional.empty()
+    duration match {
+      case f: FiniteDuration => Optional.ofNullable(DurationConverters.toJava(f))
+      case _                 => Optional.empty()
+    }
   }
 }

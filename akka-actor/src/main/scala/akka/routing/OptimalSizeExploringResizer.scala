@@ -125,7 +125,7 @@ case class DefaultOptimalSizeExploringResizer(
     numOfAdjacentSizesToConsiderDuringOptimization: Int = 16,
     exploreStepSize: Double = 0.1,
     downsizeRatio: Double = 0.8,
-    downsizeAfterUnderutilizedFor: Duration = 72.hours,
+    downsizeAfterUnderutilizedFor: FiniteDuration = 72.hours,
     explorationProbability: Double = 0.4,
     weightOfLatestMetric: Double = 0.5)
     extends OptimalSizeExploringResizer {
@@ -256,11 +256,10 @@ case class DefaultOptimalSizeExploringResizer(
   }
 
   def resize(currentRoutees: immutable.IndexedSeq[Routee]): Int = {
-    import akka.util.JavaDurationConverters._
     val currentSize = currentRoutees.length
     val now = LocalDateTime.now
     val proposedChange =
-      if (record.underutilizationStreak.fold(false)(_.start.isBefore(now.minus(downsizeAfterUnderutilizedFor.asJava)))) {
+      if (record.underutilizationStreak.fold(false)(_.start.isBefore(now.minus(downsizeAfterUnderutilizedFor.toJava)))) {
         val downsizeTo = (record.underutilizationStreak.get.highestUtilization * downsizeRatio).toInt
         Math.min(downsizeTo - currentSize, 0)
       } else if (performanceLog.isEmpty || record.underutilizationStreak.isDefined) {

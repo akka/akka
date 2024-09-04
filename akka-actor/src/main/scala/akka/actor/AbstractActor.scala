@@ -4,6 +4,7 @@
 
 package akka.actor
 
+import java.time.{ Duration => JDuration }
 import java.util.Optional
 
 import scala.annotation.nowarn
@@ -13,7 +14,6 @@ import scala.runtime.BoxedUnit
 
 import akka.annotation.DoNotInherit
 import akka.japi.pf.ReceiveBuilder
-import akka.util.JavaDurationConverters
 
 /**
  * Java API: compatible with lambda expressions
@@ -155,8 +155,11 @@ object AbstractActor {
      * than the ordinary actor message processing thread, such as [[java.util.concurrent.CompletionStage]] and [[scala.concurrent.Future]] callbacks.
      */
     def getReceiveTimeout(): java.time.Duration = {
-      import JavaDurationConverters._
-      receiveTimeout.asJava
+      if (!receiveTimeout.isFinite) {
+        JDuration.ZERO
+      } else {
+        JDuration.ofNanos(receiveTimeout.toNanos)
+      }
     }
 
     /**
