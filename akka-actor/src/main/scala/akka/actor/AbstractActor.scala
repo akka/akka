@@ -155,10 +155,10 @@ object AbstractActor {
      * than the ordinary actor message processing thread, such as [[java.util.concurrent.CompletionStage]] and [[scala.concurrent.Future]] callbacks.
      */
     def getReceiveTimeout(): java.time.Duration = {
-      if (!receiveTimeout.isFinite) {
-        JDuration.ZERO
-      } else {
+      if (receiveTimeout.isFinite) {
         JDuration.ofNanos(receiveTimeout.toNanos)
+      } else {
+        JDuration.ZERO
       }
     }
 

@@ -125,7 +125,7 @@ case class DefaultOptimalSizeExploringResizer(
     numOfAdjacentSizesToConsiderDuringOptimization: Int = 16,
     exploreStepSize: Double = 0.1,
     downsizeRatio: Double = 0.8,
-    downsizeAfterUnderutilizedFor: FiniteDuration = 72.hours,
+    downsizeAfterUnderutilizedFor: Duration = 72.hours,
     explorationProbability: Double = 0.4,
     weightOfLatestMetric: Double = 0.5)
     extends OptimalSizeExploringResizer {
@@ -153,6 +153,14 @@ case class DefaultOptimalSizeExploringResizer(
    */
   @InternalApi
   private[routing] var stopExploring = false
+
+  /**
+   * INTERNAL API
+   *
+   * Introduced to avoid changing downsizeAfterUnderutilizedFor to FiniteDuration
+   */
+  @InternalApi
+  private val downsizeAfterUnderutilizedDuration = downsizeAfterUnderutilizedFor.asInstanceOf[FiniteDuration].toJava
 
   private def random = ThreadLocalRandom.current()
 
@@ -259,7 +267,7 @@ case class DefaultOptimalSizeExploringResizer(
     val currentSize = currentRoutees.length
     val now = LocalDateTime.now
     val proposedChange =
-      if (record.underutilizationStreak.fold(false)(_.start.isBefore(now.minus(downsizeAfterUnderutilizedFor.toJava)))) {
+      if (record.underutilizationStreak.fold(false)(_.start.isBefore(now.minus(downsizeAfterUnderutilizedDuration)))) {
         val downsizeTo = (record.underutilizationStreak.get.highestUtilization * downsizeRatio).toInt
         Math.min(downsizeTo - currentSize, 0)
       } else if (performanceLog.isEmpty || record.underutilizationStreak.isDefined) {
