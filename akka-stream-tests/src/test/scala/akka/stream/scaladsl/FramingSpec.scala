@@ -7,6 +7,7 @@ package akka.stream.scaladsl
 import java.nio.ByteOrder
 import java.util.concurrent.ThreadLocalRandom
 
+import scala.annotation.nowarn
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration._
