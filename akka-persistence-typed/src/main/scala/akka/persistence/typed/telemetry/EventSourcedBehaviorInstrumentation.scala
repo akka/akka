@@ -4,7 +4,7 @@
 
 package akka.persistence.typed.telemetry
 
-import akka.util.ccompat.JavaConverters._
+import scala.annotation.nowarn
 import scala.collection.immutable
 
 import akka.actor.typed.ActorRef
@@ -13,8 +13,8 @@ import akka.actor.typed.Extension
 import akka.actor.typed.ExtensionId
 import akka.annotation.InternalStableApi
 import akka.event.Logging
+import akka.util.ccompat.JavaConverters._
 import akka.util.TopologicalSort.topologicalSort
-import akka.util.unused
 
 /**
  * INTERNAL API
@@ -150,7 +150,7 @@ object EmptyEventSourcedBehaviorInstrumentation extends EmptyEventSourcedBehavio
 class EmptyEventSourcedBehaviorInstrumentation extends EventSourcedBehaviorInstrumentation {
   import EventSourcedBehaviorInstrumentation.{ Context, EmptyContext }
 
-  def this(@unused system: ActorSystem[_]) = this()
+  def this(@nowarn("msg=never used") system: ActorSystem[_]) = this()
 
   override def actorInitialized(actorRef: ActorRef[_]): Unit = ()
 

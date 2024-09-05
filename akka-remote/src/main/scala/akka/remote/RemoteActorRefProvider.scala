@@ -36,7 +36,6 @@ import akka.remote.serialization.ActorRefResolveThreadLocalCache
 import akka.serialization.Serialization
 import akka.util.ErrorMessages
 import akka.util.OptionVal
-import akka.util.unused
 
 /**
  * INTERNAL API
@@ -344,7 +343,9 @@ private[akka] class RemoteActorRefProvider(
     warnOnUnsafe(s"Remote deploy of [$path] is not allowed, falling back to local.")
 
   /** Override to add any additional checks if using `RemoteActorRefProvider` as a superclass. */
-  protected def shouldCreateRemoteActorRef(@unused system: ActorSystem, @unused address: Address): Boolean = true
+  protected def shouldCreateRemoteActorRef(
+      @nowarn("msg=never used") system: ActorSystem,
+      @nowarn("msg=never used") address: Address): Boolean = true
 
   def actorOf(
       system: ActorSystemImpl,

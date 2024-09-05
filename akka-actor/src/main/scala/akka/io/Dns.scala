@@ -22,7 +22,6 @@ import akka.io.dns.ARecord
 import akka.io.dns.DnsProtocol
 import akka.routing.ConsistentHashingRouter.ConsistentHashable
 import akka.util.ccompat._
-import akka.util.unused
 
 /**
  * Not for user extension.
@@ -38,7 +37,7 @@ abstract class Dns {
    * the akka.actor.io.dns.resolver that is configured.
    */
   @deprecated("Use cached(DnsProtocol.Resolve)", "2.6.0")
-  def cached(@unused name: String): Option[Dns.Resolved] = None
+  def cached(@nowarn("msg=never used") name: String): Option[Dns.Resolved] = None
 
   /**
    * If an entry is cached return it immediately. If it is not then
@@ -53,7 +52,7 @@ abstract class Dns {
     ret
   }
 
-  def cached(@unused request: DnsProtocol.Resolve): Option[DnsProtocol.Resolved] = None
+  def cached(@nowarn("msg=never used") request: DnsProtocol.Resolve): Option[DnsProtocol.Resolved] = None
 
   def resolve(request: DnsProtocol.Resolve, system: ActorSystem, sender: ActorRef): Option[DnsProtocol.Resolved] = {
     val ret = cached(request)

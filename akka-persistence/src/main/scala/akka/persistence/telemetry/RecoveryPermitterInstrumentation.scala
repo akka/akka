@@ -4,6 +4,8 @@
 
 package akka.persistence.telemetry
 
+import scala.annotation.nowarn
+
 import scala.collection.immutable
 
 import akka.actor.ActorRef
@@ -17,7 +19,6 @@ import akka.annotation.InternalStableApi
 import akka.event.Logging
 import akka.util.TopologicalSort.topologicalSort
 import akka.util.ccompat.JavaConverters._
-import akka.util.unused
 
 /**
  * INTERNAL API: Instrumentation SPI for PersistentActor.
@@ -58,7 +59,7 @@ object EmptyRecoveryPermitterInstrumentation extends EmptyRecoveryPermitterInstr
 @InternalStableApi
 class EmptyRecoveryPermitterInstrumentation extends RecoveryPermitterInstrumentation {
 
-  def this(@unused system: ActorSystem) = this()
+  def this(@nowarn("msg=never used") system: ActorSystem) = this()
 
   override def recoveryPermitterStatus(
       recoveryPermitter: ActorRef,

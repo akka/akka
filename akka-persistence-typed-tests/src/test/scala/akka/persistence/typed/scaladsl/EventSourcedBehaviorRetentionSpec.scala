@@ -6,6 +6,7 @@ package akka.persistence.typed.scaladsl
 
 import java.util.concurrent.atomic.AtomicInteger
 
+import scala.annotation.nowarn
 import scala.concurrent.duration._
 import scala.util.Success
 import scala.util.Try
@@ -31,7 +32,6 @@ import akka.persistence.typed.SnapshotCompleted
 import akka.persistence.typed.SnapshotFailed
 import akka.persistence.typed.SnapshotSelectionCriteria
 import akka.serialization.jackson.CborSerializable
-import akka.util.unused
 
 object EventSourcedBehaviorRetentionSpec extends Matchers {
 
@@ -49,7 +49,7 @@ object EventSourcedBehaviorRetentionSpec extends Matchers {
   final case class State(value: Int, history: Vector[Int]) extends CborSerializable
 
   def counter(
-      @unused ctx: ActorContext[Command],
+      @nowarn("msg=never used") ctx: ActorContext[Command],
       persistenceId: PersistenceId,
       probe: Option[ActorRef[(State, Event)]] = None,
       snapshotSignalProbe: Option[ActorRef[WrappedSignal]] = None,

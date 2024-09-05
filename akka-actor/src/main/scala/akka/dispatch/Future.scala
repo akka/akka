@@ -20,7 +20,6 @@ import akka.annotation.InternalStableApi
 import akka.compat
 import akka.dispatch.internal.SameThreadExecutionContext
 import akka.japi.{ Procedure, Function => JFunc, Option => JOption }
-import akka.util.unused
 
 /**
  * ExecutionContexts is the Java API for ExecutionContexts
@@ -223,20 +222,20 @@ object japi {
       internal(t)
       BoxedUnit.UNIT
     }
-    protected def internal(@unused result: T): Unit = ()
+    protected def internal(@nowarn("msg=never used") result: T): Unit = ()
   }
 
   @deprecated("Do not use this directly, use 'Recover'", "2.0")
   class RecoverBridge[+T] extends AbstractPartialFunction[Throwable, T] {
     override final def isDefinedAt(t: Throwable): Boolean = true
     override final def apply(t: Throwable): T = internal(t)
-    protected def internal(@unused result: Throwable): T = null.asInstanceOf[T]
+    protected def internal(@nowarn("msg=never used") result: Throwable): T = null.asInstanceOf[T]
   }
 
   @deprecated("Do not use this directly, use subclasses of this", "2.0")
   class BooleanFunctionBridge[-T] extends scala.Function1[T, Boolean] {
     override final def apply(t: T): Boolean = internal(t)
-    protected def internal(@unused result: T): Boolean = false
+    protected def internal(@nowarn("msg=never used") result: T): Boolean = false
   }
 
   @deprecated("Do not use this directly, use subclasses of this", "2.0")
@@ -246,7 +245,7 @@ object japi {
     final def apply$mcLF$sp(f: Float): BoxedUnit = { internal(f.asInstanceOf[T]); BoxedUnit.UNIT }
     final def apply$mcLD$sp(d: Double): BoxedUnit = { internal(d.asInstanceOf[T]); BoxedUnit.UNIT }
     override final def apply(t: T): BoxedUnit = { internal(t); BoxedUnit.UNIT }
-    protected def internal(@unused result: T): Unit = ()
+    protected def internal(@nowarn("msg=never used") result: T): Unit = ()
   }
 }
 
@@ -406,6 +405,6 @@ abstract class Mapper[-T, +R] extends scala.runtime.AbstractFunction1[T, R] {
    * Throws UnsupportedOperation by default.
    */
   @throws(classOf[Throwable])
-  def checkedApply(@unused parameter: T): R =
+  def checkedApply(@nowarn("msg=never used") parameter: T): R =
     throw new UnsupportedOperationException("Mapper.checkedApply has not been implemented")
 }

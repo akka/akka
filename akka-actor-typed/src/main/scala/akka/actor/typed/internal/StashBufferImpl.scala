@@ -7,6 +7,7 @@ package akka.actor.typed.internal
 import java.util.function.{ Function => JFunction }
 import java.util.function.Predicate
 
+import scala.annotation.nowarn
 import scala.annotation.tailrec
 import scala.util.control.NonFatal
 
@@ -19,7 +20,7 @@ import akka.actor.typed.scaladsl
 import akka.actor.typed.scaladsl.ActorContext
 import akka.annotation.{ InternalApi, InternalStableApi }
 import akka.japi.function.Procedure
-import akka.util.{ unused, ConstantFun }
+import akka.util.ConstantFun
 import akka.util.OptionVal
 
 /**
@@ -87,7 +88,7 @@ import akka.util.OptionVal
   }
 
   @InternalStableApi
-  private def createNode(message: T, @unused ctx: scaladsl.ActorContext[T]): Node[T] = {
+  private def createNode(message: T, @nowarn("msg=never used") ctx: scaladsl.ActorContext[T]): Node[T] = {
     new Node(null, message)
   }
 
@@ -107,7 +108,7 @@ import akka.util.OptionVal
       behavior: Behavior[T],
       ctx: TypedActorContext[T],
       wrappedMessage: T,
-      @unused node: Node[T]): Behavior[T] = {
+      @nowarn("msg=never used") node: Node[T]): Behavior[T] = {
     Behavior.interpretMessage(behavior, ctx, wrappedMessage)
   }
 
@@ -248,10 +249,12 @@ import akka.util.OptionVal
     s"StashBuffer($size/$capacity)"
 
   @InternalStableApi
-  private[akka] def unstashed(@unused ctx: ActorContext[T], @unused node: Node[T]): Unit = ()
+  private[akka] def unstashed(
+      @nowarn("msg=never used") ctx: ActorContext[T],
+      @nowarn("msg=never used") node: Node[T]): Unit = ()
 
   @InternalStableApi
-  private def stashCleared(@unused ctx: ActorContext[T]): Unit = ()
+  private def stashCleared(@nowarn("msg=never used") ctx: ActorContext[T]): Unit = ()
 
 }
 

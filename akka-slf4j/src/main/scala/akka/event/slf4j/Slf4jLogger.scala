@@ -4,13 +4,15 @@
 
 package akka.event.slf4j
 
+import scala.annotation.nowarn
+
 import org.slf4j.{ MDC, Marker, MarkerFactory, Logger => SLFLogger, LoggerFactory => SLFLoggerFactory }
 
 import akka.actor._
 import akka.dispatch.RequiresMessageQueue
 import akka.event.{ LogMarker, _ }
 import akka.event.Logging._
-import akka.util.{ unused, Helpers }
+import akka.util.Helpers
 
 /**
  * Base trait for all classes that wants to be able use the SLF4J logging infrastructure.
@@ -169,7 +171,7 @@ class Slf4jLogger extends Actor with SLF4JLogging with RequiresMessageQueue[Logg
  * backend configuration (e.g. logback.xml) to filter log events before publishing
  * the log events to the `eventStream`.
  */
-class Slf4jLoggingFilter(@unused settings: ActorSystem.Settings, eventStream: EventStream)
+class Slf4jLoggingFilter(@nowarn("msg=never used") settings: ActorSystem.Settings, eventStream: EventStream)
     extends LoggingFilterWithMarker {
   def isErrorEnabled(logClass: Class[_], logSource: String) =
     (eventStream.logLevel >= ErrorLevel) && Logger(logClass, logSource).isErrorEnabled

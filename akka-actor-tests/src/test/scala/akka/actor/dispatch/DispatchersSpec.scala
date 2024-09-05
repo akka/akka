@@ -7,6 +7,7 @@ package akka.actor.dispatch
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicBoolean
 
+import scala.annotation.nowarn
 import scala.reflect.ClassTag
 
 import com.typesafe.config.Config
@@ -17,7 +18,6 @@ import akka.actor._
 import akka.dispatch._
 import akka.routing.FromConfig
 import akka.testkit.{ AkkaSpec, ImplicitSender }
-import akka.util.unused
 
 object DispatchersSpec {
   val config = """
@@ -74,7 +74,9 @@ object DispatchersSpec {
     }
   }
 
-  class OneShotMailboxType(@unused settings: ActorSystem.Settings, @unused config: Config)
+  class OneShotMailboxType(
+      @nowarn("msg=never used") settings: ActorSystem.Settings,
+      @nowarn("msg=never used") config: Config)
       extends MailboxType
       with ProducesMessageQueue[DoublingMailbox] {
     val created = new AtomicBoolean(false)

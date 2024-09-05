@@ -10,6 +10,7 @@ import java.util.concurrent.CompletionStage
 import java.util.function.BiFunction
 import java.util.function.Supplier
 
+import scala.annotation.nowarn
 import scala.annotation.unchecked.uncheckedVariance
 import scala.annotation.varargs
 import scala.collection.immutable
@@ -34,7 +35,6 @@ import akka.japi.function.Creator
 import akka.stream._
 import akka.util.ConstantFun
 import akka.util.Timeout
-import akka.util.unused
 
 object Flow {
 
@@ -59,7 +59,7 @@ object Flow {
     Flow.create[I]().map(f)
 
   /** Create a `Flow` which can process elements of type `T`. */
-  def of[T](@unused clazz: Class[T]): javadsl.Flow[T, T, NotUsed] = create[T]()
+  def of[T](@nowarn("msg=never used") clazz: Class[T]): javadsl.Flow[T, T, NotUsed] = create[T]()
 
   /**
    * A graph with the shape of a flow logically is a flow, this method makes it so also in type.

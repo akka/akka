@@ -7,6 +7,7 @@ package akka.cluster.sharding
 import java.net.URLEncoder
 import java.util
 
+import scala.annotation.nowarn
 import scala.concurrent.duration._
 
 import akka.actor.Actor
@@ -40,7 +41,6 @@ import akka.util.Clock
 import akka.util.MessageBufferMap
 import akka.util.OptionVal
 import akka.util.PrettyDuration._
-import akka.util.unused
 
 /**
  * INTERNAL API
@@ -418,7 +418,7 @@ private[akka] class Shard(
     entityProps: String => Props,
     settings: ClusterShardingSettings,
     extractEntityId: ShardRegion.ExtractEntityId,
-    @unused extractShardId: ShardRegion.ExtractShardId,
+    @nowarn("msg=never used") extractShardId: ShardRegion.ExtractShardId,
     handOffStopMessage: Any,
     rememberEntitiesProvider: Option[RememberEntitiesProvider],
     rememberEntityStarterManager: ActorRef)
@@ -1162,7 +1162,7 @@ private[akka] class Shard(
    * of active entities.
    */
   @InternalStableApi
-  def entityCreated(@unused id: EntityId): Int = entities.nrActiveEntities()
+  def entityCreated(@nowarn("msg=never used") id: EntityId): Int = entities.nrActiveEntities()
 
   // ===== buffering while busy saving a start or stop when remembering entities =====
   def appendToMessageBuffer(id: EntityId, msg: Any, snd: ActorRef): Unit = {

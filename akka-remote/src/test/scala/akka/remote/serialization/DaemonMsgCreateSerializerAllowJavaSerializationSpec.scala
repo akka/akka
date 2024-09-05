@@ -4,6 +4,8 @@
 
 package akka.remote.serialization
 
+import scala.annotation.nowarn
+
 import com.typesafe.config.ConfigFactory
 
 import akka.actor.Actor
@@ -22,7 +24,6 @@ import akka.serialization.Serialization
 import akka.serialization.SerializationExtension
 import akka.testkit.AkkaSpec
 import akka.testkit.JavaSerializable
-import akka.util.unused
 
 object DaemonMsgCreateSerializerAllowJavaSerializationSpec {
 
@@ -30,9 +31,11 @@ object DaemonMsgCreateSerializerAllowJavaSerializationSpec {
     def receive = Actor.emptyBehavior
   }
   class MyActor extends EmptyActor
-  class MyActorWithParam(@unused ignore: String) extends EmptyActor
-  class MyActorWithFunParam(@unused fun: Function1[Int, Int]) extends EmptyActor
-  class ActorWithDummyParameter(@unused javaSerialized: DummyParameter, @unused protoSerialized: ActorRef)
+  class MyActorWithParam(@nowarn("msg=never used") ignore: String) extends EmptyActor
+  class MyActorWithFunParam(@nowarn("msg=never used") fun: Function1[Int, Int]) extends EmptyActor
+  class ActorWithDummyParameter(
+      @nowarn("msg=never used") javaSerialized: DummyParameter,
+      @nowarn("msg=never used") protoSerialized: ActorRef)
       extends EmptyActor
 }
 

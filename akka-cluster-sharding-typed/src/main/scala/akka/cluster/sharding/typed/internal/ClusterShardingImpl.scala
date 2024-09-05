@@ -10,6 +10,7 @@ import java.time.Duration
 import java.util.concurrent.CompletionStage
 import java.util.concurrent.ConcurrentHashMap
 
+import scala.annotation.nowarn
 import scala.jdk.DurationConverters._
 import scala.jdk.FutureConverters._
 import scala.concurrent.Future
@@ -42,7 +43,7 @@ import akka.japi.function.{ Function => JFunction }
 import akka.pattern.AskTimeoutException
 import akka.pattern.PromiseActorRef
 import akka.pattern.StatusReply
-import akka.util.{ unused, ByteString, Timeout }
+import akka.util.{ ByteString, Timeout }
 
 /**
  * INTERNAL API
@@ -405,7 +406,7 @@ import akka.util.{ unused, ByteString, Timeout }
         shardRegion: akka.actor.ActorRef,
         entityId: String,
         message: T,
-        @unused timeout: Timeout): Future[U] = {
+        @nowarn("msg=never used") timeout: Timeout): Future[U] = {
       shardRegion ! ShardingEnvelope(entityId, message)
       future
     }

@@ -9,7 +9,7 @@ import java.net.ServerSocket
 import java.net.Socket
 import java.nio.channels.DatagramChannel
 
-import akka.util.unused
+import scala.annotation.nowarn
 
 object Inet {
 
@@ -22,22 +22,22 @@ object Inet {
     /**
      * Action to be taken for this option before bind() is called
      */
-    def beforeDatagramBind(@unused ds: DatagramSocket): Unit = ()
+    def beforeDatagramBind(@nowarn("msg=never used") ds: DatagramSocket): Unit = ()
 
     /**
      * Action to be taken for this option before bind() is called
      */
-    def beforeServerSocketBind(@unused ss: ServerSocket): Unit = ()
+    def beforeServerSocketBind(@nowarn("msg=never used") ss: ServerSocket): Unit = ()
 
     /**
      * Action to be taken for this option before calling connect()
      */
-    def beforeConnect(@unused s: Socket): Unit = ()
+    def beforeConnect(@nowarn("msg=never used") s: Socket): Unit = ()
 
     /**
      * Action to be taken for this option after connect returned.
      */
-    def afterConnect(@unused s: Socket): Unit = ()
+    def afterConnect(@nowarn("msg=never used") s: Socket): Unit = ()
   }
 
   /**
@@ -51,17 +51,17 @@ object Inet {
     /**
      * Action to be taken for this option after connect returned.
      */
-    def afterBind(@unused s: DatagramSocket): Unit = ()
+    def afterBind(@nowarn("msg=never used") s: DatagramSocket): Unit = ()
 
     /**
      * Action to be taken for this option after connect returned.
      */
-    def afterBind(@unused s: ServerSocket): Unit = ()
+    def afterBind(@nowarn("msg=never used") s: ServerSocket): Unit = ()
 
     /**
      * Action to be taken for this option after connect returned.
      */
-    def afterConnect(@unused s: DatagramSocket): Unit = ()
+    def afterConnect(@nowarn("msg=never used") s: DatagramSocket): Unit = ()
 
   }
 

@@ -15,7 +15,6 @@ import language.implicitConversions
 
 import akka.annotation.InternalApi
 import akka.routing.{ Deafen, Listen, Listeners }
-import akka.util.unused
 
 object FSM {
 
@@ -845,7 +844,7 @@ trait FSM[S, D] extends Actor with Listeners with ActorLogging {
     processEvent(event, source)
   }
 
-  private[akka] def processEvent(event: Event, @unused source: AnyRef): Unit = {
+  private[akka] def processEvent(event: Event, @nowarn("msg=never used") source: AnyRef): Unit = {
     val stateFunc = stateFunctions(currentState.stateName)
     val nextState = if (stateFunc.isDefinedAt(event)) {
       stateFunc(event)

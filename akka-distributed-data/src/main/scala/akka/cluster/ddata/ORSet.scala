@@ -4,12 +4,13 @@
 
 package akka.cluster.ddata
 
+import scala.annotation.nowarn
 import scala.annotation.tailrec
 import scala.collection.immutable
 
 import akka.annotation.InternalApi
 import akka.cluster.UniqueAddress
-import akka.util.{ unused, HashCode }
+import akka.util.HashCode
 
 object ORSet {
   private val _empty: ORSet[Any] = new ORSet(Map.empty, VersionVector.empty)
@@ -373,7 +374,7 @@ final class ORSet[A] private[akka] (
    * [[ORSet#remove(node:akka\.cluster\.ddata\.SelfUniqueAddress*]]
    * for each element, but it is more efficient.
    */
-  def clear(@unused node: SelfUniqueAddress): ORSet[A] = clear()
+  def clear(@nowarn("msg=never used") node: SelfUniqueAddress): ORSet[A] = clear()
 
   /**
    * INTERNAL API

@@ -6,6 +6,7 @@ package akka.persistence.testkit.query.scaladsl
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 
+import scala.annotation.nowarn
 import scala.collection.immutable
 
 import com.typesafe.config.Config
@@ -38,7 +39,6 @@ import akka.persistence.testkit.internal.InMemStorageExtension
 import akka.persistence.testkit.query.internal.EventsByPersistenceIdStage
 import akka.persistence.typed.PersistenceId
 import akka.stream.scaladsl.Source
-import akka.util.unused
 
 object PersistenceTestKitReadJournal {
   val Identifier = "akka.persistence.testkit.query"
@@ -67,7 +67,10 @@ object PersistenceTestKitReadJournal {
   }
 }
 
-final class PersistenceTestKitReadJournal(system: ExtendedActorSystem, @unused config: Config, configPath: String)
+final class PersistenceTestKitReadJournal(
+    system: ExtendedActorSystem,
+    @nowarn("msg=never used") config: Config,
+    configPath: String)
     extends ReadJournal
     with EventsByPersistenceIdQuery
     with EventsByPersistenceIdTypedQuery

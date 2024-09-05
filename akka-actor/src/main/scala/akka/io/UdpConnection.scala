@@ -9,6 +9,7 @@ import java.nio.ByteBuffer
 import java.nio.channels.DatagramChannel
 import java.nio.channels.SelectionKey._
 
+import scala.annotation.nowarn
 import scala.annotation.tailrec
 import scala.util.control.NonFatal
 
@@ -18,7 +19,7 @@ import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
 import akka.io.SelectionHandler._
 import akka.io.UdpConnected._
 import akka.io.dns.DnsProtocol
-import akka.util.{ unused, ByteString }
+import akka.util.ByteString
 
 /**
  * INTERNAL API
@@ -69,7 +70,7 @@ private[io] class UdpConnection(
       }
   }
 
-  def doConnect(@unused address: InetSocketAddress): Unit = {
+  def doConnect(@nowarn("msg=never used") address: InetSocketAddress): Unit = {
     channel = DatagramChannel.open
     channel.configureBlocking(false)
     val socket = channel.socket

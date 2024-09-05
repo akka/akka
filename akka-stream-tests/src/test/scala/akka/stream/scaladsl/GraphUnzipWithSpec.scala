@@ -4,6 +4,7 @@
 
 package akka.stream.scaladsl
 
+import scala.annotation.nowarn
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
@@ -18,7 +19,6 @@ import akka.stream.testkit.TestSubscriber.Probe
 import akka.stream.testkit.Utils.TE
 import akka.testkit.EventFilter
 import akka.testkit.TestProbe
-import akka.util.unused
 
 class GraphUnzipWithSpec extends StreamSpec("""
     akka.stream.materializer.initial-input-buffer-size = 2
@@ -31,7 +31,7 @@ class GraphUnzipWithSpec extends StreamSpec("""
   type LeftOutput = Int
   type RightOutput = String
 
-  abstract class Fixture(@unused b: GraphDSL.Builder[_]) {
+  abstract class Fixture(@nowarn("msg=never used") b: GraphDSL.Builder[_]) {
     def in: Inlet[Int]
     def left: Outlet[LeftOutput]
     def right: Outlet[RightOutput]

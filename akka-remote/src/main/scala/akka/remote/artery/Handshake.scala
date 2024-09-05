@@ -4,6 +4,7 @@
 
 package akka.remote.artery
 
+import scala.annotation.nowarn
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
@@ -19,7 +20,6 @@ import akka.stream.Inlet
 import akka.stream.Outlet
 import akka.stream.stage._
 import akka.util.OptionVal
-import akka.util.unused
 
 /**
  * INTERNAL API
@@ -51,7 +51,7 @@ private[remote] object OutboundHandshake {
  * INTERNAL API
  */
 private[remote] class OutboundHandshake(
-    @unused system: ActorSystem,
+    @nowarn("msg=never used") system: ActorSystem,
     outboundContext: OutboundContext,
     outboundEnvelopePool: ObjectPool[ReusableOutboundEnvelope],
     timeout: FiniteDuration,

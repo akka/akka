@@ -4,6 +4,8 @@
 
 package akka.stream.impl
 
+import scala.annotation.nowarn
+
 import org.reactivestreams.{ Processor, Subscriber, Subscription }
 
 import akka.actor._
@@ -12,7 +14,6 @@ import akka.event.Logging
 import akka.stream.{ AbruptTerminationException, Attributes }
 import akka.stream.ActorAttributes
 import akka.stream.impl.ActorSubscriberMessage.{ OnComplete, OnError, OnNext, OnSubscribe }
-import akka.util.unused
 
 /**
  * INTERNAL API
@@ -155,7 +156,7 @@ import akka.util.unused
     case OnSubscribe(_) => throw new IllegalStateException("onSubscribe called after onError or onComplete")
   }
 
-  protected def inputOnError(@unused e: Throwable): Unit = {
+  protected def inputOnError(@nowarn("msg=never used") e: Throwable): Unit = {
     clear()
   }
 

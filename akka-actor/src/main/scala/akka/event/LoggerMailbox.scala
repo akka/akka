@@ -6,6 +6,8 @@ package akka.event
 
 import com.typesafe.config.Config
 
+import scala.annotation.nowarn
+
 import akka.actor.ActorRef
 import akka.actor.ActorSystem
 import akka.dispatch.MailboxType
@@ -13,14 +15,15 @@ import akka.dispatch.MessageQueue
 import akka.dispatch.ProducesMessageQueue
 import akka.dispatch.UnboundedMailbox
 import akka.event.Logging.LogEvent
-import akka.util.unused
 
 trait LoggerMessageQueueSemantics
 
 /**
  * INTERNAL API
  */
-private[akka] class LoggerMailboxType(@unused settings: ActorSystem.Settings, @unused config: Config)
+private[akka] class LoggerMailboxType(
+    @nowarn("msg=never used") settings: ActorSystem.Settings,
+    @nowarn("msg=never used") config: Config)
     extends MailboxType
     with ProducesMessageQueue[LoggerMailbox] {
 
@@ -33,7 +36,7 @@ private[akka] class LoggerMailboxType(@unused settings: ActorSystem.Settings, @u
 /**
  * INTERNAL API
  */
-private[akka] class LoggerMailbox(@unused owner: ActorRef, system: ActorSystem)
+private[akka] class LoggerMailbox(@nowarn("msg=never used") owner: ActorRef, system: ActorSystem)
     extends UnboundedMailbox.MessageQueue
     with LoggerMessageQueueSemantics {
 

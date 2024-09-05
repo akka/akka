@@ -7,6 +7,7 @@ package akka.actor.typed.javadsl
 import java.util.Collections
 import java.util.function.{ Supplier, Function => JFunction }
 
+import scala.annotation.nowarn
 import scala.reflect.ClassTag
 
 import akka.actor.typed._
@@ -20,7 +21,6 @@ import akka.actor.typed.internal.{
 import akka.japi.function.{ Effect, Function2 => JapiFunction2 }
 import akka.japi.pf.PFBuilder
 import akka.util.ccompat.JavaConverters._
-import akka.util.unused
 
 /**
  * Factories for [[akka.actor.typed.Behavior]].
@@ -171,7 +171,7 @@ object Behaviors {
    * @param type the supertype of all messages accepted by this behavior
    * @return the behavior builder
    */
-  def receive[T](@unused `type`: Class[T]): BehaviorBuilder[T] = BehaviorBuilder.create[T]
+  def receive[T](@nowarn("msg=never used") `type`: Class[T]): BehaviorBuilder[T] = BehaviorBuilder.create[T]
 
   /**
    * Construct an actor behavior that can react to lifecycle signals only.

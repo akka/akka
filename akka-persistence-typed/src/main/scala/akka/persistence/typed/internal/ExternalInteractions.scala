@@ -4,6 +4,7 @@
 
 package akka.persistence.typed.internal
 
+import scala.annotation.nowarn
 import scala.collection.immutable
 
 import akka.actor.ActorRef
@@ -19,7 +20,7 @@ import akka.annotation.InternalStableApi
 import akka.persistence._
 import akka.persistence.JournalProtocol.ReplayMessages
 import akka.persistence.SnapshotProtocol.LoadSnapshot
-import akka.util.{ unused, OptionVal }
+import akka.util.OptionVal
 
 /** INTERNAL API */
 @InternalApi
@@ -78,9 +79,9 @@ private[akka] trait JournalInteractions[C, E, S] {
   // FIXME remove instrumentation hook method in 2.10.0
   @InternalStableApi
   private[akka] def onWriteInitiated(
-      @unused ctx: ActorContext[_],
-      @unused cmd: Any,
-      @unused repr: PersistentRepr): Unit = ()
+      @nowarn("msg=never used") ctx: ActorContext[_],
+      @nowarn("msg=never used") cmd: Any,
+      @nowarn("msg=never used") repr: PersistentRepr): Unit = ()
 
   protected def internalPersistAll(
       cmd: OptionVal[Any],
@@ -121,9 +122,9 @@ private[akka] trait JournalInteractions[C, E, S] {
   // FIXME remove instrumentation hook method in 2.10.0
   @InternalStableApi
   private[akka] def onWritesInitiated(
-      @unused ctx: ActorContext[_],
-      @unused cmd: Any,
-      @unused repr: immutable.Seq[PersistentRepr]): Unit = ()
+      @nowarn("msg=never used") ctx: ActorContext[_],
+      @nowarn("msg=never used") cmd: Any,
+      @nowarn("msg=never used") repr: immutable.Seq[PersistentRepr]): Unit = ()
 
   protected def replayEvents(fromSeqNr: Long, toSeqNr: Long): Unit = {
     setup.internalLogger.debug2("Replaying events: from: {}, to: {}", fromSeqNr, toSeqNr)

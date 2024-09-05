@@ -33,7 +33,7 @@ import akka.stream.impl.TraversalBuilder
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
 import akka.stream.scaladsl.{ DelayStrategy, Source }
 import akka.stream.stage._
-import akka.util.{ unused, OptionVal }
+import akka.util.OptionVal
 import akka.util.ccompat._
 
 // This file is perhaps getting long (Github Issue #31619), please add new operators in other files
@@ -658,7 +658,7 @@ private[stream] object Collect {
       private var aggregator: Out = zero
       private var aggregating: Future[Out] = Future.successful(aggregator)
 
-      private def onRestart(@unused t: Throwable): Unit = {
+      private def onRestart(@nowarn("msg=never used") t: Throwable): Unit = {
         aggregator = zero
       }
 
