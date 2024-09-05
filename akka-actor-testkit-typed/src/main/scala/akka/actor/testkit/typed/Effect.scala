@@ -9,7 +9,6 @@ import java.util.concurrent.TimeoutException
 import scala.annotation.nowarn
 import scala.jdk.FunctionConverters._
 import scala.concurrent.duration.FiniteDuration
-import scala.jdk.FunctionConverters._
 import scala.jdk.DurationConverters._
 import scala.util.{ Failure, Success, Try }
 
