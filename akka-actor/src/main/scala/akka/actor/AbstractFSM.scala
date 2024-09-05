@@ -5,8 +5,7 @@
 package akka.actor
 
 import scala.concurrent.duration.FiniteDuration
-
-import akka.util.JavaDurationConverters._
+import scala.jdk.DurationConverters._
 
 /**
  * Java API: compatible with lambda expressions
@@ -115,7 +114,7 @@ abstract class AbstractFSM[S, D] extends FSM[S, D] {
       stateName: S,
       stateTimeout: java.time.Duration,
       stateFunctionBuilder: FSMStateFunctionBuilder[S, D]): Unit = {
-    when(stateName, stateTimeout.asScala, stateFunctionBuilder)
+    when(stateName, stateTimeout.toScala, stateFunctionBuilder)
   }
 
   /**
@@ -151,7 +150,7 @@ abstract class AbstractFSM[S, D] extends FSM[S, D] {
    * @param timeout state timeout for the initial state, overriding the default timeout for that state
    */
   final def startWith(stateName: S, stateData: D, timeout: java.time.Duration): Unit = {
-    startWith(stateName, stateData, timeout.asScala)
+    startWith(stateName, stateData, timeout.toScala)
   }
 
   /**
@@ -453,7 +452,7 @@ abstract class AbstractFSM[S, D] extends FSM[S, D] {
    * in the mailbox when the new timer was started.
    */
   def startTimerWithFixedDelay(name: String, msg: Any, delay: java.time.Duration): Unit =
-    startTimerWithFixedDelay(name, msg, delay.asScala)
+    startTimerWithFixedDelay(name, msg, delay.toScala)
 
   /**
    * Schedules a message to be sent repeatedly to the `self` actor with a
@@ -481,7 +480,7 @@ abstract class AbstractFSM[S, D] extends FSM[S, D] {
    * in the mailbox when the new timer was started.
    */
   def startTimerAtFixedRate(name: String, msg: Any, interval: java.time.Duration): Unit =
-    startTimerAtFixedRate(name, msg, interval.asScala)
+    startTimerAtFixedRate(name, msg, interval.toScala)
 
   /**
    * Start a timer that will send `msg` once to the `self` actor after
@@ -493,7 +492,7 @@ abstract class AbstractFSM[S, D] extends FSM[S, D] {
    * in the mailbox when the new timer was started.
    */
   def startSingleTimer(name: String, msg: Any, delay: java.time.Duration): Unit =
-    startSingleTimer(name, msg, delay.asScala)
+    startSingleTimer(name, msg, delay.toScala)
 
   /**
    * Schedule named timer to deliver message after given delay, possibly repeating.
@@ -517,7 +516,7 @@ abstract class AbstractFSM[S, D] extends FSM[S, D] {
    */
   @deprecated("Use startSingleTimer instead.", since = "2.6.0")
   final def setTimer(name: String, msg: Any, timeout: java.time.Duration): Unit = {
-    setTimer(name, msg, timeout.asScala, repeat = false)
+    setTimer(name, msg, timeout.toScala, repeat = false)
   }
 
   /**
@@ -534,7 +533,7 @@ abstract class AbstractFSM[S, D] extends FSM[S, D] {
     "startTimerAtFixedRate, but startTimerWithFixedDelay is often preferred.",
     since = "2.6.0")
   final def setTimer(name: String, msg: Any, timeout: java.time.Duration, repeat: Boolean): Unit = {
-    setTimer(name, msg, timeout.asScala, repeat)
+    setTimer(name, msg, timeout.toScala, repeat)
   }
 
   /**

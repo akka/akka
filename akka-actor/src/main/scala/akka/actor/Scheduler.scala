@@ -10,10 +10,10 @@ import scala.annotation.nowarn
 import scala.annotation.tailrec
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
+import scala.jdk.DurationConverters._
 import scala.util.control.NoStackTrace
 
 import akka.annotation.InternalApi
-import akka.util.JavaDurationConverters
 
 /**
  * This exception is thrown by Scheduler.schedule* when scheduling is not
@@ -143,8 +143,7 @@ trait Scheduler {
       delay: java.time.Duration,
       runnable: Runnable,
       executor: ExecutionContext): Cancellable = {
-    import JavaDurationConverters._
-    scheduleWithFixedDelay(initialDelay.asScala, delay.asScala)(runnable)(executor)
+    scheduleWithFixedDelay(initialDelay.toScala, delay.toScala)(runnable)(executor)
   }
 
   /**
@@ -202,8 +201,7 @@ trait Scheduler {
       message: Any,
       executor: ExecutionContext,
       sender: ActorRef): Cancellable = {
-    import JavaDurationConverters._
-    scheduleWithFixedDelay(initialDelay.asScala, delay.asScala, receiver, message)(executor, sender)
+    scheduleWithFixedDelay(initialDelay.toScala, delay.toScala, receiver, message)(executor, sender)
   }
 
   /**
@@ -281,8 +279,7 @@ trait Scheduler {
       interval: java.time.Duration,
       runnable: Runnable,
       executor: ExecutionContext): Cancellable = {
-    import JavaDurationConverters._
-    scheduleAtFixedRate(initialDelay.asScala, interval.asScala)(runnable)(executor)
+    scheduleAtFixedRate(initialDelay.toScala, interval.toScala)(runnable)(executor)
   }
 
   /**
@@ -351,8 +348,7 @@ trait Scheduler {
       message: Any,
       executor: ExecutionContext,
       sender: ActorRef): Cancellable = {
-    import JavaDurationConverters._
-    scheduleAtFixedRate(initialDelay.asScala, interval.asScala, receiver, message)(executor, sender)
+    scheduleAtFixedRate(initialDelay.toScala, interval.toScala, receiver, message)(executor, sender)
   }
 
   /**
@@ -392,8 +388,7 @@ trait Scheduler {
       message: Any,
       executor: ExecutionContext,
       sender: ActorRef): Cancellable = {
-    import JavaDurationConverters._
-    schedule(initialDelay.asScala, interval.asScala, receiver, message)(executor, sender)
+    schedule(initialDelay.toScala, interval.toScala, receiver, message)(executor, sender)
   }
 
   /**
@@ -427,8 +422,7 @@ trait Scheduler {
     since = "2.6.0")
   def schedule(initialDelay: java.time.Duration, interval: java.time.Duration, runnable: Runnable)(
       implicit executor: ExecutionContext): Cancellable = {
-    import JavaDurationConverters._
-    schedule(initialDelay.asScala, interval.asScala, runnable)
+    schedule(initialDelay.toScala, interval.toScala, runnable)
   }
 
   /**
@@ -463,8 +457,7 @@ trait Scheduler {
       message: Any,
       executor: ExecutionContext,
       sender: ActorRef): Cancellable = {
-    import JavaDurationConverters._
-    scheduleOnce(delay.asScala, receiver, message)(executor, sender)
+    scheduleOnce(delay.toScala, receiver, message)(executor, sender)
   }
 
   /**
@@ -502,8 +495,7 @@ trait Scheduler {
    * Note: For scheduling within actors `AbstractActorWithTimers` should be preferred.
    */
   def scheduleOnce(delay: java.time.Duration, runnable: Runnable)(implicit executor: ExecutionContext): Cancellable = {
-    import JavaDurationConverters._
-    scheduleOnce(delay.asScala, runnable)(executor)
+    scheduleOnce(delay.toScala, runnable)(executor)
   }
 
   /**

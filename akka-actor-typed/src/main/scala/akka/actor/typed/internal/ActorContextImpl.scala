@@ -12,6 +12,7 @@ import java.util.concurrent.CompletionStage
 
 import scala.annotation.{ nowarn, switch }
 import scala.concurrent.{ ExecutionContextExecutor, Future }
+import scala.jdk.DurationConverters._
 import scala.reflect.ClassTag
 import scala.util.Failure
 import scala.util.Success
@@ -26,7 +27,6 @@ import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
 import akka.pattern.StatusReply
 import akka.util.BoxedType
-import akka.util.JavaDurationConverters._
 import akka.util.OptionVal
 import akka.util.Timeout
 
@@ -193,10 +193,10 @@ import akka.util.Timeout
   }
 
   override def setReceiveTimeout(duration: java.time.Duration, msg: T): Unit =
-    setReceiveTimeout(duration.asScala, msg)
+    setReceiveTimeout(duration.toScala, msg)
 
   override def scheduleOnce[U](delay: java.time.Duration, target: ActorRef[U], msg: U): akka.actor.Cancellable =
-    scheduleOnce(delay.asScala, target, msg)
+    scheduleOnce(delay.toScala, target, msg)
 
   override def spawn[U](behavior: akka.actor.typed.Behavior[U], name: String): akka.actor.typed.ActorRef[U] =
     spawn(behavior, name, Props.empty)

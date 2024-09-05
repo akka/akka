@@ -6,6 +6,7 @@ package akka.cluster.sharding.typed
 
 import scala.collection.immutable
 import scala.concurrent.duration._
+import scala.jdk.DurationConverters._
 
 import com.typesafe.config.Config
 
@@ -19,7 +20,6 @@ import akka.cluster.typed.Cluster
 import akka.cluster.typed.ClusterSingletonManagerSettings
 import akka.coordination.lease.LeaseUsageSettings
 import akka.japi.Util.immutableSeq
-import akka.util.JavaDurationConverters._
 
 object ClusterShardingSettings {
 
@@ -307,11 +307,11 @@ object ClusterShardingSettings {
 
       def withTimeout(timeout: FiniteDuration): IdleSettings = copy(timeout = timeout)
 
-      def withTimeout(timeout: java.time.Duration): IdleSettings = withTimeout(timeout.asScala)
+      def withTimeout(timeout: java.time.Duration): IdleSettings = withTimeout(timeout.toScala)
 
       def withInterval(interval: FiniteDuration): IdleSettings = copy(interval = Some(interval))
 
-      def withInterval(interval: java.time.Duration): IdleSettings = withInterval(interval.asScala)
+      def withInterval(interval: java.time.Duration): IdleSettings = withInterval(interval.toScala)
 
       private def copy(timeout: FiniteDuration = timeout, interval: Option[FiniteDuration] = interval): IdleSettings =
         new IdleSettings(timeout, interval)
@@ -702,37 +702,37 @@ object ClusterShardingSettings {
     def withBufferSize(value: Int): TuningParameters = copy(bufferSize = value)
     def withCoordinatorFailureBackoff(value: FiniteDuration): TuningParameters = copy(coordinatorFailureBackoff = value)
     def withCoordinatorFailureBackoff(value: java.time.Duration): TuningParameters =
-      withCoordinatorFailureBackoff(value.asScala)
+      withCoordinatorFailureBackoff(value.toScala)
     def withEntityRecoveryConstantRateStrategyFrequency(value: FiniteDuration): TuningParameters =
       copy(entityRecoveryConstantRateStrategyFrequency = value)
     def withEntityRecoveryConstantRateStrategyFrequency(value: java.time.Duration): TuningParameters =
-      withEntityRecoveryConstantRateStrategyFrequency(value.asScala)
+      withEntityRecoveryConstantRateStrategyFrequency(value.toScala)
     def withEntityRecoveryConstantRateStrategyNumberOfEntities(value: Int): TuningParameters =
       copy(entityRecoveryConstantRateStrategyNumberOfEntities = value)
     def withEntityRecoveryStrategy(value: java.lang.String): TuningParameters = copy(entityRecoveryStrategy = value)
     def withEntityRestartBackoff(value: FiniteDuration): TuningParameters = copy(entityRestartBackoff = value)
-    def withEntityRestartBackoff(value: java.time.Duration): TuningParameters = withEntityRestartBackoff(value.asScala)
+    def withEntityRestartBackoff(value: java.time.Duration): TuningParameters = withEntityRestartBackoff(value.toScala)
     def withHandOffTimeout(value: FiniteDuration): TuningParameters = copy(handOffTimeout = value)
-    def withHandOffTimeout(value: java.time.Duration): TuningParameters = withHandOffTimeout(value.asScala)
+    def withHandOffTimeout(value: java.time.Duration): TuningParameters = withHandOffTimeout(value.toScala)
     def withKeepNrOfBatches(value: Int): TuningParameters = copy(keepNrOfBatches = value)
     def withLeastShardAllocationMaxSimultaneousRebalance(value: Int): TuningParameters =
       copy(leastShardAllocationMaxSimultaneousRebalance = value)
     def withLeastShardAllocationRebalanceThreshold(value: Int): TuningParameters =
       copy(leastShardAllocationRebalanceThreshold = value)
     def withRebalanceInterval(value: FiniteDuration): TuningParameters = copy(rebalanceInterval = value)
-    def withRebalanceInterval(value: java.time.Duration): TuningParameters = withRebalanceInterval(value.asScala)
+    def withRebalanceInterval(value: java.time.Duration): TuningParameters = withRebalanceInterval(value.toScala)
     def withRetryInterval(value: FiniteDuration): TuningParameters = copy(retryInterval = value)
-    def withRetryInterval(value: java.time.Duration): TuningParameters = withRetryInterval(value.asScala)
+    def withRetryInterval(value: java.time.Duration): TuningParameters = withRetryInterval(value.toScala)
     def withShardFailureBackoff(value: FiniteDuration): TuningParameters = copy(shardFailureBackoff = value)
-    def withShardFailureBackoff(value: java.time.Duration): TuningParameters = withShardFailureBackoff(value.asScala)
+    def withShardFailureBackoff(value: java.time.Duration): TuningParameters = withShardFailureBackoff(value.toScala)
     def withShardStartTimeout(value: FiniteDuration): TuningParameters = copy(shardStartTimeout = value)
-    def withShardStartTimeout(value: java.time.Duration): TuningParameters = withShardStartTimeout(value.asScala)
+    def withShardStartTimeout(value: java.time.Duration): TuningParameters = withShardStartTimeout(value.toScala)
     def withSnapshotAfter(value: Int): TuningParameters = copy(snapshotAfter = value)
     def withUpdatingStateTimeout(value: FiniteDuration): TuningParameters = copy(updatingStateTimeout = value)
-    def withUpdatingStateTimeout(value: java.time.Duration): TuningParameters = withUpdatingStateTimeout(value.asScala)
+    def withUpdatingStateTimeout(value: java.time.Duration): TuningParameters = withUpdatingStateTimeout(value.toScala)
     def withWaitingForStateTimeout(value: FiniteDuration): TuningParameters = copy(waitingForStateTimeout = value)
     def withWaitingForStateTimeout(value: java.time.Duration): TuningParameters =
-      withWaitingForStateTimeout(value.asScala)
+      withWaitingForStateTimeout(value.toScala)
     def withCoordinatorStateWriteMajorityPlus(value: Int): TuningParameters =
       copy(coordinatorStateWriteMajorityPlus = value)
     def withCoordinatorStateReadMajorityPlus(value: Int): TuningParameters =
@@ -743,7 +743,7 @@ object ClusterShardingSettings {
       copy(leastShardAllocationRelativeLimit = value)
     def withPassivationStopTimeout(value: FiniteDuration): TuningParameters = copy(passivationStopTimeout = value)
     def withPassivationStopTimeout(value: java.time.Duration): TuningParameters =
-      withPassivationStopTimeout(value.asScala)
+      withPassivationStopTimeout(value.toScala)
 
     private def copy(
         bufferSize: Int = bufferSize,
@@ -1005,7 +1005,7 @@ final class ClusterShardingSettings(
 
   @deprecated("Use withPassivationStrategy instead", since = "2.6.18")
   def withPassivateIdleEntityAfter(duration: java.time.Duration): ClusterShardingSettings =
-    copy(passivationStrategySettings = passivationStrategySettings.withOldIdleStrategy(duration.asScala))
+    copy(passivationStrategySettings = passivationStrategySettings.withOldIdleStrategy(duration.toScala))
 
   /**
    * API MAY CHANGE: Settings for passivation strategies may change after additional testing and feedback.
@@ -1021,7 +1021,7 @@ final class ClusterShardingSettings(
     copy(shardRegionQueryTimeout = duration)
 
   def withShardRegionQueryTimeout(duration: java.time.Duration): ClusterShardingSettings =
-    copy(shardRegionQueryTimeout = duration.asScala)
+    copy(shardRegionQueryTimeout = duration.toScala)
 
   /**
    * Note that if you define a custom lease name and have several sharding entity types each one must have a unique

@@ -10,6 +10,7 @@ import java.util.Optional
 
 import scala.annotation.nowarn
 import scala.annotation.tailrec
+import scala.jdk.DurationConverters._
 import scala.jdk.OptionConverters._
 import scala.concurrent.duration.FiniteDuration
 import scala.reflect.{ classTag, ClassTag }
@@ -23,7 +24,6 @@ import akka.japi.function
 import akka.stream.impl.TraversalBuilder
 import akka.util.ByteString
 import akka.util.Helpers
-import akka.util.JavaDurationConverters._
 import akka.util.LineNumbers
 
 /**
@@ -523,7 +523,7 @@ object Attributes {
      * such a delay. During this time, the stream will be mostly "silent", i.e. it cannot make progress because of backpressure,
      * but you might still be able observe a long delay at the ultimate source.
      */
-    def afterDelay(delay: java.time.Duration, strategy: Strategy): Strategy = AfterDelay(delay.asScala, strategy)
+    def afterDelay(delay: java.time.Duration, strategy: Strategy): Strategy = AfterDelay(delay.toScala, strategy)
   }
 
   /**
@@ -887,7 +887,7 @@ object ActorAttributes {
    * Java API: Defines a timeout for stream subscription and what action to take when that hits.
    */
   def streamSubscriptionTimeout(timeout: Duration, mode: StreamSubscriptionTimeoutTerminationMode): Attributes =
-    streamSubscriptionTimeout(timeout.asScala, mode)
+    streamSubscriptionTimeout(timeout.toScala, mode)
 
   /**
    * Maximum number of elements emitted in batch if downstream signals large demand.
@@ -978,7 +978,7 @@ object StreamRefAttributes {
   /**
    * Java API: Specifies the subscription timeout within which the remote side MUST subscribe to the handed out stream reference.
    */
-  def subscriptionTimeout(timeout: Duration): Attributes = subscriptionTimeout(timeout.asScala)
+  def subscriptionTimeout(timeout: Duration): Attributes = subscriptionTimeout(timeout.toScala)
 
   /**
    * Specifies the size of the buffer on the receiving side that is eagerly filled even without demand.
@@ -995,7 +995,7 @@ object StreamRefAttributes {
    *  Java API: If no new elements arrive within this timeout, demand is redelivered.
    */
   def demandRedeliveryInterval(timeout: Duration): Attributes =
-    demandRedeliveryInterval(timeout.asScala)
+    demandRedeliveryInterval(timeout.toScala)
 
   /**
    * Scala API: The time between the Terminated signal being received and when the local SourceRef determines to fail itself
@@ -1007,6 +1007,6 @@ object StreamRefAttributes {
    * Java API: The time between the Terminated signal being received and when the local SourceRef determines to fail itself
    */
   def finalTerminationSignalDeadline(timeout: Duration): Attributes =
-    finalTerminationSignalDeadline(timeout.asScala)
+    finalTerminationSignalDeadline(timeout.toScala)
 
 }

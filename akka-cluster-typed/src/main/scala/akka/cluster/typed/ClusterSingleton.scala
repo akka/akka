@@ -5,7 +5,10 @@
 package akka.cluster.typed
 
 import scala.concurrent.duration.{ Duration, FiniteDuration, _ }
+import scala.jdk.DurationConverters._
+
 import com.typesafe.config.Config
+
 import akka.actor.typed._
 import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.cluster.ClusterSettings.DataCenter
@@ -15,7 +18,7 @@ import akka.cluster.singleton.{
 }
 import akka.cluster.typed.internal.AdaptedClusterSingletonImpl
 import akka.coordination.lease.LeaseUsageSettings
-import akka.util.JavaDurationConverters._
+
 import org.slf4j.LoggerFactory
 
 object ClusterSingletonSettings {
@@ -74,13 +77,13 @@ final class ClusterSingletonSettings(
   def withRemovalMargin(removalMargin: FiniteDuration): ClusterSingletonSettings = copy(removalMargin = removalMargin)
 
   def withRemovalMargin(removalMargin: java.time.Duration): ClusterSingletonSettings =
-    withRemovalMargin(removalMargin.asScala)
+    withRemovalMargin(removalMargin.toScala)
 
   def withHandoverRetryInterval(handOverRetryInterval: FiniteDuration): ClusterSingletonSettings =
     copy(handOverRetryInterval = handOverRetryInterval)
 
   def withHandoverRetryInterval(handOverRetryInterval: java.time.Duration): ClusterSingletonSettings =
-    withHandoverRetryInterval(handOverRetryInterval.asScala)
+    withHandoverRetryInterval(handOverRetryInterval.toScala)
 
   def withBufferSize(bufferSize: Int): ClusterSingletonSettings = copy(bufferSize = bufferSize)
 
@@ -332,13 +335,13 @@ final class ClusterSingletonManagerSettings(
     copy(removalMargin = removalMargin)
 
   def withRemovalMargin(removalMargin: java.time.Duration): ClusterSingletonManagerSettings =
-    withRemovalMargin(removalMargin.asScala)
+    withRemovalMargin(removalMargin.toScala)
 
   def withHandOverRetryInterval(retryInterval: FiniteDuration): ClusterSingletonManagerSettings =
     copy(handOverRetryInterval = retryInterval)
 
   def withHandOverRetryInterval(retryInterval: java.time.Duration): ClusterSingletonManagerSettings =
-    withHandOverRetryInterval(retryInterval.asScala)
+    withHandOverRetryInterval(retryInterval.toScala)
 
   /**
    * Note that if you define a custom lease name and have several singletons each one must have a unique

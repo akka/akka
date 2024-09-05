@@ -11,6 +11,7 @@ import java.util.function.{ BiFunction, Supplier }
 import scala.annotation.unchecked.uncheckedVariance
 import scala.annotation.varargs
 import scala.collection.immutable
+import scala.jdk.DurationConverters._
 import scala.jdk.FutureConverters._
 import scala.jdk.OptionConverters.RichOptional
 import scala.reflect.ClassTag
@@ -21,7 +22,6 @@ import akka.event.{ LogMarker, LoggingAdapter, MarkerLoggingAdapter }
 import akka.japi.{ function, Pair }
 import akka.stream._
 import akka.util.ConstantFun
-import akka.util.JavaDurationConverters._
 import akka.util.ccompat.JavaConverters._
 
 /**
@@ -762,7 +762,7 @@ final class SubSource[Out, Mat](
   def groupedWithin(
       maxNumber: Int,
       duration: java.time.Duration): SubSource[java.util.List[Out @uncheckedVariance], Mat] =
-    new SubSource(delegate.groupedWithin(maxNumber, duration.asScala).map(_.asJava))
+    new SubSource(delegate.groupedWithin(maxNumber, duration.toScala).map(_.asJava))
 
   /**
    * Chunk up this stream into groups of elements received within a time window,
@@ -786,7 +786,7 @@ final class SubSource[Out, Mat](
       maxWeight: Long,
       costFn: function.Function[Out, java.lang.Long],
       duration: java.time.Duration): javadsl.SubSource[java.util.List[Out @uncheckedVariance], Mat] =
-    new SubSource(delegate.groupedWeightedWithin(maxWeight, duration.asScala)(costFn.apply _).map(_.asJava))
+    new SubSource(delegate.groupedWeightedWithin(maxWeight, duration.toScala)(costFn.apply _).map(_.asJava))
 
   /**
    * Chunk up this stream into groups of elements received within a time window,
@@ -812,7 +812,7 @@ final class SubSource[Out, Mat](
       maxNumber: Int,
       costFn: function.Function[Out, java.lang.Long],
       duration: java.time.Duration): javadsl.SubSource[java.util.List[Out @uncheckedVariance], Mat] =
-    new SubSource(delegate.groupedWeightedWithin(maxWeight, maxNumber, duration.asScala)(costFn.apply).map(_.asJava))
+    new SubSource(delegate.groupedWeightedWithin(maxWeight, maxNumber, duration.toScala)(costFn.apply).map(_.asJava))
 
   /**
    * Discard the given number of elements at the beginning of the stream.
@@ -841,7 +841,7 @@ final class SubSource[Out, Mat](
    * '''Cancels when''' downstream cancels
    */
   def dropWithin(duration: java.time.Duration): SubSource[Out, Mat] =
-    new SubSource(delegate.dropWithin(duration.asScala))
+    new SubSource(delegate.dropWithin(duration.toScala))
 
   /**
    * Terminate processing (and cancel the upstream publisher) after predicate
@@ -927,7 +927,7 @@ final class SubSource[Out, Mat](
    * @param strategy Strategy that is used when incoming elements cannot fit inside the buffer
    */
   def delay(of: java.time.Duration, strategy: DelayOverflowStrategy): SubSource[Out, Mat] =
-    new SubSource(delegate.delay(of.asScala, strategy))
+    new SubSource(delegate.delay(of.toScala, strategy))
 
   /**
    * Shifts elements emission in time by an amount individually determined through delay strategy a specified amount.
@@ -1164,7 +1164,7 @@ final class SubSource[Out, Mat](
    * '''Cancels when''' downstream cancels or timer fires
    */
   def takeWithin(duration: java.time.Duration): SubSource[Out, Mat] =
-    new SubSource(delegate.takeWithin(duration.asScala))
+    new SubSource(delegate.takeWithin(duration.toScala))
 
   /**
    * Allows a faster upstream to progress independently of a slower subscriber by conflating elements into a summary
@@ -1979,7 +1979,7 @@ final class SubSource[Out, Mat](
    * '''Cancels when''' downstream cancels
    */
   def initialTimeout(timeout: java.time.Duration): SubSource[Out, Mat] =
-    new SubSource(delegate.initialTimeout(timeout.asScala))
+    new SubSource(delegate.initialTimeout(timeout.toScala))
 
   /**
    * If the completion of the stream does not happen until the provided timeout, the stream is failed
@@ -1994,7 +1994,7 @@ final class SubSource[Out, Mat](
    * '''Cancels when''' downstream cancels
    */
   def completionTimeout(timeout: java.time.Duration): SubSource[Out, Mat] =
-    new SubSource(delegate.completionTimeout(timeout.asScala))
+    new SubSource(delegate.completionTimeout(timeout.toScala))
 
   /**
    * If the time between two processed elements exceeds the provided timeout, the stream is failed
@@ -2010,7 +2010,7 @@ final class SubSource[Out, Mat](
    * '''Cancels when''' downstream cancels
    */
   def idleTimeout(timeout: java.time.Duration): SubSource[Out, Mat] =
-    new SubSource(delegate.idleTimeout(timeout.asScala))
+    new SubSource(delegate.idleTimeout(timeout.toScala))
 
   /**
    * If the time between the emission of an element and the following downstream demand exceeds the provided timeout,
@@ -2026,7 +2026,7 @@ final class SubSource[Out, Mat](
    * '''Cancels when''' downstream cancels
    */
   def backpressureTimeout(timeout: java.time.Duration): SubSource[Out, Mat] =
-    new SubSource(delegate.backpressureTimeout(timeout.asScala))
+    new SubSource(delegate.backpressureTimeout(timeout.toScala))
 
   /**
    * Injects additional elements if upstream does not emit for a configured amount of time. In other words, this
@@ -2046,7 +2046,7 @@ final class SubSource[Out, Mat](
    * '''Cancels when''' downstream cancels
    */
   def keepAlive(maxIdle: java.time.Duration, injectedElem: function.Creator[Out]): SubSource[Out, Mat] =
-    new SubSource(delegate.keepAlive(maxIdle.asScala, injectedElem.create _))
+    new SubSource(delegate.keepAlive(maxIdle.toScala, injectedElem.create _))
 
   /**
    * Sends elements downstream with speed limited to `elements/per`. In other words, this operator set the maximum rate
@@ -2079,7 +2079,7 @@ final class SubSource[Out, Mat](
    *
    */
   def throttle(elements: Int, per: java.time.Duration): javadsl.SubSource[Out, Mat] =
-    new SubSource(delegate.throttle(elements, per.asScala))
+    new SubSource(delegate.throttle(elements, per.toScala))
 
   /**
    * Sends elements downstream with speed limited to `elements/per`. In other words, this operator set the maximum rate
@@ -2122,7 +2122,7 @@ final class SubSource[Out, Mat](
       per: java.time.Duration,
       maximumBurst: Int,
       mode: ThrottleMode): javadsl.SubSource[Out, Mat] =
-    new SubSource(delegate.throttle(elements, per.asScala, maximumBurst, mode))
+    new SubSource(delegate.throttle(elements, per.toScala, maximumBurst, mode))
 
   /**
    * Sends elements downstream with speed limited to `cost/per`. Cost is
@@ -2160,7 +2160,7 @@ final class SubSource[Out, Mat](
       cost: Int,
       per: java.time.Duration,
       costCalculation: function.Function[Out, Integer]): javadsl.SubSource[Out, Mat] =
-    new SubSource(delegate.throttle(cost, per.asScala, costCalculation.apply _))
+    new SubSource(delegate.throttle(cost, per.toScala, costCalculation.apply _))
 
   /**
    * Sends elements downstream with speed limited to `cost/per`. Cost is
@@ -2207,7 +2207,7 @@ final class SubSource[Out, Mat](
       maximumBurst: Int,
       costCalculation: function.Function[Out, Integer],
       mode: ThrottleMode): javadsl.SubSource[Out, Mat] =
-    new SubSource(delegate.throttle(cost, per.asScala, maximumBurst, costCalculation.apply _, mode))
+    new SubSource(delegate.throttle(cost, per.toScala, maximumBurst, costCalculation.apply _, mode))
 
   /**
    * Detaches upstream demand from downstream demand without detaching the
@@ -2235,7 +2235,7 @@ final class SubSource[Out, Mat](
    * '''Cancels when''' downstream cancels
    */
   def initialDelay(delay: java.time.Duration): SubSource[Out, Mat] =
-    new SubSource(delegate.initialDelay(delay.asScala))
+    new SubSource(delegate.initialDelay(delay.toScala))
 
   /**
    * Change the attributes of this [[Source]] to the given ones and seal the list
@@ -2474,6 +2474,6 @@ final class SubSource[Out, Mat](
         aggregate = (agg, out) => aggregate.apply(agg, out).toScala,
         harvest = agg => harvest.apply(agg),
         emitOnTimer = Option(emitOnTimer).map {
-          case Pair(predicate, duration) => (agg => predicate.test(agg), duration.asScala)
+          case Pair(predicate, duration) => (agg => predicate.test(agg), duration.toScala)
         }))
 }

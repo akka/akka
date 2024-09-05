@@ -55,27 +55,27 @@ import akka.util.OptionVal
 @InternalApi private[akka] trait TimerSchedulerCrossDslSupport[T]
     extends scaladsl.TimerScheduler[T]
     with javadsl.TimerScheduler[T] {
-  import akka.util.JavaDurationConverters._
+  import scala.jdk.DurationConverters._
 
   override final def startTimerWithFixedDelay(key: Any, msg: T, delay: Duration): Unit =
-    startTimerWithFixedDelay(key, msg, delay.asScala)
+    startTimerWithFixedDelay(key, msg, delay.toScala)
 
   override final def startTimerWithFixedDelay(key: Any, msg: T, initialDelay: Duration, delay: Duration): Unit =
-    startTimerWithFixedDelay(key, msg, initialDelay.asScala, delay.asScala)
+    startTimerWithFixedDelay(key, msg, initialDelay.toScala, delay.toScala)
 
   override final def startTimerAtFixedRate(key: Any, msg: T, interval: Duration): Unit =
-    startTimerAtFixedRate(key, msg, interval.asScala)
+    startTimerAtFixedRate(key, msg, interval.toScala)
 
   override final def startTimerAtFixedRate(key: Any, msg: T, initialDelay: Duration, interval: Duration): Unit =
-    startTimerAtFixedRate(key, msg, initialDelay.asScala, interval.asScala)
+    startTimerAtFixedRate(key, msg, initialDelay.toScala, interval.toScala)
 
   override final def startPeriodicTimer(key: Any, msg: T, interval: Duration): Unit = {
     //this follows the deprecation note in the super class
-    startTimerWithFixedDelay(key, msg, interval.asScala)
+    startTimerWithFixedDelay(key, msg, interval.toScala)
   }
 
   override final def startSingleTimer(key: Any, msg: T, delay: Duration): Unit =
-    startSingleTimer(key, msg, delay.asScala)
+    startSingleTimer(key, msg, delay.toScala)
 }
 
 /**

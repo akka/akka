@@ -6,13 +6,13 @@ package akka.actor.testkit.typed
 
 import java.util.concurrent.TimeoutException
 
-import scala.jdk.FunctionConverters._
 import scala.concurrent.duration.FiniteDuration
+import scala.jdk.FunctionConverters._
+import scala.jdk.DurationConverters._
 import scala.util.{ Failure, Success, Try }
 
 import akka.actor.typed.{ ActorRef, Behavior, Props, RecipientRef }
 import akka.annotation.{ DoNotInherit, InternalApi }
-import akka.util.JavaDurationConverters._
 import akka.util.unused
 
 /**
@@ -58,7 +58,7 @@ object Effect {
     /**
      * Java API
      */
-    def getResponseTimeout: java.time.Duration = responseTimeout.asJava
+    def getResponseTimeout: java.time.Duration = responseTimeout.toJava
 
     private var sentResponse: Boolean = false
 
@@ -244,7 +244,7 @@ object Effect {
     /**
      * Java API
      */
-    def duration(): java.time.Duration = d.asJava
+    def duration(): java.time.Duration = d.toJava
   }
 
   case object ReceiveTimeoutCancelled extends ReceiveTimeoutCancelled
@@ -256,7 +256,7 @@ object Effect {
    * FIXME what about events scheduled through the scheduler?
    */
   final case class Scheduled[U](delay: FiniteDuration, target: ActorRef[U], message: U) extends Effect {
-    def duration(): java.time.Duration = delay.asJava
+    def duration(): java.time.Duration = delay.toJava
   }
 
   final case class TimerScheduled[U](
@@ -266,11 +266,11 @@ object Effect {
       mode: TimerScheduled.TimerMode,
       overriding: Boolean)(val send: () => Unit)
       extends Effect {
-    def duration(): java.time.Duration = delay.asJava
+    def duration(): java.time.Duration = delay.toJava
   }
 
   object TimerScheduled {
-    import akka.util.JavaDurationConverters._
+    import scala.jdk.DurationConverters._
 
     sealed trait TimerMode
     case object FixedRateMode extends TimerMode
@@ -281,9 +281,9 @@ object Effect {
 
     /*Java API*/
     def fixedRateMode = FixedRateMode
-    def fixedRateMode(initialDelay: java.time.Duration) = FixedRateModeWithInitialDelay(initialDelay.asScala)
+    def fixedRateMode(initialDelay: java.time.Duration) = FixedRateModeWithInitialDelay(initialDelay.toScala)
     def fixedDelayMode = FixedDelayMode
-    def fixedDelayMode(initialDelay: java.time.Duration) = FixedDelayModeWithInitialDelay(initialDelay.asScala)
+    def fixedDelayMode(initialDelay: java.time.Duration) = FixedDelayModeWithInitialDelay(initialDelay.toScala)
     def singleMode = SingleMode
   }
 

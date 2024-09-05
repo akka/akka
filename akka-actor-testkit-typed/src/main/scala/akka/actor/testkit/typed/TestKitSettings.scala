@@ -5,13 +5,13 @@
 package akka.actor.testkit.typed
 
 import scala.concurrent.duration.{ Duration, FiniteDuration }
+import scala.jdk.DurationConverters._
 
 import com.typesafe.config.Config
 
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Extension
 import akka.actor.typed.ExtensionId
-import akka.util.JavaDurationConverters._
 import akka.util.Timeout
 
 object TestKitSettings {
@@ -87,5 +87,5 @@ final class TestKitSettings(val config: Config) {
    * Java API: Scale the `duration` with the configured `TestTimeFactor`
    */
   def dilated(duration: java.time.Duration): java.time.Duration =
-    dilated(duration.asScala).asJava
+    dilated(duration.toScala).toJava
 }

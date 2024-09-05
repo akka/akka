@@ -38,8 +38,8 @@ object Timeout {
    * Create a Timeout from java.time.Duration.
    */
   def create(duration: java.time.Duration): Timeout = {
-    import JavaDurationConverters._
-    new Timeout(duration.asScala)
+    import scala.jdk.DurationConverters._
+    new Timeout(duration.toScala)
   }
 
   implicit def durationToTimeout(duration: FiniteDuration): Timeout = new Timeout(duration)

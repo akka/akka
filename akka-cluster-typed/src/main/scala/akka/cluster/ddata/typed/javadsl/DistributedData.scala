@@ -6,6 +6,8 @@ package akka.cluster.ddata.typed.javadsl
 
 import java.util.function.{ Function => JFunction }
 
+import scala.jdk.DurationConverters._
+
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
@@ -17,7 +19,6 @@ import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
 import akka.cluster.ddata.ReplicatedData
 import akka.cluster.ddata.SelfUniqueAddress
-import akka.util.JavaDurationConverters._
 
 object DistributedData extends ExtensionId[DistributedData] {
   def get(system: ActorSystem[_]): DistributedData = apply(system)
@@ -52,7 +53,7 @@ object DistributedData extends ExtensionId[DistributedData] {
         new ReplicatorMessageAdapter[A, B](
           context,
           distributedData.replicator,
-          distributedData.unexpectedAskTimeout.asJava)
+          distributedData.unexpectedAskTimeout.toJava)
       factory(replicatorAdapter)
     }
   }

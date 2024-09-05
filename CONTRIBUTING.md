@@ -546,7 +546,7 @@ Scala has proven the most viable way to do it, as long as you keep the following
 | `scala.collection.immutable.Seq[T]` | `java.util.List<T>` |
 | `scala.concurrent.Future[T]` | `java.util.concurrent.CompletionStage<T>` |
 | `scala.concurrent.Promise[T]` | `java.util.concurrent.CompletableFuture<T>` |
-| `scala.concurrent.duration.FiniteDuration` | `java.time.Duration` (use `akka.util.JavaDurationConverters`) |
+| `scala.concurrent.duration.FiniteDuration` | `java.time.Duration` |
 | `T => Unit` | `java.util.function.Consumer<T>` |
 | `() => R` (`scala.Function0[R]`) | `java.util.function.Supplier<R>` |
 | `T => R` (`scala.Function1[T, R]`) | `java.util.function.Function<T, R>` |

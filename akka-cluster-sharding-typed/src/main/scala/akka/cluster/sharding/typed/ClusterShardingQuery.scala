@@ -5,12 +5,12 @@
 package akka.cluster.sharding.typed
 
 import scala.concurrent.duration.FiniteDuration
+import scala.jdk.DurationConverters._
 
 import akka.actor.typed.ActorRef
 import akka.cluster.sharding.ShardRegion.ClusterShardingStats
 import akka.cluster.sharding.ShardRegion.CurrentShardRegionState
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
-import akka.util.JavaDurationConverters
 
 /**
  * Protocol for querying sharding state e.g. A ShardRegion's state
@@ -67,5 +67,5 @@ final case class GetClusterShardingStats(
       entityTypeKey: javadsl.EntityTypeKey[_],
       timeout: java.time.Duration,
       replyTo: ActorRef[ClusterShardingStats]) =
-    this(entityTypeKey.asScala, JavaDurationConverters.asFiniteDuration(timeout), replyTo)
+    this(entityTypeKey.asScala, timeout.toScala, replyTo)
 }
