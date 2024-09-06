@@ -8,6 +8,7 @@ import java.util
 import java.util.concurrent._
 import java.util.concurrent.locks.{ Condition, LockSupport, ReentrantLock }
 
+import scala.annotation.nowarn
 import scala.collection.mutable
 import scala.concurrent.{ Await, ExecutionContext, ExecutionContextExecutor, Future }
 import scala.util.control.Exception
@@ -827,7 +828,7 @@ trait QueueSetupHelper {
       }
     }
 
-    def manualTimeControl(@unused on: Boolean): Unit =
+    def manualTimeControl(@nowarn("msg=never used") on: Boolean): Unit =
       waiting = Some(Manual())
 
     override def signalAll(): Unit = condition.signalAll()

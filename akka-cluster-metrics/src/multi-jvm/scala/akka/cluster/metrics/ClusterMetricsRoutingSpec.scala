@@ -28,7 +28,6 @@ import akka.routing.Routees
 import akka.serialization.jackson.CborSerializable
 import akka.testkit.{ DefaultTimeout, ImplicitSender, LongRunningTest }
 import akka.testkit.GHExcludeTest
-import akka.util.unused
 
 object AdaptiveLoadBalancingRouterConfig extends MultiNodeConfig {
 
@@ -112,7 +111,7 @@ object AdaptiveLoadBalancingRouterConfig extends MultiNodeConfig {
 
 }
 
-class TestCustomMetricsSelector(@unused config: Config) extends MetricsSelector {
+class TestCustomMetricsSelector(@nowarn("msg=never used") config: Config) extends MetricsSelector {
   override def weights(nodeMetrics: Set[NodeMetrics]): Map[Address, Int] = Map.empty
 }
 

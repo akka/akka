@@ -4,6 +4,7 @@
 
 package akka.persistence.journal
 
+import scala.annotation.nowarn
 import scala.concurrent.duration._
 
 import com.typesafe.config._
@@ -13,7 +14,6 @@ import akka.persistence._
 import akka.persistence.JournalProtocol._
 import akka.persistence.scalatest.{ MayVerb, OptionalTests }
 import akka.testkit._
-import akka.util.unused
 
 object JournalSpec {
   val config: Config = ConfigFactory.parseString(s"""
@@ -69,7 +69,7 @@ abstract class JournalSpec(config: Config)
    * test case. `pid` is the `persistenceId` that will be used in the test.
    * This method may be needed to clean pre-existing events from the log.
    */
-  def preparePersistenceId(@unused pid: String): Unit = ()
+  def preparePersistenceId(@nowarn("msg=never used") pid: String): Unit = ()
 
   /**
    * Implementation may override and return false if it does not

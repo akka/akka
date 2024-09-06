@@ -4,6 +4,7 @@
 
 package akka.actor
 
+import scala.annotation.nowarn
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
@@ -12,7 +13,7 @@ import language.postfixOps
 
 import akka.event._
 import akka.testkit._
-import akka.util.{ unused, Timeout }
+import akka.util.Timeout
 
 object FSMActorSpec {
 
@@ -79,7 +80,7 @@ object FSMActorSpec {
     // verify that old-style does still compile
     onTransition(transitionHandler _)
 
-    def transitionHandler(@unused from: LockState, @unused to: LockState) = {
+    def transitionHandler(@nowarn("msg=never used") from: LockState, @nowarn("msg=never used") to: LockState) = {
       // dummy
     }
 

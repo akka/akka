@@ -4,6 +4,7 @@
 
 package akka.persistence.testkit
 
+import scala.annotation.nowarn
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.util.Try
@@ -18,7 +19,6 @@ import akka.persistence.journal.Tagged
 import akka.persistence.snapshot.SnapshotStore
 import akka.persistence.testkit.internal.{ InMemStorageExtension, SnapshotStorageEmulatorExtension }
 import akka.persistence.testkit.internal.CurrentTime
-import akka.util.unused
 
 /**
  * INTERNAL API
@@ -26,7 +26,9 @@ import akka.util.unused
  * Persistence testkit plugin for events.
  */
 @InternalApi
-class PersistenceTestKitPlugin(@unused cfg: Config, cfgPath: String) extends AsyncWriteJournal with ActorLogging {
+class PersistenceTestKitPlugin(@nowarn("msg=never used") cfg: Config, cfgPath: String)
+    extends AsyncWriteJournal
+    with ActorLogging {
 
   private final val storage = {
     log.debug("Using in memory storage [{}] for test kit journal", cfgPath)

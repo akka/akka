@@ -8,6 +8,7 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ThreadFactory
 import java.util.concurrent.atomic.AtomicLong
 
+import scala.annotation.nowarn
 import scala.annotation.tailrec
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.{ Duration, FiniteDuration }
@@ -19,7 +20,6 @@ import akka.actor.Cancellable
 import akka.actor.Scheduler
 import akka.event.LoggingAdapter
 import akka.util.ccompat.JavaConverters._
-import akka.util.unused
 
 /**
  * For testing: scheduler that does not look at the clock, but must be
@@ -31,7 +31,10 @@ import akka.util.unused
  * easier, but these tests might fail to catch race conditions that only
  * happen when tasks are scheduled in parallel in 'real time'.
  */
-class ExplicitlyTriggeredScheduler(@unused config: Config, log: LoggingAdapter, @unused tf: ThreadFactory)
+class ExplicitlyTriggeredScheduler(
+    @nowarn("msg=never used") config: Config,
+    log: LoggingAdapter,
+    @nowarn("msg=never used") tf: ThreadFactory)
     extends Scheduler {
 
   private class Item(val interval: Option[FiniteDuration], val runnable: Runnable)

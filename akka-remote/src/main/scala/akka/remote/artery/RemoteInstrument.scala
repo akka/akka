@@ -7,6 +7,7 @@ package akka.remote.artery
 import java.nio.ByteBuffer
 import java.util.concurrent.ConcurrentHashMap
 
+import scala.annotation.nowarn
 import scala.annotation.tailrec
 import scala.util.control.NonFatal
 
@@ -21,7 +22,6 @@ import akka.event.LoggingAdapter
 import akka.remote.RemoteActorRefProvider
 import akka.util.OptionVal
 import akka.util.ccompat._
-import akka.util.unused
 
 /**
  * INTERNAL API
@@ -402,7 +402,7 @@ private[remote] object RemoteInstruments {
   def getLength(kl: Int): Int = kl & lengthMask
 
   @InternalStableApi
-  def create(system: ExtendedActorSystem, @unused log: LoggingAdapter): Vector[RemoteInstrument] = {
+  def create(system: ExtendedActorSystem, @nowarn("msg=never used") log: LoggingAdapter): Vector[RemoteInstrument] = {
     val c = system.settings.config
     val path = "akka.remote.artery.advanced.instruments"
     import akka.util.ccompat.JavaConverters._

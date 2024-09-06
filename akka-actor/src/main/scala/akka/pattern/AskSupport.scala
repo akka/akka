@@ -20,7 +20,6 @@ import akka.dispatch.ExecutionContexts
 import akka.dispatch.sysmsg._
 import akka.util.{ Timeout, Unsafe }
 import akka.util.ByteString
-import akka.util.unused
 
 /**
  * This is what is used to complete a Future that is returned from an ask/? call,
@@ -675,22 +674,27 @@ private[akka] final class PromiseActorRef(
   }
 
   @InternalStableApi
-  private[akka] def ask(actorSel: ActorSelection, message: Any, @unused timeout: Timeout): Future[Any] = {
+  private[akka] def ask(
+      actorSel: ActorSelection,
+      message: Any,
+      @nowarn("msg=never used") timeout: Timeout): Future[Any] = {
     actorSel.tell(message, this)
     result.future
   }
 
   @InternalStableApi
-  private[akka] def ask(actorRef: ActorRef, message: Any, @unused timeout: Timeout): Future[Any] = {
+  private[akka] def ask(actorRef: ActorRef, message: Any, @nowarn("msg=never used") timeout: Timeout): Future[Any] = {
     actorRef.tell(message, this)
     result.future
   }
 
   @InternalStableApi
-  private[akka] def onComplete(@unused message: Any, @unused alreadyCompleted: Boolean): Unit = {}
+  private[akka] def onComplete(
+      @nowarn("msg=never used") message: Any,
+      @nowarn("msg=never used") alreadyCompleted: Boolean): Unit = {}
 
   @InternalStableApi
-  private[akka] def onTimeout(@unused timeout: Timeout): Unit = {}
+  private[akka] def onTimeout(@nowarn("msg=never used") timeout: Timeout): Unit = {}
 }
 
 /**

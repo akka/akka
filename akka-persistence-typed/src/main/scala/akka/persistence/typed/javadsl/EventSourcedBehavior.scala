@@ -4,6 +4,8 @@
 
 package akka.persistence.typed.javadsl
 
+import scala.annotation.nowarn
+
 import java.util.Collections
 import java.util.Optional
 import akka.actor.typed
@@ -15,7 +17,6 @@ import akka.annotation.InternalApi
 import akka.persistence.typed._
 import akka.persistence.typed.EventAdapter
 import akka.persistence.typed.internal._
-import akka.util.unused
 
 /**
  * For projects using Java 17 and newer, also see [[EventSourcedOnCommandBehavior]]
@@ -152,7 +153,10 @@ abstract class EventSourcedBehavior[Command, Event, State] private[akka] (
    * @return `true` if snapshot should be saved at the given `state`, `event` and `sequenceNr` when the event has
    *         been successfully persisted
    */
-  def shouldSnapshot(@unused state: State, @unused event: Event, @unused sequenceNr: Long): Boolean = false
+  def shouldSnapshot(
+      @nowarn("msg=never used") state: State,
+      @nowarn("msg=never used") event: Event,
+      @nowarn("msg=never used") sequenceNr: Long): Boolean = false
 
   /**
    * Can be used to delete events after `shouldSnapshot`.
@@ -181,14 +185,14 @@ abstract class EventSourcedBehavior[Command, Event, State] private[akka] (
    *
    * If [[tagsFor(Event, State)]] is overriden this method is ignored.
    */
-  def tagsFor(@unused event: Event): java.util.Set[String] = Collections.emptySet()
+  def tagsFor(@nowarn("msg=never used") event: Event): java.util.Set[String] = Collections.emptySet()
 
   /**
    * Return tags to store for the given event and state, the tags can then be used in persistence query.
    * The state passed to the tagger allows for toggling a tag with one event but keep all events after it tagged
    * based on a property or the type of the state.
    */
-  def tagsFor(@unused state: State, event: Event): java.util.Set[String] =
+  def tagsFor(@nowarn("msg=never used") state: State, event: Event): java.util.Set[String] =
     tagsFor(event)
 
   /**

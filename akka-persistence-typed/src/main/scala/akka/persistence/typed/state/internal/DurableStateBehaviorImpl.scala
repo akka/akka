@@ -6,6 +6,8 @@ package akka.persistence.typed.state.internal
 
 import org.slf4j.LoggerFactory
 
+import scala.annotation.nowarn
+
 import akka.actor.typed
 import akka.actor.typed.ActorRef
 import akka.actor.typed.BackoffSupervisorStrategy
@@ -24,7 +26,6 @@ import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.SnapshotAdapter
 import akka.persistence.typed.state.scaladsl._
 import akka.persistence.typed.telemetry.DurableStateBehaviorInstrumentationProvider
-import akka.util.unused
 
 @InternalApi
 private[akka] object DurableStateBehaviorImpl {
@@ -155,7 +156,7 @@ private[akka] final case class DurableStateBehaviorImpl[Command, State](
 
   // FIXME remove instrumentation hook method in 2.10.0
   @InternalStableApi
-  private[akka] def initialize(@unused context: ActorContext[_]): Unit = ()
+  private[akka] def initialize(@nowarn("msg=never used") context: ActorContext[_]): Unit = ()
 
   override def receiveSignal(handler: PartialFunction[(State, Signal), Unit]): DurableStateBehavior[Command, State] =
     copy(signalHandler = handler)

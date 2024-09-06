@@ -4,6 +4,7 @@
 
 package akka.persistence.typed.state.internal
 
+import scala.annotation.nowarn
 import scala.annotation.tailrec
 import scala.collection.immutable
 
@@ -21,7 +22,6 @@ import akka.persistence.typed.state.internal.DurableStateBehaviorImpl.GetState
 import akka.persistence.typed.state.scaladsl.Effect
 import akka.persistence.typed.telemetry.DurableStateBehaviorInstrumentation
 import akka.util.OptionVal
-import akka.util.unused
 
 /**
  * INTERNAL API
@@ -58,7 +58,9 @@ private[akka] object Running {
     def nextRevision(): RunningState[State] =
       copy(revision = revision + 1)
 
-    def applyState[C, E](@unused setup: BehaviorSetup[C, State], updated: State): RunningState[State] = {
+    def applyState[C, E](
+        @nowarn("msg=never used") setup: BehaviorSetup[C, State],
+        updated: State): RunningState[State] = {
       copy(state = updated)
     }
 
@@ -429,9 +431,11 @@ private[akka] object Running {
 
   // FIXME remove instrumentation hook method in 2.10.0
   @InternalStableApi
-  private[akka] def onWriteFailed(@unused ctx: ActorContext[_], @unused reason: Throwable): Unit = ()
+  private[akka] def onWriteFailed(
+      @nowarn("msg=never used") ctx: ActorContext[_],
+      @nowarn("msg=never used") reason: Throwable): Unit = ()
   // FIXME remove instrumentation hook method in 2.10.0
   @InternalStableApi
-  private[akka] def onWriteSuccess(@unused ctx: ActorContext[_]): Unit = ()
+  private[akka] def onWriteSuccess(@nowarn("msg=never used") ctx: ActorContext[_]): Unit = ()
 
 }

@@ -4,6 +4,8 @@
 
 package akka.stream.impl
 
+import scala.annotation.nowarn
+
 import org.reactivestreams.{ Subscriber, Subscription }
 
 import akka.actor._
@@ -11,7 +13,6 @@ import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.stream.AbruptTerminationException
 import akka.stream.ActorAttributes
 import akka.stream.Attributes
-import akka.util.unused
 
 /**
  * INTERNAL API
@@ -123,7 +124,7 @@ import akka.util.unused
 
     def onError(input: Int, e: Throwable): Unit
 
-    def onDepleted(@unused input: Int): Unit = ()
+    def onDepleted(@nowarn("msg=never used") input: Int): Unit = ()
 
     def onCompleteWhenNoInput(): Unit = ()
 

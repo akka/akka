@@ -5,6 +5,7 @@
 package akka.stream.impl
 
 import scala.collection.immutable
+import scala.annotation.nowarn
 
 import org.reactivestreams.Subscription
 
@@ -13,7 +14,6 @@ import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.stream.AbruptTerminationException
 import akka.stream.ActorAttributes
 import akka.stream.Attributes
-import akka.util.unused
 
 /**
  * INTERNAL API
@@ -192,7 +192,7 @@ import akka.util.unused
       enqueue(id, elem)
     }
 
-    def onCancel(@unused output: Int): Unit = ()
+    def onCancel(@nowarn("msg=never used") output: Int): Unit = ()
 
     def demandAvailableFor(id: Int) = new TransferState {
       override def isCompleted: Boolean = cancelled(id) || completed(id) || errored(id)

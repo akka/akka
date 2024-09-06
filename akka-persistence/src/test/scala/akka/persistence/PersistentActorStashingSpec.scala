@@ -4,6 +4,7 @@
 
 package akka.persistence
 
+import scala.annotation.nowarn
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
 
@@ -13,7 +14,6 @@ import akka.actor.{ Actor, ActorRef, OneForOneStrategy, Props }
 import akka.actor.SupervisorStrategy.Resume
 import akka.persistence.journal.SteppingInmemJournal
 import akka.testkit.ImplicitSender
-import akka.util.unused
 
 object PersistentActorStashingSpec {
   final case class Cmd(data: Any)
@@ -175,7 +175,7 @@ object PersistentActorStashingSpec {
       case _ => // ignore
     }
 
-    def stashWithinHandler(@unused evt: Evt) = {
+    def stashWithinHandler(@nowarn("msg=never used") evt: Evt) = {
       stash()
     }
 

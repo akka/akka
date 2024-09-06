@@ -4,6 +4,8 @@
 
 package akka.persistence.typed.internal
 
+import scala.annotation.nowarn
+
 import java.util.Optional
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
@@ -47,7 +49,6 @@ import akka.persistence.typed.scaladsl._
 import akka.persistence.typed.scaladsl.{ Recovery => TypedRecovery }
 import akka.persistence.typed.scaladsl.RetentionCriteria
 import akka.persistence.typed.telemetry.EventSourcedBehaviorInstrumentationProvider
-import akka.util.unused
 
 @InternalApi
 private[akka] object EventSourcedBehaviorImpl {
@@ -260,7 +261,7 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
 
   // FIXME remove instrumentation hook method in 2.10.0
   @InternalStableApi
-  private[akka] def initialize(@unused context: ActorContext[_]): Unit = ()
+  private[akka] def initialize(@nowarn("msg=never used") context: ActorContext[_]): Unit = ()
 
   override def receiveSignal(
       handler: PartialFunction[(State, Signal), Unit]): EventSourcedBehavior[Command, Event, State] =

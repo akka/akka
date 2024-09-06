@@ -45,7 +45,7 @@ object Source {
   /**
    * Create a `Source` with no elements. The result is the same as calling `Source.<O>empty()`
    */
-  def empty[T](@unused clazz: Class[T]): Source[T, NotUsed] = empty[T]()
+  def empty[T](@nowarn("msg=never used") clazz: Class[T]): Source[T, NotUsed] = empty[T]()
 
   /**
    * Create a `Source` which materializes a [[java.util.concurrent.CompletableFuture]] which controls what element

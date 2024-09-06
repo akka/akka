@@ -21,7 +21,7 @@ import akka.dispatch.affinity.AffinityPoolConfigurator
 import akka.dispatch.sysmsg._
 import akka.event.EventStream
 import akka.event.Logging.{ Debug, Error, LogEventException }
-import akka.util.{ unused, Index, Unsafe }
+import akka.util.{ Index, Unsafe }
 
 final case class Envelope private (message: Any, sender: ActorRef) {
 
@@ -338,7 +338,9 @@ abstract class MessageDispatcher(val configurator: MessageDispatcherConfigurator
 /**
  * An ExecutorServiceConfigurator is a class that given some prerequisites and a configuration can create instances of ExecutorService
  */
-abstract class ExecutorServiceConfigurator(@unused config: Config, @unused prerequisites: DispatcherPrerequisites)
+abstract class ExecutorServiceConfigurator(
+    @nowarn("msg=never used") config: Config,
+    @nowarn("msg=never used") prerequisites: DispatcherPrerequisites)
     extends ExecutorServiceFactoryProvider
 
 /**
@@ -397,7 +399,7 @@ class ThreadPoolExecutorConfigurator(config: Config, prerequisites: DispatcherPr
 
   protected def createThreadPoolConfigBuilder(
       config: Config,
-      @unused prerequisites: DispatcherPrerequisites): ThreadPoolConfigBuilder = {
+      @nowarn("msg=never used") prerequisites: DispatcherPrerequisites): ThreadPoolConfigBuilder = {
     import akka.util.Helpers.ConfigOps
     val builder =
       ThreadPoolConfigBuilder(ThreadPoolConfig())

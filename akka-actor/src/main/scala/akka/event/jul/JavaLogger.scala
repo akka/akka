@@ -6,6 +6,8 @@ package akka.event.jul
 
 import java.util.logging
 
+import scala.annotation.nowarn
+
 import akka.actor.Actor
 import akka.actor.ActorSystem
 import akka.dispatch.RequiresMessageQueue
@@ -14,7 +16,6 @@ import akka.event.EventStream
 import akka.event.LoggerMessageQueueSemantics
 import akka.event.Logging._
 import akka.event.LoggingFilter
-import akka.util.unused
 
 /**
  * `java.util.logging` logger.
@@ -97,7 +98,8 @@ object Logger {
  * the log events to the `eventStream`.
  */
 @deprecated("Use Slf4jLoggingFilter instead.", "2.6.0")
-class JavaLoggingFilter(@unused settings: ActorSystem.Settings, eventStream: EventStream) extends LoggingFilter {
+class JavaLoggingFilter(@nowarn("msg=never used") settings: ActorSystem.Settings, eventStream: EventStream)
+    extends LoggingFilter {
   import Logger.mapLevel
 
   def isErrorEnabled(logClass: Class[_], logSource: String) =

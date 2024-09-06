@@ -6,6 +6,7 @@ package akka.actor
 
 import java.util.concurrent.atomic.AtomicInteger
 
+import scala.annotation.nowarn
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
@@ -22,7 +23,6 @@ import akka.pattern.ask
 import akka.routing.RoundRobinPool
 import akka.testkit._
 import akka.testkit.TestEvent._
-import akka.util.unused
 
 object SupervisorSpec {
   val Timeout = 5.seconds
@@ -92,7 +92,8 @@ object SupervisorSpec {
 
   val failure = new AssertionError("deliberate test failure")
 
-  class Mailbox(@unused settings: ActorSystem.Settings, @unused config: Config) extends MailboxType {
+  class Mailbox(@nowarn("msg=never used") settings: ActorSystem.Settings, @nowarn("msg=never used") config: Config)
+      extends MailboxType {
     override def create(owner: Option[ActorRef], system: Option[ActorSystem]): MessageQueue =
       throw failure
   }

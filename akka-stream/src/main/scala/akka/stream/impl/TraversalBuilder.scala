@@ -4,6 +4,7 @@
 
 package akka.stream.impl
 
+import scala.annotation.nowarn
 import scala.collection.immutable.Map.Map1
 import scala.language.existentials
 
@@ -15,7 +16,6 @@ import akka.stream.impl.fusing.GraphStageModule
 import akka.stream.impl.fusing.GraphStages.SingleSource
 import akka.stream.scaladsl.Keep
 import akka.util.OptionVal
-import akka.util.unused
 
 /**
  * INTERNAL API
@@ -46,7 +46,7 @@ import akka.util.unused
     Concat.normalizeConcat(this, that)
   }
 
-  def rewireFirstTo(@unused relativeOffset: Int): Traversal = null
+  def rewireFirstTo(@nowarn("msg=never used") relativeOffset: Int): Traversal = null
 }
 
 /**

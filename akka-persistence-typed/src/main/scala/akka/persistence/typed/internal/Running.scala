@@ -10,6 +10,7 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.concurrent.atomic.AtomicReference
 
+import scala.annotation.nowarn
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.Future
@@ -71,7 +72,6 @@ import akka.stream.scaladsl.Source
 import akka.stream.typed.scaladsl.ActorFlow
 import akka.util.OptionVal
 import akka.util.Timeout
-import akka.util.unused
 
 /**
  * INTERNAL API
@@ -1269,19 +1269,23 @@ private[akka] object Running {
   // FIXME remove instrumentation hook method in 2.10.0
   @InternalStableApi
   private[akka] def onWriteFailed(
-      @unused ctx: ActorContext[_],
-      @unused reason: Throwable,
-      @unused event: PersistentRepr): Unit = ()
+      @nowarn("msg=never used") ctx: ActorContext[_],
+      @nowarn("msg=never used") reason: Throwable,
+      @nowarn("msg=never used") event: PersistentRepr): Unit = ()
   // FIXME remove instrumentation hook method in 2.10.0
   @InternalStableApi
   private[akka] def onWriteRejected(
-      @unused ctx: ActorContext[_],
-      @unused reason: Throwable,
-      @unused event: PersistentRepr): Unit = ()
+      @nowarn("msg=never used") ctx: ActorContext[_],
+      @nowarn("msg=never used") reason: Throwable,
+      @nowarn("msg=never used") event: PersistentRepr): Unit = ()
   // FIXME remove instrumentation hook method in 2.10.0
   @InternalStableApi
-  private[akka] def onWriteSuccess(@unused ctx: ActorContext[_], @unused event: PersistentRepr): Unit = ()
+  private[akka] def onWriteSuccess(
+      @nowarn("msg=never used") ctx: ActorContext[_],
+      @nowarn("msg=never used") event: PersistentRepr): Unit = ()
   // FIXME remove instrumentation hook method in 2.10.0
   @InternalStableApi
-  private[akka] def onWriteDone(@unused ctx: ActorContext[_], @unused event: PersistentRepr): Unit = ()
+  private[akka] def onWriteDone(
+      @nowarn("msg=never used") ctx: ActorContext[_],
+      @nowarn("msg=never used") event: PersistentRepr): Unit = ()
 }

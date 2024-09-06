@@ -394,7 +394,7 @@ final class EntityContext[M](
 
 }
 
-@nowarn // for unused msgClass to make class type explicit in the Java API. Not using @unused as the user is likely to see it
+@nowarn // for unused msgClass to make class type explicit in the Java API. Not using @nowarn("msg=never used") as the user is likely to see it
 /** Allows starting a specific Sharded Entity by its entity identifier */
 object StartEntity {
 

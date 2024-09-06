@@ -4,6 +4,7 @@
 
 package akka.persistence.typed.state.internal
 
+import scala.annotation.nowarn
 import scala.concurrent.Future
 import scala.util.Failure
 import scala.util.Success
@@ -21,7 +22,6 @@ import akka.persistence._
 import akka.persistence.state.scaladsl.DurableStateUpdateWithChangeEventStore
 import akka.persistence.state.scaladsl.GetObjectResult
 import akka.util.OptionVal
-import akka.util.unused
 
 /** INTERNAL API */
 @InternalApi
@@ -112,7 +112,9 @@ private[akka] trait DurableStateStoreInteractions[C, S] {
   }
 
   @InternalStableApi
-  private[akka] def onWriteInitiated(@unused ctx: ActorContext[_], @unused cmd: Any): Unit = ()
+  private[akka] def onWriteInitiated(
+      @nowarn("msg=never used") ctx: ActorContext[_],
+      @nowarn("msg=never used") cmd: Any): Unit = ()
 
   protected def requestRecoveryPermit(): Unit = {
     setup.persistence.recoveryPermitter.tell(RecoveryPermitter.RequestRecoveryPermit, setup.selfClassic)

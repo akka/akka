@@ -4,12 +4,13 @@
 
 package akka.actor.dungeon
 
+import scala.annotation.nowarn
+
 import akka.actor.{ Actor, ActorCell, ActorRef, ActorRefScope, Address, InternalActorRef, Terminated }
 import akka.annotation.InternalApi
 import akka.dispatch.sysmsg.{ DeathWatchNotification, Unwatch, Watch }
 import akka.event.AddressTerminatedTopic
 import akka.event.Logging.{ Debug, Warning }
-import akka.util.unused
 
 /**
  * INTERNAL API
@@ -155,7 +156,7 @@ private[akka] trait DeathWatch { this: ActorCell =>
       }
     }
 
-  protected def unwatchWatchedActors(@unused actor: Actor): Unit =
+  protected def unwatchWatchedActors(@nowarn("msg=never used") actor: Actor): Unit =
     if (watching.nonEmpty) {
       maintainAddressTerminatedSubscription() {
         try {

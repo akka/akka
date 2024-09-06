@@ -9,6 +9,7 @@ import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
+import scala.annotation.nowarn
 import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.concurrent.duration._
@@ -51,7 +52,6 @@ import akka.stream.stage.InHandler
 import akka.stream.stage.OutHandler
 import akka.stream.stage.StageLogging
 import akka.util.OptionVal
-import akka.util.unused
 
 /**
  * INTERNAL API
@@ -548,7 +548,7 @@ import akka.util.unused
       minSlice: Int,
       maxSlice: Int,
       offset: Offset,
-      @unused firehose: Boolean): Source[EventEnvelope[Event], NotUsed] = {
+      @nowarn("msg=never used") firehose: Boolean): Source[EventEnvelope[Event], NotUsed] = {
     PersistenceQuery(system)
       .readJournalFor[EventsBySliceQuery](pluginId)
       .eventsBySlices(entityType, minSlice, maxSlice, offset)

@@ -4,6 +4,8 @@
 
 package akka.persistence.typed.internal
 
+import scala.annotation.nowarn
+
 import akka.actor.typed.Behavior
 import akka.actor.typed.internal.PoisonPill
 import akka.actor.typed.scaladsl.{ ActorContext, Behaviors }
@@ -14,7 +16,6 @@ import akka.persistence.SnapshotProtocol.LoadSnapshotFailed
 import akka.persistence.SnapshotProtocol.LoadSnapshotResult
 import akka.persistence.typed.{ RecoveryFailed, ReplicaId }
 import akka.persistence.typed.internal.EventSourcedBehaviorImpl.{ GetSeenSequenceNr, GetState }
-import akka.util.unused
 
 /**
  * INTERNAL API
@@ -113,10 +114,12 @@ private[akka] class ReplayingSnapshot[C, E, S](override val setup: BehaviorSetup
 
   // FIXME remove instrumentation hook method in 2.10.0
   @InternalStableApi
-  def onRecoveryStart(@unused context: ActorContext[_]): Unit = ()
+  def onRecoveryStart(@nowarn("msg=never used") context: ActorContext[_]): Unit = ()
   // FIXME remove instrumentation hook method in 2.10.0
   @InternalStableApi
-  def onRecoveryFailed(@unused context: ActorContext[_], @unused reason: Throwable): Unit = ()
+  def onRecoveryFailed(
+      @nowarn("msg=never used") context: ActorContext[_],
+      @nowarn("msg=never used") reason: Throwable): Unit = ()
 
   private def onRecoveryTick(snapshot: Boolean): Behavior[InternalProtocol] =
     if (snapshot) {

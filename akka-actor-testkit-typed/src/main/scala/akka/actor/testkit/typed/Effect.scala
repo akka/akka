@@ -6,14 +6,14 @@ package akka.actor.testkit.typed
 
 import java.util.concurrent.TimeoutException
 
-import scala.concurrent.duration.FiniteDuration
+import scala.annotation.nowarn
 import scala.jdk.FunctionConverters._
+import scala.concurrent.duration.FiniteDuration
 import scala.jdk.DurationConverters._
 import scala.util.{ Failure, Success, Try }
 
 import akka.actor.typed.{ ActorRef, Behavior, Props, RecipientRef }
 import akka.annotation.{ DoNotInherit, InternalApi }
-import akka.util.unused
 
 /**
  * All tracked effects for the [[akka.actor.testkit.typed.scaladsl.BehaviorTestKit]] and
@@ -202,7 +202,7 @@ object Effect {
   @InternalApi
   private[akka] object SpawnedAnonymousAdapter {
     def apply[T]() = new SpawnedAnonymousAdapter[T](null)
-    def unapply[T](@unused s: SpawnedAnonymousAdapter[T]): Boolean = true
+    def unapply[T](@nowarn("msg=never used") s: SpawnedAnonymousAdapter[T]): Boolean = true
   }
 
   /**

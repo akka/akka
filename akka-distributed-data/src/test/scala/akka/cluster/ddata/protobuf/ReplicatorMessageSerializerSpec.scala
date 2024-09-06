@@ -4,6 +4,7 @@
 
 package akka.cluster.ddata.protobuf
 
+import scala.annotation.nowarn
 import scala.concurrent.duration._
 
 import com.typesafe.config.ConfigFactory
@@ -28,7 +29,7 @@ import akka.cluster.ddata.Replicator._
 import akka.cluster.ddata.Replicator.Internal._
 import akka.cluster.ddata.VersionVector
 import akka.testkit.TestKit
-import akka.util.{ unused, ByteString }
+import akka.util.ByteString
 
 class ReplicatorMessageSerializerSpec
     extends TestKit(
@@ -260,7 +261,7 @@ class ReplicatorMessageSerializerSpec
 
     "suppory getOrAdd" in {
       var n = 0
-      def createValue(@unused a: Read): AnyRef = {
+      def createValue(@nowarn("msg=never used") a: Read): AnyRef = {
         n += 1
         new AnyRef {
           override val toString = "v" + n

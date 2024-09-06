@@ -4,6 +4,7 @@
 
 package akka.persistence.typed.internal
 
+import scala.annotation.nowarn
 import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
@@ -36,7 +37,6 @@ import akka.persistence.typed.internal.Running.WithSeqNrAccessible
 import akka.persistence.typed.internal.Running.startReplicationStream
 import akka.util.OptionVal
 import akka.util.PrettyDuration._
-import akka.util.unused
 
 /***
  * INTERNAL API
@@ -94,13 +94,16 @@ private[akka] final class ReplayingEvents[C, E, S](
 
   // FIXME remove instrumentation hook method in 2.10.0
   @InternalStableApi
-  def onRecoveryStart(@unused context: ActorContext[_]): Unit = ()
+  def onRecoveryStart(@nowarn("msg=never used") context: ActorContext[_]): Unit = ()
   // FIXME remove instrumentation hook method in 2.10.0
   @InternalStableApi
-  def onRecoveryComplete(@unused context: ActorContext[_]): Unit = ()
+  def onRecoveryComplete(@nowarn("msg=never used") context: ActorContext[_]): Unit = ()
   // FIXME remove instrumentation hook method in 2.10.0
   @InternalStableApi
-  def onRecoveryFailed(@unused context: ActorContext[_], @unused reason: Throwable, @unused event: Option[Any]): Unit =
+  def onRecoveryFailed(
+      @nowarn("msg=never used") context: ActorContext[_],
+      @nowarn("msg=never used") reason: Throwable,
+      @nowarn("msg=never used") event: Option[Any]): Unit =
     ()
 
   override def onMessage(msg: InternalProtocol): Behavior[InternalProtocol] = {

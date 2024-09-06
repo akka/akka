@@ -18,7 +18,7 @@ import akka.actor.typed.internal.InternalRecipientRef
 import akka.annotation.InternalStableApi
 import akka.pattern.PromiseActorRef
 import akka.pattern.StatusReply
-import akka.util.{ unused, Timeout }
+import akka.util.Timeout
 
 /**
  * The ask-pattern implements the initiator side of a request–reply protocol.
@@ -158,7 +158,10 @@ object AskPattern {
     val promiseRef: PromiseActorRef = _promiseRef
 
     @InternalStableApi
-    private[akka] def ask[T](target: InternalRecipientRef[T], message: T, @unused timeout: Timeout): Future[U] = {
+    private[akka] def ask[T](
+        target: InternalRecipientRef[T],
+        message: T,
+        @nowarn("msg=never used") timeout: Timeout): Future[U] = {
       target ! message
       future
     }
