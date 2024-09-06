@@ -31,7 +31,7 @@ import akka.routing.RouterConfig
 import akka.routing.RouterPoolActor
 import akka.routing.RoutingLogic
 import akka.util.HashCode
-import akka.util.ccompat.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 object ClusterRouterGroupSettings {
 

@@ -27,7 +27,7 @@ import akka.serialization.BaseSerializer
 import akka.serialization.SerializationExtension
 import akka.serialization.SerializerWithStringManifest
 import akka.serialization.Serializers
-import akka.util.ccompat.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 /**
  * INTERNAL API

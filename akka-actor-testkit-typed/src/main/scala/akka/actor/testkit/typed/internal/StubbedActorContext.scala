@@ -231,7 +231,7 @@ private[akka] final class FunctionRef[-T](override val path: ActorPath, send: (T
    * this method.
    */
   def logEntries: List[CapturedLogEvent] = {
-    import akka.util.ccompat.JavaConverters._
+    import scala.jdk.CollectionConverters._
     substituteLoggerFactory.getEventQueue
       .iterator()
       .asScala

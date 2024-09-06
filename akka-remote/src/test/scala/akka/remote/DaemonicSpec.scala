@@ -10,10 +10,8 @@ import com.typesafe.config.ConfigFactory
 
 import akka.actor.{ ActorSystem, Address }
 import akka.testkit._
-import akka.util.ccompat._
-import akka.util.ccompat.JavaConverters._
+import scala.jdk.CollectionConverters._
 
-@ccompatUsedUntil213
 class DaemonicSpec extends AkkaSpec {
 
   "Remoting configured with daemonic = on" must {

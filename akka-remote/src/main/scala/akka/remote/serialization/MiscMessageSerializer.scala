@@ -22,7 +22,7 @@ import akka.remote.WireFormats.AddressData
 import akka.remote.routing.RemoteRouterConfig
 import akka.routing._
 import akka.serialization.{ BaseSerializer, Serialization, SerializationExtension, SerializerWithStringManifest }
-import akka.util.ccompat.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerWithStringManifest with BaseSerializer {
 

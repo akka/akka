@@ -10,7 +10,7 @@ import akka.persistence.typed.ReplicaId
 import akka.persistence.typed.ReplicationId
 import akka.util.OptionVal
 import akka.util.WallClock
-import akka.util.ccompat.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 /**
  * INTERNAL API

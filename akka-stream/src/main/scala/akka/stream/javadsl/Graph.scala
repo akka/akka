@@ -8,13 +8,13 @@ import java.util
 
 import scala.annotation.nowarn
 import scala.annotation.unchecked.uncheckedVariance
+import scala.jdk.CollectionConverters._
 
 import akka.NotUsed
 import akka.japi.{ function, Pair }
 import akka.stream._
 import akka.stream.scaladsl.GenericGraph
 import akka.util.ConstantFun
-import akka.util.ccompat.JavaConverters._
 
 /**
  * Merge several streams, taking elements as they arrive from input streams
@@ -460,7 +460,7 @@ object ZipN {
  */
 object ZipWithN {
   def create[A, O](zipper: function.Function[java.util.List[A], O], n: Int): Graph[UniformFanInShape[A, O], NotUsed] = {
-    import akka.util.ccompat.JavaConverters._
+    import scala.jdk.CollectionConverters._
     scaladsl.ZipWithN[A, O](seq => zipper.apply(seq.asJava))(n)
   }
 }

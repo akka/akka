@@ -224,7 +224,7 @@ object JacksonObjectMapperProvider extends ExtensionId[JacksonObjectMapperProvid
       dynamicAccess: DynamicAccess,
       log: Option[LoggingAdapter]): Unit = {
 
-    import akka.util.ccompat.JavaConverters._
+    import scala.jdk.CollectionConverters._
 
     val configuredModules = config.getStringList("jackson-modules").asScala
     val modules1 =
@@ -298,13 +298,13 @@ object JacksonObjectMapperProvider extends ExtensionId[JacksonObjectMapperProvid
     }
 
   private def features(config: Config, section: String): immutable.Seq[(String, Boolean)] = {
-    import akka.util.ccompat.JavaConverters._
+    import scala.jdk.CollectionConverters._
     val cfg = config.getConfig(section)
     cfg.root.keySet().asScala.map(key => key -> cfg.getBoolean(key)).toList
   }
 
   private def configPairs(config: Config, section: String): immutable.Seq[(String, String)] = {
-    import akka.util.ccompat.JavaConverters._
+    import scala.jdk.CollectionConverters._
     val cfg = config.getConfig(section)
     cfg.root.keySet().asScala.map(key => key -> cfg.getString(key)).toList
   }

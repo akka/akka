@@ -13,7 +13,7 @@ import akka.dispatch.ExecutionContexts
 import akka.japi.function
 import akka.persistence.typed.internal._
 import akka.persistence.typed.internal.SideEffect
-import akka.util.ccompat.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 /**
  * INTERNAL API: see `class EffectFactories`

@@ -8,7 +8,7 @@ import scala.collection.immutable
 
 import akka.actor.ExtendedActorSystem
 import akka.actor.setup.Setup
-import akka.util.ccompat.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 object SerializationSetup {
 

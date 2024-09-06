@@ -13,9 +13,7 @@ import akka.cluster.MemberStatus
 import akka.remote.testkit.Direction
 import akka.serialization.jackson.CborSerializable
 import akka.testkit._
-import akka.util.ccompat._
 
-@ccompatUsedUntil213
 object ClusterShardCoordinatorDowning2Spec {
   case class Ping(id: String) extends CborSerializable
 

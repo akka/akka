@@ -251,7 +251,7 @@ final class Attributes private[akka] (
    * `get` to get the most specific attribute value.
    */
   def getAttributeList(): java.util.List[Attribute] = {
-    import akka.util.ccompat.JavaConverters._
+    import scala.jdk.CollectionConverters._
     attributeList.asJava
   }
 

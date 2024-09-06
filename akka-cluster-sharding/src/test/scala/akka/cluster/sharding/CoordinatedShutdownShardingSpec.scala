@@ -17,7 +17,6 @@ import akka.testkit.AkkaSpec
 import akka.testkit.TestActors.EchoActor
 import akka.testkit.TestProbe
 import akka.testkit.WithLogCapturing
-import akka.util.ccompat._
 
 object CoordinatedShutdownShardingSpec {
   val config =
@@ -39,7 +38,6 @@ object CoordinatedShutdownShardingSpec {
   }
 }
 
-@ccompatUsedUntil213
 class CoordinatedShutdownShardingSpec extends AkkaSpec(CoordinatedShutdownShardingSpec.config) with WithLogCapturing {
   import CoordinatedShutdownShardingSpec._
 

@@ -55,8 +55,6 @@ class ClusterSingletonRestart2Spec
     ConfigFactory.parseString("akka.cluster.roles = [other]").withFallback(system.settings.config))
   var sys4: ActorSystem = null
 
-  import akka.util.ccompat._
-  @ccompatUsedUntil213
   def join(from: ActorSystem, to: ActorSystem): Unit = {
     if (Cluster(from).selfRoles.contains("singleton"))
       from.actorOf(

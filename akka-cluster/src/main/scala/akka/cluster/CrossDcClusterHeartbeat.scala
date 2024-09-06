@@ -15,7 +15,6 @@ import akka.event.ActorWithLogClass
 import akka.event.Logging
 import akka.remote.FailureDetectorRegistry
 import akka.util.ConstantFun
-import akka.util.ccompat._
 
 /**
  * INTERNAL API
@@ -35,7 +34,6 @@ import akka.util.ccompat._
  * nodes which aggressively come and go as the traffic in the service changes.
  */
 @InternalApi
-@ccompatUsedUntil213
 private[cluster] class CrossDcHeartbeatSender extends Actor {
   import CrossDcHeartbeatSender._
 

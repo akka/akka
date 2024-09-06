@@ -18,7 +18,7 @@ import akka.discovery.aggregate.AggregateServiceDiscovery.Methods
 import akka.dispatch.MessageDispatcher
 import akka.event.Logging
 import akka.util.Helpers.Requiring
-import akka.util.ccompat.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 /**
  * INTERNAL API

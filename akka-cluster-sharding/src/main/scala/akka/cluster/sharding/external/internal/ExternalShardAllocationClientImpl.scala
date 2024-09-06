@@ -38,7 +38,7 @@ import akka.event.Logging
 import akka.pattern.ask
 import akka.util.PrettyDuration._
 import akka.util.Timeout
-import akka.util.ccompat.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 /**
  * INTERNAL API

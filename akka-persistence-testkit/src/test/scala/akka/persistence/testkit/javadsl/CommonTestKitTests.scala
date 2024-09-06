@@ -11,7 +11,7 @@ import akka.actor.typed.javadsl.Adapter
 import akka.persistence._
 import akka.persistence.testkit._
 import akka.testkit.EventFilter
-import akka.util.ccompat.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 trait CommonTestKitTests extends JavaDslUtils {
 

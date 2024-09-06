@@ -15,7 +15,7 @@ import scala.jdk.DurationConverters._
 import akka.actor._
 import akka.annotation.InternalApi
 import akka.testkit.{ TestActor, TestDuration, TestProbe }
-import akka.util.ccompat.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 /**
  * Java API: Test kit for testing actors. Inheriting from this class enables

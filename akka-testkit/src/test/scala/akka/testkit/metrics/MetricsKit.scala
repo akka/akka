@@ -32,7 +32,7 @@ private[akka] trait MetricsKit extends MetricsKitOps {
 
   import MetricsKit._
 
-  import akka.util.ccompat.JavaConverters._
+  import scala.jdk.CollectionConverters._
 
   private var reporters: List[ScheduledReporter] = Nil
 
@@ -151,7 +151,7 @@ private[akka] trait MetricsKit extends MetricsKitOps {
   }
 
   private[metrics] def getOrRegister[M <: Metric](key: String, metric: => M)(implicit tag: ClassTag[M]): M = {
-    import akka.util.ccompat.JavaConverters._
+    import scala.jdk.CollectionConverters._
     registry.getMetrics.asScala.find(_._1 == key).map(_._2) match {
       case Some(existing: M) => existing
       case Some(_) =>
@@ -195,7 +195,7 @@ trait AkkaMetricRegistry {
   def getHdrHistograms = filterFor(classOf[HdrHistogram])
   def getAveragingGauges = filterFor(classOf[AveragingGauge])
 
-  import akka.util.ccompat.JavaConverters._
+  import scala.jdk.CollectionConverters._
   private def filterFor[T](clazz: Class[T]): mutable.Iterable[(String, T)] =
     for {
       (key, metric) <- getMetrics.asScala

@@ -21,7 +21,7 @@ import akka.event.Logging
 import akka.pattern.AskTimeoutException
 import akka.pattern.ask
 import akka.util.Timeout
-import akka.util.ccompat.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 /**
  * Internal API

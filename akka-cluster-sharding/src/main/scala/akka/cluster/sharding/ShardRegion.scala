@@ -254,7 +254,7 @@ object ShardRegion {
      * Java API
      */
     def getRegions: java.util.Set[Address] = {
-      import akka.util.ccompat.JavaConverters._
+      import scala.jdk.CollectionConverters._
       regions.asJava
     }
 
@@ -284,7 +284,7 @@ object ShardRegion {
      * Java API
      */
     def getRegions(): java.util.Map[Address, ShardRegionStats] = {
-      import akka.util.ccompat.JavaConverters._
+      import scala.jdk.CollectionConverters._
       regions.asJava
     }
   }
@@ -319,13 +319,13 @@ object ShardRegion {
      * Java API
      */
     def getStats(): java.util.Map[ShardId, Int] = {
-      import akka.util.ccompat.JavaConverters._
+      import scala.jdk.CollectionConverters._
       stats.asJava
     }
 
     /** Java API */
     def getFailed(): java.util.Set[ShardId] = {
-      import akka.util.ccompat.JavaConverters._
+      import scala.jdk.CollectionConverters._
       failed.asJava
     }
 
@@ -385,13 +385,13 @@ object ShardRegion {
      * If gathering the shard information times out the set of shards will be empty.
      */
     def getShards(): java.util.Set[ShardState] = {
-      import akka.util.ccompat.JavaConverters._
+      import scala.jdk.CollectionConverters._
       shards.asJava
     }
 
     /** Java API */
     def getFailed(): java.util.Set[ShardId] = {
-      import akka.util.ccompat.JavaConverters._
+      import scala.jdk.CollectionConverters._
       failed.asJava
     }
 
@@ -428,7 +428,7 @@ object ShardRegion {
      * Java API:
      */
     def getEntityIds(): java.util.Set[EntityId] = {
-      import akka.util.ccompat.JavaConverters._
+      import scala.jdk.CollectionConverters._
       entityIds.asJava
     }
   }

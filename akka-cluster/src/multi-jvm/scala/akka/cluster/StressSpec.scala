@@ -515,7 +515,7 @@ abstract class StressSpec extends MultiNodeClusterSpec(StressMultiJvmSpec) with 
       .append(" MB")
     sb.append("\n")
 
-    import akka.util.ccompat.JavaConverters._
+    import scala.jdk.CollectionConverters._
     val args = runtime.getInputArguments.asScala.filterNot(_.contains("classpath")).mkString("\n  ")
     sb.append("Args:\n  ").append(args)
     sb.append("\n")

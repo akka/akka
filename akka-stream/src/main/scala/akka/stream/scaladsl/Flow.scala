@@ -43,7 +43,6 @@ import akka.stream.stage._
 import akka.util.ConstantFun
 import akka.util.OptionVal
 import akka.util.Timeout
-import akka.util.ccompat._
 
 /**
  * A `Flow` is a set of stream processing steps that has one open input and one open output.
@@ -819,7 +818,6 @@ final case class RunnableGraph[+Mat](override val traversalBuilder: TraversalBui
  * Binary compatibility is only maintained for callers of this trait’s interface.
  */
 @DoNotInherit
-@ccompatUsedUntil213
 trait FlowOps[+Out, +Mat] {
   import GraphDSL.Implicits._
 

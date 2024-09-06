@@ -28,7 +28,7 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
 import akka.stream.scaladsl._
 import akka.stream.stage._
 import akka.util.OptionVal
-import akka.util.ccompat.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 /**
  * INTERNAL API

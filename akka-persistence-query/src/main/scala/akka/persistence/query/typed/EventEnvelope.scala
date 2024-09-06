@@ -9,7 +9,7 @@ import java.util.Optional
 
 import akka.persistence.query.Offset
 import akka.util.HashCode
-import akka.util.ccompat.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 object EventEnvelope {
 

@@ -21,7 +21,7 @@ import akka.actor.ExtensionIdProvider
 import akka.coordination.lease.scaladsl.Lease
 import akka.event.Logging
 import akka.testkit.TestProbe
-import akka.util.ccompat.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 object TestLeaseExt extends ExtensionId[TestLeaseExt] with ExtensionIdProvider {
   override def get(system: ActorSystem): TestLeaseExt = super.get(system)

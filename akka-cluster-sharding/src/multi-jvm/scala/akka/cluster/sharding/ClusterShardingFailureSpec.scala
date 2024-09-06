@@ -13,9 +13,7 @@ import akka.remote.testconductor.RoleName
 import akka.remote.testkit.Direction
 import akka.serialization.jackson.CborSerializable
 import akka.testkit._
-import akka.util.ccompat._
 
-@ccompatUsedUntil213
 object ClusterShardingFailureSpec {
   case class Get(id: String) extends CborSerializable
   case class Add(id: String, i: Int) extends CborSerializable

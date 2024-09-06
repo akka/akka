@@ -397,7 +397,7 @@ object Flow {
  * A `Flow` is a set of stream processing steps that has one open input and one open output.
  */
 final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph[FlowShape[In, Out], Mat] {
-  import akka.util.ccompat.JavaConverters._
+  import scala.jdk.CollectionConverters._
 
   override def shape: FlowShape[In, Out] = delegate.shape
   override def traversalBuilder = delegate.traversalBuilder

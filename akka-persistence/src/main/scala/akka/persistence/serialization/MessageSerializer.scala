@@ -17,7 +17,6 @@ import akka.persistence.serialization.{ MessageFormats => mf }
 import akka.protobufv3.internal.ByteString
 import akka.protobufv3.internal.UnsafeByteOperations
 import akka.serialization._
-import akka.util.ccompat._
 
 import scala.concurrent.duration.Duration
 import scala.concurrent.duration.FiniteDuration
@@ -30,7 +29,6 @@ trait Message extends Serializable
 /**
  * Protobuf serializer for [[akka.persistence.PersistentRepr]], [[akka.persistence.AtLeastOnceDelivery]] and [[akka.persistence.fsm.PersistentFSM.StateChangeEvent]] messages.
  */
-@ccompatUsedUntil213
 @nowarn("msg=deprecated")
 class MessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer {
   import PersistentRepr.Undefined
@@ -117,7 +115,7 @@ class MessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer 
 
   def atLeastOnceDeliverySnapshot(
       atLeastOnceDeliverySnapshot: mf.AtLeastOnceDeliverySnapshot): AtLeastOnceDeliverySnapshot = {
-    import akka.util.ccompat.JavaConverters._
+    import scala.jdk.CollectionConverters._
     val unconfirmedDeliveries = new VectorBuilder[UnconfirmedDelivery]()
     atLeastOnceDeliverySnapshot.getUnconfirmedDeliveriesList().iterator().asScala.foreach { next =>
       unconfirmedDeliveries += UnconfirmedDelivery(
@@ -220,7 +218,7 @@ class MessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer 
   }
 
   private def atomicWrite(atomicWrite: mf.AtomicWrite): AtomicWrite = {
-    import akka.util.ccompat.JavaConverters._
+    import scala.jdk.CollectionConverters._
     AtomicWrite(atomicWrite.getPayloadList.asScala.iterator.map(persistent).to(immutable.IndexedSeq))
   }
 

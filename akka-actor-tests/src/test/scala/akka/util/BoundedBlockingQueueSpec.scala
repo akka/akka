@@ -24,7 +24,7 @@ import org.scalatest.wordspec.AnyWordSpec
 
 import akka.testkit.TimingTest
 import akka.util.DefaultExecutionContext._
-import akka.util.ccompat.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 class BoundedBlockingQueueSpec
     extends AnyWordSpec

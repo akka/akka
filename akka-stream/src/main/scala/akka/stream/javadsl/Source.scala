@@ -30,7 +30,7 @@ import akka.japi.function.Creator
 import akka.stream._
 import akka.stream.impl.{ LinearTraversalBuilder, UnfoldAsyncJava }
 import akka.util._
-import akka.util.ccompat.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 /** Java API */
 object Source {
@@ -673,7 +673,7 @@ object Source {
       case other                                      => other
     }.toSeq
     else immutable.Seq()
-    import akka.util.ccompat.JavaConverters._
+    import scala.jdk.CollectionConverters._
     new Source(scaladsl.Source.combine(seq)(size => fanInStrategy(size)).mapMaterializedValue(_.asJava))
   }
 
@@ -918,7 +918,7 @@ object Source {
  */
 final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[SourceShape[Out], Mat] {
 
-  import akka.util.ccompat.JavaConverters._
+  import scala.jdk.CollectionConverters._
 
   override def shape: SourceShape[Out] = delegate.shape
 

@@ -29,9 +29,7 @@ import akka.cluster.typed.Leave
 import akka.pattern.AskTimeoutException
 import akka.serialization.jackson.CborSerializable
 import akka.util.Timeout
-import akka.util.ccompat._
 
-@ccompatUsedUntil213
 object ClusterShardingSpec {
   val config = ConfigFactory.parseString("""
       akka.actor.provider = cluster

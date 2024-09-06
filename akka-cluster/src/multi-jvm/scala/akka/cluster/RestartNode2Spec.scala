@@ -19,9 +19,7 @@ import akka.cluster.MemberStatus._
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
-import akka.util.ccompat._
 
-@ccompatUsedUntil213
 object RestartNode2SpecMultiJvmSpec extends MultiNodeConfig {
   val seed1 = role("seed1")
   val seed2 = role("seed2")

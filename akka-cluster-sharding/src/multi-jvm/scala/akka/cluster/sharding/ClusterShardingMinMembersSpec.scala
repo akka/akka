@@ -10,9 +10,7 @@ import akka.cluster.MemberStatus
 import akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy
 import akka.cluster.sharding.ShardRegion.{ ClusterShardingStats, GetClusterShardingStats }
 import akka.testkit._
-import akka.util.ccompat._
 
-@ccompatUsedUntil213
 abstract class ClusterShardingMinMembersSpecConfig(mode: String)
     extends MultiNodeClusterShardingConfig(
       mode,

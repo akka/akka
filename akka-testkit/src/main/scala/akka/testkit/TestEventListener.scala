@@ -19,7 +19,6 @@ import akka.event.Logging
 import akka.event.Logging.{ Debug, Error, Info, InitializeLogger, LogEvent, LoggerInitialized, Warning }
 import akka.japi.Util.immutableSeq
 import akka.util.BoxedType
-import akka.util.ccompat._
 
 /**
  * Implementation helpers of the EventFilter facilities: send `Mute`
@@ -543,7 +542,6 @@ final case class DeadLettersFilter(val messageClass: Class[_])(occurrences: Int)
  * }
  * </code></pre>
  */
-@ccompatUsedUntil213
 class TestEventListener extends Logging.DefaultLogger {
   import TestEvent._
 

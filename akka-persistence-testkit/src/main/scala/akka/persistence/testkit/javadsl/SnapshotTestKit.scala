@@ -15,7 +15,7 @@ import akka.annotation.ApiMayChange
 import akka.japi.Pair
 import akka.persistence.testkit.{ ExpectedFailure, SnapshotMeta, SnapshotOperation, SnapshotStorage }
 import akka.persistence.testkit.scaladsl.{ SnapshotTestKit => ScalaTestKit }
-import akka.util.ccompat.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 /**
  * Class for testing persisted snapshots in persistent actors.

@@ -20,7 +20,7 @@ import akka.util.Helpers.ConfigOps
 import akka.util.Helpers.Requiring
 import akka.util.Helpers.toRootLowerCase
 import akka.util.WildcardIndex
-import akka.util.ccompat.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 /** INTERNAL API */
 private[akka] final class ArterySettings private (config: Config) {

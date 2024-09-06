@@ -17,9 +17,7 @@ import akka.actor._
 import akka.cluster.MemberStatus
 import akka.cluster.sharding.ShardRegion.{ CurrentShardRegionState, GetShardRegionState, Passivate }
 import akka.testkit._
-import akka.util.ccompat._
 
-@ccompatUsedUntil213
 object ClusterShardingRememberEntitiesPerfSpec {
   val NrRegions = 6
   // use 5 for "real" testing

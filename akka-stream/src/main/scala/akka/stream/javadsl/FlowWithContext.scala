@@ -16,7 +16,7 @@ import akka.event.{ LogMarker, LoggingAdapter, MarkerLoggingAdapter }
 import akka.japi.{ function, Pair }
 import akka.stream._
 import akka.util.ConstantFun
-import akka.util.ccompat.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 object FlowWithContext {
 

@@ -16,7 +16,7 @@ import akka.actor.{
 }
 import akka.annotation.InternalApi
 import akka.pattern.internal.CircuitBreakerTelemetryProvider
-import akka.util.ccompat.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 /**
  * Companion object providing factory methods for Circuit Breaker which runs callbacks in caller's thread

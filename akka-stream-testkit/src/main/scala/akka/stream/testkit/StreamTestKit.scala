@@ -22,7 +22,6 @@ import akka.stream._
 import akka.stream.impl._
 import akka.testkit.{ TestActor, TestProbe }
 import akka.testkit.TestActor.AutoPilot
-import akka.util.ccompat._
 
 /**
  * Provides factory methods for various Publishers.
@@ -95,7 +94,6 @@ object TestPublisher {
 
     type Self <: ManualProbe[I]
 
-    @ccompatUsedUntil213
     private val probe: TestProbe = TestProbe()
 
     //this is a way to pause receiving message from probe until subscription is done

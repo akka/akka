@@ -45,7 +45,7 @@ object AkkaSpec {
       """)
 
   def mapToConfig(map: Map[String, Any]): Config = {
-    import akka.util.ccompat.JavaConverters._
+    import scala.jdk.CollectionConverters._
     ConfigFactory.parseMap(map.asJava)
   }
 

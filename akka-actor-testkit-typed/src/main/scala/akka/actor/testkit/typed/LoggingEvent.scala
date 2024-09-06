@@ -11,7 +11,7 @@ import scala.jdk.OptionConverters._
 import org.slf4j.Marker
 import org.slf4j.event.Level
 
-import akka.util.ccompat.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 object LoggingEvent {
 
@@ -72,7 +72,7 @@ final case class LoggingEvent(
    * Java API
    */
   def getMdc: java.util.Map[String, String] = {
-    import akka.util.ccompat.JavaConverters._
+    import scala.jdk.CollectionConverters._
     mdc.asJava
   }
 

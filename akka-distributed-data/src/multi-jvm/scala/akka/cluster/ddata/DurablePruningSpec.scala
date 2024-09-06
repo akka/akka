@@ -17,9 +17,7 @@ import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
-import akka.util.ccompat._
 
-@ccompatUsedUntil213
 object DurablePruningSpec extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")

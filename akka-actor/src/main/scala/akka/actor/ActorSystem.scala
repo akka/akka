@@ -419,7 +419,7 @@ object ActorSystem {
     final val SerializeAllMessages: Boolean = getBoolean("akka.actor.serialize-messages")
     final val SerializeAllCreators: Boolean = getBoolean("akka.actor.serialize-creators")
     final val NoSerializationVerificationNeededClassPrefix: Set[String] = {
-      import akka.util.ccompat.JavaConverters._
+      import scala.jdk.CollectionConverters._
       getStringList("akka.actor.no-serialization-verification-needed-class-prefix").asScala.toSet
     }
 

@@ -24,7 +24,7 @@ import akka.stream.{
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.stage.{ GraphStageLogic, GraphStageWithMaterializedValue, InHandler }
 import akka.util.ByteString
-import akka.util.ccompat.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 /**
  * INTERNAL API

@@ -18,7 +18,7 @@ import akka.japi.Pair
 import akka.japi.function
 import akka.stream._
 import akka.util.ConstantFun
-import akka.util.ccompat.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 object SourceWithContext {
 

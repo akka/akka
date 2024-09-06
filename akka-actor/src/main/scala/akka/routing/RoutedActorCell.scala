@@ -20,7 +20,6 @@ import akka.actor.SupervisorStrategy
 import akka.actor.Terminated
 import akka.dispatch.Envelope
 import akka.dispatch.MessageDispatcher
-import akka.util.ccompat._
 
 /**
  * INTERNAL API
@@ -36,7 +35,6 @@ private[akka] object RoutedActorCell {
 /**
  * INTERNAL API
  */
-@ccompatUsedUntil213
 private[akka] class RoutedActorCell(
     _system: ActorSystemImpl,
     _ref: InternalActorRef,

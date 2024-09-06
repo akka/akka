@@ -6,7 +6,7 @@ package akka.cluster.sharding.external
 
 import akka.cluster.sharding.ShardRegion.ShardId
 import akka.cluster.sharding.external.ExternalShardAllocationStrategy.ShardLocation
-import akka.util.ccompat.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 final class ShardLocations(val locations: Map[ShardId, ShardLocation]) {
 

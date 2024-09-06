@@ -14,9 +14,7 @@ import akka.cluster.sharding.ShardRegion.{ CurrentRegions, GetCurrentRegions }
 import akka.remote.testconductor.RoleName
 import akka.serialization.jackson.CborSerializable
 import akka.testkit._
-import akka.util.ccompat._
 
-@ccompatUsedUntil213
 object MultiDcClusterShardingSpec {
   sealed trait EntityMsg extends CborSerializable {
     def id: String

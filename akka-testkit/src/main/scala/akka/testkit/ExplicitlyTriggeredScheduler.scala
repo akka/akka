@@ -12,6 +12,7 @@ import scala.annotation.nowarn
 import scala.annotation.tailrec
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.{ Duration, FiniteDuration }
+import scala.jdk.CollectionConverters._
 import scala.util.Try
 
 import com.typesafe.config.Config
@@ -19,7 +20,6 @@ import com.typesafe.config.Config
 import akka.actor.Cancellable
 import akka.actor.Scheduler
 import akka.event.LoggingAdapter
-import akka.util.ccompat.JavaConverters._
 
 /**
  * For testing: scheduler that does not look at the clock, but must be

@@ -43,7 +43,7 @@ final case class GSet[A] private (elements: Set[A])(override val delta: Option[G
    * Java API
    */
   def getElements(): java.util.Set[A] = {
-    import akka.util.ccompat.JavaConverters._
+    import scala.jdk.CollectionConverters._
     elements.asJava
   }
 

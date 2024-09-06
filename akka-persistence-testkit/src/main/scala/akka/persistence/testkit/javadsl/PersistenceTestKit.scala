@@ -14,7 +14,7 @@ import akka.actor.ActorSystem
 import akka.annotation.ApiMayChange
 import akka.persistence.testkit.{ EventStorage, ExpectedFailure, ExpectedRejection, JournalOperation }
 import akka.persistence.testkit.scaladsl.{ PersistenceTestKit => ScalaTestKit }
-import akka.util.ccompat.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 /**
  * Class for testing persisted events in persistent actors.

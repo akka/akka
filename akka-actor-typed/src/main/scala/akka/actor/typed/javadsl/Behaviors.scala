@@ -20,7 +20,7 @@ import akka.actor.typed.internal.{
 }
 import akka.japi.function.{ Effect, Function2 => JapiFunction2 }
 import akka.japi.pf.PFBuilder
-import akka.util.ccompat.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 /**
  * Factories for [[akka.actor.typed.Behavior]].

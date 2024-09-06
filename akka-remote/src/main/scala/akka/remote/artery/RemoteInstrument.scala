@@ -21,7 +21,6 @@ import akka.event.Logging
 import akka.event.LoggingAdapter
 import akka.remote.RemoteActorRefProvider
 import akka.util.OptionVal
-import akka.util.ccompat._
 
 /**
  * INTERNAL API
@@ -35,7 +34,6 @@ import akka.util.ccompat._
  * will be created for each encoder and decoder. It's only called from the operator, so if it doesn't
  * delegate to any shared instance it doesn't have to be thread-safe.
  */
-@ccompatUsedUntil213
 abstract class RemoteInstrument {
 
   /**
@@ -405,7 +403,7 @@ private[remote] object RemoteInstruments {
   def create(system: ExtendedActorSystem, @nowarn("msg=never used") log: LoggingAdapter): Vector[RemoteInstrument] = {
     val c = system.settings.config
     val path = "akka.remote.artery.advanced.instruments"
-    import akka.util.ccompat.JavaConverters._
+    import scala.jdk.CollectionConverters._
     val configuredInstruments = c
       .getStringList(path)
       .asScala

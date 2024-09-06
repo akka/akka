@@ -14,12 +14,10 @@ import scala.util.Random
 import akka.annotation.InternalApi
 import akka.cluster.ClusterSettings.DataCenter
 import akka.cluster.MemberStatus._
-import akka.util.ccompat._
 
 /**
  * INTERNAL API
  */
-@ccompatUsedUntil213
 @InternalApi private[akka] object MembershipState {
   import MemberStatus._
   private val leaderMemberStatus = Set[MemberStatus](Up, Leaving, PreparingForShutdown, ReadyForShutdown)

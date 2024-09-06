@@ -17,7 +17,7 @@ import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
 import akka.persistence.typed.ReplicaId
 import akka.persistence.typed.ReplicationId
 import akka.persistence.typed.ReplicationId.Separator
-import akka.util.ccompat.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 object ReplicatedEntityProvider {
 

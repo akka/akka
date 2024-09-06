@@ -19,9 +19,7 @@ import akka.persistence.journal.leveldb.{ SharedLeveldbJournal, SharedLeveldbSto
 import akka.remote.testconductor.RoleName
 import akka.serialization.jackson.CborSerializable
 import akka.testkit.{ TestActors, TestProbe }
-import akka.util.ccompat._
 
-@ccompatUsedUntil213
 object MultiNodeClusterShardingSpec {
 
   object EntityActor {

@@ -23,7 +23,7 @@ import akka.annotation.InternalApi
 import akka.japi.function.{ Function => JFunction }
 import akka.pattern.StatusReply
 import akka.util.OptionVal
-import akka.util.ccompat.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 /**
  * INTERNAL API

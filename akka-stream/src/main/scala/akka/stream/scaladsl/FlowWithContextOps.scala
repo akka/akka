@@ -14,7 +14,6 @@ import akka.dispatch.ExecutionContexts
 import akka.event.{ LogMarker, LoggingAdapter, MarkerLoggingAdapter }
 import akka.stream._
 import akka.stream.impl.Throttle
-import akka.util.ccompat._
 import akka.util.ConstantFun
 
 /**
@@ -22,7 +21,6 @@ import akka.util.ConstantFun
  * element with each data element.
  *
  */
-@ccompatUsedUntil213
 trait FlowWithContextOps[+Out, +Ctx, +Mat] {
   type ReprMat[+O, +C, +M] <: FlowWithContextOps[O, C, M] {
     type ReprMat[+OO, +CC, +MatMat] = FlowWithContextOps.this.ReprMat[OO, CC, MatMat]

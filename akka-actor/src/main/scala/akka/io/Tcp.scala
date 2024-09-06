@@ -21,7 +21,7 @@ import akka.annotation.InternalApi
 import akka.io.Inet._
 import akka.util.{ ByteString, Helpers }
 import akka.util.Helpers.Requiring
-import akka.util.ccompat.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 /**
  * TCP Extension for Akka’s IO layer.

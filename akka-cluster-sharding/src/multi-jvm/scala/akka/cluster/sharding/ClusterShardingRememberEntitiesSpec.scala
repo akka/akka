@@ -12,9 +12,7 @@ import akka.actor._
 import akka.cluster.{ Cluster, MemberStatus }
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
-import akka.util.ccompat._
 
-@ccompatUsedUntil213
 object ClusterShardingRememberEntitiesSpec {
 
   val extractEntityId: ShardRegion.ExtractEntityId = {
