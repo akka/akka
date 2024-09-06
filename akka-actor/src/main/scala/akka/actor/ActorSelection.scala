@@ -22,14 +22,12 @@ import akka.dispatch.ExecutionContexts
 import akka.pattern.ask
 import akka.routing.MurmurHash
 import akka.util.{ Helpers, Timeout }
-import akka.util.ccompat._
 
 /**
  * An ActorSelection is a logical view of a section of an ActorSystem's tree of Actors,
  * allowing for broadcasting of messages to that section.
  */
 @SerialVersionUID(1L)
-@ccompatUsedUntil213
 abstract class ActorSelection extends Serializable {
   this: ScalaActorSelection =>
 

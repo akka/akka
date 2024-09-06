@@ -16,9 +16,7 @@ import akka.annotation.InternalApi
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.testkit._
-import akka.util.ccompat._
 
-@ccompatUsedUntil213
 object MultiDcHeartbeatTakingOverSpecMultiJvmSpec extends MultiNodeConfig {
   val first = role("first") //   alpha
   val second = role("second") // alpha

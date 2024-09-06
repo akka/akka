@@ -16,7 +16,7 @@ import akka.persistence.journal.Tagged
 import akka.persistence.testkit.ProcessingPolicy.DefaultPolicies
 import akka.persistence.testkit.internal.TestKitStorage
 import akka.stream.scaladsl.Source
-import akka.util.ccompat.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 /**
  * INTERNAL API

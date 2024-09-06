@@ -28,10 +28,8 @@ import akka.serialization.BaseSerializer
 import akka.serialization.Serialization
 import akka.serialization.SerializerWithStringManifest
 import akka.util.ByteString.UTF_8
-import akka.util.ccompat._
-import akka.util.ccompat.JavaConverters._
+import scala.jdk.CollectionConverters._
 
-@ccompatUsedUntil213
 private object ReplicatedDataSerializer {
   /*
    * Generic superclass to allow to compare Entry types used in protobuf.

@@ -25,9 +25,7 @@ import akka.remote.testkit.MultiNodeConfig
 import akka.serialization.jackson.CborSerializable
 import akka.testkit._
 import akka.testkit.TestEvent._
-import akka.util.ccompat._
 
-@ccompatUsedUntil213
 object MultiNodeClusterSpec {
 
   def clusterConfigWithFailureDetectorPuppet: Config =

@@ -127,7 +127,7 @@ class DispatchersSpec extends AkkaSpec(DispatchersSpec.config) with ImplicitSend
   val defaultDispatcherConfig = settings.config.getConfig("akka.actor.default-dispatcher")
 
   lazy val allDispatchers: Map[String, MessageDispatcher] = {
-    import akka.util.ccompat.JavaConverters._
+    import scala.jdk.CollectionConverters._
 
     validTypes
       .map(t => (t, from(ConfigFactory.parseMap(Map(tipe -> t, id -> t).asJava).withFallback(defaultDispatcherConfig))))
@@ -167,7 +167,7 @@ class DispatchersSpec extends AkkaSpec(DispatchersSpec.config) with ImplicitSend
     }
 
     "throw ConfigurationException if type does not exist" in {
-      import akka.util.ccompat.JavaConverters._
+      import scala.jdk.CollectionConverters._
       intercept[ConfigurationException] {
         from(
           ConfigFactory

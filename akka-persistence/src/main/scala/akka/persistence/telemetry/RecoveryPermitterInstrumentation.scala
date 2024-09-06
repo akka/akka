@@ -5,7 +5,6 @@
 package akka.persistence.telemetry
 
 import scala.annotation.nowarn
-
 import scala.collection.immutable
 
 import akka.actor.ActorRef
@@ -18,7 +17,7 @@ import akka.actor.ExtensionIdProvider
 import akka.annotation.InternalStableApi
 import akka.event.Logging
 import akka.util.TopologicalSort.topologicalSort
-import akka.util.ccompat.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 /**
  * INTERNAL API: Instrumentation SPI for PersistentActor.

@@ -10,7 +10,7 @@ import akka.actor.testkit.typed.internal.TestInboxImpl
 import akka.actor.typed.ActorRef
 import akka.annotation.{ ApiMayChange, DoNotInherit }
 import akka.pattern.StatusReply
-import akka.util.ccompat.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 object TestInbox {
   def create[T](name: String): TestInbox[T] = TestInboxImpl(name)

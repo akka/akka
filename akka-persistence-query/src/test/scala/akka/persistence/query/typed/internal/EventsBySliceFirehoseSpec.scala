@@ -240,7 +240,7 @@ class EventsBySliceFirehoseSpec
       val firehose =
         eventsBySliceFirehose.getFirehose(FirehoseKey(EventsBySliceFirehoseQuery.Identifier, entityType, sliceRange))
       firehose.consumerTracking.size shouldBe 2
-      import akka.util.ccompat.JavaConverters._
+      import scala.jdk.CollectionConverters._
       firehose.consumerTracking.values.asScala.foreach { tracking =>
         tracking.offsetTimestamp shouldBe allEnvelopes(1).offset.asInstanceOf[TimestampOffset].timestamp
       }

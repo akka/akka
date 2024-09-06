@@ -20,9 +20,7 @@ import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.remote.testkit.STMultiNodeSpec
 import akka.testkit._
-import akka.util.ccompat._
 
-@ccompatUsedUntil213
 object ClusterSingletonManagerDownedSpec extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")

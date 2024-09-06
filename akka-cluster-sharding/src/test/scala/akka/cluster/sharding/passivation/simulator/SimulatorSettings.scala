@@ -11,7 +11,7 @@ import scala.collection.immutable
 import com.typesafe.config.Config
 
 import akka.japi.Util.immutableSeq
-import akka.util.ccompat.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 final case class SimulatorSettings(runs: immutable.Seq[SimulatorSettings.RunSettings], printDetailedStats: Boolean)
 

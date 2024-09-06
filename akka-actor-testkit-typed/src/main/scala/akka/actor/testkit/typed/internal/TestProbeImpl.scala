@@ -35,7 +35,7 @@ import akka.annotation.InternalApi
 import akka.japi.function.Creator
 import akka.util.BoxedType
 import akka.util.PrettyDuration._
-import akka.util.ccompat.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 @InternalApi
 private[akka] object TestProbeImpl {

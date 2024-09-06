@@ -10,9 +10,7 @@ import javax.net.ssl.SSLSession
 
 import akka.actor.ExtendedActorSystem
 import akka.actor.setup.Setup
-import akka.util.ccompat._
 
-@ccompatUsedUntil213
 trait SSLEngineProvider {
 
   def createServerSSLEngine(hostname: String, port: Int): SSLEngine

@@ -59,9 +59,7 @@ import akka.remote.RARP
 import akka.serialization.SerializationExtension
 import akka.util.ByteString
 import akka.util.Helpers.toRootLowerCase
-import akka.util.ccompat._
 
-@ccompatUsedUntil213
 object ReplicatorSettings {
 
   /**
@@ -88,7 +86,7 @@ object ReplicatorSettings {
       else Some(config.getBytes("log-data-size-exceeding").toInt)
     }
 
-    import akka.util.ccompat.JavaConverters._
+    import scala.jdk.CollectionConverters._
     new ReplicatorSettings(
       roles = roleOption(config.getString("role")).toSet,
       gossipInterval = config.getDuration("gossip-interval", MILLISECONDS).millis,
@@ -127,7 +125,7 @@ object ReplicatorSettings {
    * INTERNAL API
    */
   @InternalApi private[akka] def parseExpiry(config: Config): Map[KeyId, FiniteDuration] = {
-    import akka.util.ccompat.JavaConverters._
+    import scala.jdk.CollectionConverters._
     val expiryConfig = config.getConfig("expire-keys-after-inactivity")
     expiryConfig.root
       .keySet()
@@ -461,7 +459,7 @@ final class ReplicatorSettings(
    * Java API
    */
   def withDurableKeys(durableKeys: java.util.Set[String]): ReplicatorSettings = {
-    import akka.util.ccompat.JavaConverters._
+    import scala.jdk.CollectionConverters._
     withDurableKeys(durableKeys.asScala.toSet)
   }
 
@@ -487,7 +485,7 @@ final class ReplicatorSettings(
    * Java API
    */
   def withExpiryKeys(expiryKeys: java.util.Map[String, java.time.Duration]): ReplicatorSettings = {
-    import akka.util.ccompat.JavaConverters._
+    import scala.jdk.CollectionConverters._
     withExpiryKeys(expiryKeys.asScala.iterator.map { case (key, value) => key -> value.toScala }.toMap)
   }
 
@@ -655,7 +653,7 @@ object Replicator {
      * Java API
      */
     def getKeyIds: java.util.Set[String] = {
-      import akka.util.ccompat.JavaConverters._
+      import scala.jdk.CollectionConverters._
       keyIds.asJava
     }
   }

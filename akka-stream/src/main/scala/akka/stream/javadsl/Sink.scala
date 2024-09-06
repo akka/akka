@@ -30,7 +30,7 @@ import akka.stream.javadsl
 import akka.stream.scaladsl
 import akka.stream.scaladsl.SinkToCompletionStage
 
-import akka.util.ccompat.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 /** Java API */
 object Sink {
@@ -198,7 +198,7 @@ object Sink {
    * If there is a failure signaled in the stream the `CompletionStage` will be completed with failure.
    */
   def takeLast[In](n: Int): Sink[In, CompletionStage[java.util.List[In]]] = {
-    import akka.util.ccompat.JavaConverters._
+    import scala.jdk.CollectionConverters._
     new Sink(
       scaladsl.Sink
         .takeLast[In](n)
@@ -216,7 +216,7 @@ object Sink {
    * See also [[Flow.limit]], [[Flow.limitWeighted]], [[Flow.take]], [[Flow.takeWithin]], [[Flow.takeWhile]]
    */
   def seq[In]: Sink[In, CompletionStage[java.util.List[In]]] = {
-    import akka.util.ccompat.JavaConverters._
+    import scala.jdk.CollectionConverters._
     new Sink(
       scaladsl.Sink.seq[In].mapMaterializedValue(fut => fut.map(sq => sq.asJava)(ExecutionContexts.parasitic).asJava))
   }
@@ -349,7 +349,7 @@ object Sink {
       @deprecatedName(Symbol("strategy"))
       fanOutStrategy: function.Function[java.lang.Integer, Graph[UniformFanOutShape[T, U], NotUsed]])
       : Sink[T, NotUsed] = {
-    import akka.util.ccompat.JavaConverters._
+    import scala.jdk.CollectionConverters._
     val seq = if (rest != null) rest.asScala.map(_.asScala).toSeq else immutable.Seq()
     new Sink(scaladsl.Sink.combine(output1.asScala, output2.asScala, seq: _*)(num => fanOutStrategy.apply(num)))
   }
@@ -379,7 +379,7 @@ object Sink {
       case other                                  => other
     }.toSeq
     else immutable.Seq()
-    import akka.util.ccompat.JavaConverters._
+    import scala.jdk.CollectionConverters._
     new Sink(scaladsl.Sink.combine(seq)(size => fanOutStrategy(size)).mapMaterializedValue(_.asJava))
   }
 

@@ -22,13 +22,11 @@ import akka.protobufv3.internal.ByteString
 import akka.protobufv3.internal.MessageLite
 import akka.remote.ByteStringUtils
 import akka.serialization._
-import akka.util.ccompat._
-import akka.util.ccompat.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 /**
  * Some useful serialization helper methods.
  */
-@ccompatUsedUntil213
 trait SerializationSupport {
 
   private final val BufferSize = 1024 * 4

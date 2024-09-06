@@ -16,9 +16,7 @@ import akka.protobufv3.internal.ByteString
 import akka.remote.ByteStringUtils
 import akka.remote.ContainerFormats
 import akka.serialization.{ BaseSerializer, SerializationExtension, Serializers }
-import akka.util.ccompat._
 
-@ccompatUsedUntil213
 class MessageContainerSerializer(val system: ExtendedActorSystem) extends BaseSerializer {
 
   private lazy val serialization = SerializationExtension(system)
@@ -71,7 +69,7 @@ class MessageContainerSerializer(val system: ExtendedActorSystem) extends BaseSe
       .deserialize(selectionEnvelope.getEnclosedMessage.toByteArray, selectionEnvelope.getSerializerId, manifest)
       .get
 
-    import akka.util.ccompat.JavaConverters._
+    import scala.jdk.CollectionConverters._
     val elements: immutable.Iterable[SelectionPathElement] = selectionEnvelope.getPatternList.asScala.iterator
       .map { x =>
         x.getType match {

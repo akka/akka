@@ -21,14 +21,12 @@ import akka.io.dns.AAAARecord
 import akka.io.dns.ARecord
 import akka.io.dns.DnsProtocol
 import akka.routing.ConsistentHashingRouter.ConsistentHashable
-import akka.util.ccompat._
 
 /**
  * Not for user extension.
  *
  * This used to be a supported extension point but will be removed in future versions of Akka.
  */
-@ccompatUsedUntil213
 @DoNotInherit
 abstract class Dns {
 

@@ -427,7 +427,7 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
         val f6 = a ? Reply("bar2")
 
         val c = system.scheduler.scheduleOnce(2.seconds) {
-          import akka.util.ccompat.JavaConverters._
+          import scala.jdk.CollectionConverters._
           Thread.getAllStackTraces().asScala.foreach {
             case (thread, stack) =>
               println(s"$thread:")

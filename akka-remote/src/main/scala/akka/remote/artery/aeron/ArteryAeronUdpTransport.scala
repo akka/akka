@@ -47,12 +47,10 @@ import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
-import akka.util.ccompat._
 
 /**
  * INTERNAL API
  */
-@ccompatUsedUntil213
 private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _provider: RemoteActorRefProvider)
     extends ArteryTransport(_system, _provider) {
   import AeronSource.AeronLifecycle

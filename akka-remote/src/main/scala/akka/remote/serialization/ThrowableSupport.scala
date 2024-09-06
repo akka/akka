@@ -100,7 +100,7 @@ private[akka] class ThrowableSupport(system: ExtendedActorSystem) {
   }
 
   private def fillInStackTrace(protoT: ContainerFormats.Throwable, t: Throwable): Unit = {
-    import akka.util.ccompat.JavaConverters._
+    import scala.jdk.CollectionConverters._
     val stackTrace =
       protoT.getStackTraceList.asScala.map { elem =>
         val fileName = elem.getFileName

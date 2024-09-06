@@ -22,9 +22,7 @@ import com.typesafe.config.Config
 import akka.actor._
 import akka.annotation.InternalApi
 import akka.event.{ LogMarker, Logging, LoggingAdapter }
-import akka.util.ccompat._
 
-@ccompatUsedUntil213
 object Serialization {
 
   /**
@@ -47,7 +45,7 @@ object Serialization {
     }
 
     private final def configToMap(cfg: Config): Map[String, String] = {
-      import akka.util.ccompat.JavaConverters._
+      import scala.jdk.CollectionConverters._
       cfg.root.unwrapped.asScala.toMap.map { case (k, v) => (k -> v.toString) }
     }
   }

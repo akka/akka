@@ -15,7 +15,7 @@ import scala.collection.{ immutable => im }
 import akka.actor.NoSerializationVerificationNeeded
 import akka.io.IpVersionSelector
 import akka.routing.ConsistentHashingRouter.ConsistentHashable
-import akka.util.ccompat.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 /**
  * Supersedes [[akka.io.Dns]] protocol.

@@ -101,7 +101,7 @@ final class TimestampOffset private (val timestamp: Instant, val readTimestamp: 
 
   /** Java API */
   def getSeen(): java.util.Map[String, java.lang.Long] = {
-    import akka.util.ccompat.JavaConverters._
+    import scala.jdk.CollectionConverters._
     seen.map { case (pid, seqNr) => pid -> java.lang.Long.valueOf(seqNr) }.asJava
   }
 
@@ -130,7 +130,7 @@ object TimestampOffsetBySlice {
 
   /** Java API */
   def create(offsets: java.util.Map[java.lang.Integer, TimestampOffset]): TimestampOffsetBySlice = {
-    import akka.util.ccompat.JavaConverters._
+    import scala.jdk.CollectionConverters._
     new TimestampOffsetBySlice(offsets.asScala.toMap.map { case (slice, offset) => slice.intValue -> offset })
   }
 
@@ -150,7 +150,7 @@ final class TimestampOffsetBySlice private (val offsets: Map[Int, TimestampOffse
 
   /** Java API */
   def getOffsets(): java.util.Map[java.lang.Integer, TimestampOffset] = {
-    import akka.util.ccompat.JavaConverters._
+    import scala.jdk.CollectionConverters._
     offsets.map { case (slice, offset) => java.lang.Integer.valueOf(slice) -> offset }.asJava
   }
 

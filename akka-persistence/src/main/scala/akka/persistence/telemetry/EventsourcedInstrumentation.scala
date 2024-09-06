@@ -4,10 +4,9 @@
 
 package akka.persistence.telemetry
 
-import akka.util.ccompat.JavaConverters._
-
 import scala.annotation.nowarn
 import scala.collection.immutable
+import scala.jdk.CollectionConverters._
 
 import akka.actor.ActorRef
 import akka.actor.ActorSystem

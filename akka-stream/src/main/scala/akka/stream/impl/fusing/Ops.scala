@@ -34,7 +34,6 @@ import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
 import akka.stream.scaladsl.{ DelayStrategy, Source }
 import akka.stream.stage._
 import akka.util.OptionVal
-import akka.util.ccompat._
 
 // This file is perhaps getting long (Github Issue #31619), please add new operators in other files
 
@@ -2316,7 +2315,6 @@ private[akka] final class StatefulMap[S, In, Out](create: () => S, f: (S, In) =>
  * INTERNAL API
  */
 @InternalApi
-@ccompatUsedUntil213
 private[akka] final class StatefulMapConcat[In, Out](val f: () => In => IterableOnce[Out])
     extends GraphStage[FlowShape[In, Out]] {
   val in = Inlet[In]("StatefulMapConcat.in")

@@ -60,7 +60,6 @@ import akka.util.OptionVal
 import akka.util.PrettyDuration._
 import akka.util.Unsafe
 import akka.util.WildcardIndex
-import akka.util.ccompat._
 
 /**
  * INTERNAL API
@@ -133,7 +132,6 @@ private[remote] object Association {
  * Thread-safe, mutable holder for association state. Main entry point for remote destined message to a specific
  * remote address.
  */
-@ccompatUsedUntil213
 private[remote] class Association(
     val transport: ArteryTransport,
     val materializer: Materializer,

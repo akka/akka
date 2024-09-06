@@ -9,7 +9,7 @@ import java.util
 import akka.annotation.InternalApi
 import akka.stream.Outlet
 import akka.stream.stage.GraphStageLogic
-import akka.util.ccompat.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 /**
  * INTERNAL API

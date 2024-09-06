@@ -6,6 +6,7 @@ package akka.stream.impl
 
 import java.util.function.BinaryOperator
 
+import scala.collection.Factory
 import scala.collection.immutable
 import scala.collection.mutable
 import scala.concurrent.Future
@@ -33,7 +34,6 @@ import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.StreamLayout.AtomicModule
 import akka.stream.scaladsl.{ Keep, Sink, SinkQueueWithCancel, Source }
 import akka.stream.stage._
-import akka.util.ccompat._
 
 /**
  * INTERNAL API

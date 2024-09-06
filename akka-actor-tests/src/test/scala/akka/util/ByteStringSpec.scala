@@ -829,7 +829,7 @@ class ByteStringSpec extends AnyWordSpec with Matchers with Checkers {
           a.asByteBuffers.forall(_.isReadOnly)
         }
         check { (a: ByteString) =>
-          import akka.util.ccompat.JavaConverters._
+          import scala.jdk.CollectionConverters._
           a.asByteBuffers.zip(a.getByteBuffers().asScala).forall(x => x._1 == x._2)
         }
       }

@@ -8,7 +8,7 @@ import java.util.{ List => JList }
 
 import akka.actor.ExtendedActorSystem
 import akka.annotation.{ InternalApi, InternalStableApi }
-import akka.util.ccompat.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 /**
  * Service Provider Interface (SPI) for collecting metrics from Circuit Breaker.

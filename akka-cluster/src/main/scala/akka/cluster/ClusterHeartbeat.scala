@@ -22,7 +22,6 @@ import akka.event.ActorWithLogClass
 import akka.event.Logging
 import akka.remote.FailureDetectorRegistry
 import akka.remote.HeartbeatMessage
-import akka.util.ccompat._
 
 /**
  * INTERNAL API.
@@ -30,7 +29,6 @@ import akka.util.ccompat._
  * Receives Heartbeat messages and replies.
  */
 @InternalApi
-@ccompatUsedUntil213
 private[cluster] final class ClusterHeartbeatReceiver(getCluster: () => Cluster) extends Actor {
   import ClusterHeartbeatSender._
 

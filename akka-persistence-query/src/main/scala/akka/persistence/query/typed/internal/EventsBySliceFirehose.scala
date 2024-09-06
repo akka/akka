@@ -155,7 +155,7 @@ import akka.util.OptionVal
     private val sliceRangeStr = s"${firehoseKey.sliceRange.min}-${firehoseKey.sliceRange.max}"
 
     private def consumerTrackingValues(): Vector[ConsumerTracking] = {
-      import akka.util.ccompat.JavaConverters._
+      import scala.jdk.CollectionConverters._
       consumerTracking.values.iterator.asScala.filter(h => h.history.nonEmpty && h.firehoseOnly).toVector
     }
 

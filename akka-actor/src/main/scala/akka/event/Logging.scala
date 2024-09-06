@@ -750,7 +750,7 @@ object Logging {
      * Java API: Retrieve the contents of the MDC.
      */
     def getMDC: java.util.Map[String, Any] = {
-      import akka.util.ccompat.JavaConverters._
+      import scala.jdk.CollectionConverters._
       mdc.asJava
     }
   }
@@ -1614,7 +1614,8 @@ trait DiagnosticLoggingAdapter extends LoggingAdapter {
 
   import Logging._
 
-  import akka.util.ccompat.JavaConverters._
+  import scala.jdk.CollectionConverters._
+  //import scala.jdk.CollectionConverters._
 
   private var _mdc = emptyMDC
 
@@ -1679,7 +1680,7 @@ class LogMarker(val name: String, val properties: Map[String, Any]) {
 
   /** Java API */
   def getProperties: java.util.Map[String, Object] = {
-    import akka.util.ccompat.JavaConverters._
+    import scala.jdk.CollectionConverters._
     properties.map { case (k, v) => (k, v.asInstanceOf[AnyRef]) }.asJava
   }
 
@@ -1700,7 +1701,7 @@ object LogMarker {
 
   /** Java API */
   def create(name: String, properties: java.util.Map[String, Any]): LogMarker = {
-    import akka.util.ccompat.JavaConverters._
+    import scala.jdk.CollectionConverters._
     apply(name, properties.asScala.toMap)
   }
 

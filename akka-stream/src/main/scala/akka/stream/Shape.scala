@@ -9,7 +9,7 @@ import scala.collection.immutable
 
 import akka.annotation.InternalApi
 import akka.util.Collections.EmptyImmutableSeq
-import akka.util.ccompat.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 /**
  * An input port of a StreamLayout.Module. This type logically belongs

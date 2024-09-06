@@ -19,7 +19,7 @@ import akka.actor.typed.Behavior
 import akka.annotation.ApiMayChange
 import akka.annotation.DoNotInherit
 import akka.persistence.testkit.scaladsl
-import akka.util.ccompat.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 /**
  * Testing of [[akka.persistence.typed.javadsl.EventSourcedBehavior]] implementations.

@@ -6,6 +6,7 @@ package akka.persistence.typed.telemetry
 
 import scala.annotation.nowarn
 import scala.collection.immutable
+import scala.jdk.CollectionConverters._
 
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
@@ -13,7 +14,6 @@ import akka.actor.typed.Extension
 import akka.actor.typed.ExtensionId
 import akka.annotation.InternalStableApi
 import akka.event.Logging
-import akka.util.ccompat.JavaConverters._
 import akka.util.TopologicalSort.topologicalSort
 
 /**

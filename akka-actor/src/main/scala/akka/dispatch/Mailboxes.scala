@@ -64,7 +64,7 @@ private[akka] class Mailboxes(
   private val mailboxTypeConfigurators = new ConcurrentHashMap[String, MailboxType]
 
   private val mailboxBindings: Map[Class[_ <: Any], String] = {
-    import akka.util.ccompat.JavaConverters._
+    import scala.jdk.CollectionConverters._
     settings.config
       .getConfig("akka.actor.mailbox.requirements")
       .root
@@ -263,7 +263,7 @@ private[akka] class Mailboxes(
 
   //INTERNAL API
   private def config(id: String): Config = {
-    import akka.util.ccompat.JavaConverters._
+    import scala.jdk.CollectionConverters._
     ConfigFactory
       .parseMap(Map("id" -> id).asJava)
       .withFallback(settings.config.getConfig(id))

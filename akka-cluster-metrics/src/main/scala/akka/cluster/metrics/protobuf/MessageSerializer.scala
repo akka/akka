@@ -20,13 +20,11 @@ import akka.protobufv3.internal.MessageLite
 import akka.remote.ByteStringUtils
 import akka.serialization.{ BaseSerializer, SerializationExtension, SerializerWithStringManifest, Serializers }
 import akka.util.ClassLoaderObjectInputStream
-import akka.util.ccompat._
-import akka.util.ccompat.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 /**
  * Protobuf serializer for [[akka.cluster.metrics.ClusterMetricsMessage]] types.
  */
-@ccompatUsedUntil213
 class MessageSerializer(val system: ExtendedActorSystem) extends SerializerWithStringManifest with BaseSerializer {
 
   private final val BufferSize = 4 * 1024

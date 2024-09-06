@@ -12,7 +12,7 @@ import akka.actor.Props
 import akka.io.Udp
 import akka.testkit.SocketUtil
 import akka.testkit.TestKit
-import akka.util.ccompat.JavaConverters._
+import scala.jdk.CollectionConverters._
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike

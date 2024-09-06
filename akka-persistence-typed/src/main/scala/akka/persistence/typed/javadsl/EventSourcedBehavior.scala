@@ -221,7 +221,7 @@ abstract class EventSourcedBehavior[Command, Event, State] private[akka] (
     val snapshotWhen: (State, Event, Long) => Boolean = (state, event, seqNr) => shouldSnapshot(state, event, seqNr)
 
     val tagger: (State, Event) => Set[String] = { (state, event) =>
-      import akka.util.ccompat.JavaConverters._
+      import scala.jdk.CollectionConverters._
       val tags = tagsFor(state, event)
       if (tags.isEmpty) Set.empty
       else tags.asScala.toSet

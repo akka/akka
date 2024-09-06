@@ -12,7 +12,7 @@ import scala.collection.JavaConverters.collectionAsScalaIterableConverter
 
 import annotation.tailrec
 
-import akka.util.ccompat.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 /**
  * An implementation of a ConcurrentMultiMap

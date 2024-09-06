@@ -22,12 +22,10 @@ import akka.io.dns.CachePolicy.{ CachePolicy, Forever, Never, Ttl }
 import akka.io.dns.internal.{ ResolvConf, ResolvConfParser }
 import akka.util.Helpers
 import akka.util.Helpers.Requiring
-import akka.util.ccompat._
-import akka.util.ccompat.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 /** INTERNAL API */
 @InternalApi
-@ccompatUsedUntil213
 private[dns] final class DnsSettings(system: ExtendedActorSystem, c: Config) {
 
   import DnsSettings._

@@ -7,8 +7,9 @@ package akka.stream.scaladsl
 import scala.annotation.nowarn
 import scala.annotation.tailrec
 import scala.annotation.unchecked.uncheckedVariance
-import scala.collection.immutable
+import scala.collection.Factory
 import scala.concurrent.Future
+import scala.collection.immutable
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
@@ -28,7 +29,6 @@ import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.fusing.GraphStages
 import akka.stream.javadsl
 import akka.stream.stage._
-import akka.util.ccompat._
 
 /**
  * A `Sink` is a set of stream processing steps that has one open input.

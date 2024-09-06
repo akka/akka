@@ -11,13 +11,11 @@ import akka.cluster.UniqueAddress
 import akka.cluster.ddata.Key.KeyId
 import akka.cluster.ddata.Replicator.Internal.DeltaPropagation
 import akka.cluster.ddata.Replicator.Internal.DeltaPropagation.NoDeltaPlaceholder
-import akka.util.ccompat._
 
 /**
  * INTERNAL API: Used by the Replicator actor.
  * Extracted to separate trait to make it easy to test.
  */
-@ccompatUsedUntil213
 @InternalApi
 private[akka] trait DeltaPropagationSelector {
 

@@ -41,7 +41,7 @@ import akka.event.Logging
 import akka.pattern.BackoffOpts
 import akka.pattern.ask
 import akka.util.ByteString
-import akka.util.ccompat.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 /**
  * This extension provides sharding functionality of actors in a cluster.

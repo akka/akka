@@ -33,13 +33,11 @@ import akka.serialization.BaseSerializer
 import akka.serialization.Serialization
 import akka.serialization.SerializerWithStringManifest
 import akka.util.{ ByteString => AkkaByteString }
-import akka.util.ccompat._
-import akka.util.ccompat.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 /**
  * INTERNAL API
  */
-@ccompatUsedUntil213
 @InternalApi
 private[akka] object ReplicatorMessageSerializer {
 

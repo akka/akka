@@ -20,7 +20,7 @@ import akka.persistence._
 import akka.persistence.journal.Tagged
 import akka.persistence.journal.WriteJournalBase
 import akka.serialization.SerializationExtension
-import akka.util.ccompat.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 private[persistence] object LeveldbStore {
   val emptyConfig = ConfigFactory.empty()

@@ -19,7 +19,6 @@ import akka.cluster.ClusterSettings.DataCenter
 import akka.cluster.MemberStatus._
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
 import akka.event.EventStream
-import akka.util.ccompat._
 
 /**
  * Domain events published to the event bus.
@@ -137,7 +136,7 @@ object ClusterEvent {
      * Java API: get current member list.
      */
     def getMembers: java.lang.Iterable[Member] = {
-      import akka.util.ccompat.JavaConverters._
+      import scala.jdk.CollectionConverters._
       members.asJava
     }
 
@@ -434,7 +433,6 @@ object ClusterEvent {
    * The nodes that have seen current version of the Gossip.
    */
   @InternalApi
-  @ccompatUsedUntil213
   private[cluster] final case class SeenChanged(convergence: Boolean, seenBy: Set[Address]) extends ClusterDomainEvent
 
   /**

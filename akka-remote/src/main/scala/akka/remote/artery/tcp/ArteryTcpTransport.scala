@@ -49,7 +49,6 @@ import akka.stream.scaladsl.Source
 import akka.stream.scaladsl.Tcp
 import akka.stream.scaladsl.Tcp.ServerBinding
 import akka.util.{ ByteString, OptionVal }
-import akka.util.ccompat._
 
 /**
  * INTERNAL API
@@ -67,7 +66,6 @@ private[remote] object ArteryTcpTransport {
 /**
  * INTERNAL API
  */
-@ccompatUsedUntil213
 private[remote] class ArteryTcpTransport(
     _system: ExtendedActorSystem,
     _provider: RemoteActorRefProvider,

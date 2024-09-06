@@ -310,7 +310,7 @@ final class ORSet[A] private[akka] (
    * Java API
    */
   def getElements(): java.util.Set[A] = {
-    import akka.util.ccompat.JavaConverters._
+    import scala.jdk.CollectionConverters._
     elements.asJava
   }
 

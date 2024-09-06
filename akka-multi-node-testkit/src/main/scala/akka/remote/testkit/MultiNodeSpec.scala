@@ -16,7 +16,6 @@ import akka.testkit.TestEvent._
 import akka.testkit.TestKit
 import akka.testkit._
 import akka.util.Timeout
-import akka.util.ccompat._
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigObject
@@ -34,7 +33,6 @@ import scala.util.control.NonFatal
 /**
  * Configure the role names and participants of the test, including configuration settings.
  */
-@ccompatUsedUntil213
 abstract class MultiNodeConfig {
 
   private var _commonConf: Option[Config] = None
@@ -267,7 +265,7 @@ object MultiNodeSpec {
       """)
 
   private def mapToConfig(map: Map[String, Any]): Config = {
-    import akka.util.ccompat.JavaConverters._
+    import scala.jdk.CollectionConverters._
     ConfigFactory.parseMap(map.asJava)
   }
 
@@ -511,7 +509,7 @@ abstract class MultiNodeSpec(
               base.replace(tag, replaceWith)
           }
       }
-      import akka.util.ccompat.JavaConverters._
+      import scala.jdk.CollectionConverters._
       ConfigFactory.parseString(deployString).root.asScala.foreach {
         case (key, value: ConfigObject) => deployer.parseConfig(key, value.toConfig).foreach(deployer.deploy)
         case (key, x) =>

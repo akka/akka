@@ -35,9 +35,7 @@ import akka.persistence.typed.scaladsl.Effect
 import akka.persistence.typed.scaladsl.EventSourcedBehavior
 import akka.persistence.typed.scaladsl.ReplicatedEventSourcing
 import akka.serialization.jackson.CborSerializable
-import akka.util.ccompat._
 
-@ccompatUsedUntil213
 object ReplicatedShardingSpec {
   def commonConfig = ConfigFactory.parseString("""
       akka.loglevel = DEBUG

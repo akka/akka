@@ -17,7 +17,6 @@ import akka.remote.testkit.SetThrottle
 import akka.remote.testkit.TokenBucket
 import akka.remote.testkit.Unthrottled
 import akka.util.Timeout
-import akka.util.ccompat._
 import io.netty.channel.ChannelInboundHandlerAdapter
 import io.netty.channel.Channel
 import io.netty.channel.ChannelHandler.Sharable
@@ -40,7 +39,6 @@ import scala.util.Try
 import scala.util.control.NoStackTrace
 import scala.util.control.NonFatal
 
-@ccompatUsedUntil213
 object Player {
 
   final class Waiter extends Actor with RequiresMessageQueue[UnboundedMessageQueueSemantics] {

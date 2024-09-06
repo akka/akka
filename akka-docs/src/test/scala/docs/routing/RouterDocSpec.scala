@@ -24,7 +24,7 @@ import akka.routing.ScatterGatherFirstCompletedPool
 import akka.routing.BalancingPool
 import akka.routing.TailChoppingGroup
 import akka.routing.TailChoppingPool
-import akka.util.ccompat.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 object RouterDocSpec {
 
