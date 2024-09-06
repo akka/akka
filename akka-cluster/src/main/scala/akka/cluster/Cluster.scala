@@ -106,7 +106,6 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
   /**
    * Java API: roles that this member has
    */
-  @nowarn("msg=deprecated")
   def getSelfRoles: java.util.Set[String] = selfRoles.asJava
 
   private val _isTerminated = new AtomicBoolean(false)

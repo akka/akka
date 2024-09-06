@@ -6,7 +6,6 @@ package akka.cluster.metrics
 
 import java.util.concurrent.ThreadLocalRandom
 
-import scala.annotation.nowarn
 import scala.collection.immutable
 import scala.jdk.CollectionConverters._
 
@@ -96,7 +95,6 @@ trait ClusterMetricsEvent
 final case class ClusterMetricsChanged(nodeMetrics: Set[NodeMetrics]) extends ClusterMetricsEvent {
 
   /** Java API */
-  @nowarn("msg=deprecated")
   def getNodeMetrics: java.lang.Iterable[NodeMetrics] = nodeMetrics.asJava
 }
 

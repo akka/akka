@@ -144,7 +144,6 @@ object ClusterEvent {
     /**
      * Java API: get current unreachable set.
      */
-    @nowarn("msg=deprecated")
     def getUnreachable: java.util.Set[Member] = {
       unreachable.asJava
     }
@@ -152,13 +151,11 @@ object ClusterEvent {
     /**
      * Java API: All data centers in the cluster
      */
-    @nowarn("msg=deprecated")
     def getUnreachableDataCenters: java.util.Set[String] = unreachableDataCenters.asJava
 
     /**
      * Java API: get current “seen-by” set.
      */
-    @nowarn("msg=deprecated")
     def getSeenBy: java.util.Set[Address] = seenBy.asJava
 
     /**
@@ -185,7 +182,6 @@ object ClusterEvent {
     /**
      * Java API: All node roles in the cluster
      */
-    @nowarn("msg=deprecated")
     def getAllRoles: java.util.Set[String] = allRoles.asJava
 
     /**
@@ -196,7 +192,6 @@ object ClusterEvent {
     /**
      * Java API: All data centers in the cluster
      */
-    @nowarn("msg=deprecated")
     def getAllDataCenters: java.util.Set[String] = allDataCenters.asJava
 
     /**

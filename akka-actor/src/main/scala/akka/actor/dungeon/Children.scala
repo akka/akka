@@ -42,7 +42,7 @@ private[akka] trait Children { this: ActorCell =>
     Unsafe.instance.getObjectVolatile(this, AbstractActorCell.childrenOffset).asInstanceOf[ChildrenContainer]
 
   final def children: immutable.Iterable[ActorRef] = childrenRefs.children
-  @nowarn("msg=deprecated")
+
   final def getChildren(): java.lang.Iterable[ActorRef] = children.asJava
 
   final def child(name: String): Option[ActorRef] = Option(getChild(name))

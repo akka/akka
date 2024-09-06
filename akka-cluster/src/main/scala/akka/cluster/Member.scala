@@ -51,7 +51,6 @@ class Member private[cluster] (
   /**
    * Java API
    */
-  @nowarn("msg=deprecated")
   def getRoles: java.util.Set[String] = roles.asJava
 
   /**

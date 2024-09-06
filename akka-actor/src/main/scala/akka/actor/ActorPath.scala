@@ -204,7 +204,6 @@ sealed trait ActorPath extends Comparable[ActorPath] with Serializable {
   /**
    * Java API: Sequence of names for this path from root to this. Performance implication: has to allocate a list.
    */
-  @nowarn("msg=deprecated")
   def getElements: java.lang.Iterable[String] = elements.asJava
 
   /**

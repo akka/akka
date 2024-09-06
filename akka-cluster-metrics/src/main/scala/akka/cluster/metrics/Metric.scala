@@ -4,7 +4,6 @@
 
 package akka.cluster.metrics
 
-import scala.annotation.nowarn
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
@@ -324,7 +323,6 @@ final case class NodeMetrics(address: Address, timestamp: Long, metrics: Set[Met
   /**
    * Java API
    */
-  @nowarn("msg=deprecated")
   def getMetrics: java.lang.Iterable[Metric] = metrics.asJava
 
   /**
