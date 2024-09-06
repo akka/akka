@@ -1367,7 +1367,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
       _stageActor = null
     }
 
-    import scala.collection.JavaConverters._
+    import scala.jdk.CollectionConverters._
     // make sure any invokeWithFeedback after this fails fast
     // and fail current outstanding invokeWithFeedback promises
     val inProgress =

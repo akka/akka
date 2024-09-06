@@ -9,6 +9,7 @@ import java.net.MalformedURLException
 import scala.annotation.nowarn
 import scala.annotation.tailrec
 import scala.collection.immutable
+import scala.jdk.CollectionConverters._
 
 import akka.japi.Util.immutableSeq
 
@@ -204,8 +205,7 @@ sealed trait ActorPath extends Comparable[ActorPath] with Serializable {
    * Java API: Sequence of names for this path from root to this. Performance implication: has to allocate a list.
    */
   @nowarn("msg=deprecated")
-  def getElements: java.lang.Iterable[String] =
-    scala.collection.JavaConverters.asJavaIterableConverter(elements).asJava
+  def getElements: java.lang.Iterable[String] = elements.asJava
 
   /**
    * Walk up the tree to obtain and return the RootActorPath.

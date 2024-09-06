@@ -313,7 +313,7 @@ object AkkaBuild {
     doc / javacOptions ++= Seq("-Xdoclint:none", "--ignore-source-errors"))
 
   def loadSystemProperties(fileName: String): Unit = {
-    import scala.collection.JavaConverters._
+    import scala.jdk.CollectionConverters._
     val file = new File(fileName)
     if (file.exists()) {
       println("Loading system properties from file `" + fileName + "`")

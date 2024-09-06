@@ -25,13 +25,13 @@ class ProjectFileIgnoreSupport(ignoreConfigFile: File, descriptor: String) {
   }
 
   private lazy val ignoredFiles: Set[String] = {
-    import scala.collection.JavaConverters._
+    import scala.jdk.CollectionConverters._
     stdoutLogger.debug(s"Loading ignored-files from $ignoreConfigFile:[${ignoreConfig.origin().url().toURI.getPath}]")
     ignoreConfig.getStringList("ignored-files").asScala.toSet
   }
 
   private lazy val ignoredPackages: Set[String] = {
-    import scala.collection.JavaConverters._
+    import scala.jdk.CollectionConverters._
     stdoutLogger.debug(
       s"Loading ignored-packages from $ignoreConfigFile:[${ignoreConfig.origin().url().toURI.getPath}]")
     ignoreConfig.getStringList("ignored-packages").asScala.toSet

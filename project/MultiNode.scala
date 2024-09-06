@@ -45,7 +45,7 @@ object MultiNode extends AutoPlugin {
   override lazy val projectSettings: Seq[Def.Setting[_]] = multiJvmSettings
 
   private val defaultMultiJvmOptions: Seq[String] = {
-    import scala.collection.JavaConverters._
+    import scala.jdk.CollectionConverters._
     // multinode.D= and multinode.X= makes it possible to pass arbitrary
     // -D or -X arguments to the forked jvm, e.g.
     // -Dmultinode.Djava.net.preferIPv4Stack=true -Dmultinode.Xmx512m -Dmultinode.XX:MaxPermSize=256M

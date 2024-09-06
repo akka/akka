@@ -18,6 +18,7 @@ import scala.concurrent.duration._
 import scala.util.Failure
 import scala.util.Success
 import scala.util.control.NonFatal
+import scala.jdk.CollectionConverters._
 
 import com.typesafe.config.{ Config, ConfigFactory }
 
@@ -106,8 +107,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
    * Java API: roles that this member has
    */
   @nowarn("msg=deprecated")
-  def getSelfRoles: java.util.Set[String] =
-    scala.collection.JavaConverters.setAsJavaSetConverter(selfRoles).asJava
+  def getSelfRoles: java.util.Set[String] = selfRoles.asJava
 
   private val _isTerminated = new AtomicBoolean(false)
   private val log = Logging.withMarker(system, ClusterLogClass.ClusterCore)

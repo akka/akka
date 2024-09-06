@@ -189,7 +189,7 @@ public class PersistenceQueryDocTest {
 
     public akka.stream.scaladsl.Source<RichEvent, QueryMetadata> byTagsWithMeta(
         scala.collection.Set<String> tags) {
-      Set<String> jTags = scala.collection.JavaConverters.setAsJavaSetConverter(tags).asJava();
+      Set<String> jTags = scala.jdk.javaapi.CollectionConverters.asJava(tags);
       return javadslReadJournal.byTagsWithMeta(jTags).asScala();
     }
   }

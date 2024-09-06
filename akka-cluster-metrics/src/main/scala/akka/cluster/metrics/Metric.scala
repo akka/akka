@@ -8,6 +8,7 @@ import scala.annotation.nowarn
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
+import scala.jdk.CollectionConverters._
 
 import akka.actor.Address
 
@@ -324,8 +325,7 @@ final case class NodeMetrics(address: Address, timestamp: Long, metrics: Set[Met
    * Java API
    */
   @nowarn("msg=deprecated")
-  def getMetrics: java.lang.Iterable[Metric] =
-    scala.collection.JavaConverters.asJavaIterableConverter(metrics).asJava
+  def getMetrics: java.lang.Iterable[Metric] = metrics.asJava
 
   /**
    * Returns true if <code>that</code> address is the same as this
