@@ -926,7 +926,7 @@ sealed abstract class ByteString
    * all fragments. Will always have at least one entry.
    */
   def getByteBuffers(): JIterable[ByteBuffer] = {
-    import scala.jdk.CollectionConverters.asJavaIterableConverter
+    import scala.jdk.CollectionConverters._
     asByteBuffers.asJava
   }
 
