@@ -1,0 +1,5 @@
+# #32510 drop additional scala source directories
+ProblemFilters.exclude[MissingClassProblem]("akka.compat.Future")
+ProblemFilters.exclude[MissingClassProblem]("akka.compat.Future$")
+ProblemFilters.exclude[MissingClassProblem]("akka.compat.PartialFunction")
+ProblemFilters.exclude[MissingClassProblem]("akka.compat.PartialFunction$")
