@@ -17,7 +17,8 @@ package object scaladsl {
    * Enable these extension methods with:
    *
    * {{{
-   *    * }}}
+   * import akka.actor.typed.scaladsl.LoggerOps
+   * }}}
    * or
    * {{{
    *import akka.actor.typed.scaladsl._
@@ -39,7 +40,6 @@ package object scaladsl {
      * @param arg1   the first argument
      * @param arg2   the second argument
      */
-    @deprecated("Not needed in 2.13 and later", "2.10.0")
     def trace2(format: String, arg1: Any, arg2: Any): Unit =
       log.trace(format, arg1, arg2)
 
@@ -55,7 +55,6 @@ package object scaladsl {
      * @param arg1   the first argument
      * @param arg2   the second argument
      */
-    @deprecated("Not needed in 2.13 and later", "2.10.0")
     def trace2(marker: Marker, format: String, arg1: Any, arg2: Any): Unit =
       log.trace(marker, format, arg1, arg2)
 
@@ -72,7 +71,6 @@ package object scaladsl {
      * @param format    the format string
      * @param arguments a list of 3 or more arguments
      */
-    @deprecated("Not needed in 2.13 and later", "2.10.0")
     def traceN(format: String, arguments: Any*): Unit = {
       val arr = arguments.toArray
       if (arr.isInstanceOf[Array[Object]])
@@ -94,7 +92,6 @@ package object scaladsl {
      * @param format    the format string
      * @param arguments a list of 3 or more arguments
      */
-    @deprecated("Not needed in 2.13 and later", "2.10.0")
     def traceN(marker: Marker, format: String, arguments: Any*): Unit = {
       val arr = arguments.toArray
       if (arr.isInstanceOf[Array[Object]])
@@ -114,7 +111,6 @@ package object scaladsl {
      * @param arg1   the first argument
      * @param arg2   the second argument
      */
-    @deprecated("Not needed in 2.13 and later", "2.10.0")
     def debug(format: String, arg1: Any, arg2: Any): Unit =
       log.debug(format, arg1, arg2)
 
@@ -130,7 +126,6 @@ package object scaladsl {
      * @param arg1   the first argument
      * @param arg2   the second argument
      */
-    @deprecated("Not needed in 2.13 and later", "2.10.0")
     def debug(marker: Marker, format: String, arg1: Any, arg2: Any): Unit =
       log.debug(marker, format, arg1, arg2)
 
@@ -147,7 +142,6 @@ package object scaladsl {
      * @param format    the format string
      * @param arguments a list of 3 or more arguments
      */
-    @deprecated("Not needed in 2.13 and later", "2.10.0")
     def debug(format: String, arguments: Any*): Unit = {
       val arr = arguments.toArray
       if (arr.isInstanceOf[Array[Object]])
@@ -169,7 +163,6 @@ package object scaladsl {
      * @param format    the format string
      * @param arguments a list of 3 or more arguments
      */
-    @deprecated("Not needed in 2.13 and later", "2.10.0")
     def debug(marker: Marker, format: String, arguments: Any*): Unit = {
       val arr = arguments.toArray
       if (arr.isInstanceOf[Array[Object]])
@@ -189,7 +182,6 @@ package object scaladsl {
      * @param arg1   the first argument
      * @param arg2   the second argument
      */
-    @deprecated("Not needed in 2.13 and later", "2.10.0")
     def info(format: String, arg1: Any, arg2: Any): Unit =
       log.info(format, arg1, arg2)
 
@@ -205,7 +197,6 @@ package object scaladsl {
      * @param arg1   the first argument
      * @param arg2   the second argument
      */
-    @deprecated("Not needed in 2.13 and later", "2.10.0")
     def info(marker: Marker, format: String, arg1: Any, arg2: Any): Unit =
       log.info(marker, format, arg1, arg2)
 
@@ -222,7 +213,6 @@ package object scaladsl {
      * @param format    the format string
      * @param arguments a list of 3 or more arguments
      */
-    @deprecated("Not needed in 2.13 and later", "2.10.0")
     def info(format: String, arguments: Any*): Unit = {
       val arr = arguments.toArray
       if (arr.isInstanceOf[Array[Object]])
@@ -244,7 +234,6 @@ package object scaladsl {
      * @param format    the format string
      * @param arguments a list of 3 or more arguments
      */
-    @deprecated("Not needed in 2.13 and later", "2.10.0")
     def info(marker: Marker, format: String, arguments: Any*): Unit = {
       val arr = arguments.toArray
       if (arr.isInstanceOf[Array[Object]])
@@ -264,7 +253,6 @@ package object scaladsl {
      * @param arg1   the first argument
      * @param arg2   the second argument
      */
-    @deprecated("Not needed in 2.13 and later", "2.10.0")
     def warn(format: String, arg1: Any, arg2: Any): Unit =
       log.warn(format, arg1, arg2)
 
@@ -280,7 +268,6 @@ package object scaladsl {
      * @param arg1   the first argument
      * @param arg2   the second argument
      */
-    @deprecated("Not needed in 2.13 and later", "2.10.0")
     def warn(marker: Marker, format: String, arg1: Any, arg2: Any): Unit =
       log.warn(marker, format, arg1, arg2)
 
@@ -297,7 +284,6 @@ package object scaladsl {
      * @param format    the format string
      * @param arguments a list of 3 or more arguments
      */
-    @deprecated("Not needed in 2.13 and later", "2.10.0")
     def warnN(format: String, arguments: Any*): Unit = {
       val arr = arguments.toArray
       if (arr.isInstanceOf[Array[Object]])
@@ -319,7 +305,6 @@ package object scaladsl {
      * @param format    the format string
      * @param arguments a list of 3 or more arguments
      */
-    @deprecated("Not needed in 2.13 and later", "2.10.0")
     def warnN(marker: Marker, format: String, arguments: Any*): Unit = {
       val arr = arguments.toArray
       if (arr.isInstanceOf[Array[Object]])
@@ -339,7 +324,6 @@ package object scaladsl {
      * @param arg1   the first argument
      * @param arg2   the second argument
      */
-    @deprecated("Not needed in 2.13 and later", "2.10.0")
     def error2(format: String, arg1: Any, arg2: Any): Unit =
       log.error(format, arg1, arg2)
 
@@ -355,7 +339,6 @@ package object scaladsl {
      * @param arg1   the first argument
      * @param arg2   the second argument
      */
-    @deprecated("Not needed in 2.13 and later", "2.10.0")
     def error2(marker: Marker, format: String, arg1: Any, arg2: Any): Unit =
       log.error(marker, format, arg1, arg2)
 
@@ -372,7 +355,6 @@ package object scaladsl {
      * @param format    the format string
      * @param arguments a list of 3 or more arguments
      */
-    @deprecated("Not needed in 2.13 and later", "2.10.0")
     def errorN(format: String, arguments: Any*): Unit = {
       val arr = arguments.toArray
       if (arr.isInstanceOf[Array[Object]])
@@ -394,7 +376,6 @@ package object scaladsl {
      * @param format    the format string
      * @param arguments a list of 3 or more arguments
      */
-    @deprecated("Not needed in 2.13 and later", "2.10.0")
     def errorN(marker: Marker, format: String, arguments: Any*): Unit = {
       val arr = arguments.toArray
       if (arr.isInstanceOf[Array[Object]])
