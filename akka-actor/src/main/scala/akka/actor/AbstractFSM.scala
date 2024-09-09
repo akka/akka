@@ -171,7 +171,7 @@ abstract class AbstractFSM[S, D] extends FSM[S, D] {
    * called, not only the first one matching.</b>
    */
   final def onTransition(transitionHandler: UnitApply2[S, S]): Unit = {
-    val pf: PartialFunction[(S, S), Unit] = akka.compat.PartialFunction.fromFunction(transitionHandler(_: S, _: S))
+    val pf: PartialFunction[(S, S), Unit] = PartialFunction.fromFunction(transitionHandler(_: S, _: S))
     super.onTransition(pf)
   }
 
