@@ -6,6 +6,7 @@ package akka.cluster
 
 import scala.annotation.nowarn
 import scala.runtime.AbstractFunction2
+import scala.jdk.CollectionConverters._
 
 import akka.actor.Address
 import akka.annotation.InternalApi
@@ -50,9 +51,7 @@ class Member private[cluster] (
   /**
    * Java API
    */
-  @nowarn("msg=deprecated")
-  def getRoles: java.util.Set[String] =
-    scala.collection.JavaConverters.setAsJavaSetConverter(roles).asJava
+  def getRoles: java.util.Set[String] = roles.asJava
 
   /**
    * Is this member older, has been part of cluster longer, than another

@@ -16,6 +16,7 @@ import scala.collection.{ immutable, mutable }
 import scala.collection.immutable.{ IndexedSeq, IndexedSeqOps, StrictOptimizedSeqOps, VectorBuilder }
 import scala.collection.mutable.{ Builder, WrappedArray }
 import scala.reflect.ClassTag
+import scala.jdk.CollectionConverters._
 
 object ByteString {
 
@@ -925,11 +926,7 @@ sealed abstract class ByteString
    * Java API: Returns an Iterable of read-only ByteBuffers that directly wraps this ByteStrings
    * all fragments. Will always have at least one entry.
    */
-  @nowarn
-  def getByteBuffers(): JIterable[ByteBuffer] = {
-    import scala.collection.JavaConverters.asJavaIterableConverter
-    asByteBuffers.asJava
-  }
+  def getByteBuffers(): JIterable[ByteBuffer] = asByteBuffers.asJava
 
   /**
    * Creates a new ByteBuffer with a copy of all bytes contained in this

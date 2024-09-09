@@ -8,6 +8,7 @@ import scala.annotation.nowarn
 import scala.collection.immutable
 import scala.collection.immutable.{ SortedSet, VectorBuilder }
 import scala.runtime.AbstractFunction5
+import scala.jdk.CollectionConverters._
 
 import language.postfixOps
 
@@ -143,23 +144,19 @@ object ClusterEvent {
     /**
      * Java API: get current unreachable set.
      */
-    @nowarn("msg=deprecated")
-    def getUnreachable: java.util.Set[Member] =
-      scala.collection.JavaConverters.setAsJavaSetConverter(unreachable).asJava
+    def getUnreachable: java.util.Set[Member] = {
+      unreachable.asJava
+    }
 
     /**
      * Java API: All data centers in the cluster
      */
-    @nowarn("msg=deprecated")
-    def getUnreachableDataCenters: java.util.Set[String] =
-      scala.collection.JavaConverters.setAsJavaSetConverter(unreachableDataCenters).asJava
+    def getUnreachableDataCenters: java.util.Set[String] = unreachableDataCenters.asJava
 
     /**
      * Java API: get current “seen-by” set.
      */
-    @nowarn("msg=deprecated")
-    def getSeenBy: java.util.Set[Address] =
-      scala.collection.JavaConverters.setAsJavaSetConverter(seenBy).asJava
+    def getSeenBy: java.util.Set[Address] = seenBy.asJava
 
     /**
      * Java API: get address of current data center leader, or null if none
@@ -185,9 +182,7 @@ object ClusterEvent {
     /**
      * Java API: All node roles in the cluster
      */
-    @nowarn("msg=deprecated")
-    def getAllRoles: java.util.Set[String] =
-      scala.collection.JavaConverters.setAsJavaSetConverter(allRoles).asJava
+    def getAllRoles: java.util.Set[String] = allRoles.asJava
 
     /**
      * All data centers in the cluster
@@ -197,9 +192,7 @@ object ClusterEvent {
     /**
      * Java API: All data centers in the cluster
      */
-    @nowarn("msg=deprecated")
-    def getAllDataCenters: java.util.Set[String] =
-      scala.collection.JavaConverters.setAsJavaSetConverter(allDataCenters).asJava
+    def getAllDataCenters: java.util.Set[String] = allDataCenters.asJava
 
     /**
      * Replace the set of unreachable datacenters with the given set

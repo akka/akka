@@ -1360,14 +1360,13 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
 
   // Internal hooks to avoid reliance on user calling super in postStop
   /** INTERNAL API */
-  @nowarn("msg=JavaConverters in package collection is deprecated")
   protected[stream] def afterPostStop(): Unit = {
     if (_stageActor ne null) {
       _stageActor.stop()
       _stageActor = null
     }
 
-    import scala.collection.JavaConverters._
+    import scala.jdk.CollectionConverters._
     // make sure any invokeWithFeedback after this fails fast
     // and fail current outstanding invokeWithFeedback promises
     val inProgress =

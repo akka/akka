@@ -5,10 +5,13 @@
 package akka.actor.dungeon
 
 import java.util.Optional
+
 import scala.annotation.nowarn
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.util.control.NonFatal
+import scala.jdk.CollectionConverters._
+
 import akka.actor._
 import akka.annotation.InternalApi
 import akka.annotation.InternalStableApi
@@ -39,9 +42,8 @@ private[akka] trait Children { this: ActorCell =>
     Unsafe.instance.getObjectVolatile(this, AbstractActorCell.childrenOffset).asInstanceOf[ChildrenContainer]
 
   final def children: immutable.Iterable[ActorRef] = childrenRefs.children
-  @nowarn("msg=deprecated")
-  final def getChildren(): java.lang.Iterable[ActorRef] =
-    scala.collection.JavaConverters.asJavaIterableConverter(children).asJava
+
+  final def getChildren(): java.lang.Iterable[ActorRef] = children.asJava
 
   final def child(name: String): Option[ActorRef] = Option(getChild(name))
   final def getChild(name: String): ActorRef = childrenRefs.getByName(name) match {

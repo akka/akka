@@ -16,7 +16,7 @@ import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import com.typesafe.config.ConfigFactory
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 object ShoppingCartSpec extends MultiNodeConfig {
   val node1 = role("node-1")
