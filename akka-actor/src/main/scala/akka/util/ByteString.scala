@@ -4,17 +4,27 @@
 
 package akka.util
 
-import java.io.{ ObjectInputStream, ObjectOutputStream }
+import java.io.ObjectInputStream
+import java.io.ObjectOutputStream
 import java.lang.{ Iterable => JIterable }
-import java.nio.{ ByteBuffer, ByteOrder }
-import java.nio.charset.{ Charset, StandardCharsets }
+import java.nio.charset.Charset
+import java.nio.charset.StandardCharsets
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
 import java.util.Base64
 
-import scala.annotation.{ tailrec, varargs }
 import scala.annotation.nowarn
-import scala.collection.{ immutable, mutable }
-import scala.collection.immutable.{ IndexedSeq, IndexedSeqOps, StrictOptimizedSeqOps, VectorBuilder }
-import scala.collection.mutable.{ Builder, WrappedArray }
+import scala.annotation.tailrec
+import scala.annotation.unused
+import scala.annotation.varargs
+import scala.collection.immutable.IndexedSeq
+import scala.collection.immutable.IndexedSeqOps
+import scala.collection.immutable.StrictOptimizedSeqOps
+import scala.collection.immutable.VectorBuilder
+import scala.collection.mutable.Builder
+import scala.collection.mutable.WrappedArray
+import scala.collection.immutable
+import scala.collection.mutable
 import scala.reflect.ClassTag
 import scala.jdk.CollectionConverters._
 
@@ -892,7 +902,7 @@ sealed abstract class ByteString
    * @param buffer a ByteBuffer to copy bytes to
    * @return the number of bytes actually copied
    */
-  def copyToBuffer(@nowarn("msg=never used") buffer: ByteBuffer): Int
+  def copyToBuffer(@unused buffer: ByteBuffer): Int
 
   /**
    * Create a new ByteString with all contents compacted into a single,
@@ -1073,7 +1083,9 @@ sealed abstract class CompactByteString extends ByteString with Serializable {
 final class ByteStringBuilder extends Builder[Byte, ByteString] {
   builder =>
 
-  import ByteString.{ ByteString1, ByteString1C, ByteStrings }
+  import ByteString.ByteString1
+  import ByteString.ByteString1C
+  import ByteString.ByteStrings
   private var _length: Int = 0
   private val _builder: VectorBuilder[ByteString1] = new VectorBuilder[ByteString1]()
   private var _temp: Array[Byte] = _

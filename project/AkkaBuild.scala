@@ -141,16 +141,6 @@ object AkkaBuild {
     scalafmtOnCompile := !CliOptions.runningOnCi.get && !sys.props.contains("akka.no.discipline") && !scalaVersion.value
         .startsWith("3."),
     crossVersion := CrossVersion.binary,
-    // Adds a `src/main/scala-2.13+` source directory for code shared
-    // between Scala 2.13 and Scala 3
-    Compile / unmanagedSourceDirectories ++= {
-      val sourceDir = (Compile / sourceDirectory).value
-      CrossVersion.partialVersion(scalaVersion.value) match {
-        case Some((3, n))            => Seq(sourceDir / "scala-2.13+")
-        case Some((2, n)) if n >= 13 => Seq(sourceDir / "scala-2.13+")
-        case _                       => Nil
-      }
-    },
     // append -SNAPSHOT to version when isSnapshot
     ThisBuild / dynverSonatypeSnapshots := true,
     ThisBuild / ivyLoggingLevel := UpdateLogging.Quiet,

@@ -4,7 +4,8 @@
 
 package akka.util
 
-import java.nio.{ ByteBuffer, ByteOrder }
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
 
 import scala.annotation.nowarn
 import scala.annotation.tailrec

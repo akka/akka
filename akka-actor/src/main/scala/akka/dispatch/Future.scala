@@ -10,6 +10,7 @@ import java.util.concurrent.{ Callable, Executor, ExecutorService }
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionStage
 
+import scala.collection.immutable.{ Iterable => ImmutableIterable }
 import scala.annotation.nowarn
 import scala.concurrent.{ ExecutionContext, ExecutionContextExecutor, ExecutionContextExecutorService, Future, Promise }
 import scala.runtime.{ AbstractPartialFunction, BoxedUnit }
@@ -17,7 +18,6 @@ import scala.util.{ Failure, Success, Try }
 
 import akka.annotation.InternalApi
 import akka.annotation.InternalStableApi
-import akka.compat
 import akka.dispatch.internal.SameThreadExecutionContext
 import akka.japi.{ Procedure, Function => JFunc, Option => JOption }
 
@@ -154,7 +154,7 @@ object Futures {
       predicate: JFunc[T, java.lang.Boolean],
       executor: ExecutionContext): Future[JOption[T]] = {
     implicit val ec = executor
-    compat.Future.find[T](futures.asScala)(predicate.apply(_))(executor).map(JOption.fromScalaOption)
+    Future.find[T](ImmutableIterable(futures.asScala).flatten)(predicate.apply)(executor).map(JOption.fromScalaOption)
   }
 
   /**
@@ -174,7 +174,7 @@ object Futures {
       futures: JIterable[Future[T]],
       fun: akka.japi.Function2[R, T, R],
       executor: ExecutionContext): Future[R] =
-    compat.Future.fold(futures.asScala)(zero)(fun.apply)(executor)
+    Future.foldLeft(ImmutableIterable(futures.asScala).flatten)(zero)(fun.apply)(executor)
 
   /**
    * Reduces the results of the supplied futures and binary function.
@@ -183,7 +183,7 @@ object Futures {
       futures: JIterable[Future[T]],
       fun: akka.japi.Function2[R, T, R],
       executor: ExecutionContext): Future[R] =
-    compat.Future.reduce[T, R](futures.asScala)(fun.apply)(executor)
+    Future.reduceLeft[T, R](ImmutableIterable(futures.asScala).flatten)(fun.apply)(executor)
 
   /**
    * Simple version of [[#traverse]]. Transforms a JIterable[Future[A]] into a Future[JIterable[A]].
