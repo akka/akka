@@ -14,6 +14,7 @@ import scala.annotation.nowarn
 import scala.annotation.unchecked.uncheckedVariance
 import scala.annotation.varargs
 import scala.collection.immutable
+import scala.concurrent.ExecutionContext
 import scala.jdk.DurationConverters._
 import scala.jdk.FutureConverters._
 import scala.jdk.OptionConverters.RichOptional
@@ -26,7 +27,6 @@ import akka.NotUsed
 import akka.actor.ActorRef
 import akka.actor.ClassicActorSystemProvider
 import akka.annotation.ApiMayChange
-import akka.dispatch.ExecutionContexts
 import akka.event.{ LogMarker, LoggingAdapter, MarkerLoggingAdapter }
 import akka.japi.Pair
 import akka.japi.Util
@@ -263,9 +263,8 @@ object Flow {
       flowFactory: function.Function[I, CompletionStage[Flow[I, O, M]]],
       fallback: function.Creator[M]): Flow[I, O, M] = {
     import scala.jdk.FutureConverters._
-    val sflow = scaladsl.Flow.lazyInit(
-      (flowFactory.apply(_)).andThen(_.asScala.map(_.asScala)(ExecutionContexts.parasitic)),
-      fallback.create _)
+    val sflow = scaladsl.Flow
+      .lazyInit((flowFactory.apply(_)).andThen(_.asScala.map(_.asScala)(ExecutionContext.parasitic)), fallback.create _)
     new Flow(sflow)
   }
 
@@ -291,9 +290,9 @@ object Flow {
     import scala.jdk.FutureConverters._
 
     val sflow = scaladsl.Flow
-      .lazyInitAsync(() => flowFactory.create().asScala.map(_.asScala)(ExecutionContexts.parasitic))
+      .lazyInitAsync(() => flowFactory.create().asScala.map(_.asScala)(ExecutionContext.parasitic))
       .mapMaterializedValue(fut =>
-        fut.map(_.fold[Optional[M]](Optional.empty())(m => Optional.ofNullable(m)))(ExecutionContexts.parasitic).asJava)
+        fut.map(_.fold[Optional[M]](Optional.empty())(m => Optional.ofNullable(m)))(ExecutionContext.parasitic).asJava)
     new Flow(sflow)
   }
 
@@ -307,7 +306,7 @@ object Flow {
   def completionStageFlow[I, O, M](flow: CompletionStage[Flow[I, O, M]]): Flow[I, O, CompletionStage[M]] = {
     import scala.jdk.FutureConverters._
     val sflow =
-      scaladsl.Flow.futureFlow(flow.asScala.map(_.asScala)(ExecutionContexts.parasitic)).mapMaterializedValue(_.asJava)
+      scaladsl.Flow.futureFlow(flow.asScala.map(_.asScala)(ExecutionContext.parasitic)).mapMaterializedValue(_.asJava)
     new javadsl.Flow(sflow)
   }
 
@@ -360,7 +359,7 @@ object Flow {
   def lazyCompletionStageFlow[I, O, M](
       create: Creator[CompletionStage[Flow[I, O, M]]]): Flow[I, O, CompletionStage[M]] =
     scaladsl.Flow
-      .lazyFutureFlow[I, O, M](() => create.create().asScala.map(_.asScala)(ExecutionContexts.parasitic))
+      .lazyFutureFlow[I, O, M](() => create.create().asScala.map(_.asScala)(ExecutionContext.parasitic))
       .mapMaterializedValue(_.asJava)
       .asJava
 

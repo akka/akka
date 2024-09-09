@@ -8,6 +8,7 @@ import java.util.UUID
 
 import scala.annotation.nowarn
 import scala.collection.immutable
+import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.Success
@@ -33,7 +34,6 @@ import akka.cluster.sharding.internal.AbstractLeastShardAllocationStrategy
 import akka.cluster.sharding.internal.ClusterShardAllocationMixin.RegionEntry
 import akka.cluster.sharding.internal.ClusterShardAllocationMixin.ShardSuitabilityOrdering
 import akka.cluster.sharding.internal.EventSourcedRememberEntitiesCoordinatorStore.MigrationMarker
-import akka.dispatch.ExecutionContexts
 import akka.event.{ BusLogging, Logging }
 import akka.pattern.{ pipe, AskTimeoutException }
 import akka.persistence._
@@ -213,7 +213,7 @@ object ShardCoordinator {
         currentShardAllocations: Map[ActorRef, immutable.IndexedSeq[ShardId]],
         rebalanceInProgress: Set[ShardId]): Future[Set[ShardId]] = {
       import scala.jdk.CollectionConverters._
-      implicit val ec = ExecutionContexts.parasitic
+      implicit val ec = ExecutionContext.parasitic
       rebalance(currentShardAllocations.asJava, rebalanceInProgress.asJava).map(_.asScala.toSet)
     }
 

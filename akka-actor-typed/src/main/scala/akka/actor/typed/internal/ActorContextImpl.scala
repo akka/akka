@@ -11,6 +11,7 @@ import java.util.Optional
 import java.util.concurrent.CompletionStage
 
 import scala.annotation.{ nowarn, switch }
+import scala.concurrent.ExecutionContext
 import scala.concurrent.{ ExecutionContextExecutor, Future }
 import scala.jdk.DurationConverters._
 import scala.reflect.ClassTag
@@ -24,7 +25,6 @@ import org.slf4j.LoggerFactory
 import akka.actor.Address
 import akka.actor.typed.internal.adapter.ActorSystemAdapter
 import akka.annotation.InternalApi
-import akka.dispatch.ExecutionContexts
 import akka.pattern.StatusReply
 import akka.util.BoxedType
 import akka.util.OptionVal
@@ -269,7 +269,7 @@ import akka.util.Timeout
 
   // Scala API impl
   def pipeToSelf[Value](future: Future[Value])(mapResult: Try[Value] => T): Unit = {
-    future.onComplete(value => self.unsafeUpcast ! AdaptMessage(value, mapResult))(ExecutionContexts.parasitic)
+    future.onComplete(value => self.unsafeUpcast ! AdaptMessage(value, mapResult))(ExecutionContext.parasitic)
   }
 
   // Java API impl

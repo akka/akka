@@ -4,6 +4,7 @@
 
 package akka.stream.impl
 
+import scala.concurrent.ExecutionContext
 import scala.concurrent.{ Future, Promise }
 
 import akka.Done
@@ -216,7 +217,7 @@ import akka.stream.stage._
           .onComplete {
             case scala.util.Success(_) =>
             case scala.util.Failure(e) => p.tryFailure(e)
-          }(akka.dispatch.ExecutionContexts.parasitic)
+          }(ExecutionContext.parasitic)
         p.future
       }
       override def complete(): Unit = callback.invoke(Completion)

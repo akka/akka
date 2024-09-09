@@ -10,13 +10,13 @@ import java.util.concurrent.atomic.{ AtomicBoolean, AtomicLong }
 
 import scala.annotation.nowarn
 import scala.collection.immutable
+import scala.concurrent.ExecutionContext
 import scala.concurrent.{ Future, Promise }
 import scala.concurrent.duration.{ Duration, FiniteDuration }
 
 import akka.{ Done, NotUsed }
 import akka.actor.{ ActorRef, Terminated }
 import akka.annotation.InternalApi
-import akka.dispatch.ExecutionContexts
 import akka.io.Inet.SocketOption
 import akka.io.Tcp
 import akka.io.Tcp._
@@ -86,7 +86,7 @@ import akka.util.ByteString
                 thisStage.tell(Unbind, thisStage)
               }
               unbindPromise.future
-            }, unbindPromise.future.map(_ => Done)(ExecutionContexts.parasitic)))
+            }, unbindPromise.future.map(_ => Done)(ExecutionContext.parasitic)))
           case f: CommandFailed =>
             val ex = new BindFailedException {
               // cannot modify the actual exception class for compatibility reasons
@@ -578,7 +578,7 @@ private[stream] object ConnectionSourceStage {
       remoteAddress,
       eagerMaterializer)
 
-    (logic, localAddressPromise.future.map(OutgoingConnection(remoteAddress, _))(ExecutionContexts.parasitic))
+    (logic, localAddressPromise.future.map(OutgoingConnection(remoteAddress, _))(ExecutionContext.parasitic))
   }
 
   override def toString = s"TCP-to($remoteAddress)"

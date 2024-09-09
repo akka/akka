@@ -8,6 +8,7 @@ import java.time.{ Duration => JDuration }
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 
+import scala.concurrent.ExecutionContext
 import scala.concurrent.Promise
 import scala.concurrent.duration._
 
@@ -15,7 +16,6 @@ import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.Eventually
 
 import akka.NotUsed
-import akka.dispatch.ExecutionContexts
 import akka.persistence.Persistence
 import akka.persistence.query.NoOffset
 import akka.persistence.query.Offset
@@ -149,7 +149,7 @@ class EventsBySliceFirehoseSpec
       TestSource[EventEnvelope[Any]]().watchTermination()(Keep.both).mapMaterializedValue {
         case (probe, termination) =>
           firehoseRunning.set(true)
-          termination.onComplete(_ => firehoseRunning.set(false))(ExecutionContexts.parasitic)
+          termination.onComplete(_ => firehoseRunning.set(false))(ExecutionContext.parasitic)
           firehosePublisherPromise.success(probe)
           NotUsed
       }

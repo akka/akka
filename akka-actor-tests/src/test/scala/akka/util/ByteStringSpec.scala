@@ -989,16 +989,6 @@ class ByteStringSpec extends AnyWordSpec with Matchers with Checkers {
     "serialize correctly" when {
       // note that this is serialization with Java serialization
       // real serialization is in akka-remote
-      if (util.Properties.versionNumberString.startsWith("2.12")) {
-        "parsing regular ByteString1C as compat" in {
-          val oldSerd =
-            "aced000573720021616b6b612e7574696c2e42797465537472696e672442797465537472696e67314336e9eed0afcfe4a40200015b000562797465737400025b427872001b616b6b612e7574696c2e436f6d7061637442797465537472696e67fa2925150f93468f0200007870757200025b42acf317f8060854e002000078700000000a74657374737472696e67"
-          val bs = ByteString("teststring", "UTF8")
-          val str = hexFromSer(bs)
-
-          str should be(oldSerd)
-        }
-      }
 
       "given all types of ByteString" in {
         check { (bs: ByteString) =>

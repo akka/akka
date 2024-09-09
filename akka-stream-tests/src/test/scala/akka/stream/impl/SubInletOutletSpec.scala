@@ -4,12 +4,12 @@
 
 package akka.stream.impl
 
+import scala.concurrent.ExecutionContext
 import scala.util.Failure
 import scala.util.Success
 
 import akka.Done
 import akka.NotUsed
-import akka.dispatch.ExecutionContexts
 import akka.stream.Attributes
 import akka.stream.FlowShape
 import akka.stream.Inlet
@@ -52,7 +52,7 @@ class SubInletOutletSpec extends StreamSpec {
         override def preStart(): Unit = {
           sideChannel
             .watchTermination() { (_, done) =>
-              done.onComplete(c => subCompletion = c)(ExecutionContexts.parasitic)
+              done.onComplete(c => subCompletion = c)(ExecutionContext.parasitic)
               NotUsed
             }
             .runWith(Sink.fromGraph(subIn.sink))
@@ -158,7 +158,7 @@ class SubInletOutletSpec extends StreamSpec {
           Source
             .fromGraph(subOut.source)
             .runWith(Sink.ignore)
-            .onComplete(t => subCompletion = t)(ExecutionContexts.parasitic)
+            .onComplete(t => subCompletion = t)(ExecutionContext.parasitic)
           subOut.setHandler(new OutHandler {
             override def onPull(): Unit = pull(in)
           })

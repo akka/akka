@@ -23,7 +23,6 @@ import akka.Done
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.actor.ExtendedActorSystem
-import akka.dispatch.ExecutionContexts
 import akka.event.Logging
 import akka.remote.RemoteActorRefProvider
 import akka.remote.RemoteLogMarker
@@ -269,7 +268,7 @@ private[remote] class ArteryTcpTransport(
                   s"Failed to bind TCP to [$bindHost:$bindPort] due to: " +
                   e.getMessage,
                   e))
-          }(ExecutionContexts.parasitic)
+          }(ExecutionContext.parasitic)
 
         // only on initial startup, when ActorSystem is starting
         val b = Await.result(binding, settings.Bind.BindTimeout)

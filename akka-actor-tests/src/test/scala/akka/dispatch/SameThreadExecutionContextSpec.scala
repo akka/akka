@@ -10,22 +10,11 @@ import scala.concurrent.Promise
 import org.scalatest.matchers.should.Matchers
 
 import akka.Done
-import akka.dispatch.internal.SameThreadExecutionContext
 import akka.testkit.AkkaSpec
 
 class SameThreadExecutionContextSpec extends AkkaSpec with Matchers {
 
   "The SameThreadExecutionContext" should {
-
-    "return a Scala specific version" in {
-      val ec = SameThreadExecutionContext()
-      if (util.Properties.versionNumberString.startsWith("2.12")) {
-        ec.getClass.getName should startWith("akka.dispatch.internal.SameThreadExecutionContext")
-      } else {
-        // in 2.13 and higher parasitic is available
-        ec.getClass.getName should ===("scala.concurrent.ExecutionContext$parasitic$")
-      }
-    }
 
     "should run follow up future operations in the same dispatcher" in {
       // covered by the respective impl test suites for sure but just in case
@@ -34,7 +23,7 @@ class SameThreadExecutionContextSpec extends AkkaSpec with Matchers {
         .map { _ =>
           Thread.currentThread().getName
         }(system.dispatcher)
-        .map(firstName => firstName -> Thread.currentThread().getName)(SameThreadExecutionContext())
+        .map(firstName => firstName -> Thread.currentThread().getName)(ExecutionContext.parasitic)
 
       promise.success(Done)
       val (threadName1, threadName2) = futureThreadNames.futureValue
@@ -48,7 +37,7 @@ class SameThreadExecutionContextSpec extends AkkaSpec with Matchers {
         .map { _ =>
           Thread.currentThread().getName
         }(ExecutionContext.global)
-        .map(firstName => firstName -> Thread.currentThread().getName)(SameThreadExecutionContext())
+        .map(firstName => firstName -> Thread.currentThread().getName)(ExecutionContext.parasitic)
 
       promise.success(Done)
       val (threadName1, threadName2) = futureThreadNames.futureValue

@@ -16,9 +16,6 @@ import scala.concurrent.{ ExecutionContext, ExecutionContextExecutor, ExecutionC
 import scala.runtime.{ AbstractPartialFunction, BoxedUnit }
 import scala.util.{ Failure, Success, Try }
 
-import akka.annotation.InternalApi
-import akka.annotation.InternalStableApi
-import akka.dispatch.internal.SameThreadExecutionContext
 import akka.japi.{ Procedure, Function => JFunc, Option => JOption }
 
 /**
@@ -74,32 +71,6 @@ object ExecutionContexts {
    * @return a reference to the global ExecutionContext
    */
   def global(): ExecutionContextExecutor = ExecutionContext.global
-
-  /**
-   * INTERNAL API
-   *
-   * WARNING: Not A General Purpose ExecutionContext!
-   *
-   * This is an execution context which runs everything on the calling thread.
-   * It is very useful for actions which are known to be non-blocking and
-   * non-throwing in order to save a round-trip to the thread pool.
-   *
-   * Once Scala 2.12 is no longer supported this can be dropped in favour of directly using `ExecutionContext.parasitic`
-   */
-  @InternalStableApi
-  private[akka] val parasitic: ExecutionContext = SameThreadExecutionContext()
-
-  /**
-   * INTERNAL API
-   */
-  @InternalApi
-  @deprecated("Use ExecutionContexts.parasitic instead", "2.6.4")
-  private[akka] object sameThreadExecutionContext extends ExecutionContext with BatchingExecutor {
-    override protected def unbatchedExecute(runnable: Runnable): Unit = parasitic.execute(runnable)
-    override protected def resubmitOnBlock: Boolean = false // No point since we execute on same thread
-    override def reportFailure(t: Throwable): Unit =
-      parasitic.reportFailure(t)
-  }
 
 }
 

@@ -6,6 +6,7 @@ package akka.actor.typed.internal.adapter
 
 import java.util.concurrent.CompletionStage
 
+import scala.concurrent.ExecutionContext
 import scala.jdk.FutureConverters._
 import scala.concurrent.ExecutionContextExecutor
 
@@ -106,11 +107,9 @@ import akka.util.OptionVal
   override def uptime: Long = classicSystem.uptime
   override def printTree: String = system.printTree
 
-  import akka.dispatch.ExecutionContexts.parasitic
-
   override def terminate(): Unit = system.terminate()
   override lazy val whenTerminated: scala.concurrent.Future[akka.Done] =
-    system.whenTerminated.map(_ => Done)(parasitic)
+    system.whenTerminated.map(_ => Done)(ExecutionContext.parasitic)
   override lazy val getWhenTerminated: CompletionStage[akka.Done] =
     whenTerminated.asJava
 

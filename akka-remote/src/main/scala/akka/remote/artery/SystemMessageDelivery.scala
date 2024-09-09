@@ -7,6 +7,7 @@ package akka.remote.artery
 import java.util.ArrayDeque
 
 import scala.annotation.tailrec
+import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 import scala.util.Failure
 import scala.util.Success
@@ -16,7 +17,6 @@ import scala.util.control.NoStackTrace
 import akka.Done
 import akka.actor.ActorRef
 import akka.annotation.InternalApi
-import akka.dispatch.ExecutionContexts
 import akka.dispatch.sysmsg.SystemMessage
 import akka.event.Logging
 import akka.remote.UniqueAddress
@@ -109,7 +109,7 @@ import akka.util.PrettyDuration.PrettyPrintableDuration
           if (isAvailable(out))
             pull(in) // onPull from downstream already called
         }
-        outboundContext.controlSubject.attach(this).foreach(callback.invoke)(ExecutionContexts.parasitic)
+        outboundContext.controlSubject.attach(this).foreach(callback.invoke)(ExecutionContext.parasitic)
       }
 
       override def postStop(): Unit = {

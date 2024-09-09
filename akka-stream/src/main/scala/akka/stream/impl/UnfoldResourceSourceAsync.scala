@@ -10,7 +10,7 @@ import scala.util.control.NonFatal
 
 import akka.Done
 import akka.annotation.InternalApi
-import akka.dispatch.ExecutionContexts.parasitic
+import ExecutionContext.parasitic
 import akka.stream._
 import akka.stream.ActorAttributes.SupervisionStrategy
 import akka.stream.Attributes.SourceLocation
