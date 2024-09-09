@@ -59,31 +59,6 @@ object LoggingDocExamples {
 
   }
 
-  def placeholders(): Unit = {
-    //#info2
-    import akka.actor.typed.scaladsl.LoggerOps
-
-    Behaviors.receive[String] { (context, message) =>
-      context.log.info2("{} received message: {}", context.self.path.name, message)
-      Behaviors.same
-    }
-    //#info2
-
-    //#infoN
-    import akka.actor.typed.scaladsl.LoggerOps
-
-    Behaviors.receive[String] { (context, message) =>
-      context.log.infoN(
-        "{} received message of size {} starting with: {}",
-        context.self.path.name,
-        message.length,
-        message.take(10))
-      Behaviors.same
-    }
-    //#infoN
-
-  }
-
   def logMessages(): Unit = {
     //#logMessages
     import akka.actor.typed.LogOptions

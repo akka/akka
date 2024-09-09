@@ -12,7 +12,7 @@ import scala.concurrent.duration.FiniteDuration
 import org.slf4j.Logger
 
 import akka.actor.{ Cancellable, NotInfluenceReceiveTimeout }
-import akka.actor.typed.scaladsl.{ ActorContext, LoggerOps }
+import akka.actor.typed.scaladsl.ActorContext
 import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
 import akka.util.OptionVal
@@ -176,7 +176,7 @@ import akka.util.OptionVal
         } else {
           // it was from an old timer that was enqueued in mailbox before canceled
           if (log.isDebugEnabled)
-            log.debugN(
+            log.debug(
               "Received timer [{}] from old generation [{}], expected generation [{}], discarding",
               timerMsg.key,
               timerMsg.generation,

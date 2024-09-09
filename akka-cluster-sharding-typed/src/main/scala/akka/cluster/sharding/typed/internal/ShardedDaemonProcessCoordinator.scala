@@ -16,7 +16,6 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.SupervisorStrategy
 import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.scaladsl.LoggerOps
 import akka.actor.typed.scaladsl.TimerScheduler
 import akka.actor.typed.scaladsl.adapter.TypedActorRefOps
 import akka.annotation.InternalApi
@@ -164,7 +163,7 @@ private final class ShardedDaemonProcessCoordinator private (
         case InternalGetResponse(success @ Replicator.GetSuccess(`key`)) =>
           val existingScaleState = success.get(key)
           if (existingScaleState.completed) {
-            context.log.debugN(
+            context.log.debug(
               "{}: Previous completed state found for Sharded Daemon Process rev [{}] from [{}]",
               daemonProcessName,
               existingScaleState.revision,
@@ -172,7 +171,7 @@ private final class ShardedDaemonProcessCoordinator private (
             stash.stash(Tick)
             stash.unstashAll(idle(existingScaleState))
           } else {
-            context.log.debugN(
+            context.log.debug(
               "{}: Previous non completed state found for Sharded Daemon Process rev [{}] from [{}], retriggering scaling",
               daemonProcessName,
               existingScaleState.revision,
@@ -212,7 +211,7 @@ private final class ShardedDaemonProcessCoordinator private (
         } else {
           runningThrottledPingKillswitch.foreach(_.shutdown())
           val newState = currentState.startScalingTo(request.newNumberOfProcesses)
-          context.log.infoN(
+          context.log.info(
             "{}: Starting rescaling of Sharded Daemon Process to [{}] processes, rev [{}]",
             daemonProcessName,
             request.newNumberOfProcesses,
@@ -224,7 +223,7 @@ private final class ShardedDaemonProcessCoordinator private (
       case Tick =>
         val sortedIdentities =
           ShardedDaemonProcessId.sortedIdentitiesFor(currentState.revision, currentState.numberOfProcesses)
-        context.log.debugN(
+        context.log.debug(
           "Sending periodic keep alive for Sharded Daemon Process [{}] to [{}] processes (revision [{}]).",
           daemonProcessName,
           sortedIdentities.size,
@@ -273,7 +272,7 @@ private final class ShardedDaemonProcessCoordinator private (
       case InternalUpdateResponse(_ @Replicator.UpdateTimeout(`key`)) =>
         // retry
         if (updateRetry > 5) {
-          context.log.warn2(
+          context.log.warn(
             "{}: Failed updating scale state for sharded daemon process, retrying, retry [{}]",
             daemonProcessName,
             updateRetry)
@@ -311,7 +310,7 @@ private final class ShardedDaemonProcessCoordinator private (
           rescalingComplete(state, request)
         } else waitForShardsStopping(state, request, previousNumberOfProcesses, newShardsStillRunning)
       case ShardStopTimeout =>
-        context.log.debug2("{}: Stopping shards timed out after [{}] retrying", daemonProcessName, stopShardsTimeout)
+        context.log.debug("{}: Stopping shards timed out after [{}] retrying", daemonProcessName, stopShardsTimeout)
         stopAllShards(state, request, previousNumberOfProcesses)
     }
   }
@@ -363,7 +362,7 @@ private final class ShardedDaemonProcessCoordinator private (
         Behaviors.same
 
       case msg =>
-        context.log.debugN("{}: Unexpected message in step {}: {}", daemonProcessName, stepName, msg.getClass.getName)
+        context.log.debug("{}: Unexpected message in step {}: {}", daemonProcessName, stepName, msg.getClass.getName)
         Behaviors.same
     })
 

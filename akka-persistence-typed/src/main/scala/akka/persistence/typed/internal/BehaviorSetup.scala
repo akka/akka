@@ -14,7 +14,6 @@ import akka.actor.{ ActorRef => ClassicActorRef }
 import akka.actor.Cancellable
 import akka.actor.typed.Signal
 import akka.actor.typed.scaladsl.ActorContext
-import akka.actor.typed.scaladsl.LoggerOps
 import akka.annotation.InternalApi
 import akka.persistence._
 import akka.persistence.typed.EventAdapter
@@ -227,7 +226,7 @@ private[akka] final class BehaviorSetup[C, E, S](
     retention match {
       case SnapshotCountRetentionCriteriaImpl(_, _, true) if retentionInProgress =>
         if (deleteToSequenceNr > 0) {
-          internalLogger.debug2(
+          internalLogger.debug(
             "Retention at seqNr [{}], deleting events to seqNr [{}].",
             sequenceNr,
             deleteToSequenceNr)

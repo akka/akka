@@ -14,7 +14,6 @@ import akka.actor.typed.PreRestart
 import akka.actor.typed.Signal
 import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.scaladsl.LoggerOps
 import akka.annotation.InternalApi
 import akka.annotation.InternalStableApi
 import akka.persistence._
@@ -127,7 +126,7 @@ private[akka] trait JournalInteractions[C, E, S] {
       @nowarn("msg=never used") repr: immutable.Seq[PersistentRepr]): Unit = ()
 
   protected def replayEvents(fromSeqNr: Long, toSeqNr: Long): Unit = {
-    setup.internalLogger.debug2("Replaying events: from: {}, to: {}", fromSeqNr, toSeqNr)
+    setup.internalLogger.debug("Replaying events: from: {}, to: {}", fromSeqNr, toSeqNr)
     setup.journal.tell(
       ReplayMessages(fromSeqNr, toSeqNr, setup.recovery.replayMax, setup.persistenceId.id, setup.selfClassic),
       setup.selfClassic)

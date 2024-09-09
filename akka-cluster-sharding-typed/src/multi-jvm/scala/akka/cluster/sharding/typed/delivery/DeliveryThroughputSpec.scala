@@ -20,7 +20,6 @@ import akka.actor.typed.delivery.ProducerController
 import akka.actor.typed.delivery.WorkPullingProducerController
 import akka.actor.typed.receptionist.ServiceKey
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.scaladsl.LoggerOps
 import akka.cluster.MultiNodeClusterSpec
 import akka.cluster.sharding.typed.ShardingEnvelope
 import akka.cluster.sharding.typed.scaladsl.ClusterSharding
@@ -274,7 +273,7 @@ object DeliveryThroughputSpec extends MultiNodeConfig {
               Behaviors.same
 
             case PrintStatus =>
-              context.log.infoN(
+              context.log.info(
                 "Remaining {}. Latest demand {}. Messages sent {}. Expecting demand from {}",
                 remaining,
                 latestDemand,

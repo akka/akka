@@ -9,7 +9,6 @@ import scala.annotation.nowarn
 import akka.actor.typed.Behavior
 import akka.actor.typed.internal.PoisonPill
 import akka.actor.typed.scaladsl.{ ActorContext, Behaviors }
-import akka.actor.typed.scaladsl.LoggerOps
 import akka.annotation.{ InternalApi, InternalStableApi }
 import akka.persistence._
 import akka.persistence.SnapshotProtocol.LoadSnapshotFailed
@@ -168,7 +167,7 @@ private[akka] class ReplayingSnapshot[C, E, S](override val setup: BehaviorSetup
         case None => (0L, Map.empty[ReplicaId, Long], VersionVector.empty)
       }
 
-      setup.internalLogger.debugN("Snapshot recovered from {} {} {}", seqNr, seenPerReplica, version)
+      setup.internalLogger.debug("Snapshot recovered from {} {} {}", seqNr, seenPerReplica, version)
 
       setup.cancelRecoveryTimer()
 

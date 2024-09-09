@@ -13,7 +13,6 @@ import akka.actor.typed.internal.PoisonPill
 import akka.actor.typed.scaladsl.AbstractBehavior
 import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.scaladsl.LoggerOps
 import akka.annotation.InternalApi
 import akka.annotation.InternalStableApi
 import akka.persistence._
@@ -171,7 +170,7 @@ private[akka] class Recovering[C, S](
       onRecoveryComplete(setup.context)
       tryReturnRecoveryPermit("recovery completed successfully")
       if (setup.internalLogger.isDebugEnabled) {
-        setup.internalLogger.debug2(
+        setup.internalLogger.debug(
           "Recovery for persistenceId [{}] took {}",
           setup.persistenceId,
           (System.nanoTime() - state.recoveryStartTime).nanos.pretty)

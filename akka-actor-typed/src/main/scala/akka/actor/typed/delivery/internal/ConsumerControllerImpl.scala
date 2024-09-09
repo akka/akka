@@ -17,7 +17,6 @@ import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.receptionist.ServiceKey
 import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.scaladsl.LoggerOps
 import akka.actor.typed.scaladsl.StashBuffer
 import akka.actor.typed.scaladsl.TimerScheduler
 import akka.annotation.InternalApi
@@ -312,7 +311,7 @@ private class ConsumerControllerImpl[A] private (
             deliver(s.copy(receivedSeqNr = seqNr), seqMsg)
           } else if (seqNr > expectedSeqNr) {
             flightRecorder.consumerMissing(pid, expectedSeqNr, seqNr)
-            context.log.debugN(
+            context.log.debug(
               "Received SequencedMessage seqNr [{}], but expected [{}], {}.",
               seqNr,
               expectedSeqNr,
@@ -327,7 +326,7 @@ private class ConsumerControllerImpl[A] private (
             }
           } else { // seqNr < expectedSeqNr
             flightRecorder.consumerDuplicate(pid, expectedSeqNr, seqNr)
-            context.log.debug2("Received duplicate SequencedMessage seqNr [{}], expected [{}].", seqNr, expectedSeqNr)
+            context.log.debug("Received duplicate SequencedMessage seqNr [{}], expected [{}].", seqNr, expectedSeqNr)
             if (seqMsg.first)
               stashBuffer.unstash(active(retryRequest(s)), 1, scalaIdentityFunction)
             else
@@ -391,7 +390,7 @@ private class ConsumerControllerImpl[A] private (
       retryTimer.start()
       resending(s)
     } else {
-      context.log.warnN(
+      context.log.warn(
         "Received SequencedMessage seqNr [{}], discarding message because it was from unexpected " +
         "producer [{}] when expecting [{}].",
         seqNr,
@@ -404,13 +403,13 @@ private class ConsumerControllerImpl[A] private (
 
   private def logChangedProducer(s: State[A], seqMsg: SequencedMessage[A]): Unit = {
     if (s.producerController == context.system.deadLetters) {
-      context.log.debugN(
+      context.log.debug(
         "Associated with new ProducerController [{}], seqNr [{}].",
         seqMsg.producerController,
         seqMsg.seqNr)
     } else {
       flightRecorder.consumerChangedProducer(seqMsg.producerId)
-      context.log.debugN(
+      context.log.debug(
         "Changing ProducerController from [{}] to [{}], seqNr [{}].",
         s.producerController,
         seqMsg.producerController,
@@ -443,7 +442,7 @@ private class ConsumerControllerImpl[A] private (
             context.log.debug("Received missing SequencedMessage seqNr [{}].", seqNr)
             deliver(s.copy(receivedSeqNr = seqNr), seqMsg)
           } else {
-            context.log.debug2(
+            context.log.debug(
               "Received SequencedMessage seqNr [{}], discarding message because waiting for [{}].",
               seqNr,
               s.receivedSeqNr + 1)
@@ -499,7 +498,7 @@ private class ConsumerControllerImpl[A] private (
         if ((s.requestedSeqNr - seqMsg.seqNr) == flowControlWindow / 2) {
           val newRequestedSeqNr = s.requestedSeqNr + flowControlWindow / 2
           flightRecorder.consumerSentRequest(seqMsg.producerId, newRequestedSeqNr)
-          context.log.debugN(
+          context.log.debug(
             "Sending Request when collecting chunks seqNr [{}], confirmedSeqNr [{}], requestUpToSeqNr [{}].",
             seqMsg.seqNr,
             s.confirmedSeqNr,
@@ -609,7 +608,7 @@ private class ConsumerControllerImpl[A] private (
               msg.seqNr)
           } else {
             if (traceEnabled)
-              context.log.traceN(
+              context.log.trace(
                 "Received SequencedMessage seqNr [{}], stashing while waiting for consumer to confirm [{}], stashed size [{}].",
                 msg.seqNr,
                 seqMsg.seqNr,
@@ -675,7 +674,7 @@ private class ConsumerControllerImpl[A] private (
       reg: RegisterToProducerController[A],
       nextBehavior: State[A] => Behavior[InternalCommand]): Behavior[InternalCommand] = {
     if (reg.producerController != s.producerController) {
-      context.log.debug2(
+      context.log.debug(
         "Register to new ProducerController [{}], previous was [{}].",
         reg.producerController,
         s.producerController)

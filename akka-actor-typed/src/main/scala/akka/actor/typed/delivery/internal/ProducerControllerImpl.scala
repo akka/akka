@@ -22,7 +22,6 @@ import akka.actor.typed.delivery.ProducerController
 import akka.actor.typed.internal.ActorFlightRecorder
 import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.scaladsl.LoggerOps
 import akka.actor.typed.scaladsl.TimerScheduler
 import akka.serialization.Serialization
 import akka.serialization.SerializationExtension
@@ -455,7 +454,7 @@ private class ProducerControllerImpl[A: ClassTag](
         supportResend: Boolean,
         viaTimeout: Boolean): Behavior[InternalCommand] = {
       flightRecorder.producerReceivedRequest(producerId, newRequestedSeqNr, newConfirmedSeqNr)
-      context.log.debugN(
+      context.log.debug(
         "Received Request, confirmed [{}], requested [{}], current [{}]",
         newConfirmedSeqNr,
         newRequestedSeqNr,
@@ -479,7 +478,7 @@ private class ProducerControllerImpl[A: ClassTag](
         else
           newRequestedSeqNr
       if (newRequestedSeqNr2 != newRequestedSeqNr)
-        context.log.debugN(
+        context.log.debug(
           "Expanded requestedSeqNr from [{}] to [{}], because current [{}] and all were probably lost",
           newRequestedSeqNr,
           newRequestedSeqNr2,
@@ -513,7 +512,7 @@ private class ProducerControllerImpl[A: ClassTag](
 
     def receiveAck(newConfirmedSeqNr: SeqNr): Behavior[InternalCommand] = {
       if (traceEnabled)
-        context.log.trace2("Received Ack, confirmed [{}], current [{}].", newConfirmedSeqNr, s.currentSeqNr)
+        context.log.trace("Received Ack, confirmed [{}], current [{}].", newConfirmedSeqNr, s.currentSeqNr)
       val stateAfterAck = onAck(newConfirmedSeqNr)
       if (newConfirmedSeqNr == s.firstSeqNr && stateAfterAck.unconfirmed.nonEmpty) {
         resendUnconfirmed(stateAfterAck.unconfirmed)
@@ -582,7 +581,7 @@ private class ProducerControllerImpl[A: ClassTag](
           context.log.error(errorMessage)
           throw new TimeoutException(errorMessage)
         } else {
-          context.log.warnN(
+          context.log.warn(
             "StoreMessageSent seqNr [{}] failed, attempt [{}] of [{}], retrying.",
             f.messageSent.seqNr,
             f.attempt,
@@ -731,7 +730,7 @@ private class ProducerControllerImpl[A: ClassTag](
               s.currentSeqNr,
               chunkedMessages.head.serialized.size)
           else
-            context.log.traceN(
+            context.log.trace(
               "Chunked seqNr [{}] into [{}] pieces, total size [{} bytes].",
               s.currentSeqNr,
               chunkedMessages.size,

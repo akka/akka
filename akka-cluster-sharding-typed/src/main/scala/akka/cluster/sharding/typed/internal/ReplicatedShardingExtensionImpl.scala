@@ -10,7 +10,6 @@ import java.util.concurrent.atomic.AtomicLong
 import org.slf4j.LoggerFactory
 
 import akka.actor.typed.ActorSystem
-import akka.actor.typed.scaladsl.LoggerOps
 import akka.annotation.InternalApi
 import akka.cluster.ClusterSettings.DataCenter
 import akka.cluster.sharding.typed.ReplicatedEntityProvider
@@ -48,7 +47,7 @@ private[akka] final class ReplicatedShardingExtensionImpl(system: ActorSystem[_]
     val initializedReplicas = settings.replicas.map {
       case (replicaSettings, typeName) =>
         // start up a sharding instance per replica id
-        logger.infoN(
+        logger.info(
           "Starting Replicated Event Sourcing sharding for replica [{}] (ShardType: [{}], typeName [{}])",
           replicaSettings.replicaId.id,
           replicaSettings.entity.typeKey.name)
@@ -65,7 +64,7 @@ private[akka] final class ReplicatedShardingExtensionImpl(system: ActorSystem[_]
         case (_, replicaId, _, regionOrProxy, _) => replicaId -> regionOrProxy
       }.toMap
       val typeNameWithoutReplicaId = settings.replicas.head._2
-      logger.infoN("Starting Replicated Event Sourcing Direct Replication")
+      logger.info("Starting Replicated Event Sourcing Direct Replication")
       system.systemActorOf(
         ShardingDirectReplication(typeNameWithoutReplicaId, thisReplica, replicaToRegionOrProxy),
         s"directReplication-${counter.incrementAndGet()}")

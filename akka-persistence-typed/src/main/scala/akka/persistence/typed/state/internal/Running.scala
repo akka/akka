@@ -15,7 +15,6 @@ import akka.actor.typed.internal.PoisonPill
 import akka.actor.typed.scaladsl.AbstractBehavior
 import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.scaladsl.LoggerOps
 import akka.annotation.InternalApi
 import akka.annotation.InternalStableApi
 import akka.persistence.typed.state.internal.DurableStateBehaviorImpl.GetState
@@ -169,7 +168,7 @@ private[akka] object Running {
         effect: Effect[S],
         sideEffects: immutable.Seq[SideEffect[S]] = Nil): (Behavior[InternalProtocol], Boolean) = {
       if (setup.internalLogger.isDebugEnabled && !effect.isInstanceOf[CompositeEffect[_]])
-        setup.internalLogger.debugN(
+        setup.internalLogger.debug(
           s"Handled command [{}], resulting effect: [{}], side effects: [{}]",
           msg.getClass.getName,
           effect,
