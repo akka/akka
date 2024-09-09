@@ -59,7 +59,7 @@ class AeronSinkSpec extends AkkaSpec("""
       val channel = s"aeron:udp?endpoint=localhost:$port"
 
       Source
-        .fromGraph(new AeronSource(channel, 1, aeron, taskRunner, pool, NoOpRemotingFlightRecorder, 0))
+        .fromGraph(new AeronSource(channel, 1, aeron, taskRunner, pool, 0))
         // fail receiver stream on first message
         .map(_ => throw new RuntimeException("stop") with NoStackTrace)
         .runWith(Sink.ignore)
@@ -74,7 +74,7 @@ class AeronSinkSpec extends AkkaSpec("""
           envelope.byteBuffer.flip()
           envelope
         }
-        .runWith(new AeronSink(channel, 1, aeron, taskRunner, pool, 500.millis, NoOpRemotingFlightRecorder))
+        .runWith(new AeronSink(channel, 1, aeron, taskRunner, pool, 500.millis))
 
       // without the give up timeout the stream would not complete/fail
       intercept[GaveUpMessageException] {

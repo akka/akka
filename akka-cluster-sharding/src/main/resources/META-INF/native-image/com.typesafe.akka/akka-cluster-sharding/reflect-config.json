@@ -5,17 +5,7 @@
     "parameterTypes" : [ "akka.actor.ActorSystem" ]
   } ]
 }, {
-  "name" : "akka.cluster.sharding.internal.jfr.JFRShardingFlightRecorder",
-  "methods" : [ {
-    "name" : "<init>"
-  } ]
-}, {
   "name" : "akka.cluster.sharding.ClusterSharding$",
-  "fields" : [ {
-    "name" : "MODULE$"
-  } ]
-}, {
-  "name" : "akka.cluster.sharding.ShardingFlightRecorder$",
   "fields" : [ {
     "name" : "MODULE$"
   } ]

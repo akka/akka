@@ -116,8 +116,7 @@ import akka.util.ConstantFun.scalaIdentityFunction
     Behaviors
       .withStash[InternalCommand](settings.flowControlWindow) { stashBuffer =>
         Behaviors.setup { context =>
-          val flightRecorder = ActorFlightRecorder(context.system).delivery
-          flightRecorder.consumerCreated(context.self.path)
+          ActorFlightRecorder.consumerCreated(context.self.path)
           Behaviors.withMdc(msg => mdcForMessage(msg)) {
             context.setLoggerName("akka.actor.typed.delivery.ConsumerController")
             serviceKey.foreach { key =>
@@ -136,7 +135,7 @@ import akka.util.ConstantFun.scalaIdentityFunction
                     ConsumerControllerImpl.enforceLocalConsumer(s.deliverTo)
                     context.watchWith(s.deliverTo, ConsumerTerminated(s.deliverTo))
 
-                    flightRecorder.consumerStarted(context.self.path)
+                    ActorFlightRecorder.consumerStarted(context.self.path)
                     val retryTimer = new RetryTimer(timers, settings.resendIntervalMin, settings.resendIntervalMax)
                     val activeBehavior =
                       new ConsumerControllerImpl[A](context, retryTimer, stashBuffer, settings)
@@ -146,7 +145,7 @@ import akka.util.ConstantFun.scalaIdentityFunction
 
                   case seqMsg: SequencedMessage[A] @unchecked =>
                     if (stashBuffer.isFull) {
-                      flightRecorder.consumerStashFull(seqMsg.producerId, seqMsg.seqNr)
+                      ActorFlightRecorder.consumerStashFull(seqMsg.producerId, seqMsg.seqNr)
                       context.log.debug(
                         "Received SequencedMessage seqNr [{}], stashing before Start, discarding message because stash is full.",
                         seqMsg.seqNr)
@@ -273,8 +272,6 @@ private class ConsumerControllerImpl[A] private (
   import ProducerControllerImpl.Resend
   import settings.flowControlWindow
 
-  private val flightRecorder = ActorFlightRecorder(context.system).delivery
-
   private val traceEnabled = context.log.isTraceEnabled
 
   private lazy val serialization = SerializationExtension(context.system)
@@ -293,7 +290,7 @@ private class ConsumerControllerImpl[A] private (
           val seqNr = seqMsg.seqNr
           val expectedSeqNr = s.receivedSeqNr + 1
 
-          flightRecorder.consumerReceived(pid, seqNr)
+          ActorFlightRecorder.consumerReceived(pid, seqNr)
           retryTimer.reset()
 
           if (s.isProducerChanged(seqMsg)) {
@@ -310,7 +307,7 @@ private class ConsumerControllerImpl[A] private (
               context.log.trace("Received SequencedMessage seqNr [{}], delivering to consumer.", seqNr)
             deliver(s.copy(receivedSeqNr = seqNr), seqMsg)
           } else if (seqNr > expectedSeqNr) {
-            flightRecorder.consumerMissing(pid, expectedSeqNr, seqNr)
+            ActorFlightRecorder.consumerMissing(pid, expectedSeqNr, seqNr)
             context.log.debug(
               "Received SequencedMessage seqNr [{}], but expected [{}], {}.",
               seqNr,
@@ -325,7 +322,7 @@ private class ConsumerControllerImpl[A] private (
               deliver(s.copy(receivedSeqNr = seqNr), seqMsg)
             }
           } else { // seqNr < expectedSeqNr
-            flightRecorder.consumerDuplicate(pid, expectedSeqNr, seqNr)
+            ActorFlightRecorder.consumerDuplicate(pid, expectedSeqNr, seqNr)
             context.log.debug("Received duplicate SequencedMessage seqNr [{}], expected [{}].", seqNr, expectedSeqNr)
             if (seqMsg.first)
               stashBuffer.unstash(active(retryRequest(s)), 1, scalaIdentityFunction)
@@ -408,7 +405,7 @@ private class ConsumerControllerImpl[A] private (
         seqMsg.producerController,
         seqMsg.seqNr)
     } else {
-      flightRecorder.consumerChangedProducer(seqMsg.producerId)
+      ActorFlightRecorder.consumerChangedProducer(seqMsg.producerId)
       context.log.debug(
         "Changing ProducerController from [{}] to [{}], seqNr [{}].",
         s.producerController,
@@ -438,7 +435,7 @@ private class ConsumerControllerImpl[A] private (
               seqNr)
             Behaviors.same
           } else if (s.isNextExpected(seqMsg)) {
-            flightRecorder.consumerReceivedResend(seqNr)
+            ActorFlightRecorder.consumerReceivedResend(seqNr)
             context.log.debug("Received missing SequencedMessage seqNr [{}].", seqNr)
             deliver(s.copy(receivedSeqNr = seqNr), seqMsg)
           } else {
@@ -497,7 +494,7 @@ private class ConsumerControllerImpl[A] private (
       val newRequestedSeqNr =
         if ((s.requestedSeqNr - seqMsg.seqNr) == flowControlWindow / 2) {
           val newRequestedSeqNr = s.requestedSeqNr + flowControlWindow / 2
-          flightRecorder.consumerSentRequest(seqMsg.producerId, newRequestedSeqNr)
+          ActorFlightRecorder.consumerSentRequest(seqMsg.producerId, newRequestedSeqNr)
           context.log.debug(
             "Sending Request when collecting chunks seqNr [{}], confirmedSeqNr [{}], requestUpToSeqNr [{}].",
             seqMsg.seqNr,
@@ -554,7 +551,7 @@ private class ConsumerControllerImpl[A] private (
             if (seqMsg.first) {
               // confirm the first message immediately to cancel resending of first
               val newRequestedSeqNr = seqNr - 1 + flowControlWindow
-              flightRecorder.consumerSentRequest(seqMsg.producerId, newRequestedSeqNr)
+              ActorFlightRecorder.consumerSentRequest(seqMsg.producerId, newRequestedSeqNr)
               context.log.debug(
                 "Sending Request after first with confirmedSeqNr [{}], requestUpToSeqNr [{}].",
                 seqNr,
@@ -563,7 +560,7 @@ private class ConsumerControllerImpl[A] private (
               newRequestedSeqNr
             } else if ((s.requestedSeqNr - seqNr) == flowControlWindow / 2) {
               val newRequestedSeqNr = s.requestedSeqNr + flowControlWindow / 2
-              flightRecorder.consumerSentRequest(seqMsg.producerId, newRequestedSeqNr)
+              ActorFlightRecorder.consumerSentRequest(seqMsg.producerId, newRequestedSeqNr)
               context.log.debug(
                 "Sending Request with confirmedSeqNr [{}], requestUpToSeqNr [{}].",
                 seqNr,
@@ -594,15 +591,15 @@ private class ConsumerControllerImpl[A] private (
           }
 
         case msg: SequencedMessage[_] =>
-          flightRecorder.consumerReceivedPreviousInProgress(msg.producerId, msg.seqNr, stashBuffer.size + 1)
+          ActorFlightRecorder.consumerReceivedPreviousInProgress(msg.producerId, msg.seqNr, stashBuffer.size + 1)
           val expectedSeqNr = seqMsg.seqNr + stashBuffer.size + 1
           if (msg.seqNr < expectedSeqNr && msg.producerController == seqMsg.producerController) {
-            flightRecorder.consumerDuplicate(msg.producerId, expectedSeqNr, msg.seqNr)
+            ActorFlightRecorder.consumerDuplicate(msg.producerId, expectedSeqNr, msg.seqNr)
             context.log.debug("Received duplicate SequencedMessage seqNr [{}].", msg.seqNr)
           } else if (stashBuffer.isFull) {
             // possible that the stash is full if ProducerController resends unconfirmed (duplicates)
             // dropping them since they can be resent
-            flightRecorder.consumerStashFull(msg.producerId, msg.seqNr)
+            ActorFlightRecorder.consumerStashFull(msg.producerId, msg.seqNr)
             context.log.debug(
               "Received SequencedMessage seqNr [{}], discarding message because stash is full.",
               msg.seqNr)
@@ -713,7 +710,7 @@ private class ConsumerControllerImpl[A] private (
       s
     } else {
       val newRequestedSeqNr = if (resendLost) s.requestedSeqNr else s.receivedSeqNr + flowControlWindow / 2
-      flightRecorder.consumerSentRequest(s.producerId, newRequestedSeqNr)
+      ActorFlightRecorder.consumerSentRequest(s.producerId, newRequestedSeqNr)
       context.log.debug(
         "Retry sending Request with confirmedSeqNr [{}], requestUpToSeqNr [{}].",
         s.confirmedSeqNr,

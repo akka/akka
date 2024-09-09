@@ -33,6 +33,7 @@ import akka.cluster.sharding.internal.RememberEntitiesProvider
 import akka.cluster.sharding.internal.RememberEntitiesShardStore
 import akka.cluster.sharding.internal.RememberEntitiesShardStore.GetEntities
 import akka.cluster.sharding.internal.RememberEntityStarterManager
+import akka.cluster.sharding.internal.ShardingFlightRecorder
 import akka.coordination.lease.scaladsl.Lease
 import akka.coordination.lease.scaladsl.LeaseProvider
 import akka.event.LoggingAdapter
@@ -448,8 +449,6 @@ private[akka] class Shard(
 
   private val rememberEntities: Boolean = rememberEntitiesProvider.isDefined
 
-  private val flightRecorder = ShardingFlightRecorder(context.system)
-
   @InternalStableApi
   private val entities = {
     val failOnInvalidStateTransition =
@@ -649,14 +648,13 @@ private[akka] class Shard(
         storingStarts.mkString(", "),
         storingStops.mkString(", "))
 
-    if (flightRecorder != NoOpShardingFlightRecorder) {
-      storingStarts.foreach { entityId =>
-        flightRecorder.rememberEntityAdd(entityId)
-      }
-      storingStops.foreach { id =>
-        flightRecorder.rememberEntityRemove(id)
-      }
+    storingStarts.foreach { entityId =>
+      ShardingFlightRecorder.rememberEntityAdd(entityId)
     }
+    storingStops.foreach { id =>
+      ShardingFlightRecorder.rememberEntityRemove(id)
+    }
+
     val startTimeNanos = System.nanoTime()
     val update = RememberEntitiesShardStore.Update(started = storingStarts, stopped = storingStops)
     store ! update
@@ -681,7 +679,7 @@ private[akka] class Shard(
           storedStarts.mkString(", "),
           storedStops.mkString(", "),
           duration.nanos.toMillis)
-      flightRecorder.rememberEntityOperation(duration)
+      ShardingFlightRecorder.rememberEntityOperation(duration)
       timers.cancel(RememberEntityTimeoutKey)
       onUpdateDone(storedStarts, storedStops)
 
@@ -996,7 +994,7 @@ private[akka] class Shard(
             passivationTimeout,
             passivationTimeout,
             settings.tuningParameters.passivationStopTimeout)
-          flightRecorder.entityPassivate(id)
+          ShardingFlightRecorder.entityPassivate(id)
         }
       case _ =>
         log.debug("{}: Unknown entity passivating [{}]. Not sending stopMessage back to entity", typeName, entity)
@@ -1051,7 +1049,7 @@ private[akka] class Shard(
         "{}: Entity stopped after passivation [{}], but will be started again due to buffered messages",
         typeName,
         entityId)
-      flightRecorder.entityPassivateRestart(entityId)
+      ShardingFlightRecorder.entityPassivateRestart(entityId)
       if (rememberEntities) {
         // trigger start or batch in case we're already writing to the remember store
         entities.rememberingStart(entityId, None)
