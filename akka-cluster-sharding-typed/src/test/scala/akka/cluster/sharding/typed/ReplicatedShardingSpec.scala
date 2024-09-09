@@ -16,7 +16,6 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.scaladsl.LoggerOps
 import akka.cluster.MemberStatus
 import akka.cluster.sharding.typed.ReplicatedShardingSpec.DataCenter
 import akka.cluster.sharding.typed.ReplicatedShardingSpec.MyReplicatedIntSet
@@ -183,10 +182,10 @@ object ProxyActor {
       Behaviors.receiveMessage {
         case ForwardToAllString(entityId, cmd) =>
           val entityRefs = replicatedShardingStringSet.entityRefsFor(entityId)
-          ctx.log.infoN("Entity refs {}", entityRefs)
+          ctx.log.info("Entity refs {}", entityRefs)
           entityRefs.foreach {
             case (replica, ref) =>
-              ctx.log.infoN("Forwarding to replica {} ref {}", replica, ref)
+              ctx.log.info("Forwarding to replica {} ref {}", replica, ref)
               ref ! cmd
           }
           Behaviors.same

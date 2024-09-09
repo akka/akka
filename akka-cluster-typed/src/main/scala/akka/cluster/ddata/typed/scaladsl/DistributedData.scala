@@ -13,7 +13,6 @@ import akka.actor.ExtendedActorSystem
 import akka.actor.typed.{ ActorRef, ActorSystem, Extension, ExtensionId, Props }
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.scaladsl.LoggerOps
 import akka.annotation.InternalApi
 import akka.cluster.{ ddata => dd }
 import akka.cluster.Cluster
@@ -92,7 +91,7 @@ class DistributedData(system: ActorSystem[_]) extends Extension {
       if (Cluster(classicSystem).isTerminated)
         log.warn("Replicator points to dead letters, because Cluster is terminated.")
       else
-        log.warn2(
+        log.warn(
           "Replicator points to dead letters. Make sure the cluster node has the proper role. " +
           "Node has roles [{}], Distributed Data is configured for roles [{}].",
           Cluster(classicSystem).selfRoles.mkString(","),

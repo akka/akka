@@ -14,7 +14,6 @@ import akka.actor.typed.internal.UnstashException
 import akka.actor.typed.scaladsl.AbstractBehavior
 import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.scaladsl.LoggerOps
 import akka.actor.typed.Behavior
 import akka.actor.typed.Signal
 import akka.annotation.InternalApi
@@ -276,7 +275,7 @@ private[akka] final class ReplayingEvents[C, E, S](
     setup.cancelRecoveryTimer()
     tryReturnRecoveryPermit("on replay failure: " + cause.getMessage)
     if (setup.internalLogger.isDebugEnabled) {
-      setup.internalLogger.debug2(
+      setup.internalLogger.debug(
         "Recovery failure for persistenceId [{}] after {}",
         setup.persistenceId,
         (System.nanoTime() - state.recoveryStartTime).nanos.pretty)
@@ -301,7 +300,7 @@ private[akka] final class ReplayingEvents[C, E, S](
       onRecoveryComplete(setup.context)
       tryReturnRecoveryPermit("replay completed successfully")
       if (setup.internalLogger.isDebugEnabled) {
-        setup.internalLogger.debug2(
+        setup.internalLogger.debug(
           "Recovery for persistenceId [{}] took {}",
           setup.persistenceId,
           (System.nanoTime() - state.recoveryStartTime).nanos.pretty)

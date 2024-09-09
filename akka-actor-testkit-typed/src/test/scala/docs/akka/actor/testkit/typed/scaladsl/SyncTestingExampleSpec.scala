@@ -71,7 +71,7 @@ object SyncTestingExampleSpec {
         }
         Behaviors.same
       case (context, GotAnAnswer(answer, from)) =>
-        context.log.info2("Got an answer [{}] from {}", answer, from)
+        context.log.info("Got an answer [{}] from {}", answer, from)
         Behaviors.same
       case (context, NoAnswerFrom(from)) =>
         context.log.info("Did not get an answer from {}", from)

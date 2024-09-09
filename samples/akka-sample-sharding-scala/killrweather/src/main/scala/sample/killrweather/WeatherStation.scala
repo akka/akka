@@ -6,7 +6,6 @@ package sample.killrweather
 import akka.actor.typed.PostStop
 import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.scaladsl.LoggerOps
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
@@ -107,7 +106,7 @@ private[killrweather] object WeatherStation {
           val updated = values :+ data
           if (context.log.isDebugEnabled) {
             val averageForSameType = average(updated.filter(_.dataType == data.dataType).map(_.value))
-            context.log.debugN(
+            context.log.debug(
               "{} total readings from station {}, type {}, average {}, diff: processingTime - eventTime: {} ms",
               updated.size,
               wsid,

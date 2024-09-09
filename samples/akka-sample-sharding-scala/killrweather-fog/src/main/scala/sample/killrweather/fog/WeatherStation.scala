@@ -6,7 +6,6 @@ package sample.killrweather.fog
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.scaladsl.LoggerOps
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.client.RequestBuilding.Post
 import akka.http.scaladsl.unmarshalling.Unmarshal
@@ -57,11 +56,11 @@ private class WeatherStation(context: ActorContext[WeatherStation.Command], wsid
   private val stationUrl = s"http://${settings.host}:${httpPort}/weather/$wsid"
 
   def running: Behavior[WeatherStation.Command] = {
-    context.log.infoN(s"Started WeatherStation {} of total {} with weather port {}",
+    context.log.info(s"Started WeatherStation {} of total {} with weather port {}",
       wsid, settings.weatherStations, httpPort)
 
     Behaviors.setup[WeatherStation.Command] { context =>
-      context.log.debugN(s"Started {} data sampling.", wsid)
+      context.log.debug(s"Started {} data sampling.", wsid)
 
       Behaviors.withTimers { timers =>
         timers.startSingleTimer(Sample, Sample, settings.sampleInterval)
@@ -75,7 +74,7 @@ private class WeatherStation(context: ActorContext[WeatherStation.Command], wsid
             Behaviors.same
 
           case ProcessSuccess(msg) =>
-            context.log.debugN("Successfully registered data: {}", msg)
+            context.log.debug("Successfully registered data: {}", msg)
             // trigger next sample only after we got a successful response
             timers.startSingleTimer(Sample, Sample, settings.sampleInterval)
             Behaviors.same

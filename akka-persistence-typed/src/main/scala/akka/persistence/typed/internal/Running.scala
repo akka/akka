@@ -23,7 +23,7 @@ import akka.actor.typed.{ Behavior, Signal }
 import akka.actor.typed.ActorRef
 import akka.actor.typed.eventstream.EventStream
 import akka.actor.typed.internal.PoisonPill
-import akka.actor.typed.scaladsl.{ AbstractBehavior, ActorContext, Behaviors, LoggerOps }
+import akka.actor.typed.scaladsl.{ AbstractBehavior, ActorContext, Behaviors }
 import akka.annotation.{ InternalApi, InternalStableApi }
 import akka.event.Logging
 import akka.persistence.DeleteMessagesFailure
@@ -311,7 +311,7 @@ private[akka] object Running {
         state: Running.RunningState[S],
         envelope: ReplicatedEventEnvelope[E],
         replication: ReplicationSetup): Behavior[InternalProtocol] = {
-      setup.internalLogger.debugN(
+      setup.internalLogger.debug(
         "Replica [{}] received replicated event from [{}], origin seq nr [{}]. Replica seq nrs: {}.",
         replication.replicaId,
         envelope.event.originReplica,
@@ -380,7 +380,7 @@ private[akka] object Running {
         if (seenSequenceNr >= event.sequenceNumber) {
           // already seen/deduplication
           if (log.isDebugEnabled)
-            log.debugN(
+            log.debug(
               "Ignoring published replicated event with seqNr [{}] from replica [{}] because it was already seen (version: {})",
               event.sequenceNumber,
               originReplicaId,
@@ -392,7 +392,7 @@ private[akka] object Running {
           // numbers (message lost or query and direct replication out of sync, should heal up by itself
           // once the query catches up)
           if (log.isDebugEnabled) {
-            log.debugN(
+            log.debug(
               "Ignoring published replicated event with replication seqNr [{}] from replica [{}] " +
               "because expected replication seqNr was [{}] ",
               event.sequenceNumber,
@@ -402,7 +402,7 @@ private[akka] object Running {
           this
         } else {
           if (log.isTraceEnabled) {
-            log.traceN(
+            log.trace(
               "Received published replicated event [{}] with timestamp [{} (UTC)] from replica [{}] seqNr [{}]",
               Logging.simpleName(event.event.getClass),
               formatTimestamp(event.timestamp),
@@ -446,7 +446,7 @@ private[akka] object Running {
       val updatedVersion = event.originVersion.merge(state.version)
 
       if (setup.internalLogger.isDebugEnabled())
-        setup.internalLogger.debugN(
+        setup.internalLogger.debug(
           "Processing event [{}] with version [{}]. Local version: {}. Updated version {}. Concurrent? {}",
           Logging.simpleName(event.event.getClass),
           event.originVersion,
@@ -521,7 +521,7 @@ private[akka] object Running {
                   concurrent = false))).copy(version = updatedVersion)
 
             if (setup.internalLogger.isTraceEnabled())
-              setup.internalLogger.traceN(
+              setup.internalLogger.trace(
                 "Event persisted [{}]. Version vector after: [{}]",
                 Logging.simpleName(event.getClass),
                 r.version)
@@ -576,7 +576,7 @@ private[akka] object Running {
               case Some(template) =>
                 val updatedVersion = currentState.version.updated(template.originReplica.id, _currentSequenceNumber)
                 if (setup.internalLogger.isDebugEnabled)
-                  setup.internalLogger.traceN(
+                  setup.internalLogger.trace(
                     "Processing event [{}] with version vector [{}]",
                     Logging.simpleName(event.getClass),
                     updatedVersion)
@@ -621,7 +621,7 @@ private[akka] object Running {
         effect: Effect[E, S],
         sideEffects: immutable.Seq[SideEffect[S]] = Nil): (Behavior[InternalProtocol], Boolean) = {
       if (setup.internalLogger.isDebugEnabled && !effect.isInstanceOf[CompositeEffect[_, _]])
-        setup.internalLogger.debugN(
+        setup.internalLogger.debug(
           s"Handled command [{}], resulting effect: [{}], side effects: [{}]",
           msg.getClass.getName,
           effect,
@@ -776,7 +776,7 @@ private[akka] object Running {
 
     final def onJournalResponse(response: Response): Behavior[InternalProtocol] = {
       if (setup.internalLogger.isDebugEnabled) {
-        setup.internalLogger.debug2(
+        setup.internalLogger.debug(
           "Received Journal response: {} after: {} nanos",
           response,
           System.nanoTime() - persistStartTime)
@@ -1059,7 +1059,7 @@ private[akka] object Running {
         case SaveSnapshotFailure(meta, error) =>
           if (snapshotReason == SnapshotWithRetention)
             setup.retentionProgressSaveSnapshotEnded(state.seqNr, success = false)
-          setup.internalLogger.warn2("Failed to save snapshot given metadata [{}] due to: {}", meta, error.getMessage)
+          setup.internalLogger.warn("Failed to save snapshot given metadata [{}] due to: {}", meta, error.getMessage)
           Some(SnapshotFailed(SnapshotMetadata.fromClassic(meta), error))
 
         case _ =>

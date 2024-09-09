@@ -24,7 +24,6 @@ import akka.actor.typed.SupervisorStrategy
 import akka.actor.typed.internal.ActorContextImpl
 import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.scaladsl.LoggerOps
 import akka.annotation._
 import akka.persistence.JournalProtocol
 import akka.persistence.Recovery
@@ -171,16 +170,13 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
       case (_, DeleteSnapshotsCompleted(DeletionTarget.Criteria(criteria))) =>
         internalLogger().debug("Persistent snapshots given criteria [{}] deleted successfully.", criteria)
       case (_, DeleteSnapshotsFailed(DeletionTarget.Individual(meta), failure)) =>
-        internalLogger().warn2("Failed to delete snapshot with meta [{}] due to: {}", meta, failure.getMessage)
+        internalLogger().warn("Failed to delete snapshot with meta [{}] due to: {}", meta, failure.getMessage)
       case (_, DeleteSnapshotsFailed(DeletionTarget.Criteria(criteria), failure)) =>
-        internalLogger().warn2(
-          "Failed to delete snapshots given criteria [{}] due to: {}",
-          criteria,
-          failure.getMessage)
+        internalLogger().warn("Failed to delete snapshots given criteria [{}] due to: {}", criteria, failure.getMessage)
       case (_, DeleteEventsCompleted(toSequenceNr)) =>
         internalLogger().debug("Events successfully deleted to sequence number [{}].", toSequenceNr)
       case (_, DeleteEventsFailed(toSequenceNr, failure)) =>
-        internalLogger().warn2(
+        internalLogger().warn(
           "Failed to delete events to sequence number [{}] due to: {}",
           toSequenceNr,
           failure.getMessage)

@@ -10,7 +10,6 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.SupervisorStrategy
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.scaladsl.LoggerOps
 import akka.persistence.typed.DeleteEventsFailed
 import akka.persistence.typed.DeleteSnapshotsFailed
 import akka.persistence.typed.EventAdapter
@@ -181,7 +180,7 @@ object BasicPersistentBehaviorCompileOnly {
           commandHandler = (state, cmd) => throw new NotImplementedError("TODO: process the command & return an Effect"),
           eventHandler = (state, evt) => throw new NotImplementedError("TODO: process the event return the next state"))
           .snapshotWhen((state, _, _) => {
-            context.log.info2("Snapshot actor {} => state: {}", context.self.path.name, state)
+            context.log.info("Snapshot actor {} => state: {}", context.self.path.name, state)
             true
           })
       }
