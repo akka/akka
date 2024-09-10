@@ -209,4 +209,7 @@ import akka.persistence.typed.state.internal.SideEffect
    * by another `unstashAll`.
    */
   def thenUnstashAll(): ReplyEffect[State]
+
+  /** Stops the actor as a side effect */
+  def thenStop(): ReplyEffect[State]
 }
