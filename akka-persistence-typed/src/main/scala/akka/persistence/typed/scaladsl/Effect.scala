@@ -211,4 +211,7 @@ trait EffectBuilder[+Event, State] extends Effect[Event, State] {
    * by another `unstashAll`.
    */
   def thenUnstashAll(): ReplyEffect[Event, State]
+
+  /** Stops the actor as a side effect */
+  def thenStop(): ReplyEffect[Event, State]
 }
