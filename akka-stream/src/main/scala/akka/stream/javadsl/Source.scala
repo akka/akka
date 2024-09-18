@@ -12,6 +12,7 @@ import java.util.function.{ BiFunction, Supplier }
 import scala.annotation.{ nowarn, varargs }
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.immutable
+import scala.concurrent.ExecutionContext
 import scala.jdk.DurationConverters._
 import scala.jdk.FutureConverters._
 import scala.jdk.OptionConverters.RichOptional
@@ -23,7 +24,6 @@ import org.reactivestreams.{ Publisher, Subscriber }
 import akka.{ Done, NotUsed }
 import akka.actor.{ ActorRef, Cancellable, ClassicActorSystemProvider }
 import akka.annotation.ApiMayChange
-import akka.dispatch.ExecutionContexts
 import akka.event.{ LogMarker, LoggingAdapter, MarkerLoggingAdapter }
 import akka.japi.{ function, JavaPartialFunction, Pair }
 import akka.japi.function.Creator
@@ -61,8 +61,7 @@ object Source {
   def maybe[T]: Source[T, CompletableFuture[Optional[T]]] = {
     new Source(scaladsl.Source.maybe[T].mapMaterializedValue { (scalaOptionPromise: Promise[Option[T]]) =>
       val javaOptionPromise = new CompletableFuture[Optional[T]]()
-      scalaOptionPromise.completeWith(
-        javaOptionPromise.asScala.map(_.toScala)(akka.dispatch.ExecutionContexts.parasitic))
+      scalaOptionPromise.completeWith(javaOptionPromise.asScala.map(_.toScala)(ExecutionContext.parasitic))
 
       javaOptionPromise
     })
@@ -314,7 +313,7 @@ object Source {
    */
   def completionStageSource[T, M](completionStageSource: CompletionStage[Source[T, M]]): Source[T, CompletionStage[M]] =
     scaladsl.Source
-      .futureSource(completionStageSource.asScala.map(_.asScala)(ExecutionContexts.parasitic))
+      .futureSource(completionStageSource.asScala.map(_.asScala)(ExecutionContext.parasitic))
       .mapMaterializedValue(_.asJava)
       .asJava
 
@@ -862,7 +861,7 @@ object Source {
     new Source(
       scaladsl.Source.unfoldResourceAsync[T, S](
         () => create.create().asScala,
-        (s: S) => read.apply(s).asScala.map(_.toScala)(akka.dispatch.ExecutionContexts.parasitic),
+        (s: S) => read.apply(s).asScala.map(_.toScala)(ExecutionContext.parasitic),
         (s: S) => close.apply(s).asScala))
 
   /**

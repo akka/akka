@@ -9,6 +9,7 @@ import java.util.function.BinaryOperator
 import scala.collection.Factory
 import scala.collection.immutable
 import scala.collection.mutable
+import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import scala.concurrent.Promise
 import scala.util.Failure
@@ -22,7 +23,6 @@ import org.reactivestreams.Subscriber
 import akka.NotUsed
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
-import akka.dispatch.ExecutionContexts
 import akka.event.Logging
 import akka.stream._
 import akka.stream.ActorAttributes.StreamSubscriptionTimeout
@@ -375,7 +375,7 @@ import akka.stream.stage._
           .foreach {
             case NonFatal(e) => p.tryFailure(e)
             case _           => ()
-          }(akka.dispatch.ExecutionContexts.parasitic)
+          }(ExecutionContext.parasitic)
         p.future
       }
       override def cancel(): Unit = {
@@ -551,7 +551,7 @@ import akka.stream.stage._
               failStage(e)
           }
         try {
-          sinkFactory(element).onComplete(cb.invoke)(ExecutionContexts.parasitic)
+          sinkFactory(element).onComplete(cb.invoke)(ExecutionContext.parasitic)
         } catch {
           case NonFatal(e) =>
             promise.failure(e)

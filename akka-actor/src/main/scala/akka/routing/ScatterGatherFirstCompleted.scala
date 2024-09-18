@@ -7,6 +7,7 @@ package akka.routing
 import java.util.concurrent.TimeoutException
 
 import scala.collection.immutable
+import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import scala.concurrent.Promise
 import scala.concurrent.duration.FiniteDuration
@@ -18,7 +19,6 @@ import akka.actor.ActorRef
 import akka.actor.ActorSystem
 import akka.actor.SupervisorStrategy
 import akka.dispatch.Dispatchers
-import akka.dispatch.ExecutionContexts
 import akka.japi.Util.immutableSeq
 import akka.pattern.ask
 import akka.pattern.pipe
@@ -47,7 +47,7 @@ private[akka] final case class ScatterGatherFirstCompletedRoutees(
     extends Routee {
 
   override def send(message: Any, sender: ActorRef): Unit = {
-    implicit val ec = ExecutionContexts.parasitic
+    implicit val ec = ExecutionContext.parasitic
     if (routees.isEmpty) {
       val reply = Future.failed(new TimeoutException("Timeout due to no routees"))
       reply.pipeTo(sender)

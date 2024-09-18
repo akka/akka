@@ -10,6 +10,7 @@ import scala.annotation.nowarn
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.collection.immutable.VectorBuilder
+import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import scala.concurrent.duration.{ FiniteDuration, _ }
 import scala.util.{ Failure, Success, Try }
@@ -461,8 +462,6 @@ private[stream] object Collect {
 @InternalApi private[akka] final case class ScanAsync[In, Out](zero: Out, f: (Out, In) => Future[Out])
     extends GraphStage[FlowShape[In, Out]] {
 
-  import akka.dispatch.ExecutionContexts
-
   val in = Inlet[In]("ScanAsync.in")
   val out = Outlet[Out]("ScanAsync.out")
   override val shape: FlowShape[In, Out] = FlowShape[In, Out](in, out)
@@ -553,7 +552,7 @@ private[stream] object Collect {
 
           eventualCurrent.value match {
             case Some(result) => futureCB(result)
-            case _            => eventualCurrent.onComplete(futureCB)(ExecutionContexts.parasitic)
+            case _            => eventualCurrent.onComplete(futureCB)(ExecutionContext.parasitic)
           }
         } catch {
           case NonFatal(ex) =>
@@ -640,8 +639,6 @@ private[stream] object Collect {
 @InternalApi private[akka] final class FoldAsync[In, Out](zero: Out, f: (Out, In) => Future[Out])
     extends GraphStage[FlowShape[In, Out]] {
 
-  import akka.dispatch.ExecutionContexts
-
   val in = Inlet[In]("FoldAsync.in")
   val out = Outlet[Out]("FoldAsync.out")
   val shape = FlowShape.of(in, out)
@@ -720,7 +717,7 @@ private[stream] object Collect {
       private def handleAggregatingValue(): Unit = {
         aggregating.value match {
           case Some(result) => futureCB(result) // already completed
-          case _            => aggregating.onComplete(futureCB)(ExecutionContexts.parasitic)
+          case _            => aggregating.onComplete(futureCB)(ExecutionContext.parasitic)
         }
       }
 
@@ -1309,7 +1306,7 @@ private[stream] object Collect {
           buffer.enqueue(holder)
 
           future.value match {
-            case None    => future.onComplete(holder)(akka.dispatch.ExecutionContexts.parasitic)
+            case None    => future.onComplete(holder)(ExecutionContext.parasitic)
             case Some(v) =>
               // #20217 the future is already here, optimization: avoid scheduling it on the dispatcher and
               // run the logic directly on this thread
@@ -1426,7 +1423,7 @@ private[stream] object Collect {
           val future = f(grab(in))
           inFlight += 1
           future.value match {
-            case None    => future.onComplete(invokeFutureCB)(akka.dispatch.ExecutionContexts.parasitic)
+            case None    => future.onComplete(invokeFutureCB)(ExecutionContext.parasitic)
             case Some(v) => futureCompleted(v)
           }
         } catch {

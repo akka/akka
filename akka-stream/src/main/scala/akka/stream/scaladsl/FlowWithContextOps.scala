@@ -6,11 +6,12 @@ package akka.stream.scaladsl
 
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.immutable
+import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
+
 import akka.NotUsed
 import akka.annotation.ApiMayChange
-import akka.dispatch.ExecutionContexts
 import akka.event.{ LogMarker, LoggingAdapter, MarkerLoggingAdapter }
 import akka.stream._
 import akka.stream.impl.Throttle
@@ -99,7 +100,7 @@ trait FlowWithContextOps[+Out, +Ctx, +Mat] {
    */
   def mapAsync[Out2](parallelism: Int)(f: Out => Future[Out2]): Repr[Out2, Ctx] =
     via(flow.mapAsync(parallelism) {
-      case (e, ctx) => f(e).map(o => (o, ctx))(ExecutionContexts.parasitic)
+      case (e, ctx) => f(e).map(o => (o, ctx))(ExecutionContext.parasitic)
     })
 
   /**
@@ -114,7 +115,7 @@ trait FlowWithContextOps[+Out, +Ctx, +Mat] {
     }
     val pairF = { (pair: (Out, Ctx), partition: P) =>
       val (elem, context) = pair
-      f(elem, partition).map(_ -> context)(ExecutionContexts.parasitic)
+      f(elem, partition).map(_ -> context)(ExecutionContext.parasitic)
     }
 
     via(flow.mapAsyncPartitioned(parallelism, perPartition)(pairPartitioner)(pairF))

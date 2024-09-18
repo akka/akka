@@ -12,7 +12,6 @@ import scala.util.{ Failure, Success, Try }
 import scala.util.control.NonFatal
 
 import akka.actor._
-import akka.dispatch.ExecutionContexts
 import akka.pattern.CircuitBreaker
 import akka.pattern.CircuitBreakersRegistry
 import akka.pattern.pipe
@@ -183,7 +182,7 @@ trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
                         adaptFromJournal(p).foreach { adaptedPersistentRepr =>
                           replyTo.tell(ReplayedMessage(adaptedPersistentRepr), Actor.noSender)
                         }
-                    }.map(_ => highSeqNr)(ExecutionContexts.parasitic)
+                    }.map(_ => highSeqNr)(ExecutionContext.parasitic)
                   }
               }
           }
@@ -191,7 +190,7 @@ trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
         replay
           .map { highSeqNr =>
             RecoverySuccess(highSeqNr)
-          }(ExecutionContexts.parasitic)
+          }(ExecutionContext.parasitic)
           .recover {
             case e => ReplayMessagesFailure(e)
           }

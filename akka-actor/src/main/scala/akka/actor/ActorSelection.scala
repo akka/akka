@@ -5,12 +5,13 @@
 package akka.actor
 
 import akka.annotation.InternalApi
-
 import java.util.concurrent.CompletionStage
 import java.util.regex.Pattern
+
 import scala.annotation.nowarn
 import scala.annotation.tailrec
 import scala.collection.immutable
+import scala.concurrent.ExecutionContext
 import scala.jdk.FutureConverters.FutureOps
 import scala.concurrent.Future
 import scala.concurrent.Promise
@@ -18,7 +19,7 @@ import scala.concurrent.duration._
 import scala.jdk.DurationConverters._
 import scala.language.implicitConversions
 import scala.util.Success
-import akka.dispatch.ExecutionContexts
+
 import akka.pattern.ask
 import akka.routing.MurmurHash
 import akka.util.{ Helpers, Timeout }
@@ -65,7 +66,7 @@ abstract class ActorSelection extends Serializable {
    * [[ActorRef]].
    */
   def resolveOne()(implicit timeout: Timeout): Future[ActorRef] = {
-    implicit val ec = ExecutionContexts.parasitic
+    implicit val ec = ExecutionContext.parasitic
     val p = Promise[ActorRef]()
     this.ask(Identify(None)).onComplete {
       case Success(ActorIdentity(_, Some(ref))) => p.success(ref)

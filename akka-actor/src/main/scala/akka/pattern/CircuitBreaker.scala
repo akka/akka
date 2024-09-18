@@ -23,7 +23,6 @@ import scala.util.control.NonFatal
 import akka.AkkaException
 import akka.actor.ClassicActorSystemProvider
 import akka.actor.Scheduler
-import akka.dispatch.ExecutionContexts.parasitic
 import akka.pattern.internal.{ CircuitBreakerNoopTelemetry, CircuitBreakerTelemetry }
 import akka.util.Unsafe
 
@@ -49,7 +48,7 @@ object CircuitBreaker {
       maxFailures: Int,
       callTimeout: FiniteDuration,
       resetTimeout: FiniteDuration): CircuitBreaker =
-    new CircuitBreaker(scheduler, maxFailures, callTimeout, resetTimeout)(parasitic)
+    new CircuitBreaker(scheduler, maxFailures, callTimeout, resetTimeout)(ExecutionContext.parasitic)
 
   /**
    * Create or find a CircuitBreaker in registry.
@@ -843,13 +842,13 @@ class CircuitBreaker(
             notifyCallSuccessListeners(start)
             callSucceeds()
           }
-        }(parasitic)
+        }(ExecutionContext.parasitic)
 
         val timeout = scheduler.scheduleOnce(callTimeout) {
           if (p.tryFailure(timeoutEx)) {
             notifyCallTimeoutListeners(start)
           }
-        }(parasitic)
+        }(ExecutionContext.parasitic)
 
         materialize(body).onComplete {
           case Success(result) =>
@@ -860,7 +859,7 @@ class CircuitBreaker(
               if (!isIgnoredException(ex)) notifyCallFailureListeners(start)
             }
             timeout.cancel()
-        }(parasitic)
+        }(ExecutionContext.parasitic)
         p.future
       }
     }

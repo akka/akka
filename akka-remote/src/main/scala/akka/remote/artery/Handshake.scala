@@ -5,6 +5,7 @@
 package akka.remote.artery
 
 import scala.annotation.nowarn
+import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
@@ -12,7 +13,6 @@ import scala.util.control.NoStackTrace
 import akka.Done
 import akka.actor.ActorSystem
 import akka.actor.Address
-import akka.dispatch.ExecutionContexts
 import akka.remote.UniqueAddress
 import akka.stream.Attributes
 import akka.stream.FlowShape
@@ -299,7 +299,7 @@ private[remote] class InboundHandshake(inboundContext: InboundContext, inControl
             thenInside(result.isSuccess)
           case None =>
             first.onComplete(result => runInStage.invoke(() => thenInside(result.isSuccess)))(
-              ExecutionContexts.parasitic)
+              ExecutionContext.parasitic)
         }
 
       }

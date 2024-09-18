@@ -10,9 +10,11 @@ import java.util.Optional
 import java.util.concurrent.CompletionStage
 import java.util.function.{ Function => JFunction }
 import java.util.function.Supplier
+
+import scala.concurrent.ExecutionContext
+
 import javax.net.ssl.SSLEngine
 import javax.net.ssl.SSLSession
-
 import scala.concurrent.duration._
 import scala.jdk.DurationConverters._
 import scala.jdk.FutureConverters._
@@ -135,7 +137,6 @@ object Tcp extends ExtensionId[Tcp] with ExtensionIdProvider {
 
 class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
   import Tcp._
-  import akka.dispatch.ExecutionContexts.parasitic
 
   private lazy val delegate: scaladsl.Tcp = scaladsl.Tcp(system)
 
@@ -171,7 +172,7 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
       delegate
         .bind(interface, port, backlog, immutableSeq(options), halfClose, optionalDurationToScala(idleTimeout))
         .map(new IncomingConnection(_))
-        .mapMaterializedValue(_.map(new ServerBinding(_))(parasitic).asJava))
+        .mapMaterializedValue(_.map(new ServerBinding(_))(ExecutionContext.parasitic).asJava))
 
   /**
    * Creates a [[Tcp.ServerBinding]] instance which represents a prospective TCP server binding on the given `endpoint`.
@@ -217,7 +218,7 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
       delegate
         .bind(interface, port)
         .map(new IncomingConnection(_))
-        .mapMaterializedValue(_.map(new ServerBinding(_))(parasitic).asJava))
+        .mapMaterializedValue(_.map(new ServerBinding(_))(ExecutionContext.parasitic).asJava))
 
   /**
    * Creates an [[Tcp.OutgoingConnection]] instance representing a prospective TCP client connection to the given endpoint.
@@ -255,7 +256,7 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
           halfClose,
           optionalDurationToScala(connectTimeout),
           optionalDurationToScala(idleTimeout))
-        .mapMaterializedValue(_.map(new OutgoingConnection(_))(parasitic).asJava))
+        .mapMaterializedValue(_.map(new OutgoingConnection(_))(ExecutionContext.parasitic).asJava))
 
   /**
    * Creates an [[Tcp.OutgoingConnection]] instance representing a prospective TCP client connection to the given endpoint.
@@ -305,7 +306,7 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
     Flow.fromGraph(
       delegate
         .outgoingConnection(new InetSocketAddress(host, port))
-        .mapMaterializedValue(_.map(new OutgoingConnection(_))(parasitic).asJava))
+        .mapMaterializedValue(_.map(new OutgoingConnection(_))(ExecutionContext.parasitic).asJava))
 
   /**
    * Creates an [[Tcp.OutgoingConnection]] with TLS.
@@ -323,7 +324,7 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
     Flow.fromGraph(
       delegate
         .outgoingConnectionWithTls(remoteAddress, createSSLEngine = () => createSSLEngine.get())
-        .mapMaterializedValue(_.map(new OutgoingConnection(_))(parasitic).asJava))
+        .mapMaterializedValue(_.map(new OutgoingConnection(_))(ExecutionContext.parasitic).asJava))
 
   /**
    * Creates an [[Tcp.OutgoingConnection]] with TLS.
@@ -359,7 +360,7 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
               case Some(t) => Failure(t)
             },
           closing)
-        .mapMaterializedValue(_.map(new OutgoingConnection(_))(parasitic).asJava))
+        .mapMaterializedValue(_.map(new OutgoingConnection(_))(ExecutionContext.parasitic).asJava))
   }
 
   /**
@@ -376,7 +377,7 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
       delegate
         .bindWithTls(interface, port, createSSLEngine = () => createSSLEngine.get())
         .map(new IncomingConnection(_))
-        .mapMaterializedValue(_.map(new ServerBinding(_))(parasitic).asJava))
+        .mapMaterializedValue(_.map(new ServerBinding(_))(ExecutionContext.parasitic).asJava))
   }
 
   /**
@@ -410,7 +411,7 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
             },
           closing)
         .map(new IncomingConnection(_))
-        .mapMaterializedValue(_.map(new ServerBinding(_))(parasitic).asJava))
+        .mapMaterializedValue(_.map(new ServerBinding(_))(ExecutionContext.parasitic).asJava))
   }
 
   private def optionalDurationToScala(duration: Optional[java.time.Duration]) = {

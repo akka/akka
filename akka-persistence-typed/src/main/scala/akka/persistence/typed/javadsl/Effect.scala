@@ -6,10 +6,11 @@ package akka.persistence.typed.javadsl
 
 import java.util.concurrent.CompletionStage
 
+import scala.concurrent.ExecutionContext
+
 import akka.actor.typed.ActorRef
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
-import akka.dispatch.ExecutionContexts
 import akka.japi.function
 import akka.persistence.typed.internal._
 import akka.persistence.typed.internal.SideEffect
@@ -115,7 +116,7 @@ import scala.jdk.CollectionConverters._
    */
   def async(effect: CompletionStage[Effect[Event, State]]): Effect[Event, State] = {
     import scala.jdk.FutureConverters._
-    AsyncEffect[Event, State](effect.asScala.map(_.asInstanceOf[EffectImpl[Event, State]])(ExecutionContexts.parasitic))
+    AsyncEffect[Event, State](effect.asScala.map(_.asInstanceOf[EffectImpl[Event, State]])(ExecutionContext.parasitic))
   }
 
   /**
@@ -124,7 +125,7 @@ import scala.jdk.CollectionConverters._
    */
   def asyncReply(effect: CompletionStage[ReplyEffect[Event, State]]): ReplyEffect[Event, State] = {
     import scala.jdk.FutureConverters._
-    AsyncEffect[Event, State](effect.asScala.map(_.asInstanceOf[EffectImpl[Event, State]])(ExecutionContexts.parasitic))
+    AsyncEffect[Event, State](effect.asScala.map(_.asInstanceOf[EffectImpl[Event, State]])(ExecutionContext.parasitic))
   }
 }
 

@@ -24,7 +24,6 @@ import com.typesafe.config.ConfigFactory
 
 import akka.Done
 import akka.annotation.InternalApi
-import akka.dispatch.ExecutionContexts
 import akka.event.Logging
 import akka.pattern.after
 import akka.util.OptionVal
@@ -258,7 +257,7 @@ object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with Extensi
         system.whenTerminated.map { _ =>
           if (exitJvm && !runningJvmHook) System.exit(exitCode)
           Done
-        }(ExecutionContexts.parasitic)
+        }(ExecutionContext.parasitic)
       } else if (exitJvm) {
         System.exit(exitCode)
         Future.successful(Done)
@@ -469,7 +468,7 @@ final class CoordinatedShutdown private[akka] (
       override val size: Int = tasks.size
 
       override def run(recoverEnabled: Boolean)(implicit ec: ExecutionContext): Future[Done] = {
-        Future.sequence(tasks.map(_.run(recoverEnabled))).map(_ => Done)(ExecutionContexts.parasitic)
+        Future.sequence(tasks.map(_.run(recoverEnabled))).map(_ => Done)(ExecutionContext.parasitic)
       }
 
       // This method may be run multiple times during the compare-and-set loop of ConcurrentHashMap, so it must be side-effect-free

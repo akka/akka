@@ -8,6 +8,7 @@ import scala.annotation.implicitNotFound
 import scala.annotation.nowarn
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.immutable
+import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
@@ -652,7 +653,7 @@ object Flow {
   @deprecated("Use 'Flow.lazyFutureFlow' instead", "2.6.0")
   def lazyInitAsync[I, O, M](flowFactory: () => Future[Flow[I, O, M]]): Flow[I, O, Future[Option[M]]] =
     Flow.lazyFutureFlow(flowFactory).mapMaterializedValue {
-      implicit val ec = akka.dispatch.ExecutionContexts.parasitic
+      implicit val ec = ExecutionContext.parasitic
       _.map(Some.apply).recover { case _: NeverMaterializedException => None }
     }
 
@@ -728,8 +729,8 @@ object Flow {
       .flatMapPrefixMat(1) {
         case Seq(a) =>
           val f: Flow[I, O, Future[M]] =
-            futureFlow(create()
-              .map(Flow[I].prepend(Source.single(a)).viaMat(_)(Keep.right))(akka.dispatch.ExecutionContexts.parasitic))
+            futureFlow(
+              create().map(Flow[I].prepend(Source.single(a)).viaMat(_)(Keep.right))(ExecutionContext.parasitic))
           f
         case Nil =>
           val f: Flow[I, O, Future[M]] = Flow[I]

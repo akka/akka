@@ -7,12 +7,12 @@ package akka.stream.javadsl
 import java.util.Optional
 import java.util.concurrent.CompletionStage
 
+import scala.concurrent.ExecutionContext
 import scala.jdk.FutureConverters._
 import scala.jdk.OptionConverters._
 import scala.concurrent.Future
 
 import akka.Done
-import akka.dispatch.ExecutionContexts
 import akka.stream.QueueOfferResult
 
 /**
@@ -131,7 +131,7 @@ object SinkQueueWithCancel {
     new akka.stream.scaladsl.SinkQueueWithCancel[T] {
 
       override def pull(): Future[Option[T]] =
-        queue.pull().asScala.map(_.toScala)(ExecutionContexts.parasitic)
+        queue.pull().asScala.map(_.toScala)(ExecutionContext.parasitic)
 
       override def cancel(): Unit = queue.cancel()
     }

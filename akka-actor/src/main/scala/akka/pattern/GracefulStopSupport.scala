@@ -4,11 +4,11 @@
 
 package akka.pattern
 
+import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 
 import akka.actor._
-import akka.dispatch.ExecutionContexts
 import akka.dispatch.sysmsg.{ Unwatch, Watch }
 import akka.util.Timeout
 
@@ -55,6 +55,6 @@ trait GracefulStopSupport {
     ref.result.future.transform({
       case Terminated(t) if t.path == target.path => true
       case _                                      => { internalTarget.sendSystemMessage(Unwatch(target, ref)); false }
-    }, t => { internalTarget.sendSystemMessage(Unwatch(target, ref)); t })(ExecutionContexts.parasitic)
+    }, t => { internalTarget.sendSystemMessage(Unwatch(target, ref)); t })(ExecutionContext.parasitic)
   }
 }

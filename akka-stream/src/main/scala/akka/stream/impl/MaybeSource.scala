@@ -4,11 +4,11 @@
 
 package akka.stream.impl
 
+import scala.concurrent.ExecutionContext
 import scala.concurrent.Promise
 import scala.util.Try
 
 import akka.annotation.InternalApi
-import akka.dispatch.ExecutionContexts
 import akka.stream._
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.stage.{ GraphStageLogic, GraphStageWithMaterializedValue, OutHandler }
@@ -39,7 +39,7 @@ import akka.util.OptionVal
             handleCompletion(value)
           case None =>
             // callback on future completion
-            promise.future.onComplete(getAsyncCallback(handleCompletion).invoke)(ExecutionContexts.parasitic)
+            promise.future.onComplete(getAsyncCallback(handleCompletion).invoke)(ExecutionContext.parasitic)
         }
       }
 

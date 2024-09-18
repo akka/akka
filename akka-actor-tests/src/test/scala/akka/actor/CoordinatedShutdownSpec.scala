@@ -20,7 +20,6 @@ import akka.ConfigurationException
 import akka.Done
 import akka.actor.CoordinatedShutdown.Phase
 import akka.actor.CoordinatedShutdown.UnknownReason
-import akka.dispatch.ExecutionContexts
 import akka.testkit.AkkaSpec
 import akka.testkit.EventFilter
 import akka.testkit.TestKit
@@ -314,10 +313,10 @@ class CoordinatedShutdownSpec
             Future {
               testProbe.ref ! BMessage("concurrentB")
               Done
-            }(ExecutionContexts.parasitic)
+            }(ExecutionContext.parasitic)
           }
           Done
-        }(ExecutionContexts.parasitic)
+        }(ExecutionContext.parasitic)
 
       val cancellationFut: Future[Done] = {
         val cancellables = (0 until 20).map { _ =>

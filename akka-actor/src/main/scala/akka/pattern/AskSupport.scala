@@ -9,6 +9,7 @@ import java.util.concurrent.TimeoutException
 
 import scala.annotation.nowarn
 import scala.annotation.tailrec
+import scala.concurrent.ExecutionContext
 import scala.concurrent.{ Future, Promise }
 import scala.language.implicitConversions
 import scala.util.{ Failure, Success }
@@ -16,7 +17,6 @@ import scala.util.control.NoStackTrace
 
 import akka.actor._
 import akka.annotation.{ InternalApi, InternalStableApi }
-import akka.dispatch.ExecutionContexts
 import akka.dispatch.sysmsg._
 import akka.util.{ Timeout, Unsafe }
 import akka.util.ByteString
@@ -722,7 +722,7 @@ private[akka] object PromiseActorRef {
     val result = Promise[Any]()
     val scheduler = provider.guardian.underlying.system.scheduler
     val a = new PromiseActorRef(provider, result, messageClassName, refPathPrefix)
-    implicit val ec = ExecutionContexts.parasitic
+    implicit val ec = ExecutionContext.parasitic
     val f = scheduler.scheduleOnce(timeout.duration) {
       val timedOut = result.tryComplete {
         val wasSentBy = if (sender == ActorRef.noSender) "" else s" was sent by [$sender]"
