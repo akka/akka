@@ -65,7 +65,7 @@ object Dependencies {
     // reactive streams
     val reactiveStreams = "org.reactivestreams" % "reactive-streams" % reactiveStreamsVersion // MIT-0
 
-    val lmdb = "org.lmdbjava" % "lmdbjava" % "0.8.3" // ApacheV2, OpenLDAP Public License
+    val lmdb = "org.lmdbjava" % "lmdbjava" % "0.9.0" // ApacheV2, OpenLDAP Public License
 
     val junit = "junit" % "junit" % junitVersion // Common Public License 1.0
 
