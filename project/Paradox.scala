@@ -24,15 +24,15 @@ object Paradox {
       }
     }
     Map(
-      "canonical.base_url" -> "https://doc.akka.io/docs/akka/current",
+      "canonical.base_url" -> "https://doc.akka.io/libraries/akka-core/current",
       "github.base_url" -> GitHub
         .url(version.value), // for links like this: @github[#1](#1) or @github[83986f9](83986f9)
-      "extref.akka.http.base_url" -> "https://doc.akka.io/docs/akka-http/current/%s",
-      "extref.akka-management.base_url" -> "https://doc.akka.io/docs/akka-management/current/%s",
-      "extref.akka-projection.base_url" -> "https://doc.akka.io/docs/akka-projection/current/%s",
-      "extref.akka-distributed-cluster.base_url" -> "https://doc.akka.io/docs/akka-distributed-cluster/current/%s",
-      "extref.akka-edge.base_url" -> "https://doc.akka.io/docs/akka-edge/current/%s",
-      "extref.platform-guide.base_url" -> "https://developer.lightbend.com/docs/akka-guide/%s",
+      "extref.akka.http.base_url" -> "https://doc.akka.io/libraries/akka-http/current/%s",
+      "extref.akka-management.base_url" -> "https://doc.akka.io/libraries/akka-management/current/%s",
+      "extref.akka-projection.base_url" -> "https://doc.akka.io/libraries/akka-projection/current/%s",
+      "extref.akka-distributed-cluster.base_url" -> "https://doc.akka.io/libraries/akka-distributed-cluster/current/%s",
+      "extref.akka-edge.base_url" -> "https://doc.akka.io/libraries/akka-edge/current/%s",
+      "extref.platform-guide.base_url" -> "https://doc.akka.io/libraries/guide/%s",
       "extref.wikipedia.base_url" -> "https://en.wikipedia.org/wiki/%s",
       "extref.github.base_url" -> (GitHub.url(version.value) + "/%s"), // for links to our sources
       "scaladoc.akka.base_url" -> s"https://doc.akka.io/api/akka/$akkaMajorMinorVersion",
@@ -105,6 +105,6 @@ object Paradox {
       ApidocPlugin.autoImport.apidocRootPackage := "akka",
       publishRsyncArtifacts += {
         val releaseVersion = if (isSnapshot.value) "snapshot" else version.value
-        ((Compile / paradox).value -> s"www/docs/akka/$releaseVersion")
+        ((Compile / paradox).value -> s"www/libraries/akka-core/$releaseVersion")
       })
 }
