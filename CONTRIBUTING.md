@@ -240,7 +240,7 @@ e.g. `allCluster`, `allTyped`.
 ### Binary compatibility
 
 Binary compatibility rules and guarantees are described in depth in the [Binary Compatibility Rules
-](https://doc.akka.io/docs/akka/current/common/binary-compatibility-rules.html) section of the documentation.
+](https://doc.akka.io/libraries/akka-core/current/common/binary-compatibility-rules.html) section of the documentation.
 
 Akka uses [MiMa](https://github.com/lightbend/mima) to
 validate the binary compatibility of incoming pull requests. If your PR fails due to binary compatibility issues, you may see
@@ -279,7 +279,7 @@ new wire format. This ensures users can complete a rolling upgrade first to the 
 rolling upgrade to the next version.
 
 All wire protocol changes that may concern rolling upgrades should be documented in the
-[Rolling Update Changelog](https://doc.akka.io/docs/akka/current/project/rolling-update.html#change-log)
+[Rolling Update Changelog](https://doc.akka.io/libraries/akka-core/current/project/rolling-update.html#change-log)
 (found in akka-docs/src/main/paradox/project/rolling-update.md)
 
 ### Protobuf
@@ -493,7 +493,7 @@ next step would be to add it to Akka as an "may change"-feature (possibly in a n
 then when the feature is hardened, well documented and
 tested it becomes an officially supported Akka feature.
 
-[List of Akka features marked as may change](https://doc.akka.io/docs/akka/current/common/may-change.html)
+[List of Akka features marked as may change](https://doc.akka.io/libraries/akka-core/current/common/may-change.html)
 
 ### Java APIs in Akka
 
@@ -601,5 +601,5 @@ Anyone can propose new changes to our CI workflows, and we will gladly review th
 ### Related links
 
 * [Akka Contributor License Agreement](https://www.lightbend.com/contribute/cla/akka)
-* [Akka Issue Tracker](https://doc.akka.io/docs/akka/current/project/issue-tracking.html)
+* [Akka Issue Tracker](https://doc.akka.io/libraries/akka-core/current/project/issue-tracking.html)
 * [Scalafmt](https://scalameta.org/scalafmt/)

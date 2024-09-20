@@ -1,12 +1,12 @@
 # Other Akka modules
 
-This page describes modules that compliment libraries from the Akka core.  See [this overview](https://doc.akka.io/docs/akka/current/typed/guide/modules.html) instead for a guide on the core modules.
+This page describes modules that compliment libraries from the Akka core.  See [this overview](https://doc.akka.io/libraries/akka-core/current/typed/guide/modules.html) instead for a guide on the core modules.
 
-## [Akka HTTP](https://doc.akka.io/docs/akka-http/current/)
+## [Akka HTTP](https://doc.akka.io/libraries/akka-http/current/)
 
 A full server- and client-side HTTP stack on top of akka-actor and akka-stream.
 
-## [Akka gRPC](https://doc.akka.io/docs/akka-grpc/current/)
+## [Akka gRPC](https://doc.akka.io/libraries/akka-grpc/current/)
 
 Akka gRPC provides support for building streaming gRPC servers and clients on top of Akka Streams.
 
@@ -24,16 +24,16 @@ The Alpakka Kafka Connector connects Apache Kafka with Akka Streams.
 Akka Projections let you process a stream of events or records from a source to a projected model or external system.
 
 
-## [Cassandra Plugin for Akka Persistence](https://doc.akka.io/docs/akka-persistence-cassandra/current/)
+## [Cassandra Plugin for Akka Persistence](https://doc.akka.io/libraries/akka-persistence-cassandra/current/)
 
 An Akka Persistence journal and snapshot store backed by Apache Cassandra.
 
 
-## [JDBC Plugin for Akka Persistence](https://doc.akka.io/docs/akka-persistence-jdbc/current/)
+## [JDBC Plugin for Akka Persistence](https://doc.akka.io/libraries/akka-persistence-jdbc/current/)
 
 An Akka Persistence journal and snapshot store for use with JDBC-compatible databases. This implementation relies on [Slick](https://scala-slick.org/).
 
-## [R2DBC Plugin for Akka Persistence](https://doc.akka.io/docs/akka-persistence-r2dbc/current/)
+## [R2DBC Plugin for Akka Persistence](https://doc.akka.io/libraries/akka-persistence-r2dbc/current/)
 
 An Akka Persistence journal and snapshot store for use with R2DBC-compatible databases. This implementation relies on [R2DBC](https://r2dbc.io/).
 
@@ -48,8 +48,8 @@ An Akka Persistence journal and snapshot store for use with R2DBC-compatible dat
 
 ## Akka Diagnostics
 
-* [Akka Thread Starvation Detector](https://doc.akka.io/docs/akka-diagnostics/current/starvation-detector.html)
-* [Akka Configuration Checker](https://doc.akka.io/docs/akka-diagnostics/current/config-checker.html)
+* [Akka Thread Starvation Detector](https://doc.akka.io/libraries/akka-diagnostics/current/starvation-detector.html)
+* [Akka Configuration Checker](https://doc.akka.io/libraries/akka-diagnostics/current/config-checker.html)
 
 ## Akka Insights
 

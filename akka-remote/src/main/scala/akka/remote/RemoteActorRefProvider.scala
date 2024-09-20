@@ -260,7 +260,7 @@ private[akka] class RemoteActorRefProvider(
   }
 
   private def checkAeronOnClassPath(system: ActorSystemImpl): Unit = {
-    val arteryLink = "https://doc.akka.io/docs/akka/current/remoting-artery.html"
+    val arteryLink = "https://doc.akka.io/libraries/akka-core/current/remoting-artery.html"
     // using classes that are used so will fail to compile if they get removed from Aeron
     checkClassOrThrow(system, "io.aeron.driver.MediaDriver", "Artery", "Aeron driver", arteryLink)
     checkClassOrThrow(system, "io.aeron.Aeron", "Artery", "Aeron client", arteryLink)

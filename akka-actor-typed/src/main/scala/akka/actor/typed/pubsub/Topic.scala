@@ -25,7 +25,7 @@ import scala.reflect.ClassTag
  *
  * Each topic results in a [[akka.actor.typed.receptionist.ServiceKey]] in the [[akka.actor.typed.receptionist.Receptionist]]
  * so the same scaling recommendation holds for topics, see docs:
- * https://doc.akka.io/docs/akka/current/typed/actor-discovery.html#receptionist-scalability
+ * https://doc.akka.io/libraries/akka-core/current/typed/actor-discovery.html#receptionist-scalability
  */
 object Topic {
 

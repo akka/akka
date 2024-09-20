@@ -4,12 +4,12 @@ Storage backends for journals, snapshot stores, durable state stores and persist
 
 Plugins maintained within the Akka organization are:
 
-* [akka-persistence-r2dbc](https://doc.akka.io/docs/akka-persistence-r2dbc/current/)
-* [akka-persistence-cassandra](https://doc.akka.io/docs/akka-persistence-cassandra/current/)
-* [akka-persistence-jdbc](https://doc.akka.io/docs/akka-persistence-jdbc/current/)
+* [akka-persistence-r2dbc](https://doc.akka.io/libraries/akka-persistence-r2dbc/current/)
+* [akka-persistence-cassandra](https://doc.akka.io/libraries/akka-persistence-cassandra/current/)
+* [akka-persistence-jdbc](https://doc.akka.io/libraries/akka-persistence-jdbc/current/)
 
 Latest features have mostly been implemented in the R2DBC plugin. Be aware of that many of the new features of @extref[Akka Distributed Cluster](akka-distributed-cluster:) and @extref[Akka Edge](akka-edge:) are only implemented by the
-[R2DBC plugin](https://doc.akka.io/docs/akka-persistence-r2dbc/current/) and are not supported by the Cassandra and JDBC plugins.
+[R2DBC plugin](https://doc.akka.io/libraries/akka-persistence-r2dbc/current/) and are not supported by the Cassandra and JDBC plugins.
 
 Those features were developed for Distributed Cluster and Edge, but they are also useful in other contexts.
 Example of concrete features not supported by the Cassandra and JDBC plugins:
@@ -41,7 +41,7 @@ However, these entries are provided as empty "", and require explicit user confi
 
 * For an example of a journal plugin which writes messages to LevelDB see @ref:[Local LevelDB journal](#local-leveldb-journal).
 * For an example of a snapshot store plugin which writes snapshots as individual files to the local filesystem see @ref:[Local snapshot store](#local-snapshot-store).
-* The state store is relatively new, one available implementation is the [akka-persistence-jdbc-plugin](https://doc.akka.io/docs/akka-persistence-jdbc/current/).
+* The state store is relatively new, one available implementation is the [akka-persistence-jdbc-plugin](https://doc.akka.io/libraries/akka-persistence-jdbc/current/).
 
 ## Eager initialization of persistence plugin
 
@@ -88,7 +88,7 @@ The LevelDB plugin cannot be used in an Akka Cluster since the storage is in a l
 @@@
 
 The LevelDB journal is deprecated and it is not advised to build new applications with it.
-As a replacement we recommend using [Akka Persistence JDBC](https://doc.akka.io/docs/akka-persistence-jdbc/current/index.html).
+As a replacement we recommend using [Akka Persistence JDBC](https://doc.akka.io/libraries/akka-persistence-jdbc/current/index.html).
 
 The LevelDB journal plugin config entry is `akka.persistence.journal.leveldb`. Enable this plugin by
 defining config property:

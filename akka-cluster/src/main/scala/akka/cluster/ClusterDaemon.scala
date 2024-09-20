@@ -449,7 +449,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
       case None =>
         logInfo(
           "No downing-provider-class configured, manual cluster downing required, see " +
-          "https://doc.akka.io/docs/akka/current/typed/cluster.html#downing")
+          "https://doc.akka.io/libraries/akka-core/current/typed/cluster.html#downing")
     }
 
     if (seedNodes.isEmpty) {
@@ -458,7 +458,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
       else
         logInfo(
           "No seed-nodes configured, manual cluster join required, see " +
-          "https://doc.akka.io/docs/akka/current/typed/cluster.html#joining")
+          "https://doc.akka.io/libraries/akka-core/current/typed/cluster.html#joining")
     } else {
       self ! JoinSeedNodes(seedNodes)
     }

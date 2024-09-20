@@ -29,8 +29,8 @@ during a rolling deployment, but deployment of the entire set has a single point
 intra-service communication can take advantage of Akka Cluster, failure management and actor messaging, which
 is convenient to use and has great performance.
 
-Between different services [Akka HTTP](https://doc.akka.io/docs/akka-http/current/) or
-[Akka gRPC](https://doc.akka.io/docs/akka-grpc/current/) can be used for synchronous (yet non-blocking)
+Between different services [Akka HTTP](https://doc.akka.io/libraries/akka-http/current/) or
+[Akka gRPC](https://doc.akka.io/libraries/akka-grpc/current/) can be used for synchronous (yet non-blocking)
 communication and [Akka Streams Kafka](https://doc.akka.io/docs/alpakka-kafka/current/) or other
 [Alpakka](https://doc.akka.io/docs/alpakka/current/) connectors for integration asynchronous communication.
 All those communication mechanisms work well with streaming of messages with end-to-end back-pressure, and the

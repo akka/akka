@@ -38,7 +38,7 @@ application implemented using Akka persistence, is completely separated from the
 
 @@@ note { title=Alternative }
 When using the R2DBC plugin an alternative to using Akka persistence query or Projection is to
-[store the query representation](https://doc.akka.io/docs/akka-persistence-r2dbc/current/durable-state-store.html#storing-query-representation)
+[store the query representation](https://doc.akka.io/libraries/akka-persistence-r2dbc/current/durable-state-store.html#storing-query-representation)
 directly from the write side.
 @@@
 

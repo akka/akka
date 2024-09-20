@@ -178,7 +178,7 @@ If you need to change any of the following aspects of sharding it will require a
  
 ### Cluster configuration change
 
-* A full restart is required if you change the [SBR strategy](https://doc.akka.io/docs/akka/current/split-brain-resolver.html#strategies)
+* A full restart is required if you change the [SBR strategy](https://doc.akka.io/libraries/akka-core/current/split-brain-resolver.html#strategies)
 
 ### Migrating from PersistentFSM to EventSourcedBehavior
 

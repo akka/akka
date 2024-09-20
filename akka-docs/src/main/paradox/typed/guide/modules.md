@@ -16,7 +16,7 @@ The following capabilities are included with Akka and are introduced later on th
 * @ref:[Alpakka](#alpakka)
 * @ref:[HTTP](#http)
 * @ref:[gRPC](#grpc)
-* [Other Akka modules](https://doc.akka.io/docs/akka/current/common/other-modules.html)
+* [Other Akka modules](https://doc.akka.io/libraries/akka-core/current/common/other-modules.html)
 
 This page does not list all available modules, but overviews the main functionality and gives you an idea of the level of sophistication you can reach when you start building systems on top of Akka.
 
@@ -345,7 +345,7 @@ Alpakka helps solve the following challenges:
 
 ### HTTP
 
-[Akka HTTP](https://doc.akka.io/docs/akka-http/current/) is a separate module from Akka.
+[Akka HTTP](https://doc.akka.io/libraries/akka-http/current/) is a separate module from Akka.
 
 The de facto standard for providing APIs remotely, internal or external, is [HTTP](https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol). Akka provides a library to construct or consume such HTTP services by giving a set of tools to create HTTP services (and serve them) and a client that can be
 used to consume other services. These tools are particularly suited to streaming in and out a large set of data or real-time events by leveraging the underlying model of Akka Streams.
@@ -358,7 +358,7 @@ Some of the challenges that HTTP tackles:
 
 ### gRPC
 
-[Akka gRPC](https://doc.akka.io/docs/akka-grpc/current/index.html) is a separate module from Akka.
+[Akka gRPC](https://doc.akka.io/libraries/akka-grpc/current/index.html) is a separate module from Akka.
 
 This library provides an implementation of gRPC that integrates nicely with the @ref:[HTTP](#http) and @ref:[Streams](#streams) modules.  It is capable of generating both client and server-side artifacts from protobuf service definitions, which can then be exposed using Akka HTTP, and handled using Streams.
 
