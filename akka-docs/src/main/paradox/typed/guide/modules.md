@@ -332,11 +332,11 @@ Streams solve the following challenges:
 
 ### Alpakka
 
-[Alpakka](https://doc.akka.io/docs/alpakka/current/) is a separate module from Akka.
+[Alpakka](https://doc.akka.io/libraries/alpakka/current/) is a separate module from Akka.
 
 Alpakka is collection of modules built upon the Streams API to provide Reactive Stream connector
 implementations for a variety of technologies common in the cloud and infrastructure landscape.  
-See the [Alpakka overview page](https://doc.akka.io/docs/alpakka/current/overview.html) for more details on the API and the implementation modules available.
+See the [Alpakka overview page](https://doc.akka.io/libraries/alpakka/current/overview.html) for more details on the API and the implementation modules available.
 
 Alpakka helps solve the following challenges:
 

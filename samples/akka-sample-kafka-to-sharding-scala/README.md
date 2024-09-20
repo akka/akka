@@ -24,7 +24,7 @@ sharding allocation strategy to move shards to the node that is consuming that p
 in no cross node traffic.
 
 Read the following documentation to learn more about [Akka Cluster External Shard Allocation](https://doc.akka.io/libraries/akka-core/current/typed/cluster-sharding.html#external-shard-allocation) 
-and its support for Kafka in [Alpakka Kafka Cluster Sharding](https://doc.akka.io/docs/alpakka-kafka/current/cluster-sharding.html).
+and its support for Kafka in [Alpakka Kafka Cluster Sharding](https://doc.akka.io/librarires/alpakka-kafka/current/cluster-sharding.html).
 
 # Running the sample 
 

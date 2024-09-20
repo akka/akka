@@ -10,11 +10,11 @@ A full server- and client-side HTTP stack on top of akka-actor and akka-stream.
 
 Akka gRPC provides support for building streaming gRPC servers and clients on top of Akka Streams.
 
-## [Alpakka](https://doc.akka.io/docs/alpakka/current/)
+## [Alpakka](https://doc.akka.io/libraries/alpakka/current/)
 
 Alpakka is a Reactive Enterprise Integration library for Java and Scala, based on Reactive Streams and Akka.
 
-## [Alpakka Kafka Connector](https://doc.akka.io/docs/alpakka-kafka/current/)
+## [Alpakka Kafka Connector](https://doc.akka.io/librarires/alpakka-kafka/current/)
 
 The Alpakka Kafka Connector connects Apache Kafka with Akka Streams.
 
