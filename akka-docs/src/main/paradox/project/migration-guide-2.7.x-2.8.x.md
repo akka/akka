@@ -24,8 +24,8 @@ in issue: https://github.com/akka/akka/issues/28304
 Classic Remoting transport has been deprecated since Akka 2.6.0 (2019-11-06) and is replaced by the Artery transport,
 which has been the default since 2.6.0 and declared ready for production in Akka 2.5.22 (2019-04-03).
 
-See [migration guide for Akka 2.6.x](https://doc.akka.io/docs/akka/2.6/project/migration-guide-2.5.x-2.6.x.html#default-remoting-is-now-artery-tcp)
-and [What is new in Artery](https://doc.akka.io/docs/akka/2.6/remoting-artery.html#what-is-new-in-artery).
+See [migration guide for Akka 2.6.x](https://doc.akka.io/libraries/akka/2.6/project/migration-guide-2.5.x-2.6.x.html#default-remoting-is-now-artery-tcp)
+and [What is new in Artery](https://doc.akka.io/libraries/akka/2.6/remoting-artery.html#what-is-new-in-artery).
 
 ### Moved classes for Multi JVM TestKit
 

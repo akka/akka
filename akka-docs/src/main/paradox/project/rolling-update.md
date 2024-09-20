@@ -20,7 +20,7 @@ is completely different. It will require a full cluster shutdown and new startup
 
 ### 2.5.0 Several changes in minor release
 
-See [migration guide](https://doc.akka.io/docs/akka/2.5/project/migration-guide-2.4.x-2.5.x.html#rolling-update) when updating from 2.4.x to 2.5.x.
+See [migration guide](https://doc.akka.io/libraries/akka/2.5/project/migration-guide-2.4.x-2.5.x.html#rolling-update) when updating from 2.4.x to 2.5.x.
 
 ### 2.5.10 Joining regression
 
