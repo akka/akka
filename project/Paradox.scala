@@ -35,11 +35,11 @@ object Paradox {
       "extref.platform-guide.base_url" -> "https://doc.akka.io/libraries/guide/%s",
       "extref.wikipedia.base_url" -> "https://en.wikipedia.org/wiki/%s",
       "extref.github.base_url" -> (GitHub.url(version.value) + "/%s"), // for links to our sources
-      "scaladoc.akka.base_url" -> s"https://doc.akka.io/api/akka/$akkaMajorMinorVersion",
+      "scaladoc.akka.base_url" -> s"https://doc.akka.io/api/akka-core/$akkaMajorMinorVersion",
       "scaladoc.akka.http.base_url" -> "https://doc.akka.io/api/akka-http/current",
       "javadoc.java.base_url" -> "https://docs.oracle.com/en/java/javase/11/docs/api/java.base/",
       "javadoc.java.link_style" -> "direct",
-      "javadoc.akka.base_url" -> s"https://doc.akka.io/japi/akka/$akkaMajorMinorVersion",
+      "javadoc.akka.base_url" -> s"https://doc.akka.io/japi/akka-core/$akkaMajorMinorVersion",
       "javadoc.akka.link_style" -> "direct",
       "javadoc.akka.http.base_url" -> "https://doc.akka.io/japi/akka-http/current",
       "javadoc.akka.http.link_style" -> "frames",

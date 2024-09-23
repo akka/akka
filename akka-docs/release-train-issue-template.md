@@ -30,7 +30,7 @@ Key links:
 
 ### Check availability
 
-- [ ] Check [API](https://doc.akka.io/api/akka/$VERSION$/) documentation
+- [ ] Check [API](https://doc.akka.io/api/akka-core/$VERSION$/) documentation
 - [ ] Check [reference](https://doc.akka.io/libraries/akka-core/$VERSION$/) documentation. Check that the reference docs were deployed and show a version warning (see section below on how to fix the version warning).
 - [ ] Check the release on https://repo.akka.io/maven/com/typesafe/akka/akka-actor_2.13/$VERSION$/akka-actor_2.13-$VERSION$.pom
 

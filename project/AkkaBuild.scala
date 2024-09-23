@@ -161,7 +161,7 @@ object AkkaBuild {
         if (isSnapshot.value) None
         else Some(url(s"https://github.com/akka/akka/releases/tag/v${version.value}"))
       ),
-    apiURL := Some(url(s"https://doc.akka.io/api/akka/${version.value}")),
+    apiURL := Some(url(s"https://doc.akka.io/api/akka-core/${version.value}")),
     initialCommands :=
       """|import language.postfixOps
          |import akka.actor._
