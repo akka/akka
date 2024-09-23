@@ -20,13 +20,13 @@ object StreamRefSettings {
 
   /** Java API */
   @deprecated(
-    "Use attributes on the Runnable graph or change the defaults in configuration, see migration guide for details https://doc.akka.io/libraries/akka/2.6/project/migration-guide-2.5.x-2.6.x.html",
+    "Use attributes on the Runnable graph or change the defaults in configuration, see migration guide for details https://doc.akka.io/libraries/akka-core/2.6/project/migration-guide-2.5.x-2.6.x.html",
     since = "2.6.0")
   def create(system: ActorSystem): StreamRefSettings = apply(system)
 
   /** Scala API */
   @deprecated(
-    "Use attributes on the Runnable graph or change the defaults in configuration, see migration guide for details https://doc.akka.io/libraries/akka/2.6/project/migration-guide-2.5.x-2.6.x.html",
+    "Use attributes on the Runnable graph or change the defaults in configuration, see migration guide for details https://doc.akka.io/libraries/akka-core/2.6/project/migration-guide-2.5.x-2.6.x.html",
     since = "2.6.0")
   def apply(system: ActorSystem): StreamRefSettings = {
     apply(system.settings.config.getConfig("akka.stream.materializer.stream-ref"))
@@ -34,13 +34,13 @@ object StreamRefSettings {
 
   /** Java API */
   @deprecated(
-    "Use attributes on the Runnable graph or change the defaults in configuration, see migration guide for details https://doc.akka.io/libraries/akka/2.6/project/migration-guide-2.5.x-2.6.x.html",
+    "Use attributes on the Runnable graph or change the defaults in configuration, see migration guide for details https://doc.akka.io/libraries/akka-core/2.6/project/migration-guide-2.5.x-2.6.x.html",
     since = "2.6.0")
   def create(c: Config): StreamRefSettings = apply(c)
 
   /** Scala API */
   @deprecated(
-    "Use attributes on the Runnable graph or change the defaults in configuration, see migration guide for details https://doc.akka.io/libraries/akka/2.6/project/migration-guide-2.5.x-2.6.x.html",
+    "Use attributes on the Runnable graph or change the defaults in configuration, see migration guide for details https://doc.akka.io/libraries/akka-core/2.6/project/migration-guide-2.5.x-2.6.x.html",
     since = "2.6.0")
   def apply(c: Config): StreamRefSettings = {
     StreamRefSettingsImpl(

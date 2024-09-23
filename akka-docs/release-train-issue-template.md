@@ -41,9 +41,9 @@ Key links:
          ```
          cd ~/www
          git status
-         git add docs/akka/current docs/akka/$VERSION$
-         git add api/akka/current api/akka/$VERSION$
-         git add japi/akka/current japi/akka/$VERSION$
+         git add libraries/akka-core/current libraries/akka-core/$VERSION$
+         git add api/akka-core/current api/akka-core/$VERSION$
+         git add japi/akka-core/current japi/akka-core/$VERSION$
          git commit -m "Akka $VERSION$"
          ```
     - [ ] push changes to the [remote git repository](https://github.com/akka/doc.akka.io)

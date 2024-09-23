@@ -155,7 +155,7 @@ officially supported. If you're on a Big Endian processor, such as Sparc, it is 
 
 ## Migrating from classic remoting
 
-See [migrating from classic remoting](https://doc.akka.io/libraries/akka/2.6/project/migration-guide-2.5.x-2.6.x.html#classic-to-artery)
+See [migrating from classic remoting](https://doc.akka.io/libraries/akka-core/2.6/project/migration-guide-2.5.x-2.6.x.html#classic-to-artery)
 
 ## Canonical address
 

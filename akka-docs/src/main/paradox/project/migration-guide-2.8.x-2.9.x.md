@@ -33,7 +33,7 @@ The published artifacts are targeting Scala 2.13 and Scala 3.3.
 ## Deprecated Cluster Client removed
 
 Cluster client has been deprecated since Akka 2.6.0 (2019-11-06). Details on how to migrate can be found in the Akka 
-2.6 docs here: https://doc.akka.io/libraries/akka/2.6/cluster-client.html#migration-to-akka-grpc
+2.6 docs here: https://doc.akka.io/libraries/akka-core/2.6/cluster-client.html#migration-to-akka-grpc
 
 
 ## Deprecated Typed Actor removed
@@ -58,7 +58,7 @@ version="0.6.1"
 ## Persistent FSM
 
 Persistent FSM has been deprecated since Akka 2.6.0 (2019-11-06) and has now been dropped. Details on how to migrate can be found in the Akka 2.8
-docs here: https://doc.akka.io/libraries/akka/2.8/persistence-fsm.html#migration-to-eventsourcedbehavior
+docs here: https://doc.akka.io/libraries/akka-core/2.8/persistence-fsm.html#migration-to-eventsourcedbehavior
 
 # Migration Guide 2.9.2 to 2.9.3
 
