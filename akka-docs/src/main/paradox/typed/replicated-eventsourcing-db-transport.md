@@ -169,6 +169,6 @@ The @apidoc[SnapshotStoreSpec] in the Persistence TCK provides a capability flag
 
 The following plugins support Replicated Event Sourcing:
 
-* [Akka Persistence Cassandra](https://doc.akka.io/docs/akka-persistence-cassandra/current/index.html) versions 1.0.3+
-* [Akka Persistence R2DBC](https://doc.akka.io/docs/akka-persistence-r2dbc/current/) versions 1.0.0+
-* [Akka Persistence JDBC](https://doc.akka.io/docs/akka-persistence-jdbc/current) versions 5.0.0+
+* [Akka Persistence Cassandra](https://doc.akka.io/libraries/akka-persistence-cassandra/current/index.html) versions 1.0.3+
+* [Akka Persistence R2DBC](https://doc.akka.io/libraries/akka-persistence-r2dbc/current/) versions 1.0.0+
+* [Akka Persistence JDBC](https://doc.akka.io/libraries/akka-persistence-jdbc/current) versions 5.0.0+

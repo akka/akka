@@ -65,7 +65,7 @@ object Scaladoc extends AutoPlugin {
       "-doc-version",
       ver,
       "-doc-canonical-base-url",
-      "https://doc.akka.io/api/akka/current/")
+      "https://doc.akka.io/api/akka-core/current/")
     CliOptions.scaladocDiagramsEnabled.ifTrue("-diagrams").toList ::: opts
   }
 
@@ -146,7 +146,7 @@ object UnidocRoot extends AutoPlugin {
         val releaseVersion = if (isSnapshot.value) "snapshot" else version.value
         (Compile / unidoc).value match {
           case Seq(japi, api) =>
-            Seq((japi -> s"www/japi/akka/$releaseVersion"), (api -> s"www/api/akka/$releaseVersion"))
+            Seq((japi -> s"www/japi/akka-core/$releaseVersion"), (api -> s"www/api/akka-core/$releaseVersion"))
         }
       }))
     .getOrElse(Nil)

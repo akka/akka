@@ -30,8 +30,8 @@ Key links:
 
 ### Check availability
 
-- [ ] Check [API](https://doc.akka.io/api/akka/$VERSION$/) documentation
-- [ ] Check [reference](https://doc.akka.io/docs/akka/$VERSION$/) documentation. Check that the reference docs were deployed and show a version warning (see section below on how to fix the version warning).
+- [ ] Check [API](https://doc.akka.io/api/akka-core/$VERSION$/) documentation
+- [ ] Check [reference](https://doc.akka.io/libraries/akka-core/$VERSION$/) documentation. Check that the reference docs were deployed and show a version warning (see section below on how to fix the version warning).
 - [ ] Check the release on https://repo.akka.io/maven/com/typesafe/akka/akka-actor_2.13/$VERSION$/akka-actor_2.13-$VERSION$.pom
 
 ### When everything is on https://repo.akka.io/maven
@@ -41,9 +41,9 @@ Key links:
          ```
          cd ~/www
          git status
-         git add docs/akka/current docs/akka/$VERSION$
-         git add api/akka/current api/akka/$VERSION$
-         git add japi/akka/current japi/akka/$VERSION$
+         git add libraries/akka-core/current libraries/akka-core/$VERSION$
+         git add api/akka-core/current api/akka-core/$VERSION$
+         git add japi/akka-core/current japi/akka-core/$VERSION$
          git commit -m "Akka $VERSION$"
          ```
     - [ ] push changes to the [remote git repository](https://github.com/akka/doc.akka.io)
@@ -70,7 +70,7 @@ For minor or major releases:
 ### Afterwards
 
 - [ ] Update `MiMa.latestPatchOf` and PR that change (`project/MiMa.scala`)
-- [ ] Update [akka-dependencies bom](https://github.com/lightbend/akka-dependencies) and version for [Akka module versions](https://doc.akka.io/docs/akka-dependencies/current/) in [akka-dependencies repo](https://github.com/akka/akka-dependencies)
+- [ ] Update [akka-dependencies bom](https://github.com/lightbend/akka-dependencies) and version for [Akka module versions](https://doc.akka.io/libraries/akka-dependencies/current/) in [akka-dependencies repo](https://github.com/akka/akka-dependencies)
 - [ ] Update [Akka Guide samples](https://github.com/akka/akka-guide)
 - [ ] Update sbt new templates:
   - [ ] [Akka Scala](https://github.com/akka/akka-quickstart-scala.g8/blob/main/src/main/g8/default.properties)

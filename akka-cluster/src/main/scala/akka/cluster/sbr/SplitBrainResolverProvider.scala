@@ -14,7 +14,7 @@ import akka.cluster.DowningProvider
 import akka.coordination.lease.scaladsl.LeaseProvider
 
 /**
- * See reference documentation: https://doc.akka.io/docs/akka/current/split-brain-resolver.html
+ * See reference documentation: https://doc.akka.io/libraries/akka-core/current/split-brain-resolver.html
  *
  * Enabled with configuration:
  * {{{

@@ -19,12 +19,12 @@ Reference Documentation
 -----------------------
 
 The reference documentation is available at [doc.akka.io](https://doc.akka.io),
-for [Scala](https://doc.akka.io/docs/akka/current/scala.html) and [Java](https://doc.akka.io/docs/akka/current/java.html).
+for [Scala](https://doc.akka.io/libraries/akka-core/current/scala.html) and [Java](https://doc.akka.io/libraries/akka-core/current/java.html).
 
 Current versions of all Akka libraries
 --------------------------------------
 
-The current versions of all Akka libraries are listed on the [Akka Dependencies](https://doc.akka.io/docs/akka-dependencies/current/) page. Releases of the Akka core libraries in this repository are listed on the [GitHub releases](https://github.com/akka/akka/releases) page.
+The current versions of all Akka libraries are listed on the [Akka Dependencies](https://doc.akka.io/libraries/akka-dependencies/current/) page. Releases of the Akka core libraries in this repository are listed on the [GitHub releases](https://github.com/akka/akka/releases) page.
 
 Community
 ---------

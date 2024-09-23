@@ -11,8 +11,8 @@ other internally.
 When building an Akka application, you would usually not use the Remoting concepts
 directly, but instead use the more high-level
 @ref[Akka Cluster](index-cluster.md) utilities or technology-agnostic protocols
-such as [HTTP](https://doc.akka.io/docs/akka-http/current/),
-[gRPC](https://doc.akka.io/docs/akka-grpc/current/) etc.
+such as [HTTP](https://doc.akka.io/libraries/akka-http/current/),
+[gRPC](https://doc.akka.io/libraries/akka-grpc/current/) etc.
 
 @@@
 
@@ -155,7 +155,7 @@ officially supported. If you're on a Big Endian processor, such as Sparc, it is 
 
 ## Migrating from classic remoting
 
-See [migrating from classic remoting](https://doc.akka.io/docs/akka/2.6/project/migration-guide-2.5.x-2.6.x.html#classic-to-artery)
+See [migrating from classic remoting](https://doc.akka.io/libraries/akka-core/2.6/project/migration-guide-2.5.x-2.6.x.html#classic-to-artery)
 
 ## Canonical address
 

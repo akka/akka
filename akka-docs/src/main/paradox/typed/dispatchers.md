@@ -232,7 +232,7 @@ leads to thread starvation.
 
 @@@ note
 
-[Thread Starvation Detector](https://doc.akka.io/docs/akka-diagnostics/current/starvation-detector.html)
+[Thread Starvation Detector](https://doc.akka.io/libraries/akka-diagnostics/current/starvation-detector.html)
 will issue warning log statements if it detects any of your dispatchers suffering from starvation and other.
 It is a helpful first step to identify the problem is occurring in a production system,
 and then you can apply the proposed solutions as explained below.

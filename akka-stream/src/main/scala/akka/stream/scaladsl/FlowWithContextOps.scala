@@ -34,7 +34,7 @@ trait FlowWithContextOps[+Out, +Ctx, +Mat] {
    *
    *  It is up to the implementer to ensure the inner flow does not exhibit any behaviour that is not expected
    *  by the downstream elements, such as reordering. For more background on these requirements
-   *  see https://doc.akka.io/docs/akka/current/stream/stream-context.html.
+   *  see https://doc.akka.io/libraries/akka-core/current/stream/stream-context.html.
    *
    * This can be used as an escape hatch for operations that are not (yet) provided with automatic
    * context propagation here.
@@ -54,7 +54,7 @@ trait FlowWithContextOps[+Out, +Ctx, +Mat] {
    * of elements and contexts or deadlock.
    *
    * For more background on these requirements
-   *  see https://doc.akka.io/docs/akka/current/stream/stream-context.html.
+   *  see https://doc.akka.io/libraries/akka-core/current/stream/stream-context.html.
    */
   @ApiMayChange def unsafeDataVia[Out2, Mat2](viaFlow: Graph[FlowShape[Out, Out2], Mat2]): Repr[Out2, Ctx]
 
@@ -64,7 +64,7 @@ trait FlowWithContextOps[+Out, +Ctx, +Mat] {
    *
    *  It is up to the implementer to ensure the inner flow does not exhibit any behaviour that is not expected
    *  by the downstream elements, such as reordering. For more background on these requirements
-   *  see https://doc.akka.io/docs/akka/current/stream/stream-context.html.
+   *  see https://doc.akka.io/libraries/akka-core/current/stream/stream-context.html.
    *
    * This can be used as an escape hatch for operations that are not (yet) provided with automatic
    * context propagation here.

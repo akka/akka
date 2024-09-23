@@ -27,8 +27,8 @@ This is a collection of patterns to demonstrate various usage of the Akka Stream
 problems in the format of "recipes". The purpose of this page is to give inspiration and ideas how to approach
 various small tasks involving streams. The recipes in this page can be used directly as-is, but they are most powerful as
 starting points: customization of the code snippets is warmly encouraged. The recipes can be extended or can provide a 
-basis for the implementation of other [patterns](https://doc.akka.io/docs/alpakka/current/patterns.html) involving
-[Alpakka](https://doc.akka.io/docs/alpakka/current).
+basis for the implementation of other [patterns](https://doc.akka.io/libraries/alpakka/current/patterns.html) involving
+[Alpakka](https://doc.akka.io/libraries/alpakka/current).
 
 This part also serves as supplementary material for the main body of documentation. It is a good idea to have this page
 open while reading the manual and look for examples demonstrating various streaming concepts
