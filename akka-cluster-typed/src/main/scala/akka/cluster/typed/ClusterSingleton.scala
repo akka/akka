@@ -48,6 +48,7 @@ object ClusterSingletonSettings {
 
 final class ClusterSingletonSettings(
     val role: Option[String],
+    @deprecated("Use Akka Distributed Cluster instead", "2.10.0")
     val dataCenter: Option[DataCenter],
     val singletonIdentificationInterval: FiniteDuration,
     val removalMargin: FiniteDuration,
@@ -70,8 +71,10 @@ final class ClusterSingletonSettings(
 
   def withNoRole(): ClusterSingletonSettings = copy(role = None)
 
+  @deprecated("Use Akka Distributed Cluster instead", "2.10.0")
   def withDataCenter(dataCenter: DataCenter): ClusterSingletonSettings = copy(dataCenter = Some(dataCenter))
 
+  @deprecated("Use Akka Distributed Cluster instead", "2.10.0")
   def withNoDataCenter(): ClusterSingletonSettings = copy(dataCenter = None)
 
   def withRemovalMargin(removalMargin: FiniteDuration): ClusterSingletonSettings = copy(removalMargin = removalMargin)

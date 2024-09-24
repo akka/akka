@@ -18,6 +18,7 @@ import akka.util.Helpers.{ toRootLowerCase, ConfigOps, Requiring }
 import akka.util.Version
 
 object ClusterSettings {
+  @deprecated("Use Akka Distributed Cluster instead", "2.10.0")
   type DataCenter = String
 
   /**

@@ -826,6 +826,7 @@ object ClusterShardingSettings {
 final class ClusterShardingSettings(
     val numberOfShards: Int,
     val role: Option[String],
+    @deprecated("Use Akka Distributed Cluster instead", "2.10.0")
     val dataCenter: Option[DataCenter],
     val rememberEntities: Boolean,
     val journalPluginId: String,
@@ -973,6 +974,7 @@ final class ClusterShardingSettings(
 
   def withRole(role: String): ClusterShardingSettings = copy(role = ClusterShardingSettings.option(role))
 
+  @deprecated("Use Akka Distributed Cluster instead", "2.10.0")
   def withDataCenter(dataCenter: DataCenter): ClusterShardingSettings =
     copy(dataCenter = ClusterShardingSettings.option(dataCenter))
 

@@ -261,6 +261,7 @@ import akka.util.{ ByteString, Timeout }
       typeKey.asInstanceOf[EntityTypeKeyImpl[M]])
   }
 
+  @deprecated("Use Akka Distributed Cluster instead", "2.10.0")
   override def entityRefFor[M](
       typeKey: scaladsl.EntityTypeKey[M],
       entityId: String,
@@ -282,6 +283,7 @@ import akka.util.{ ByteString, Timeout }
       typeKey.asInstanceOf[EntityTypeKeyImpl[M]])
   }
 
+  @deprecated("Use Akka Distributed Cluster instead", "2.10.0")
   override def entityRefFor[M](
       typeKey: javadsl.EntityTypeKey[M],
       entityId: String,

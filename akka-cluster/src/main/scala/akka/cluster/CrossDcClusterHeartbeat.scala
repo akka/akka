@@ -34,6 +34,7 @@ import akka.util.ConstantFun
  * nodes which aggressively come and go as the traffic in the service changes.
  */
 @InternalApi
+@deprecated("Use Akka Distributed Cluster instead", "2.10.0")
 private[cluster] class CrossDcHeartbeatSender extends Actor {
   import CrossDcHeartbeatSender._
 

@@ -539,6 +539,7 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
    *   that passed the `extractEntityId` will be used
    * @return the actor ref of the [[ShardRegion]] that is to be responsible for the shard
    */
+  @deprecated("Use Akka Distributed Cluster instead", "2.10.0")
   def startProxy(
       typeName: String,
       role: Option[String],
@@ -604,6 +605,7 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
    *   entity from the incoming message
    * @return the actor ref of the [[ShardRegion]] that is to be responsible for the shard
    */
+  @deprecated("Use Akka Distributed Cluster instead", "2.10.0")
   def startProxy(
       typeName: String,
       role: Optional[String],
@@ -652,6 +654,7 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
    * [[#startProxy]] method before it can be used here. Messages to the entity is always sent
    * via the `ShardRegion`.
    */
+  @deprecated("Use Akka Distributed Cluster instead", "2.10.0")
   def shardRegionProxy(typeName: String, dataCenter: DataCenter): ActorRef = {
     proxies.get(proxyName(typeName, Some(dataCenter))) match {
       case null =>

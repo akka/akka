@@ -29,6 +29,7 @@ class Member private[cluster] (
     val appVersion: Version)
     extends Serializable {
 
+  @deprecated("Use Akka Distributed Cluster instead", "2.10.0")
   lazy val dataCenter: DataCenter = roles
     .find(_.startsWith(ClusterSettings.DcRolePrefix))
     .getOrElse(throw new IllegalStateException("DataCenter undefined, should not be possible"))
@@ -42,7 +43,7 @@ class Member private[cluster] (
     case _         => false
   }
   override def toString: String = {
-    s"Member($address, $status${if (dataCenter == ClusterSettings.DefaultDataCenter) "" else s", $dataCenter"}${if (appVersion == Version.Zero) ""
+    s"Member($address, $status${if (appVersion == Version.Zero) ""
     else s", $appVersion"})"
   }
 

@@ -187,6 +187,7 @@ object ClusterEvent {
     /**
      * All data centers in the cluster
      */
+    @deprecated("Use Akka Distributed Cluster instead", "2.10.0")
     def allDataCenters: Set[String] = members.iterator.map(_.dataCenter).to(immutable.Set)
 
     /**
@@ -409,16 +410,19 @@ object ClusterEvent {
    * Marker interface to facilitate subscription of
    * both [[UnreachableDataCenter]] and [[ReachableDataCenter]].
    */
+  @deprecated("Use Akka Distributed Cluster instead", "2.10.0")
   sealed trait DataCenterReachabilityEvent extends ClusterDomainEvent
 
   /**
    * A data center is considered as unreachable when any members from the data center are unreachable
    */
+  @deprecated("Use Akka Distributed Cluster instead", "2.10.0")
   final case class UnreachableDataCenter(dataCenter: DataCenter) extends DataCenterReachabilityEvent
 
   /**
    * A data center is considered reachable when all members from the data center are reachable
    */
+  @deprecated("Use Akka Distributed Cluster instead", "2.10.0")
   final case class ReachableDataCenter(dataCenter: DataCenter) extends DataCenterReachabilityEvent
 
   /**

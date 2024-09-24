@@ -96,6 +96,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
   def selfAddress: Address = selfUniqueAddress.address
 
   /** Data center to which this node belongs to (defaults to "default" if not configured explicitly) */
+  @deprecated("Use Akka Distributed Cluster instead", "2.10.0")
   def selfDataCenter: DataCenter = settings.SelfDataCenter
 
   /**
