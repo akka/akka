@@ -84,14 +84,13 @@ The factory returns a `Behavior` that can be spawned like any other behavior.
 
 ## Sharded Replicated Event Sourced entities
 
-There are three ways to integrate replicated event sourced entities with sharding:
+There are two ways to integrate replicated event sourced entities with sharding:
 
 * Ensure that each replica has a unique entity id by using the replica id as part of the entity id
-* Use @ref[multi datacenter](cluster-dc.md)  to run a full copy of sharding per replica
 * Use roles to run a full copy of sharding per replica
 
 
-To simplify all three cases the @apidoc[ReplicatedShardingExtension] is available from the
+To simplify, the @apidoc[ReplicatedShardingExtension] is available from the
 `akka-cluster-sharding-typed` module.
 
 Scala
@@ -110,14 +109,6 @@ Scala
 
 Java
 :  @@snip [ReplicatedShardingTest.java](/akka-cluster-sharding-typed/src/test/java/jdocs/akka/cluster/sharding/typed/ReplicatedShardingCompileOnlySpec.java) { #bootstrap-role }
-
-Lastly if your Akka Cluster is setup across DCs you can run a replica per DC.
-
-Scala
-:  @@snip [ReplicatedShardingSpec.scala](/akka-cluster-sharding-typed/src/test/scala/docs/akka/cluster/sharding/typed/ReplicatedShardingCompileOnlySpec.scala) { #bootstrap-dc }
-
-Java
-:  @@snip [ReplicatedShardingTest.java](/akka-cluster-sharding-typed/src/test/java/jdocs/akka/cluster/sharding/typed/ReplicatedShardingCompileOnlySpec.java) { #bootstrap-dc }
 
 Regardless of which replication strategy you use sending messages to the replicated entities is the same.
 

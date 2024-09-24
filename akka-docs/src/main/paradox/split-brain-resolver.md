@@ -431,16 +431,6 @@ That could result in that members are removed from one side but are still runnin
 
 @@@
 
-## Multiple data centers
-
-Akka Cluster has @ref:[support for multiple data centers](cluster-dc.md), where the cluster
-membership is managed by each data center separately and independently of network partitions across different
-data centers. The Split Brain Resolver is embracing that strategy and will not count nodes or down nodes in
-another data center.
-
-When there is a network partition across data centers the typical solution is to wait the partition out until it heals, i.e.
-do nothing. Other decisions should be performed by an external monitoring tool or human operator.
-
 ## Cluster Singleton and Cluster Sharding
 
 The purpose of Cluster Singleton and Cluster Sharding is to run at most one instance

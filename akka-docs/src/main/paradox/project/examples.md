@@ -53,7 +53,7 @@ to other services.
 ## Replicated Event Sourcing
 
 The @extref[Akka Distributed Cluster Guide](akka-distributed-cluster:guide/3-active-active.html) illustrates how to use @ref:[Replicated Event Sourcing](../typed/replicated-eventsourcing.md) that supports
-active-active persistent entities across data centers.
+active-active persistent entities.
 
 ## Kafka to Cluster Sharding 
 
