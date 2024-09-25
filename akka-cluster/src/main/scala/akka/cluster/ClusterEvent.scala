@@ -28,6 +28,7 @@ import akka.event.EventStream
  *   Cluster(system).subscribe(actorRef, classOf[ClusterDomainEvent])
  * }}}
  */
+@nowarn("msg=Use Akka Distributed Cluster")
 object ClusterEvent {
 
   sealed abstract class SubscriptionInitialStateMode
@@ -96,6 +97,7 @@ object ClusterEvent {
    * @param memberTombstones INTERNAL API
    */
   @SerialVersionUID(2)
+  @nowarn("msg=Use Akka Distributed Cluster")
   final class CurrentClusterState(
       val members: immutable.SortedSet[Member],
       val unreachable: Set[Member],

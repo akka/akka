@@ -4,6 +4,7 @@
 
 package akka.cluster.sbr
 
+import scala.annotation.nowarn
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
@@ -92,6 +93,7 @@ object SplitBrainResolverSpec {
   }
 }
 
+@nowarn("msg=Use Akka Distributed Cluster")
 class SplitBrainResolverSpec
     extends AkkaSpec("""
   |akka {

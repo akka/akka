@@ -8,6 +8,7 @@ import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
 
+@SuppressWarnings("deprecation")
 public class ClusterSingletonManagerTest {
 
   @SuppressWarnings("null")

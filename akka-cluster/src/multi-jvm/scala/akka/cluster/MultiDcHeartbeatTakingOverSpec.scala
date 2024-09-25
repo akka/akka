@@ -4,6 +4,7 @@
 
 package akka.cluster
 
+import scala.annotation.nowarn
 import scala.collection.immutable
 import scala.collection.immutable.SortedSet
 import scala.concurrent.duration._
@@ -62,6 +63,7 @@ class MultiDcHeartbeatTakingOverSpecMultiJvmNode3 extends MultiDcHeartbeatTaking
 class MultiDcHeartbeatTakingOverSpecMultiJvmNode4 extends MultiDcHeartbeatTakingOverSpec
 class MultiDcHeartbeatTakingOverSpecMultiJvmNode5 extends MultiDcHeartbeatTakingOverSpec
 
+@nowarn("msg=Use Akka Distributed Cluster")
 abstract class MultiDcHeartbeatTakingOverSpec extends MultiNodeClusterSpec(MultiDcHeartbeatTakingOverSpecMultiJvmSpec) {
 
   "A 2-dc cluster" must {

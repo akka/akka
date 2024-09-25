@@ -6,6 +6,8 @@ package akka.cluster.sharding.typed
 
 import java.util.concurrent.ThreadLocalRandom
 
+import scala.annotation.nowarn
+
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import org.scalatest.time.Span
@@ -35,6 +37,7 @@ import akka.persistence.typed.scaladsl.EventSourcedBehavior
 import akka.persistence.typed.scaladsl.ReplicatedEventSourcing
 import akka.serialization.jackson.CborSerializable
 
+@nowarn("msg=Use Akka Distributed Cluster")
 object ReplicatedShardingSpec {
   def commonConfig = ConfigFactory.parseString("""
       akka.loglevel = DEBUG
@@ -219,6 +222,7 @@ class RoleReplicatedShardingSpec
 class DataCenterReplicatedShardingSpec
     extends ReplicatedShardingSpec(DataCenter, ReplicatedShardingSpec.dcAConfig, ReplicatedShardingSpec.dcBConfig)
 
+@nowarn("msg=Use Akka Distributed Cluster")
 abstract class ReplicatedShardingSpec(replicationType: ReplicationType, configA: Config, configB: Config)
     extends ScalaTestWithActorTestKit(configA)
     with AnyWordSpecLike

@@ -4,6 +4,7 @@
 
 package akka.cluster.sbr
 
+import scala.annotation.nowarn
 import scala.collection.immutable
 import scala.concurrent.duration.Duration
 import scala.concurrent.duration.FiniteDuration
@@ -57,6 +58,7 @@ import akka.coordination.lease.scaladsl.Lease
 /**
  * INTERNAL API
  */
+@nowarn("msg=Use Akka Distributed Cluster")
 @InternalApi private[akka] abstract class DowningStrategy(val selfDc: DataCenter, selfUniqueAddress: UniqueAddress) {
   import DowningStrategy._
 
@@ -357,6 +359,7 @@ import akka.coordination.lease.scaladsl.Lease
  *
  * It is only counting members within the own data center.
  */
+@nowarn("msg=Use Akka Distributed Cluster")
 @InternalApi private[sbr] final class StaticQuorum(
     selfDc: DataCenter,
     val quorumSize: Int,
@@ -394,6 +397,7 @@ import akka.coordination.lease.scaladsl.Lease
  *
  * It is only counting members within the own data center.
  */
+@nowarn("msg=Use Akka Distributed Cluster")
 @InternalApi private[sbr] final class KeepMajority(
     selfDc: DataCenter,
     override val role: Option[String],
@@ -483,6 +487,7 @@ import akka.coordination.lease.scaladsl.Lease
  * It is only using members within the own data center, i.e. oldest within the
  * data center.
  */
+@nowarn("msg=Use Akka Distributed Cluster")
 @InternalApi private[sbr] final class KeepOldest(
     selfDc: DataCenter,
     val downIfAlone: Boolean,
@@ -564,6 +569,7 @@ import akka.coordination.lease.scaladsl.Lease
  *
  * Down all nodes unconditionally.
  */
+@nowarn("msg=Use Akka Distributed Cluster")
 @InternalApi private[sbr] final class DownAllNodes(selfDc: DataCenter, selfUniqueAddress: UniqueAddress)
     extends DowningStrategy(selfDc, selfUniqueAddress) {
   import DowningStrategy._
@@ -586,6 +592,7 @@ import akka.coordination.lease.scaladsl.Lease
  * If the `role` is defined the majority/minority is based only on members with that `role`.
  * It is only counting members within the own data center.
  */
+@nowarn("msg=Use Akka Distributed Cluster")
 @InternalApi private[sbr] final class LeaseMajority(
     selfDc: DataCenter,
     override val role: Option[String],

@@ -4,6 +4,7 @@
 
 package akka.cluster.sharding.typed
 
+import scala.annotation.nowarn
 import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.jdk.DurationConverters._
@@ -823,6 +824,7 @@ object ClusterShardingSettings {
  *   lease name. If the lease name is undefined it will be derived from ActorSystem name and shard name,
  *   but that may result in too long lease names.
  */
+@nowarn("msg=Use Akka Distributed Cluster")
 final class ClusterShardingSettings(
     val numberOfShards: Int,
     val role: Option[String],

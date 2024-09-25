@@ -4,6 +4,7 @@
 
 package akka.cluster.typed
 
+import scala.annotation.nowarn
 import scala.concurrent.duration.{ Duration, FiniteDuration, _ }
 import scala.jdk.DurationConverters._
 
@@ -18,9 +19,9 @@ import akka.cluster.singleton.{
 }
 import akka.cluster.typed.internal.AdaptedClusterSingletonImpl
 import akka.coordination.lease.LeaseUsageSettings
-
 import org.slf4j.LoggerFactory
 
+@nowarn("msg=Use Akka Distributed Cluster")
 object ClusterSingletonSettings {
   def apply(system: ActorSystem[_]): ClusterSingletonSettings =
     fromConfig(system.settings.config.getConfig("akka.cluster"))
@@ -46,6 +47,7 @@ object ClusterSingletonSettings {
   }
 }
 
+@nowarn("msg=Use Akka Distributed Cluster")
 final class ClusterSingletonSettings(
     val role: Option[String],
     @deprecated("Use Akka Distributed Cluster instead", "2.10.0")

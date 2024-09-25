@@ -91,6 +91,7 @@ import akka.util.{ ByteString, Timeout }
 }
 
 /** INTERNAL API */
+@nowarn("msg=Use Akka Distributed Cluster")
 @InternalApi private[akka] final class ClusterShardingImpl(system: ActorSystem[_])
     extends javadsl.ClusterSharding
     with scaladsl.ClusterSharding {

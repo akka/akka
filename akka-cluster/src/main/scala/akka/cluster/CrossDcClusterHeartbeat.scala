@@ -4,6 +4,7 @@
 
 package akka.cluster
 
+import scala.annotation.nowarn
 import scala.collection.SortedSet
 import scala.collection.immutable
 
@@ -35,6 +36,7 @@ import akka.util.ConstantFun
  */
 @InternalApi
 @deprecated("Use Akka Distributed Cluster instead", "2.10.0")
+@nowarn("msg=Use Akka Distributed Cluster")
 private[cluster] class CrossDcHeartbeatSender extends Actor {
   import CrossDcHeartbeatSender._
 
@@ -230,6 +232,7 @@ private[akka] object CrossDcHeartbeatSender {
 
 /** INTERNAL API */
 @InternalApi
+@nowarn("msg=Use Akka Distributed Cluster")
 private[cluster] final case class CrossDcHeartbeatingState(
     selfDataCenter: DataCenter,
     failureDetector: FailureDetectorRegistry[Address],
@@ -321,6 +324,7 @@ private[cluster] final case class CrossDcHeartbeatingState(
 
 /** INTERNAL API */
 @InternalApi
+@nowarn("msg=Use Akka Distributed Cluster")
 private[cluster] object CrossDcHeartbeatingState {
 
   /** Sorted by age */

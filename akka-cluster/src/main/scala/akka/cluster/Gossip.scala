@@ -7,12 +7,12 @@ package akka.cluster
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
 
+import scala.annotation.nowarn
 import scala.collection.immutable
 import scala.concurrent.duration.Deadline
 
 import ClusterSettings.DataCenter
 import MemberStatus._
-
 import akka.annotation.InternalApi
 
 /**
@@ -65,6 +65,7 @@ private[cluster] object Gossip {
  */
 @SerialVersionUID(1L)
 @InternalApi
+@nowarn("msg=Use Akka Distributed Cluster")
 private[cluster] final case class Gossip(
     members: immutable.SortedSet[Member], // sorted set of members with their status, sorted by address
     overview: GossipOverview = GossipOverview(),
@@ -354,6 +355,6 @@ private[cluster] final case class GossipStatus(from: UniqueAddress, version: Vec
     }
   }
 
-  override def toString: DataCenter =
+  override def toString: String =
     f"GossipStatus($from,$version,${seenDigest.map(byte => f"$byte%02x").mkString("")})"
 }

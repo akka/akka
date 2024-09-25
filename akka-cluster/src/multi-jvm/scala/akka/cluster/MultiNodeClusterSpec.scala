@@ -6,6 +6,7 @@ package akka.cluster
 
 import java.util.concurrent.ConcurrentHashMap
 
+import scala.annotation.nowarn
 import scala.collection.immutable
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -88,6 +89,7 @@ object MultiNodeClusterSpec {
   }
 }
 
+@nowarn("msg=Use Akka Distributed Cluster")
 abstract class MultiNodeClusterSpec(multiNodeconfig: MultiNodeConfig)
     extends MultiNodeSpec(multiNodeconfig)
     with Suite

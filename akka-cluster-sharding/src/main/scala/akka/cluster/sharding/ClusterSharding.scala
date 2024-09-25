@@ -8,6 +8,7 @@ import java.net.URLEncoder
 import java.util.Optional
 import java.util.concurrent.ConcurrentHashMap
 
+import scala.annotation.nowarn
 import scala.collection.immutable
 import scala.concurrent.Await
 import scala.util.control.NonFatal
@@ -170,6 +171,7 @@ object ClusterSharding extends ExtensionId[ClusterSharding] with ExtensionIdProv
 /**
  * @see [[ClusterSharding$ ClusterSharding companion object]]
  */
+@nowarn("msg=Use Akka Distributed Cluster")
 class ClusterSharding(system: ExtendedActorSystem) extends Extension {
   import ClusterShardingGuardian._
   import ShardCoordinator.ShardAllocationStrategy

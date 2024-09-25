@@ -21,6 +21,7 @@ import akka.util.Version
  * and roles.
  */
 @SerialVersionUID(1L)
+@nowarn("msg=Use Akka Distributed Cluster")
 class Member private[cluster] (
     val uniqueAddress: UniqueAddress,
     private[cluster] val upNumber: Int, // INTERNAL API

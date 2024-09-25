@@ -332,6 +332,7 @@ private[cluster] object ClusterCoreDaemon {
  * INTERNAL API.
  */
 @InternalApi
+@nowarn("msg=Use Akka Distributed Cluster")
 private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatChecker: JoinConfigCompatChecker)
     extends Actor
     with RequiresMessageQueue[UnboundedMessageQueueSemantics] {

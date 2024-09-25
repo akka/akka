@@ -4,6 +4,7 @@
 
 package akka.cluster.typed
 
+import scala.annotation.nowarn
 import scala.concurrent.duration._
 
 import com.typesafe.config.ConfigFactory
@@ -38,6 +39,7 @@ class MultiDcClusterSingletonMultiJvmNode1 extends MultiDcClusterSingletonSpec
 class MultiDcClusterSingletonMultiJvmNode2 extends MultiDcClusterSingletonSpec
 class MultiDcClusterSingletonMultiJvmNode3 extends MultiDcClusterSingletonSpec
 
+@nowarn("msg=Use Akka Distributed Cluster")
 abstract class MultiDcClusterSingletonSpec
     extends MultiNodeSpec(MultiDcClusterSingletonSpecConfig)
     with MultiNodeTypedClusterSpec {

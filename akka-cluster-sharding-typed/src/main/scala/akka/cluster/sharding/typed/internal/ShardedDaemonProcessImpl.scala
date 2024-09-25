@@ -7,6 +7,7 @@ package akka.cluster.sharding.typed.internal
 import java.util.Optional
 import java.util.function.IntFunction
 
+import scala.annotation.nowarn
 import scala.jdk.OptionConverters._
 import scala.reflect.ClassTag
 
@@ -36,6 +37,7 @@ import akka.cluster.typed.SingletonActor
  * INTERNAL API
  */
 @InternalApi
+@nowarn("msg=Use Akka Distributed Cluster")
 private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
     extends javadsl.ShardedDaemonProcess
     with scaladsl.ShardedDaemonProcess {

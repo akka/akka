@@ -4,6 +4,7 @@
 
 package akka.cluster
 
+import scala.annotation.nowarn
 import scala.collection.immutable.SortedSet
 
 import org.scalatest.matchers.should.Matchers
@@ -13,6 +14,7 @@ import akka.actor.Address
 import akka.cluster.ClusterSettings.DefaultDataCenter
 import akka.cluster.Gossip.vclockName
 
+@nowarn("msg=Use Akka Distributed Cluster")
 class GossipSpec extends AnyWordSpec with Matchers {
 
   import MemberStatus._

@@ -6,6 +6,7 @@ package akka.cluster
 
 import java.util.concurrent.ThreadLocalRandom
 
+import scala.annotation.nowarn
 import scala.annotation.tailrec
 import scala.collection.SortedSet
 import scala.collection.immutable
@@ -32,6 +33,7 @@ import akka.cluster.MemberStatus._
 /**
  * INTERNAL API
  */
+@nowarn("msg=Use Akka Distributed Cluster")
 @InternalApi private[akka] final case class MembershipState(
     latestGossip: Gossip,
     selfUniqueAddress: UniqueAddress,
@@ -233,6 +235,7 @@ import akka.cluster.MemberStatus._
 /**
  * INTERNAL API
  */
+@nowarn("msg=Use Akka Distributed Cluster")
 @InternalApi private[akka] class GossipTargetSelector(
     reduceGossipDifferentViewProbability: Double,
     crossDcGossipProbability: Double) {

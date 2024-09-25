@@ -66,15 +66,14 @@ object AkkaDisciplinePlugin extends AutoPlugin {
     "akka-testkit")
 
   // cat=lint-deprecation: we want to keep using both Java and Scala deprecation annotations
-  val defaultScala2Options =
-    "-Wconf:cat=unused-nowarn:s,cat=lint-infer-any:s,cat=lint-deprecation:s,msg=Use Akka Distributed Cluster:s,any:e"
+  val defaultScala2Options = "-Wconf:cat=unused-nowarn:s,cat=lint-infer-any:s,cat=lint-deprecation:s,any:e"
   // cat=other-shadowing: a good warning, but we do re-use names so much all over the tests that it is a ton of work to fix
   val defaultScala2TestOptions =
-    "-Wconf:cat=unused-nowarn:s,cat=lint-infer-any:s,cat=other-shadowing:s,msg=Use Akka Distributed Cluster:s,any:e"
+    "-Wconf:cat=unused-nowarn:s,cat=lint-infer-any:s,cat=other-shadowing:s,any:e"
 
   // deprecation doesn't quite seem to work, warns for the location of the annotation
   // We have SerialVersionUID on traits which doesn't make sense but needs to stay for historical/compat reasons
-  val defaultScala3Options = "-Wconf:cat=deprecation:s,msg=SerialVersionUID does nothing:s,msg=Use Akka Distributed Cluster:s,any:e"
+  val defaultScala3Options = "-Wconf:cat=deprecation:s,msg=SerialVersionUID does nothing:s,any:e"
 
   lazy val nowarnSettings = Seq(
     Compile / scalacOptions += (

@@ -4,6 +4,7 @@
 
 package akka.cluster.singleton
 
+import scala.annotation.nowarn
 import scala.collection.immutable
 import scala.concurrent.duration._
 
@@ -77,6 +78,7 @@ object ClusterSingletonProxySettings {
  *   when new messages are sent viea the proxy. Use 0 to disable buffering, i.e. messages will be dropped
  *   immediately if the location of the singleton is unknown.
  */
+@nowarn("msg=Use Akka Distributed Cluster")
 final class ClusterSingletonProxySettings(
     val singletonName: String,
     val role: Option[String],
@@ -161,6 +163,7 @@ object ClusterSingletonProxy {
  * Note that this is a best effort implementation: messages can always be lost due to the distributed nature of the
  * actors involved.
  */
+@nowarn("msg=Use Akka Distributed Cluster")
 final class ClusterSingletonProxy(singletonManagerPath: String, settings: ClusterSingletonProxySettings)
     extends Actor
     with ActorLogging {
