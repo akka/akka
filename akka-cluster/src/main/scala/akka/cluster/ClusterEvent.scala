@@ -15,7 +15,6 @@ import language.postfixOps
 import akka.actor.{ Actor, ActorRef, Address }
 import akka.actor.DeadLetterSuppression
 import akka.annotation.{ DoNotInherit, InternalApi }
-import akka.cluster.ClusterEvent._
 import akka.cluster.ClusterSettings.DataCenter
 import akka.cluster.MemberStatus._
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
@@ -666,6 +665,7 @@ private[cluster] final class ClusterDomainEventPublisher
     extends Actor
     with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
   import InternalClusterAction._
+  import ClusterEvent._
 
   val cluster = Cluster(context.system)
   val selfUniqueAddress = cluster.selfUniqueAddress
