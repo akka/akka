@@ -205,6 +205,7 @@ abstract class ClusterSharding {
    *
    * For in-depth documentation of its semantics, see [[EntityRef]].
    */
+  @deprecated("Use Akka Distributed Cluster instead", "2.10.0")
   def entityRefFor[M](typeKey: EntityTypeKey[M], entityId: String, dataCenter: String): EntityRef[M]
 
   /**
@@ -320,6 +321,7 @@ final class Entity[M, E] private (
    * dataCenter does not match the data center of the current node the `ShardRegion` will be started
    * in proxy mode.
    */
+  @deprecated("Use Akka Distributed Cluster instead", "2.10.0")
   def withDataCenter(newDataCenter: String): Entity[M, E] = copy(dataCenter = Optional.ofNullable(newDataCenter))
 
   /**
@@ -465,6 +467,7 @@ object EntityTypeKey {
    * The specified datacenter of the incarnation of the particular entity referenced by this EntityRef,
    * if a datacenter was specified.
    */
+  @deprecated("Use Akka Distributed Cluster instead", "2.10.0")
   def getDataCenter: Optional[String] =
     Optional.ofNullable(dataCenter.orNull)
 

@@ -4,6 +4,7 @@
 
 package akka.cluster.sharding
 
+import scala.annotation.nowarn
 import scala.concurrent.duration._
 
 import com.typesafe.config.ConfigFactory
@@ -73,6 +74,7 @@ class MultiDcClusterShardingSpecMultiJvmNode2 extends MultiDcClusterShardingSpec
 class MultiDcClusterShardingSpecMultiJvmNode3 extends MultiDcClusterShardingSpec
 class MultiDcClusterShardingSpecMultiJvmNode4 extends MultiDcClusterShardingSpec
 
+@nowarn("msg=Use Akka Distributed Cluster")
 abstract class MultiDcClusterShardingSpec
     extends MultiNodeClusterShardingSpec(MultiDcClusterShardingSpecConfig)
     with ImplicitSender {

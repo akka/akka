@@ -7,6 +7,7 @@ package akka.cluster.sharding.internal
 import java.lang.{ Boolean => JBoolean }
 import java.lang.{ Integer => JInteger }
 
+import scala.annotation.nowarn
 import scala.collection.immutable
 
 import akka.actor.ActorRef
@@ -64,6 +65,7 @@ import akka.cluster.sharding.internal.ClusterShardAllocationMixin.RegionEntry
 /**
  * INTERNAL API
  */
+@nowarn("msg=Use Akka Distributed Cluster")
 @InternalApi private[akka] trait ClusterShardAllocationMixin {
   import ClusterShardAllocationMixin.AllocationMap
 

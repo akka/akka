@@ -66,6 +66,7 @@ object ReplicatedEntityProvider {
    * Create a [[ReplicatedEntityProvider]] that uses the defaults for [[Entity]] when running in
    * ClusterSharding. A replica will be run per data center.
    */
+  @deprecated("Use Akka Distributed Cluster instead", "2.10.0")
   def perDataCenter[M: ClassTag, E](typeName: String, allReplicaIds: Set[ReplicaId])(
       create: ReplicationId => Behavior[M]): ReplicatedEntityProvider[M] = {
     apply(typeName, allReplicaIds) { (typeKey, replicaId) =>
@@ -97,6 +98,7 @@ object ReplicatedEntityProvider {
    * Create a [[ReplicatedEntityProvider]] that uses the defaults for [[Entity]] when running in
    * ClusterSharding. A replica will be run per data center.
    */
+  @deprecated("Use Akka Distributed Cluster instead", "2.10.0")
   def createPerDataCenter[M](
       messageClass: Class[M],
       typeName: String,

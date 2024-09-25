@@ -4,6 +4,7 @@
 
 package akka.cluster
 
+import scala.annotation.nowarn
 import scala.collection.immutable.SortedSet
 
 import akka.actor.ActorSelection
@@ -18,6 +19,7 @@ import akka.testkit.ImplicitSender
 import akka.testkit.TestProbe
 import akka.util.Version
 
+@nowarn("msg=Use Akka Distributed Cluster")
 object CrossDcHeartbeatSenderSpec {
   class TestCrossDcHeartbeatSender(heartbeatProbe: TestProbe) extends CrossDcHeartbeatSender {
     // disable register for cluster events
@@ -29,6 +31,7 @@ object CrossDcHeartbeatSenderSpec {
   }
 }
 
+@nowarn("msg=Use Akka Distributed Cluster")
 class CrossDcHeartbeatSenderSpec extends AkkaSpec("""
     akka.loglevel = DEBUG
     akka.actor.provider = cluster

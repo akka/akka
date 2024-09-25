@@ -7,6 +7,8 @@ package akka.cluster.typed.internal
 import java.util.concurrent.ConcurrentHashMap
 import java.util.function.{ Function => JFunction }
 
+import scala.annotation.nowarn
+
 import akka.actor.{ ExtendedActorSystem, InvalidActorNameException }
 import akka.actor.typed.{ ActorRef, ActorSystem, Behavior }
 import akka.actor.typed.internal.{ PoisonPill, PoisonPillInterceptor }
@@ -22,6 +24,7 @@ import akka.cluster.typed.{ Cluster, ClusterSingleton, ClusterSingletonImpl, Clu
  * INTERNAL API:
  */
 @InternalApi
+@nowarn("msg=Use Akka Distributed Cluster")
 private[akka] final class AdaptedClusterSingletonImpl(system: ActorSystem[_]) extends ClusterSingleton {
   require(
     system.isInstanceOf[ActorSystemAdapter[_]],

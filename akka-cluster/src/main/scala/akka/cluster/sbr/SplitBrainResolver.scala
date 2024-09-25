@@ -7,6 +7,7 @@ package akka.cluster.sbr
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 
+import scala.annotation.nowarn
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 
@@ -94,6 +95,7 @@ import akka.remote.artery.ThisActorSystemQuarantinedEvent
  * The implementation is split into two classes SplitBrainResolver and SplitBrainResolverBase to be
  * able to unit test the logic without running cluster.
  */
+@nowarn("msg=Use Akka Distributed Cluster")
 @InternalApi private[sbr] final class SplitBrainResolver(stableAfter: FiniteDuration, strategy: DowningStrategy)
     extends SplitBrainResolverBase(stableAfter, strategy) {
 
@@ -135,6 +137,7 @@ import akka.remote.artery.ThisActorSystemQuarantinedEvent
  * The implementation is split into two classes SplitBrainResolver and SplitBrainResolverBase to be
  * able to unit test the logic without running cluster.
  */
+@nowarn("msg=Use Akka Distributed Cluster")
 @InternalApi private[sbr] abstract class SplitBrainResolverBase(stableAfter: FiniteDuration, _strategy: DowningStrategy)
     extends Actor
     with Stash

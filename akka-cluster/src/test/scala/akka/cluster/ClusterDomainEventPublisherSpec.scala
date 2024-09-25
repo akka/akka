@@ -4,6 +4,7 @@
 
 package akka.cluster
 
+import scala.annotation.nowarn
 import scala.collection.immutable.SortedSet
 
 import org.scalatest.BeforeAndAfterEach
@@ -27,6 +28,7 @@ object ClusterDomainEventPublisherSpec {
     """
 }
 
+@nowarn("msg=Use Akka Distributed Cluster")
 class ClusterDomainEventPublisherSpec
     extends AkkaSpec(ClusterDomainEventPublisherSpec.config)
     with BeforeAndAfterEach

@@ -4,6 +4,7 @@
 
 package akka.cluster
 
+import scala.annotation.nowarn
 import scala.concurrent.duration._
 
 import com.typesafe.config.ConfigFactory
@@ -59,6 +60,7 @@ class MultiDcJoinMultiJvmNode3 extends MultiDcJoinSpec
 class MultiDcJoinMultiJvmNode4 extends MultiDcJoinSpec
 class MultiDcJoinMultiJvmNode5 extends MultiDcJoinSpec
 
+@nowarn("msg=Use Akka Distributed Cluster")
 abstract class MultiDcJoinSpec extends MultiNodeClusterSpec(MultiDcJoinMultiJvmSpec) {
   import MultiDcJoinMultiJvmSpec._
 

@@ -4,6 +4,7 @@
 
 package akka.cluster
 
+import scala.annotation.nowarn
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
@@ -58,6 +59,7 @@ class MultiDcSplitBrainMultiJvmNode3 extends MultiDcSplitBrainSpec
 class MultiDcSplitBrainMultiJvmNode4 extends MultiDcSplitBrainSpec
 class MultiDcSplitBrainMultiJvmNode5 extends MultiDcSplitBrainSpec
 
+@nowarn("msg=Use Akka Distributed Cluster")
 abstract class MultiDcSplitBrainSpec extends MultiNodeClusterSpec(MultiDcSplitBrainMultiJvmSpec) {
 
   import MultiDcSplitBrainMultiJvmSpec._

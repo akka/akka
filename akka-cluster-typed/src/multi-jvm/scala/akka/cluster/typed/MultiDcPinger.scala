@@ -4,11 +4,14 @@
 
 package akka.cluster.typed
 
+import scala.annotation.nowarn
+
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import akka.serialization.jackson.CborSerializable
 
+@nowarn("msg=Use Akka Distributed Cluster")
 object MultiDcPinger {
 
   sealed trait Command extends CborSerializable

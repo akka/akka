@@ -118,7 +118,7 @@ Java
 ### A note about EntityRef and serialization
 
 If including @apidoc[typed.*.EntityRef]'s in messages or the `State`/`Event`s of an @apidoc[typed.*.EventSourcedBehavior], those `EntityRef`s will need to be serialized.
-The @scala[`entityId`, `typeKey`, and (in multi-DC use-cases) `dataCenter` of an `EntityRef`]@java[`getEntityId`, `getTypeKey`, and (in multi-DC use-cases) `getDataCenter` methods of an `EntityRef`]
+The @scala[`entityId` and `typeKey` of an `EntityRef`]@java[`getEntityId` and `getTypeKey` methods of an `EntityRef`]
 provide exactly the information needed upon deserialization to regenerate an `EntityRef` equivalent to the one serialized, given an expected
 type of messages to send to the entity.
 

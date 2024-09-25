@@ -289,10 +289,7 @@ automatically unregistered from the router. When new nodes join the cluster, add
 routees are added to the router, according to the configuration.
  
 See @ref:[Cluster Aware Routers](cluster-routing.md) and @ref:[Routers](routing.md).
- 
-@@include[cluster.md](includes/cluster.md) { #cluster-multidc } 
-See @ref:[Cluster Multi-DC](cluster-dc.md).
- 
+
 ### Cluster Metrics
 
 The member nodes of the cluster can collect system health metrics and publish that to other cluster nodes

@@ -457,9 +457,6 @@ See @ref:[Distributed Publish Subscribe](distributed-pub-sub.md).
 @@include[cluster.md](../includes/cluster.md) { #cluster-router }
 See @ref:[Group Routers](routers.md#group-router). 
 
-@@include[cluster.md](../includes/cluster.md) { #cluster-multidc }
-See @ref:[Cluster Multi-DC](cluster-dc.md).
-
 @@include[cluster.md](../includes/cluster.md) { #reliable-delivery }
 See @ref:[Reliable Delivery](reliable-delivery.md)
 

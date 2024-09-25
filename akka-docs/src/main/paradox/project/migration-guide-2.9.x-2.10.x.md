@@ -20,3 +20,8 @@ The transitive dependency on `scala-java8-compat` has been removed.
 ## Deprecation of `akka.actor.typed.scaladsl.LoggerOps`
 
 All helper methods like `LoggerOps.info2` can be replaced by using the underlying `org.slf4j.Logger` apis.
+
+## Deprecation of Multi-DC Cluster
+
+Use @extre[Akka Distributed Cluster](akka-distributed-cluster:) and @extre[Akka Edge](akka-edge:) instead.
+

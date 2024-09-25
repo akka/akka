@@ -4,6 +4,7 @@
 
 package akka.cluster
 
+import scala.annotation.nowarn
 import scala.collection.immutable.SortedSet
 
 import org.scalatest.matchers.should.Matchers
@@ -13,6 +14,7 @@ import akka.actor.Address
 import akka.cluster.ClusterSettings.DataCenter
 import akka.cluster.MemberStatus.Up
 
+@nowarn("msg=Use Akka Distributed Cluster")
 class GossipTargetSelectorSpec extends AnyWordSpec with Matchers {
 
   val aDc1 = TestMember(Address("akka", "sys", "a", 2552), Up, Set.empty, dataCenter = "dc1")

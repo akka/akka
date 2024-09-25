@@ -15,7 +15,6 @@ import language.postfixOps
 import akka.actor.{ Actor, ActorRef, Address }
 import akka.actor.DeadLetterSuppression
 import akka.annotation.{ DoNotInherit, InternalApi }
-import akka.cluster.ClusterEvent._
 import akka.cluster.ClusterSettings.DataCenter
 import akka.cluster.MemberStatus._
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
@@ -28,6 +27,7 @@ import akka.event.EventStream
  *   Cluster(system).subscribe(actorRef, classOf[ClusterDomainEvent])
  * }}}
  */
+@nowarn("msg=Use Akka Distributed Cluster")
 object ClusterEvent {
 
   sealed abstract class SubscriptionInitialStateMode
@@ -96,6 +96,7 @@ object ClusterEvent {
    * @param memberTombstones INTERNAL API
    */
   @SerialVersionUID(2)
+  @nowarn("msg=Use Akka Distributed Cluster")
   final class CurrentClusterState(
       val members: immutable.SortedSet[Member],
       val unreachable: Set[Member],
@@ -187,6 +188,7 @@ object ClusterEvent {
     /**
      * All data centers in the cluster
      */
+    @deprecated("Use Akka Distributed Cluster instead", "2.10.0")
     def allDataCenters: Set[String] = members.iterator.map(_.dataCenter).to(immutable.Set)
 
     /**
@@ -409,16 +411,19 @@ object ClusterEvent {
    * Marker interface to facilitate subscription of
    * both [[UnreachableDataCenter]] and [[ReachableDataCenter]].
    */
+  @deprecated("Use Akka Distributed Cluster instead", "2.10.0")
   sealed trait DataCenterReachabilityEvent extends ClusterDomainEvent
 
   /**
    * A data center is considered as unreachable when any members from the data center are unreachable
    */
+  @deprecated("Use Akka Distributed Cluster instead", "2.10.0")
   final case class UnreachableDataCenter(dataCenter: DataCenter) extends DataCenterReachabilityEvent
 
   /**
    * A data center is considered reachable when all members from the data center are reachable
    */
+  @deprecated("Use Akka Distributed Cluster instead", "2.10.0")
   final case class ReachableDataCenter(dataCenter: DataCenter) extends DataCenterReachabilityEvent
 
   /**
@@ -660,6 +665,7 @@ private[cluster] final class ClusterDomainEventPublisher
     extends Actor
     with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
   import InternalClusterAction._
+  import ClusterEvent._
 
   val cluster = Cluster(context.system)
   val selfUniqueAddress = cluster.selfUniqueAddress
