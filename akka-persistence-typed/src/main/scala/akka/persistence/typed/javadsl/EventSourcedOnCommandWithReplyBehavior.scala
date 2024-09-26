@@ -4,13 +4,11 @@
 
 package akka.persistence.typed.javadsl
 
-import scala.annotation.nowarn
 import akka.actor.typed
 import akka.actor.typed.BackoffSupervisorStrategy
 import akka.actor.typed.Behavior
 import akka.actor.typed.internal.BehaviorImpl.DeferredBehavior
 import akka.actor.typed.javadsl.ActorContext
-import akka.annotation.ApiMayChange
 import akka.annotation.InternalApi
 import akka.persistence.typed.EventAdapter
 import akka.persistence.typed.NoOpEventAdapter
@@ -24,7 +22,7 @@ import akka.persistence.typed.scaladsl
 
 import java.util.Collections
 import java.util.Optional
-import scala.jdk.FutureConverters.CompletionStageOps
+import scala.annotation.nowarn
 
 /**
  * Event sourced behavior for projects built with Java 17 or newer where message handling can be done
@@ -212,8 +210,7 @@ abstract class EventSourcedOnCommandWithReplyBehavior[Command, Event, State](
   /**
    * INTERNAL API
    */
-  @InternalApi private[akka] final def createEventSourcedBehavior()
-      : scaladsl.EventSourcedBehavior[Command, Event, State] = {
+  @InternalApi private[akka] def createEventSourcedBehavior(): scaladsl.EventSourcedBehavior[Command, Event, State] = {
     val snapshotWhen: (State, Event, Long) => Boolean = (state, event, seqNr) => shouldSnapshot(state, event, seqNr)
 
     val tagger: (State, Event) => Set[String] = { (state, event) =>
@@ -242,11 +239,8 @@ abstract class EventSourcedOnCommandWithReplyBehavior[Command, Event, State](
     if (!handler.isEmpty) behavior = behavior.receiveSignal(handler.handler)
     onPersistFailure.ifPresent(opf => behavior = behavior.onPersistFailure(opf))
     stashCapacity.ifPresent(sc => behavior = behavior.withStashCapacity(sc))
-    replicationInterceptor.ifPresent(ri =>
-      behavior = behavior.withReplicatedEventInterceptor(ri.intercept(_, _, _, _).asScala))
 
     behavior
-
   }
 
   /**
@@ -261,14 +255,5 @@ abstract class EventSourcedOnCommandWithReplyBehavior[Command, Event, State](
    * If not defined, the default `akka.persistence.typed.stash-capacity` will be used.
    */
   def stashCapacity: Optional[java.lang.Integer] = Optional.empty()
-
-  /**
-   * If a callback is returned it is invoked when an event from another replica arrives, delaying persisting the event until the returned
-   * completion stage completes, if the future fails the actor is crashed.
-   *
-   * Only used when the entity is replicated.
-   */
-  @ApiMayChange
-  def replicationInterceptor: Optional[ReplicationInterceptor[Event, State]] = Optional.empty()
 
 }
