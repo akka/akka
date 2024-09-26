@@ -10,6 +10,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import org.scalatest.concurrent.Eventually
 import org.scalatest.wordspec.AnyWordSpecLike
 import akka.Done
+import akka.actor.testkit.typed.TestException
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.ActorRef
@@ -593,6 +594,18 @@ class ReplicatedEventSourcingSpec
       intercepted.toSet shouldEqual Set(
         Intercepted(ReplicaId("R1"), 2L, "from r1"),
         Intercepted(ReplicaId("R2"), 2L, "from r2"))
+    }
+
+    "fail entity if replicated event interceptor fails" in {
+      val entityId = nextEntityId
+      val probe = createTestProbe[Done]()
+      val r1 = spawn(testBehavior(entityId, "R1", modifyBehavior = _.withReplicatedEventInterceptor { (_, _, _, _) =>
+        throw TestException("immediate fail")
+      }))
+      val r2 = spawn(testBehavior(entityId, "R2"))
+      r1 ! StoreMe("from r1", probe.ref)
+      r2 ! StoreMe("from r2", probe.ref)
+      probe.expectTerminated(r1)
     }
   }
 }

@@ -6,6 +6,7 @@ package akka.persistence.typed
 
 import org.scalatest.wordspec.AnyWordSpecLike
 import akka.Done
+import akka.actor.testkit.typed.TestException
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.ActorRef
@@ -406,6 +407,30 @@ class ReplicatedEventPublishingSpec
       actor ! MyReplicatedBehavior.Get(probe.ref)
       probe.expectMessage(Set("one", "two", "three"))
       interceptProbe.receiveMessage() shouldEqual Intercepted(DCB, 2L, "two")
+    }
+
+    "fail entity if replicated event interceptor fails" in {
+      val id = nextEntityId()
+      val probe = createTestProbe[Any]()
+      val actor = spawn(
+        MyReplicatedBehavior(
+          id,
+          DCA,
+          Set(DCA, DCB),
+          modifyBehavior =
+            _.withReplicatedEventInterceptor((_, _, _, _) => Future.failed(throw TestException("immediate fail")))))
+      actor ! MyReplicatedBehavior.Add("one", probe.ref)
+      probe.expectMessage(Done)
+
+      // simulate a published event from another replica
+      actor.asInstanceOf[ActorRef[Any]] ! internal.PublishedEventImpl(
+        ReplicationId(EntityType, id, DCB).persistenceId,
+        1L,
+        "two",
+        System.currentTimeMillis(),
+        Some(new ReplicatedPublishedEventMetaData(DCB, VersionVector.empty)),
+        None)
+      probe.expectTerminated(actor)
     }
 
   }

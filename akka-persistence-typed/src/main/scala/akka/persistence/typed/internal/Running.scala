@@ -322,11 +322,11 @@ private[akka] object Running {
             val asyncInterceptResult =
               interceptor(envelope.event.originReplica, state.seqNr + 1, state.state, envelope.event.event)
             asyncInterceptResult.value match {
-              case Some(_) =>
-                // optimization for quick interceptors
+              case Some(Success(_)) =>
+                // optimization for quick successful interceptors
                 handleExternalReplicatedEventPersist(replication, envelope.event, None)
-              case None =>
-                // we need to defer handling the event until the future completes
+              case _ =>
+                // failed or not ready
                 waitAsyncReplicationIntercept(
                   state,
                   asyncInterceptResult,
@@ -375,11 +375,11 @@ private[akka] object Running {
                       state.state,
                       event.event.asInstanceOf[E])
                   asyncInterceptResult.value match {
-                    case Some(_) =>
-                      // optimization for quick interceptors
+                    case Some(Success(_)) =>
+                      // optimization for quick successful interceptors
                       onPublishedEvent(state, replication, replicatedEventMetaData, event)
-                    case None =>
-                      // we need to defer handling the event until the future completes
+                    case _ =>
+                      // failed or not ready
                       asyncWait = true
                       waitAsyncReplicationIntercept(
                         state,
@@ -1051,8 +1051,8 @@ private[akka] object Running {
   }
 
   /** INTERNAL API */
-  @InternalApi private[akka] final class WaitingAsyncReplicationIntercept(var state: RunningState[S])
-      extends AbstractBehavior[InternalProtocol](setup.context)
+  @InternalApi private[akka] final class WaitingAsyncReplicationIntercept(_state: RunningState[S])
+      extends WaitingAsyncEffect(_state)
       with WithSeqNrAccessible {
 
     override def onMessage(msg: InternalProtocol): Behavior[InternalProtocol] = {
@@ -1067,51 +1067,6 @@ private[akka] object Running {
         case getSeqNr: GetSeenSequenceNr                       => onGetSeenSequenceNr(getSeqNr)
         case _                                                 => Behaviors.unhandled
       }
-    }
-
-    def onCommand(cmd: IncomingCommand[C]): Behavior[InternalProtocol] = {
-      if (state.receivedPoisonPill) {
-        if (setup.settings.logOnStashing)
-          setup.internalLogger.debug("Discarding message [{}], because actor is to be stopped.", cmd)
-        Behaviors.unhandled
-      } else {
-        stashInternal(cmd)
-      }
-    }
-
-    private def onGetSeenSequenceNr(get: GetSeenSequenceNr): Behavior[InternalProtocol] = {
-      get.replyTo ! state.seenPerReplica.getOrElse(get.replica, 0L)
-      this
-    }
-
-    def onReplicatedEvent(event: InternalProtocol.ReplicatedEventEnvelope[E]): Behavior[InternalProtocol] = {
-      if (state.receivedPoisonPill) {
-        Behaviors.unhandled
-      } else {
-        stashInternal(event)
-      }
-    }
-
-    def onPublishedEvent(event: PublishedEventImpl): Behavior[InternalProtocol] = {
-      if (state.receivedPoisonPill) {
-        Behaviors.unhandled
-      } else {
-        stashInternal(event)
-      }
-    }
-
-    override def onSignal: PartialFunction[Signal, Behavior[InternalProtocol]] = {
-      case PoisonPill =>
-        // wait for completion of async effect before stopping
-        state = state.copy(receivedPoisonPill = true)
-        this
-      case signal =>
-        if (setup.onSignal(state.state, signal, catchAndLog = false)) this
-        else Behaviors.unhandled
-    }
-
-    override def currentSequenceNumber: Long = {
-      _currentSequenceNumber
     }
   }
 
