@@ -4,12 +4,12 @@
 
 package akka.persistence.typed.internal
 
+import akka.Done
+
 import scala.concurrent.ExecutionContext
 import scala.util.control.NonFatal
-
 import org.slf4j.Logger
 import org.slf4j.MDC
-
 import akka.actor.{ ActorRef => ClassicActorRef }
 import akka.actor.Cancellable
 import akka.actor.typed.Signal
@@ -24,8 +24,9 @@ import akka.persistence.typed.scaladsl.EventSourcedBehavior
 import akka.persistence.typed.scaladsl.RetentionCriteria
 import akka.persistence.typed.telemetry.EventSourcedBehaviorInstrumentation
 import akka.persistence.typed.scaladsl.SnapshotWhenPredicate
-
 import akka.util.OptionVal
+
+import scala.concurrent.Future
 
 /**
  * INTERNAL API
@@ -62,7 +63,8 @@ private[akka] final class BehaviorSetup[C, E, S](
     val publishEvents: Boolean,
     private val internalLoggerFactory: () => Logger,
     private var retentionInProgress: Boolean,
-    val instrumentation: EventSourcedBehaviorInstrumentation) {
+    val instrumentation: EventSourcedBehaviorInstrumentation,
+    val replicationInterceptor: Option[(ReplicaId, Long, S, E) => Future[Done]]) {
 
   import BehaviorSetup._
   import InternalProtocol.RecoveryTickEvent

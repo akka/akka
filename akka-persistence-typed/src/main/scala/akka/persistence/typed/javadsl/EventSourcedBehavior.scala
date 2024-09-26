@@ -4,8 +4,9 @@
 
 package akka.persistence.typed.javadsl
 
-import scala.annotation.nowarn
+import akka.Done
 
+import scala.annotation.nowarn
 import java.util.Collections
 import java.util.Optional
 import akka.actor.typed
@@ -13,10 +14,14 @@ import akka.actor.typed.BackoffSupervisorStrategy
 import akka.actor.typed.Behavior
 import akka.actor.typed.internal.BehaviorImpl.DeferredBehavior
 import akka.actor.typed.javadsl.ActorContext
+import akka.annotation.ApiMayChange
 import akka.annotation.InternalApi
 import akka.persistence.typed._
 import akka.persistence.typed.EventAdapter
 import akka.persistence.typed.internal._
+
+import java.util.concurrent.CompletionStage
+import scala.jdk.FutureConverters.CompletionStageOps
 
 /**
  * For projects using Java 17 and newer, also see [[EventSourcedOnCommandBehavior]]
@@ -229,7 +234,7 @@ abstract class EventSourcedBehavior[Command, Event, State] private[akka] (
 
     val commandHandlerInstance = commandHandler()
     val eventHandlerInstance = eventHandler()
-    val behavior = new internal.EventSourcedBehaviorImpl[Command, Event, State](
+    var behavior = new internal.EventSourcedBehaviorImpl[Command, Event, State](
       persistenceId,
       emptyState,
       (state, cmd) => commandHandlerInstance(state, cmd).asInstanceOf[EffectImpl[Event, State]],
@@ -245,22 +250,13 @@ abstract class EventSourcedBehavior[Command, Event, State] private[akka] (
       .withRecovery(recovery.asScala)
 
     val handler = signalHandler()
-    val behaviorWithSignalHandler =
-      if (handler.isEmpty) behavior
-      else behavior.receiveSignal(handler.handler)
+    if (!handler.isEmpty) behavior = behavior.receiveSignal(handler.handler)
+    onPersistFailure.ifPresent(opf => behavior = behavior.onPersistFailure(opf))
+    stashCapacity.ifPresent(sc => behavior = behavior.withStashCapacity(sc))
+    replicationInterceptor.ifPresent(ri =>
+      behavior = behavior.withReplicatedEventInterceptor(ri.intercept(_, _, _, _).asScala))
 
-    val withSignalHandler =
-      if (onPersistFailure.isPresent)
-        behaviorWithSignalHandler.onPersistFailure(onPersistFailure.get)
-      else
-        behaviorWithSignalHandler
-
-    if (stashCapacity.isPresent) {
-      withSignalHandler.withStashCapacity(stashCapacity.get)
-    } else {
-      withSignalHandler
-    }
-
+    behavior
   }
 
   /**
@@ -276,6 +272,20 @@ abstract class EventSourcedBehavior[Command, Event, State] private[akka] (
    */
   def stashCapacity: Optional[java.lang.Integer] = Optional.empty()
 
+  /**
+   * If a callback is returned it is invoked when an event from another replica arrives, delaying persisting the event until the returned
+   * completion stage completes, if the future fails the actor is crashed.
+   *
+   * Only used when the entity is replicated.
+   */
+  @ApiMayChange
+  def replicationInterceptor: Optional[ReplicationInterceptor[Event, State]] = Optional.empty()
+
+}
+
+@FunctionalInterface
+trait ReplicationInterceptor[Event, State] {
+  def intercept(replicaId: ReplicaId, sequenceNumber: Long, state: State, event: Event): CompletionStage[Done]
 }
 
 /**

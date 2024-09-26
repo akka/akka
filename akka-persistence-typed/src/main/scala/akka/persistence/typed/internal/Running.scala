@@ -319,11 +319,26 @@ private[akka] object Running {
         state.seenPerReplica)
       envelope.ack ! ReplicatedEventAck
       if (envelope.event.originReplica != replication.replicaId && !alreadySeen(envelope.event)) {
-        setup.internalLogger.debug(
-          "Saving event [{}] from [{}] as first time",
-          envelope.event.originSequenceNr,
-          envelope.event.originReplica)
-        handleExternalReplicatedEventPersist(replication, envelope.event, None)
+        setup.replicationInterceptor match {
+          case Some(interceptor) =>
+            val asyncInterceptResult =
+              interceptor(envelope.event.originReplica, state.seqNr + 1, state.state, envelope.event.event)
+            asyncInterceptResult.value match {
+              case Some(_) =>
+                // optimization for quick interceptors
+                handleExternalReplicatedEventPersist(replication, envelope.event, None)
+              case None =>
+                // we need to defer handling the event until the future completes
+                ???
+            }
+
+          case None =>
+            setup.internalLogger.debug(
+              "Saving event [{}] from [{}] as first time",
+              envelope.event.originSequenceNr,
+              envelope.event.originReplica)
+            handleExternalReplicatedEventPersist(replication, envelope.event, None)
+        }
       } else {
         setup.internalLogger.debug(
           "Filtering event [{}] from [{}] as it was already seen",
@@ -334,6 +349,7 @@ private[akka] object Running {
     }
 
     def onPublishedEvent(state: Running.RunningState[S], event: PublishedEventImpl): Behavior[InternalProtocol] = {
+      var asyncWait: Boolean = false
       val newBehavior: Behavior[InternalProtocol] = setup.replication match {
         case None =>
           setup.internalLogger.warn(
@@ -349,10 +365,33 @@ private[akka] object Running {
                 event.persistenceId)
               this
             case Some(replicatedEventMetaData) =>
-              onPublishedEvent(state, replication, replicatedEventMetaData, event)
+              setup.replicationInterceptor match {
+                case Some(interceptor) =>
+                  val asyncInterceptResult =
+                    interceptor(
+                      replicatedEventMetaData.replicaId,
+                      state.seqNr + 1,
+                      state.state,
+                      event.event.asInstanceOf[E])
+                  asyncInterceptResult.value match {
+                    case Some(_) =>
+                      // optimization for quick interceptors
+                      onPublishedEvent(state, replication, replicatedEventMetaData, event)
+                    case None =>
+                      // we need to defer handling the event until the future completes
+                      asyncWait = true
+                      ???
+
+                  }
+
+                case None =>
+                  onPublishedEvent(state, replication, replicatedEventMetaData, event)
+              }
+
           }
       }
-      tryUnstashOne(newBehavior)
+      if (!asyncWait) tryUnstashOne(newBehavior)
+      else newBehavior
     }
 
     private def onPublishedEvent(

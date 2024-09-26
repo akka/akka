@@ -7,10 +7,8 @@ package akka.persistence.typed
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
-
 import org.scalatest.concurrent.Eventually
 import org.scalatest.wordspec.AnyWordSpecLike
-
 import akka.Done
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
@@ -21,6 +19,10 @@ import akka.persistence.testkit.query.scaladsl.PersistenceTestKitReadJournal
 import akka.persistence.testkit.scaladsl.PersistenceTestKit
 import akka.persistence.typed.scaladsl.{ Effect, EventSourcedBehavior, ReplicatedEventSourcing, ReplicationContext }
 import akka.serialization.jackson.CborSerializable
+
+import scala.concurrent.ExecutionContext
+import scala.concurrent.Future
+import scala.concurrent.duration.DurationInt
 
 object ReplicatedEventSourcingSpec {
 
@@ -80,11 +82,14 @@ object ReplicatedEventSourcingSpec {
       entityId: String,
       replicaId: String,
       probe: Option[ActorRef[EventAndContext]] = None,
-      allReplicas: Set[ReplicaId] = AllReplicas): Behavior[Command] =
+      allReplicas: Set[ReplicaId] = AllReplicas,
+      modifyBehavior: EventSourcedBehavior[Command, String, State] => EventSourcedBehavior[Command, String, State] =
+        identity): Behavior[Command] =
     ReplicatedEventSourcing.commonJournalConfig(
       ReplicationId("ReplicatedEventSourcingSpec", entityId, ReplicaId(replicaId)),
       allReplicas,
-      PersistenceTestKitReadJournal.Identifier)(replicationContext => eventSourcedBehavior(replicationContext, probe))
+      PersistenceTestKitReadJournal.Identifier)(replicationContext =>
+      modifyBehavior(eventSourcedBehavior(replicationContext, probe)))
 
   def nonReplicatedEventSourcedBehavior(
       persistenceId: PersistenceId,
@@ -527,6 +532,67 @@ class ReplicatedEventSourcingSpec
         r1 ! GetState(stateProbe.ref)
         stateProbe.expectMessageType[State].all.reverse shouldEqual List("from es1", "from r1", "from r2")
       }
+    }
+
+    "intercept replicated events between two entities" in {
+      val entityId = nextEntityId
+      val probe = createTestProbe[Done]()
+      case class Intercepted(origin: ReplicaId, seqNr: Long, event: String)
+      val interceptProbe = createTestProbe[Intercepted]()
+      val addInterceptor: EventSourcedBehavior[Command, String, State] => EventSourcedBehavior[Command, String, State] =
+        _.withReplicatedEventInterceptor { (origin, seqNr, _, event) =>
+          interceptProbe.ref ! Intercepted(origin, seqNr, event)
+          Future.successful(Done)
+        }
+      val r1 = spawn(testBehavior(entityId, "R1", modifyBehavior = addInterceptor))
+      val r2 = spawn(testBehavior(entityId, "R2", modifyBehavior = addInterceptor))
+      r1 ! StoreMe("from r1", probe.ref)
+      r2 ! StoreMe("from r2", probe.ref)
+      eventually {
+        val probe = createTestProbe[State]()
+        r1 ! GetState(probe.ref)
+        probe.expectMessageType[State].all.toSet shouldEqual Set("from r1", "from r2")
+      }
+      eventually {
+        val probe = createTestProbe[State]()
+        r2 ! GetState(probe.ref)
+        probe.expectMessageType[State].all.toSet shouldEqual Set("from r1", "from r2")
+      }
+      val intercepted = interceptProbe.receiveMessages(2)
+      intercepted.toSet shouldEqual Set(
+        Intercepted(ReplicaId("R1"), 2L, "from r1"),
+        Intercepted(ReplicaId("R2"), 2L, "from r2"))
+    }
+
+    "intercept and delay replicated events between two entities" in {
+      val entityId = nextEntityId
+      val probe = createTestProbe[Done]()
+      case class Intercepted(origin: ReplicaId, seqNr: Long, event: String)
+      val interceptProbe = createTestProbe[Intercepted]()
+      implicit val ec: ExecutionContext = system.executionContext
+      val addInterceptor: EventSourcedBehavior[Command, String, State] => EventSourcedBehavior[Command, String, State] =
+        _.withReplicatedEventInterceptor { (origin, seqNr, _, event) =>
+          interceptProbe.ref ! Intercepted(origin, seqNr, event)
+          akka.pattern.after(50.millis)(Future { Done })
+        }
+      val r1 = spawn(testBehavior(entityId, "R1", modifyBehavior = addInterceptor))
+      val r2 = spawn(testBehavior(entityId, "R2", modifyBehavior = addInterceptor))
+      r1 ! StoreMe("from r1", probe.ref)
+      r2 ! StoreMe("from r2", probe.ref)
+      eventually {
+        val probe = createTestProbe[State]()
+        r1 ! GetState(probe.ref)
+        probe.expectMessageType[State].all.toSet shouldEqual Set("from r1", "from r2")
+      }
+      eventually {
+        val probe = createTestProbe[State]()
+        r2 ! GetState(probe.ref)
+        probe.expectMessageType[State].all.toSet shouldEqual Set("from r1", "from r2")
+      }
+      val intercepted = interceptProbe.receiveMessages(2)
+      intercepted.toSet shouldEqual Set(
+        Intercepted(ReplicaId("R1"), 2L, "from r1"),
+        Intercepted(ReplicaId("R2"), 2L, "from r2"))
     }
   }
 }

@@ -9,9 +9,7 @@ import scala.annotation.nowarn
 import java.util.Optional
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
-
 import org.slf4j.LoggerFactory
-
 import akka.Done
 import akka.actor.typed
 import akka.actor.typed.ActorRef
@@ -48,6 +46,8 @@ import akka.persistence.typed.scaladsl._
 import akka.persistence.typed.scaladsl.{ Recovery => TypedRecovery }
 import akka.persistence.typed.scaladsl.RetentionCriteria
 import akka.persistence.typed.telemetry.EventSourcedBehaviorInstrumentationProvider
+
+import scala.concurrent.Future
 
 @InternalApi
 private[akka] object EventSourcedBehaviorImpl {
@@ -107,7 +107,8 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
     override val signalHandler: PartialFunction[(State, Signal), Unit] = PartialFunction.empty,
     replication: Option[ReplicationSetup] = None,
     publishEvents: Boolean = true,
-    customStashCapacity: Option[Int] = None)
+    customStashCapacity: Option[Int] = None,
+    replicatedEventInterceptor: Option[(ReplicaId, Long, State, Event) => Future[Done]] = None)
     extends EventSourcedBehavior[Command, Event, State] {
 
   import EventSourcedBehaviorImpl.WriterIdentity
@@ -212,7 +213,8 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
             publishEvents = publishEvents,
             internalLoggerFactory = () => internalLogger(),
             retentionInProgress = false,
-            instrumentation)
+            instrumentation,
+            replicatedEventInterceptor)
 
           // needs to accept Any since we also can get messages from the journal
           // not part of the user facing Command protocol
@@ -322,6 +324,10 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
 
   override def withStashCapacity(size: Int): EventSourcedBehavior[Command, Event, State] =
     copy(customStashCapacity = Some(size))
+
+  override def withReplicatedEventInterceptor(
+      interceptor: (ReplicaId, Long, State, Event) => Future[Done]): EventSourcedBehavior[Command, Event, State] =
+    copy(replicatedEventInterceptor = Some(interceptor))
 
 }
 
