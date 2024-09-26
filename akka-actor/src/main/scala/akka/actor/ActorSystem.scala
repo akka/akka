@@ -15,7 +15,7 @@ import scala.compat.java8.FutureConverters
 import scala.compat.java8.OptionConverters._
 import scala.concurrent.{ ExecutionContext, ExecutionContextExecutor, Future, Promise }
 import scala.concurrent.blocking
-import scala.concurrent.duration.Duration
+import scala.concurrent.duration.{ Duration, DurationInt }
 import scala.util.{ Failure, Success, Try }
 import scala.util.control.{ ControlThrowable, NonFatal }
 
@@ -25,6 +25,7 @@ import com.typesafe.config.ConfigRenderOptions
 
 import akka.ConfigurationException
 import akka.actor.dungeon.ChildrenContainer
+import akka.actor.dungeon.LicenseKeySupplier
 import akka.actor.setup.{ ActorSystemSetup, Setup }
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
@@ -35,6 +36,11 @@ import akka.japi.Util.immutableSeq
 import akka.serialization.SerializationExtension
 import akka.util._
 import akka.util.Helpers.toRootLowerCase
+import java.net.URLDecoder
+import java.security.{ KeyFactory, MessageDigest, Signature }
+import java.security.spec.X509EncodedKeySpec
+import java.time.Instant
+import java.time.{ LocalDate, ZoneId }
 
 object BootstrapSetup {
 
@@ -858,10 +864,10 @@ private[akka] class ActorSystemImpl(
             if (cause.isInstanceOf[IncompatibleClassChangeError] && cause.getMessage.startsWith("akka"))
               System.err.println(
                 s"""Detected ${cause.getClass.getName} error, which MAY be caused by incompatible Akka versions on the classpath.
-                  | Please note that a given Akka version MUST be the same across all modules of Akka that you are using,
-                  | e.g. if you use akka-actor [${akka.Version.current} (resolved from current classpath)] all other core
-                  | Akka modules MUST be of the same version. External projects like Alpakka, Persistence plugins or Akka
-                  | HTTP etc. have their own version numbers - please make sure you're using a compatible set of libraries.
+                   | Please note that a given Akka version MUST be the same across all modules of Akka that you are using,
+                   | e.g. if you use akka-actor [${akka.Version.current} (resolved from current classpath)] all other core
+                   | Akka modules MUST be of the same version. External projects like Alpakka, Persistence plugins or Akka
+                   | HTTP etc. have their own version numbers - please make sure you're using a compatible set of libraries.
                  """.stripMargin.replaceAll("[\r\n]", ""))
 
             if (settings.JvmExitOnFatalError)
@@ -1073,6 +1079,7 @@ private[akka] class ActorSystemImpl(
     if (settings.LogDeadLetters > 0)
       logDeadLetterListener = Some(systemActorOf(Props(new DeadLetterListener), "deadLetterListener"))
     eventStream.startUnsubscriber()
+    checkLicenseKey()
     ManifestInfo(this).checkSameVersion("Akka", allModules, logWarning = true)
     if (!terminating)
       loadExtensions()
@@ -1332,4 +1339,160 @@ private[akka] class ActorSystemImpl(
 
   private def isTypedGuardian: Boolean =
     guardianProps.exists(_.clazz.getName.startsWith("akka.actor.typed"))
+
+  private def checkLicenseKey(): Unit = {
+    val maybeSupplier = Option(LicenseKeySupplier.instance.get())
+    val key = maybeSupplier match {
+      case Some(supplier) => supplier.get(config)
+      case None           => config.getString("akka.license-key")
+    }
+    val akkaVersion = akka.Version.Current
+    val buildDate = LocalDate.ofInstant(Instant.ofEpochMilli(akka.Version.BuildDate), ZoneId.systemDefault())
+    val revokedLicenseKeyIds = Seq(
+      // This actually isn't a revoked license key id, but is here as an example of what one looks like
+      "ece608e4a2cc927c3d31d7e1ac0b3b641c1cf569548c5462e659cce412cfcd6c")
+
+    if (LocalDate.now().isAfter(buildDate.plusYears(3))) {
+      log.info(s"Akka $akkaVersion is more than 3 years old, license check skipped as Apache license is in use.")
+    } else if (key == "") {
+      if (config.getBoolean("akka.warn-on-no-license-key")) {
+        log.warning("Dev use only. Free keys at https://akka.io/key")
+      }
+      scheduler.scheduleOnce(15.minutes) {
+        log.error("Akka terminated. Obtain free keys at https://akka.io/key")
+        terminate()
+      }(dispatcher)
+    } else {
+      val publicKeyEncoded =
+        "49M9dBWX5VO6FXdkO6KvIgBWn97ANHFad5fJdkVkhy0DG0jzE5l4SZY6I5am2DmnaHJ4cIx54umRoCy1q3SzjLHbBMcczLIaO2p2CQKUNgwK8y4KITrUTYn6U0EqUb"
+      val publicKeySpec = new X509EncodedKeySpec(Base62.decode(publicKeyEncoded))
+      val publicKey = KeyFactory.getInstance("EC").generatePublic(publicKeySpec)
+
+      val licenseBytes = try Base62.decode(key)
+      catch {
+        case NonFatal(e) => failInvalidLicenseKey(s"Error decoding license key: ${e.getMessage}")
+      }
+      if (licenseBytes.length < 3) {
+        failInvalidLicenseKey("Invalid license key")
+      }
+      if (licenseBytes(0) != 0x25 || licenseBytes(1) != 0x52) {
+        failInvalidLicenseKey("Invalid license key")
+      }
+      val version = licenseBytes(2)
+      if (version != 0) {
+        failInvalidLicenseKey(s"Unrecognized license key version: $version")
+      }
+      val hashSep = licenseBytes.indexOf('#', 2)
+      if (hashSep == -1) {
+        failInvalidLicenseKey("Invalid license key")
+      }
+      val signedContent = licenseBytes.take(hashSep)
+      val sigBytes = licenseBytes.drop(hashSep + 1)
+      val sig = Signature.getInstance("SHA256withECDSA")
+      sig.initVerify(publicKey)
+      sig.update(signedContent)
+      if (!sig.verify(sigBytes)) {
+        failInvalidLicenseKey("Failed to validate license signature")
+      }
+
+      val licenseKeyId = MessageDigest
+        .getInstance("SHA-256")
+        .digest(sigBytes)
+        // Not efficient, would use HexFormat.of(), but that requires JDK17
+        .map(byte => "%02X".format(byte))
+        .mkString
+      if (revokedLicenseKeyIds.contains(licenseKeyId)) {
+        failInvalidLicenseKey("The license key has been revoked")
+      }
+
+      val claimsStr = new String(licenseBytes, 3, hashSep - 3, "utf-8")
+      val claims = claimsStr.split('&').map { claim =>
+        claim.split("=", 2) match {
+          case Array(key, value) => key -> URLDecoder.decode(value, "utf-8")
+          case _                 => failInvalidLicenseKey("Invalid license key claim")
+        }
+      }
+
+      val epoch = LocalDate.of(2024, 8, 22)
+
+      def opt(key: String): Option[String] = claims.collectFirst {
+        case (`key`, value) => value
+      }
+
+      def optDate(key: String): Option[LocalDate] = opt(key).map(v => epoch.plusDays(Integer.parseInt(v, 16)))
+
+      val user = opt("s").getOrElse("unknown user")
+      val issuer = opt("i") match {
+        case Some("k") =>
+          "Kalix"
+        case _ =>
+          "Lightbend"
+      }
+
+      val buildExpiry = optDate("b")
+      val expiry = optDate("e")
+      val warnOnExpiry = opt("w").contains("1")
+      val supplierClaim = opt("supplier")
+      val buildVersion = opt("v")
+
+      supplierClaim.foreach { expectedSupplierClass =>
+        maybeSupplier match {
+          case Some(supplier) if expectedSupplierClass != supplier.getClass.getName =>
+            failInvalidLicenseKey("Not compatible with this distribution of Akka. Wrong supplier.")
+          case Some(_) =>
+          // ok, right supplier
+          case None =>
+            failInvalidLicenseKey("Not compatible with this distribution of Akka. Missing supplier.")
+        }
+      }
+
+      buildVersion.foreach { version =>
+        if (version != akkaVersion) {
+          failInvalidLicenseKey("Not permitted for use with this version of Akka")
+        }
+      }
+
+      buildExpiry match {
+        case Some(expired) if expired.isBefore(buildDate) =>
+          failExpiredLicenseKey(
+            warnOnExpiry,
+            s"The key licensed to $issuer user $user is expired for all Akka builds released after $expired, but Akka $akkaVersion was released on $buildDate.")
+        case Some(valid) =>
+          log.info(
+            s"License check succeeded for $issuer user $user. License is valid for all Akka builds released prior to $valid.")
+        case None =>
+      }
+      expiry match {
+        case Some(expired) if expired.isBefore(LocalDate.now()) =>
+          failExpiredLicenseKey(warnOnExpiry, s"The key licensed to $issuer user $user expired on $expired.")
+        case Some(valid) =>
+          log.info(s"License check succeeded for $issuer user $user. License is valid until $valid.")
+        case None =>
+      }
+
+      if (buildExpiry.isEmpty && expiry.isEmpty) {
+        log.info(s"License check succeeded for $issuer user $user. License is perpetual.")
+      }
+    }
+  }
+
+  private def failInvalidLicenseKey(detailedMsg: String): Nothing = {
+    log.error("Invalid key. Free keys at https://akka.io/key")
+    log.debug(s"The supplied license key is not valid: $detailedMsg")
+    throw new RuntimeException(s"Invalid key: $detailedMsg")
+  }
+
+  private def failExpiredLicenseKey(warnOnExpiry: Boolean, detailedMsg: String): Unit = {
+    log.error(
+      "Expired key. {}Obtain refresh key at https://akka.io/key",
+      if (warnOnExpiry) "" else "Akka will terminate in 15 mins. ")
+    log.debug(s"The supplied license key has expired: $detailedMsg")
+    if (!warnOnExpiry) {
+      val terminateAfter = 15.minutes + ThreadLocalRandom.current().nextInt(5 * 60).seconds
+      scheduler.scheduleOnce(terminateAfter) {
+        log.error("Akka terminated due to expired key. Obtain refresh key at https://akka.io/key")
+        terminate()
+      }(dispatcher)
+    }
+  }
 }

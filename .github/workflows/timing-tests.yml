@@ -53,6 +53,7 @@ jobs:
             -Dmultinode.Xms256M \
             -Dmultinode.Xmx256M \
             -Dmultinode.XX:+AlwaysActAsServerClassMachine \
+            -Dakka.warn-on-no-license-key=false \
             clean test
 
       - name: Test Reports
