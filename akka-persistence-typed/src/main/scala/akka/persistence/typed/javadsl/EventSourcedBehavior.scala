@@ -285,7 +285,7 @@ abstract class EventSourcedBehavior[Command, Event, State] private[akka] (
 
 @FunctionalInterface
 trait ReplicationInterceptor[Event, State] {
-  def intercept(replicaId: ReplicaId, sequenceNumber: Long, state: State, event: Event): CompletionStage[Done]
+  def intercept(originReplica: ReplicaId, sequenceNumber: Long, state: State, event: Event): CompletionStage[Done]
 }
 
 /**

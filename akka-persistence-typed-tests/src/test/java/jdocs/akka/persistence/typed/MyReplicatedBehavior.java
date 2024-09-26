@@ -4,11 +4,14 @@
 
 package jdocs.akka.persistence.typed;
 
+import akka.Done;
 import akka.actor.typed.Behavior;
 import akka.persistence.typed.ReplicaId;
 import akka.persistence.typed.ReplicationId;
 import akka.persistence.typed.javadsl.*;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 // #factory
 public class MyReplicatedBehavior
@@ -70,5 +73,13 @@ public class MyReplicatedBehavior
   @Override
   public EventHandler<State, Event> eventHandler() {
     throw new UnsupportedOperationException("dummy for example");
+  }
+
+  @Override
+  public Optional<ReplicationInterceptor<Event, State>> replicationInterceptor() {
+    return Optional.of((originReplica, sequenceNumber, state, event) -> {
+      System.out.println("Intercept side effect for replicated event " + event);
+      return CompletableFuture.completedFuture(Done.done());
+    });
   }
 }
