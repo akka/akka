@@ -7,9 +7,7 @@ package akka.persistence.typed.internal
 import java.util.Optional
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
-
 import org.slf4j.LoggerFactory
-
 import akka.Done
 import akka.actor.typed
 import akka.actor.typed.ActorRef
@@ -197,7 +195,7 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
           val eventSourcedSetup = new BehaviorSetup(
             ctx.asInstanceOf[ActorContext[InternalProtocol]],
             persistenceId,
-            emptyState,
+            Some(emptyState),
             commandHandler,
             eventHandler,
             WriterIdentity.newIdentity(),

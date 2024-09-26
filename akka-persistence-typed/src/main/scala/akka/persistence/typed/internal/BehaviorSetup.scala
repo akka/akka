@@ -45,7 +45,7 @@ import akka.util.OptionVal
 private[akka] final class BehaviorSetup[C, E, S](
     val context: ActorContext[InternalProtocol],
     val persistenceId: PersistenceId,
-    val emptyState: S,
+    private var _emptyState: Option[S],
     val commandHandler: EventSourcedBehavior.CommandHandler[C, E, S],
     val eventHandler: EventSourcedBehavior.EventHandler[S, E],
     val writerIdentity: EventSourcedBehaviorImpl.WriterIdentity,
@@ -289,6 +289,15 @@ private[akka] final class BehaviorSetup[C, E, S](
 
       case _ =>
     }
+  }
+
+  def emptyState: S = _emptyState match {
+    case Some(s) => s
+    case None    => throw new IllegalStateException("emptyState accessed after cleared")
+  }
+
+  def clearEmptyState(): Unit = {
+    _emptyState = None
   }
 
 }

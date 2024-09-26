@@ -295,6 +295,7 @@ private[akka] final class ReplayingEvents[C, E, S](
   private def onRecoveryCompleted(state: ReplayingState[S]): Behavior[InternalProtocol] =
     try {
       setup.instrumentation.recoveryDone(setup.context.self)
+      setup.clearEmptyState()
       onRecoveryComplete(setup.context)
       tryReturnRecoveryPermit("replay completed successfully")
       if (setup.internalLogger.isDebugEnabled) {
