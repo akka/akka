@@ -9,14 +9,12 @@ import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.concurrent.atomic.AtomicReference
-
 import scala.annotation.nowarn
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.util.Failure
 import scala.util.Success
-
 import akka.Done
 import akka.actor.UnhandledMessage
 import akka.actor.typed.{ Behavior, Signal }
@@ -329,7 +327,10 @@ private[akka] object Running {
                 handleExternalReplicatedEventPersist(replication, envelope.event, None)
               case None =>
                 // we need to defer handling the event until the future completes
-                ???
+                waitAsyncReplicationIntercept(
+                  state,
+                  asyncInterceptResult,
+                  () => handleExternalReplicatedEventPersist(replication, envelope.event, None))
             }
 
           case None =>
@@ -380,7 +381,10 @@ private[akka] object Running {
                     case None =>
                       // we need to defer handling the event until the future completes
                       asyncWait = true
-                      ???
+                      waitAsyncReplicationIntercept(
+                        state,
+                        asyncInterceptResult,
+                        () => onPublishedEvent(state, replication, replicatedEventMetaData, event))
 
                   }
 
@@ -449,7 +453,7 @@ private[akka] object Running {
               event.sequenceNumber)
           }
 
-          // fast forward stream for source replica
+          // fast-forward stream for source replica
           state.replicationControl.get(originReplicaId).foreach(_.fastForward(event.sequenceNumber))
 
           handleExternalReplicatedEventPersist(
@@ -779,6 +783,7 @@ private[akka] object Running {
         case RecoveryPermitGranted                     => Behaviors.unhandled
         case ContinueUnstash                           => Behaviors.unhandled
         case _: AsyncEffectCompleted[_, _, _]          => Behaviors.unhandled
+        case _: AsyncReplicationInterceptCompleted     => Behaviors.unhandled
       }
     }
 
@@ -993,6 +998,88 @@ private[akka] object Running {
     }
 
     def onGetSeenSequenceNr(get: GetSeenSequenceNr): WaitingAsyncEffect = {
+      get.replyTo ! state.seenPerReplica.getOrElse(get.replica, 0L)
+      this
+    }
+
+    def onReplicatedEvent(event: InternalProtocol.ReplicatedEventEnvelope[E]): Behavior[InternalProtocol] = {
+      if (state.receivedPoisonPill) {
+        Behaviors.unhandled
+      } else {
+        stashInternal(event)
+      }
+    }
+
+    def onPublishedEvent(event: PublishedEventImpl): Behavior[InternalProtocol] = {
+      if (state.receivedPoisonPill) {
+        Behaviors.unhandled
+      } else {
+        stashInternal(event)
+      }
+    }
+
+    override def onSignal: PartialFunction[Signal, Behavior[InternalProtocol]] = {
+      case PoisonPill =>
+        // wait for completion of async effect before stopping
+        state = state.copy(receivedPoisonPill = true)
+        this
+      case signal =>
+        if (setup.onSignal(state.state, signal, catchAndLog = false)) this
+        else Behaviors.unhandled
+    }
+
+    override def currentSequenceNumber: Long = {
+      _currentSequenceNumber
+    }
+  }
+
+  // ===============================================
+
+  def waitAsyncReplicationIntercept(
+      state: RunningState[S],
+      interceptResult: Future[Done],
+      nextBehaviorF: () => Behavior[InternalProtocol]): Behavior[InternalProtocol] = {
+    setup.setMdcPhase(PersistenceMdc.AsyncReplicationIntercept)
+    recursiveUnstashOne = 0
+    setup.context.pipeToSelf(interceptResult) {
+      case Success(_) => AsyncReplicationInterceptCompleted(nextBehaviorF)
+      case Failure(exc) =>
+        setup.internalLogger.debug(s"Async replication intercept failed: $exc")
+        throw exc
+    }
+    new WaitingAsyncReplicationIntercept(state)
+  }
+
+  /** INTERNAL API */
+  @InternalApi private[akka] final class WaitingAsyncReplicationIntercept(var state: RunningState[S])
+      extends AbstractBehavior[InternalProtocol](setup.context)
+      with WithSeqNrAccessible {
+
+    override def onMessage(msg: InternalProtocol): Behavior[InternalProtocol] = {
+      msg match {
+        case AsyncReplicationInterceptCompleted(nextBehaviorF) => nextBehaviorF()
+        case in: IncomingCommand[C @unchecked]                 => onCommand(in)
+        case re: ReplicatedEventEnvelope[E @unchecked]         => onReplicatedEvent(re)
+        case pe: PublishedEventImpl                            => onPublishedEvent(pe)
+        case JournalResponse(r)                                => onDeleteEventsJournalResponse(r, state.state)
+        case SnapshotterResponse(r)                            => onDeleteSnapshotResponse(r, state.state)
+        case get: GetState[S @unchecked]                       => stashInternal(get)
+        case getSeqNr: GetSeenSequenceNr                       => onGetSeenSequenceNr(getSeqNr)
+        case _                                                 => Behaviors.unhandled
+      }
+    }
+
+    def onCommand(cmd: IncomingCommand[C]): Behavior[InternalProtocol] = {
+      if (state.receivedPoisonPill) {
+        if (setup.settings.logOnStashing)
+          setup.internalLogger.debug("Discarding message [{}], because actor is to be stopped.", cmd)
+        Behaviors.unhandled
+      } else {
+        stashInternal(cmd)
+      }
+    }
+
+    private def onGetSeenSequenceNr(get: GetSeenSequenceNr): Behavior[InternalProtocol] = {
       get.replyTo ! state.seenPerReplica.getOrElse(get.replica, 0L)
       this
     }

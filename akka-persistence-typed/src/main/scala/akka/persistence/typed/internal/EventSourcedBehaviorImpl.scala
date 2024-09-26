@@ -340,6 +340,8 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
   final case class RecoveryTickEvent(snapshot: Boolean) extends InternalProtocol
   final case class IncomingCommand[C](c: C) extends InternalProtocol
   final case class AsyncEffectCompleted[C, E, S](cmd: C, effect: Effect[E, S]) extends InternalProtocol
+  final case class AsyncReplicationInterceptCompleted(nextBehaviorF: () => Behavior[InternalProtocol])
+      extends InternalProtocol
   case object ContinueUnstash extends InternalProtocol
 
   final case class ReplicatedEventEnvelope[E](event: ReplicatedEvent[E], ack: ActorRef[ReplicatedEventAck.type])
