@@ -19,6 +19,7 @@ Key links:
 - [ ] Check that open PRs and issues assigned to the milestone are reasonable
 - [ ] If PRs were merged after EU midnight, trigger the [native-image tests](https://github.com/akka/akka/actions/workflows/native-image-tests.yml) and see that they are green.
 - [ ] Update the version and change date in the LICENSE file.
+- [ ] Allign the copyright year in all files.
 - [ ] Update the Akka version in the samples to $VERSION$, otherwise the published zip files of the samples will have the old version.
 - [ ] Create a new milestone for the [next version](https://github.com/akka/akka/milestones)
 - [ ] Close the [$VERSION$ milestone](https://github.com/akka/akka/milestones?direction=asc&sort=due_date)
