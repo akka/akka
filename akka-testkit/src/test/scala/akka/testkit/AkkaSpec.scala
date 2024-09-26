@@ -31,6 +31,7 @@ object AkkaSpec {
         loggers = ["akka.testkit.TestEventListener"]
         loglevel = "WARNING"
         stdout-loglevel = "WARNING"
+        warn-on-no-license-key = off
         actor {
           default-dispatcher {
             executor = "fork-join-executor"

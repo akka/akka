@@ -69,6 +69,7 @@ jobs:
             -Dmultinode.Daeron.dir=/opt/volumes/media-driver \
             -Daeron.term.buffer.length=33554432 \
             -Dmultinode.Daeron.term.buffer.length=33554432 \
+            -Dakka.warn-on-no-license-key=false \
             multiNodeTest
 
       - name: Email on failure
