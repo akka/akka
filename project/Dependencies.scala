@@ -31,7 +31,7 @@ object Dependencies {
 
   // Also update URLs in link-validator.conf
   val scala213Version = "2.13.14"
-  val scala3Version = "3.3.3"
+  val scala3Version = "3.3.4"
   val allScalaVersions = Seq(scala213Version, scala3Version)
 
   val reactiveStreamsVersion = "1.0.4"
