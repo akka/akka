@@ -5,10 +5,11 @@
 package akka.stream.scaladsl
 
 import scala.concurrent.duration.FiniteDuration
-
 import akka.NotUsed
 import akka.stream.{ Attributes, Outlet, RestartSettings, SourceShape }
 import akka.stream.stage.{ GraphStage, GraphStageLogic }
+
+import scala.annotation.nowarn
 
 /**
  * A RestartSource wraps a [[Source]] that gets restarted when it completes or fails.
@@ -17,6 +18,7 @@ import akka.stream.stage.{ GraphStage, GraphStageLogic }
  * example, for [[Source]] streams that depend on a remote server that may crash or become partitioned. The
  * RestartSource ensures that the graph can continue running while the [[Source]] restarts.
  */
+
 object RestartSource {
 
   /**

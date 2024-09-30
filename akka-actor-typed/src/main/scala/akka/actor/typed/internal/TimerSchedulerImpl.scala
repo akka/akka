@@ -122,12 +122,13 @@ import akka.util.OptionVal
 
     val task = mode match {
       case SingleMode =>
-        ctx.system.scheduler.scheduleOnce(delay, () => ctx.self.unsafeUpcast ! timerMsg)(ExecutionContext.parasitic)
+        ctx.system.scheduler
+          .scheduleOnce(delay, () => ctx.self.unsafeUpcast[Any] ! timerMsg)(ExecutionContext.parasitic)
       case m: FixedDelayMode =>
-        ctx.system.scheduler.scheduleWithFixedDelay(m.initialDelay, delay)(() => ctx.self.unsafeUpcast ! timerMsg)(
+        ctx.system.scheduler.scheduleWithFixedDelay(m.initialDelay, delay)(() => ctx.self.unsafeUpcast[Any] ! timerMsg)(
           ExecutionContext.parasitic)
       case m: FixedRateMode =>
-        ctx.system.scheduler.scheduleAtFixedRate(m.initialDelay, delay)(() => ctx.self.unsafeUpcast ! timerMsg)(
+        ctx.system.scheduler.scheduleAtFixedRate(m.initialDelay, delay)(() => ctx.self.unsafeUpcast[Any] ! timerMsg)(
           ExecutionContext.parasitic)
     }
 

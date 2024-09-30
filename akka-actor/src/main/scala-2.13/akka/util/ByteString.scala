@@ -892,7 +892,7 @@ sealed abstract class ByteString
    * @param buffer a ByteBuffer to copy bytes to
    * @return the number of bytes actually copied
    */
-  def copyToBuffer(@nowarn("msg=never used") buffer: ByteBuffer): Int
+  def copyToBuffer(buffer: ByteBuffer): Int
 
   /**
    * Create a new ByteString with all contents compacted into a single,

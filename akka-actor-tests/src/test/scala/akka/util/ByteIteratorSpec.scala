@@ -6,9 +6,11 @@ package akka.util
 
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-
 import akka.util.ByteIterator.ByteArrayIterator
 
+import scala.annotation.nowarn
+
+@nowarn("cat=lint-infer-any")
 class ByteIteratorSpec extends AnyWordSpec with Matchers {
   "A ByteIterator" should {
 
@@ -16,12 +18,12 @@ class ByteIteratorSpec extends AnyWordSpec with Matchers {
       // Since the 'indexOf' operator invalidates the iterator,
       // we must create a new one for each test:
       def freshIterator(): ByteIterator = ByteArrayIterator(Array(0x20, 0x20, 0x10, 0x20, 0x20, 0x10))
-      freshIterator().indexOf(0x20) should be(0)
-      freshIterator().indexOf(0x10) should be(2)
+      freshIterator().indexOf(0x20b) should be(0)
+      freshIterator().indexOf(0x10b) should be(2)
 
-      freshIterator().indexOf(0x20, 1) should be(1)
-      freshIterator().indexOf(0x10, 1) should be(2)
-      freshIterator().indexOf(0x10, 3) should be(5)
+      freshIterator().indexOf(0x20b, 1) should be(1)
+      freshIterator().indexOf(0x10b, 1) should be(2)
+      freshIterator().indexOf(0x10b, 3) should be(5)
 
       // There is also an indexOf with another signature, which is hard to invoke :D
       def otherIndexOf(iterator: ByteIterator, byte: Byte, from: Int): Int =

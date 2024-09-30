@@ -61,7 +61,7 @@ trait RouterConfig extends Serializable {
    * Management messages not handled by the "head" actor are
    * delegated to this controller actor.
    */
-  def routingLogicController(@nowarn("msg=never used") routingLogic: RoutingLogic): Option[Props] = None
+  def routingLogicController(routingLogic: RoutingLogic): Option[Props] = None
 
   /**
    * Is the message handled by the router head actor or the
@@ -86,7 +86,7 @@ trait RouterConfig extends Serializable {
   /**
    * Check that everything is there which is needed. Called in constructor of RoutedActorRef to fail early.
    */
-  def verifyConfig(@nowarn("msg=never used") path: ActorPath): Unit = ()
+  def verifyConfig(path: ActorPath): Unit = ()
 
   /**
    * INTERNAL API

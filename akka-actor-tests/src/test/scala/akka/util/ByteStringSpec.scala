@@ -22,6 +22,7 @@ import org.scalatestplus.scalacheck.Checkers
 
 import akka.util.ByteString.{ ByteString1, ByteString1C, ByteStrings }
 
+@nowarn("cat=lint-infer-any")
 class ByteStringSpec extends AnyWordSpec with Matchers with Checkers {
 
   implicit val betterGeneratorDrivenConfig: PropertyCheckConfiguration =

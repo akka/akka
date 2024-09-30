@@ -36,10 +36,7 @@ final class DeliveryProducerStarted(val producerId: String, val actorPath: Strin
 @Enabled(false) // hi frequency event
 @StackTrace(false)
 @Category(Array("Akka", "Delivery", "ProducerController")) @Label("Delivery ProducerController sent RequestNext")
-final class DeliveryProducerRequestNext(
-    val producerId: String,
-    val currentSeqNr: Long,
-    @nowarn("msg=never used") val confirmedSeqNr: Long)
+final class DeliveryProducerRequestNext(val producerId: String, val currentSeqNr: Long, val confirmedSeqNr: Long)
     extends Event
 
 /** INTERNAL API */

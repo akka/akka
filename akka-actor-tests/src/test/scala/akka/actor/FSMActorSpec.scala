@@ -4,7 +4,6 @@
 
 package akka.actor
 
-import scala.annotation.nowarn
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
@@ -80,7 +79,7 @@ object FSMActorSpec {
     // verify that old-style does still compile
     onTransition(transitionHandler _)
 
-    def transitionHandler(@nowarn("msg=never used") from: LockState, @nowarn("msg=never used") to: LockState) = {
+    def transitionHandler(from: LockState, to: LockState) = {
       // dummy
     }
 
@@ -267,7 +266,7 @@ class FSMActorSpec extends AkkaSpec(Map("akka.actor.debug.fsm" -> true)) with Im
     "log events and transitions if asked to do so" in {
       import scala.jdk.CollectionConverters._
       val config = ConfigFactory
-        .parseMap(Map("akka.loglevel" -> "DEBUG", "akka.actor.debug.fsm" -> true).asJava)
+        .parseMap(Map[String, Any]("akka.loglevel" -> "DEBUG", "akka.actor.debug.fsm" -> true).asJava)
         .withFallback(system.settings.config)
       val fsmEventSystem = ActorSystem("fsmEvent", config)
       try {

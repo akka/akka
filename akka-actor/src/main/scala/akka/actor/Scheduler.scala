@@ -161,7 +161,6 @@ trait Scheduler {
    *
    * Note: For scheduling within actors `with Timers` should be preferred.
    */
-  @nowarn("msg=deprecated")
   final def scheduleWithFixedDelay(
       initialDelay: FiniteDuration,
       delay: FiniteDuration,
@@ -358,7 +357,6 @@ trait Scheduler {
     "Use scheduleWithFixedDelay or scheduleAtFixedRate instead. This has the same semantics as " +
     "scheduleAtFixedRate, but scheduleWithFixedDelay is often preferred.",
     since = "2.6.0")
-  @nowarn("msg=deprecated")
   final def schedule(initialDelay: FiniteDuration, interval: FiniteDuration, receiver: ActorRef, message: Any)(
       implicit
       executor: ExecutionContext,

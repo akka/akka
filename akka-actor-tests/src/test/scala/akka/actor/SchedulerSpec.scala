@@ -8,7 +8,6 @@ import java.io.Closeable
 import java.util.concurrent._
 import java.util.concurrent.ThreadLocalRandom
 
-import scala.annotation.nowarn
 import scala.concurrent.{ Await, ExecutionContext, Future }
 import scala.concurrent.duration._
 import scala.util.Try
@@ -684,7 +683,6 @@ class LightArrayRevolverSchedulerSpec extends AkkaSpec(SchedulerSpec.testConfRev
     def reportFailure(t: Throwable): Unit = { t.printStackTrace() }
   }
 
-  @nowarn
   def withScheduler(start: Long = 0L, _startTick: Int = 0, config: Config = ConfigFactory.empty)(
       thunk: (Scheduler with Closeable, Driver) => Unit): Unit = {
     val lbq = new AtomicReference[LinkedBlockingQueue[Long]](new LinkedBlockingQueue[Long])

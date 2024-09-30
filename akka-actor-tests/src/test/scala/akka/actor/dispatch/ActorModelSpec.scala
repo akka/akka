@@ -232,7 +232,7 @@ object ActorModelSpec {
           Error(
             e,
             Option(dispatcher).toString,
-            Option(dispatcher).getOrElse(this).getClass,
+            Option[Any](dispatcher).getOrElse(this).getClass,
             "actual: " + stats + ", required: InterceptorStats(susp=" + suspensions +
             ",res=" + resumes + ",reg=" + registers + ",unreg=" + unregisters +
             ",recv=" + msgsReceived + ",proc=" + msgsProcessed + ",restart=" + restarts))
@@ -615,7 +615,6 @@ object BalancingDispatcherModelSpec {
   }
 }
 
-@nowarn
 class BalancingDispatcherModelSpec extends ActorModelSpec(BalancingDispatcherModelSpec.config) {
   import ActorModelSpec._
 

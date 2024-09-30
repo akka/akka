@@ -6,7 +6,6 @@ package akka.actor.testkit.typed
 
 import java.util.concurrent.TimeoutException
 
-import scala.annotation.nowarn
 import scala.jdk.FunctionConverters._
 import scala.concurrent.duration.FiniteDuration
 import scala.jdk.DurationConverters._
@@ -202,7 +201,7 @@ object Effect {
   @InternalApi
   private[akka] object SpawnedAnonymousAdapter {
     def apply[T]() = new SpawnedAnonymousAdapter[T](null)
-    def unapply[T](@nowarn("msg=never used") s: SpawnedAnonymousAdapter[T]): Boolean = true
+    def unapply[T](s: SpawnedAnonymousAdapter[T]): Boolean = true
   }
 
   /**
