@@ -16,12 +16,12 @@ object Dependencies {
   val slf4jVersion = "2.0.16"
   // check agrona version when updating this
   // Note: 1.46 is JDK 17 only so we cannot bump until we stop supporting JDK 11
-  val aeronVersion = "1.44.1"
+  val aeronVersion = "1.44.3"
   // needs to be inline with the aeron version, check
   // https://github.com/real-logic/aeron/blob/1.x.y/build.gradle
   // Note: 1.23+ is JDK 17 only so we cannot bump until we stop supporting JDK 11
   val agronaVersion = "1.22.0"
-  val nettyVersion = "4.1.112.Final"
+  val nettyVersion = "4.1.113.Final"
   val protobufJavaVersion = "3.25.5" // also sync with protocVersion in Protobuf.scala
   val logbackVersion = "1.5.7"
   val scalaFortifyVersion = "1.0.22"
@@ -31,12 +31,13 @@ object Dependencies {
 
   // Also update URLs in link-validator.conf
   val scala213Version = "2.13.15"
-  val scala3Version = "3.3.3"
+  val scala3Version = "3.3.4"
+
   val allScalaVersions = Seq(scala213Version, scala3Version)
 
   val reactiveStreamsVersion = "1.0.4"
 
-  val graalVmNativeImageVersion = "24.0.2"
+  val graalVmNativeImageVersion = "24.1.0"
 
   val scalaTestVersion = "3.2.17"
 
@@ -96,7 +97,7 @@ object Dependencies {
   object TestDependencies {
     val commonsMath = "org.apache.commons" % "commons-math" % "2.2" % Test // ApacheV2
 
-    val commonsIo = "commons-io" % "commons-io" % "2.16.1" % Test // ApacheV2
+    val commonsIo = "commons-io" % "commons-io" % "2.17.0" % Test // ApacheV2
     val commonsCodec = "commons-codec" % "commons-codec" % "1.17.1" % Test // ApacheV2
     val junit = "junit" % "junit" % junitVersion % "test" // Common Public License 1.0
     val logback = Compile.logback % Test // EPL 1.0
@@ -161,7 +162,7 @@ object Dependencies {
     val protobufRuntime = "com.google.protobuf" % "protobuf-java" % protobufJavaVersion % "optional;provided"
 
     // used for classpath scanning in testkit/tests for native-image metadata
-    val classgraph = "io.github.classgraph" % "classgraph" % "4.8.175" % "optional;provided;test" // MIT
+    val classgraph = "io.github.classgraph" % "classgraph" % "4.8.176" % "optional;provided;test" // MIT
     val jacksonCore = Compile.jacksonCore % "optional;provided;test"
     val jacksonScala = Compile.jacksonScala % "optional;provided;test"
     val optionalForNativeImageMetadata = Seq(classgraph, jacksonCore, jacksonScala)
