@@ -270,5 +270,18 @@ object EventSourcedBehavior {
    */
   @ApiMayChange
   def withReplicatedEventInterceptor(
-      interceptor: (ReplicaId, Long, State, Event) => Future[Done]): EventSourcedBehavior[Command, Event, State]
+      interceptor: ReplicationInterceptor[State, Event]): EventSourcedBehavior[Command, Event, State]
+}
+
+@FunctionalInterface
+trait ReplicationInterceptor[State, Event] {
+
+  /**
+   * @param state Current state
+   * @param event The replicated event
+   * @param originReplica The replica where the event came from
+   * @param sequenceNumber The local sequence number the event will get when persisted
+   * @return
+   */
+  def intercept(state: State, event: Event, originReplica: ReplicaId, sequenceNumber: Long): Future[Done]
 }

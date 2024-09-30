@@ -320,7 +320,7 @@ private[akka] object Running {
         setup.replicationInterceptor match {
           case Some(interceptor) =>
             val asyncInterceptResult =
-              interceptor(envelope.event.originReplica, state.seqNr + 1, state.state, envelope.event.event)
+              interceptor.intercept(state.state, envelope.event.event, envelope.event.originReplica, state.seqNr + 1)
             asyncInterceptResult.value match {
               case Some(Success(_)) =>
                 // optimization for quick successful interceptors
@@ -369,11 +369,11 @@ private[akka] object Running {
               setup.replicationInterceptor match {
                 case Some(interceptor) =>
                   val asyncInterceptResult =
-                    interceptor(
-                      replicatedEventMetaData.replicaId,
-                      state.seqNr + 1,
+                    interceptor.intercept(
                       state.state,
-                      event.event.asInstanceOf[E])
+                      event.event.asInstanceOf[E],
+                      replicatedEventMetaData.replicaId,
+                      state.seqNr + 1)
                   asyncInterceptResult.value match {
                     case Some(Success(_)) =>
                       // optimization for quick successful interceptors

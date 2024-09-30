@@ -9,12 +9,10 @@ import akka.actor.typed.Behavior;
 import akka.persistence.typed.ReplicaId;
 import akka.persistence.typed.ReplicationId;
 import akka.persistence.typed.javadsl.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 // #factory
 public class MyReplicatedBehavior
@@ -80,10 +78,11 @@ public class MyReplicatedBehavior
 
   @Override
   public Optional<ReplicationInterceptor<Event, State>> replicationInterceptor() {
-    return Optional.of((originReplica, sequenceNumber, state, event) -> {
-      Logger logger = LoggerFactory.getLogger(MyReplicatedBehavior.class);
-      logger.info("Intercept side effect for replicated event {}", event);
-      return CompletableFuture.completedFuture(Done.done());
-    });
+    return Optional.of(
+        (originReplica, sequenceNumber, state, event) -> {
+          Logger logger = LoggerFactory.getLogger(MyReplicatedBehavior.class);
+          logger.info("Intercept side effect for replicated event {}", event);
+          return CompletableFuture.completedFuture(Done.done());
+        });
   }
 }

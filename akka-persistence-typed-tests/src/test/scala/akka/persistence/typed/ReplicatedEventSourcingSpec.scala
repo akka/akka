@@ -541,7 +541,7 @@ class ReplicatedEventSourcingSpec
       case class Intercepted(origin: ReplicaId, seqNr: Long, event: String)
       val interceptProbe = createTestProbe[Intercepted]()
       val addInterceptor: EventSourcedBehavior[Command, String, State] => EventSourcedBehavior[Command, String, State] =
-        _.withReplicatedEventInterceptor { (origin, seqNr, _, event) =>
+        _.withReplicatedEventInterceptor { (_, event, origin, seqNr) =>
           interceptProbe.ref ! Intercepted(origin, seqNr, event)
           Future.successful(Done)
         }
@@ -572,7 +572,7 @@ class ReplicatedEventSourcingSpec
       val interceptProbe = createTestProbe[Intercepted]()
       implicit val ec: ExecutionContext = system.executionContext
       val addInterceptor: EventSourcedBehavior[Command, String, State] => EventSourcedBehavior[Command, String, State] =
-        _.withReplicatedEventInterceptor { (origin, seqNr, _, event) =>
+        _.withReplicatedEventInterceptor { (_, event, origin, seqNr) =>
           interceptProbe.ref ! Intercepted(origin, seqNr, event)
           akka.pattern.after(50.millis)(Future { Done })
         }

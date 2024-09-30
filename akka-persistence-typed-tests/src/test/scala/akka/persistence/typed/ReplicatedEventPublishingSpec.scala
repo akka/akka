@@ -350,7 +350,7 @@ class ReplicatedEventPublishingSpec
             MyReplicatedBehavior.Command,
             String,
             Set[String]] =
-        _.withReplicatedEventInterceptor { (origin, seqNr, _, event) =>
+        _.withReplicatedEventInterceptor { (_, event, origin, seqNr) =>
           interceptProbe.ref ! Intercepted(origin, seqNr, event)
           Future.successful(Done)
         }
@@ -385,7 +385,7 @@ class ReplicatedEventPublishingSpec
             MyReplicatedBehavior.Command,
             String,
             Set[String]] =
-        _.withReplicatedEventInterceptor { (origin, seqNr, _, event) =>
+        _.withReplicatedEventInterceptor { (_, event, origin, seqNr) =>
           interceptProbe.ref ! Intercepted(origin, seqNr, event)
           akka.pattern.after(50.millis)(Future { Done })
         }

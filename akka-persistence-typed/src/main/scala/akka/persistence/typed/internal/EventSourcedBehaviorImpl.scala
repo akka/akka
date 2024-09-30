@@ -47,8 +47,6 @@ import akka.persistence.typed.scaladsl.{ Recovery => TypedRecovery }
 import akka.persistence.typed.scaladsl.RetentionCriteria
 import akka.persistence.typed.telemetry.EventSourcedBehaviorInstrumentationProvider
 
-import scala.concurrent.Future
-
 @InternalApi
 private[akka] object EventSourcedBehaviorImpl {
 
@@ -108,7 +106,7 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
     replication: Option[ReplicationSetup] = None,
     publishEvents: Boolean = true,
     customStashCapacity: Option[Int] = None,
-    replicatedEventInterceptor: Option[(ReplicaId, Long, State, Event) => Future[Done]] = None)
+    replicatedEventInterceptor: Option[ReplicationInterceptor[State, Event]] = None)
     extends EventSourcedBehavior[Command, Event, State] {
 
   import EventSourcedBehaviorImpl.WriterIdentity
@@ -326,7 +324,7 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
     copy(customStashCapacity = Some(size))
 
   override def withReplicatedEventInterceptor(
-      interceptor: (ReplicaId, Long, State, Event) => Future[Done]): EventSourcedBehavior[Command, Event, State] =
+      interceptor: ReplicationInterceptor[State, Event]): EventSourcedBehavior[Command, Event, State] =
     copy(replicatedEventInterceptor = Some(interceptor))
 
 }
