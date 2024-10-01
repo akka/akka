@@ -52,6 +52,13 @@ one library in a `reference.conf` of another library.
 
 @@@
 
+## License key
+
+Akka requires a license key for use in production. Free keys can be obtained at [https://akka.io/key](https://akka.io/key).
+Add the key to the configuration property `akka.license-key`.
+
+For local development, Akka can be used without a key, but be aware of that the `ActorSystem` will terminate after a while when a key isn't configured.
+
 ## When using JarJar, OneJar, Assembly or any jar-bundler
 
 @@@ warning

@@ -48,6 +48,7 @@ jobs:
             -Dmultinode.Xmx256M \
             -Dmultinode.Xlog:gc \
             -Dmultinode.XX:+AlwaysActAsServerClassMachine \
+            -Dakka.warn-on-no-license-key=false \
             clean akka-cluster-metrics/test
 
       - name: Test Reports

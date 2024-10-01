@@ -90,6 +90,7 @@ jobs:
             -Dmultinode.Daeron.dir=/opt/volumes/media-driver \
             -Daeron.term.buffer.length=33554432 \
             -Dmultinode.Daeron.term.buffer.length=33554432 \
+            -Dakka.warn-on-no-license-key=false \
             multiNodeTest
 
       - name: Email on failure
@@ -108,7 +109,7 @@ jobs:
           body: |
             Multi node test of ${{github.repository}} failed!
             https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
-      
+
       - name: Cleanup the environment
         if: ${{ always() }}
         shell: bash {0}
@@ -204,7 +205,7 @@ jobs:
           body: |
             Multi node test of ${{github.repository}} failed!
             https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
-      
+
       - name: Cleanup the environment
         if: ${{ always() }}
         shell: bash {0}
