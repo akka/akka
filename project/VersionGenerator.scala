@@ -42,7 +42,7 @@ object VersionGenerator {
     import scala.sys.process._
     val buildDate = dynverGitDescribeOutput.value match {
       case Some(output) if output.ref.isTag && output.isCleanAfterTag =>
-        Seq("git", "tag", "-l", output.ref.value, "--format=%(taggerdate:unix)").!!.trim.toLong * 1000
+        Seq("git", "tag", "-l", output.ref.value, "--format=%(creatordate:unix)").!!.trim.toLong * 1000
       case Some(output) if !output.isDirty && !output.commitSuffix.isEmpty =>
         Seq("git", "show", output.commitSuffix.sha, "-s", "--format=%ct").!!.trim.toLong * 1000
       case _ =>
