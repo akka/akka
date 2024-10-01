@@ -395,8 +395,8 @@ class ClusterReceptionistSpec extends AnyWordSpec with Matchers with LogCapturin
           // we should get either empty message and then updated with the new incarnation actor
           // or just updated with the new service directly
           val msg = regProbe1.fishForMessagePF(20.seconds) {
-            case PingKey.Listing(entries) if entries.size == 1 => FishingOutcome.Complete
-            case _: Listing                                    => FishingOutcome.ContinueAndIgnore
+            case PingKey.Listing(l) if l.size == 1 => FishingOutcome.Complete
+            case _: Listing                        => FishingOutcome.ContinueAndIgnore
           }
           val entries = msg.last match {
             case PingKey.Listing(e) => e

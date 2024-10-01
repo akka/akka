@@ -430,11 +430,9 @@ private[akka] object Running {
 
   // FIXME remove instrumentation hook method in 2.10.0
   @InternalStableApi
-  private[akka] def onWriteFailed(
-      @nowarn("msg=never used") ctx: ActorContext[_],
-      @nowarn("msg=never used") reason: Throwable): Unit = ()
+  private[akka] def onWriteFailed(ctx: ActorContext[_], reason: Throwable): Unit = ()
   // FIXME remove instrumentation hook method in 2.10.0
   @InternalStableApi
-  private[akka] def onWriteSuccess(@nowarn("msg=never used") ctx: ActorContext[_]): Unit = ()
+  private[akka] def onWriteSuccess(ctx: ActorContext[_]): Unit = ()
 
 }

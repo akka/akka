@@ -6,8 +6,6 @@ package docs.delivery
 
 import java.util.UUID
 
-import scala.annotation.nowarn
-
 import akka.actor.typed.ActorSystem
 
 //#imports
@@ -18,7 +16,6 @@ import akka.actor.typed.scaladsl.Behaviors
 
 //#imports
 
-@nowarn("msg=never used")
 object PointToPointDocExample {
 
   //#producer

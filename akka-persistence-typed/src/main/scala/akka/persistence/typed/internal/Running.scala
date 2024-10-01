@@ -10,7 +10,6 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.concurrent.atomic.AtomicReference
 
-import scala.annotation.nowarn
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.Future
@@ -1268,24 +1267,14 @@ private[akka] object Running {
 
   // FIXME remove instrumentation hook method in 2.10.0
   @InternalStableApi
-  private[akka] def onWriteFailed(
-      @nowarn("msg=never used") ctx: ActorContext[_],
-      @nowarn("msg=never used") reason: Throwable,
-      @nowarn("msg=never used") event: PersistentRepr): Unit = ()
+  private[akka] def onWriteFailed(ctx: ActorContext[_], reason: Throwable, event: PersistentRepr): Unit = ()
   // FIXME remove instrumentation hook method in 2.10.0
   @InternalStableApi
-  private[akka] def onWriteRejected(
-      @nowarn("msg=never used") ctx: ActorContext[_],
-      @nowarn("msg=never used") reason: Throwable,
-      @nowarn("msg=never used") event: PersistentRepr): Unit = ()
+  private[akka] def onWriteRejected(ctx: ActorContext[_], reason: Throwable, event: PersistentRepr): Unit = ()
   // FIXME remove instrumentation hook method in 2.10.0
   @InternalStableApi
-  private[akka] def onWriteSuccess(
-      @nowarn("msg=never used") ctx: ActorContext[_],
-      @nowarn("msg=never used") event: PersistentRepr): Unit = ()
+  private[akka] def onWriteSuccess(ctx: ActorContext[_], event: PersistentRepr): Unit = ()
   // FIXME remove instrumentation hook method in 2.10.0
   @InternalStableApi
-  private[akka] def onWriteDone(
-      @nowarn("msg=never used") ctx: ActorContext[_],
-      @nowarn("msg=never used") event: PersistentRepr): Unit = ()
+  private[akka] def onWriteDone(ctx: ActorContext[_], event: PersistentRepr): Unit = ()
 }

@@ -72,7 +72,7 @@ class InputStreamSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
 
       val arr = new Array[Byte](byteString.size + 1)
       inputStream.read(arr) should ===(arr.size - 1)
-      ByteString(arr) should ===(byteString :+ 0)
+      ByteString(arr) should ===(byteString :+ (0: Byte))
 
       inputStream.close()
     }

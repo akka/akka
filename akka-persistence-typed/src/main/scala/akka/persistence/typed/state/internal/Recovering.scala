@@ -4,7 +4,6 @@
 
 package akka.persistence.typed.state.internal
 
-import scala.annotation.nowarn
 import scala.concurrent.duration._
 
 import akka.actor.typed.Behavior
@@ -129,15 +128,13 @@ private[akka] class Recovering[C, S](
 
   // FIXME remove instrumentation hook method in 2.10.0
   @InternalStableApi
-  def onRecoveryStart(@nowarn("msg=never used") context: ActorContext[_]): Unit = ()
+  def onRecoveryStart(context: ActorContext[_]): Unit = ()
   // FIXME remove instrumentation hook method in 2.10.0
   @InternalStableApi
-  def onRecoveryComplete(@nowarn("msg=never used") context: ActorContext[_]): Unit = ()
+  def onRecoveryComplete(context: ActorContext[_]): Unit = ()
   // FIXME remove instrumentation hook method in 2.10.0
   @InternalStableApi
-  def onRecoveryFailed(
-      @nowarn("msg=never used") context: ActorContext[_],
-      @nowarn("msg=never used") reason: Throwable): Unit = ()
+  def onRecoveryFailed(context: ActorContext[_], reason: Throwable): Unit = ()
 
   private def onRecoveryTimeout(): Behavior[InternalProtocol] = {
     val ex = new RecoveryTimedOut(s"Recovery timed out, didn't get state within ${setup.settings.recoveryTimeout}")

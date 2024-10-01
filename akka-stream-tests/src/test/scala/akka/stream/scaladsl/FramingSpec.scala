@@ -7,7 +7,6 @@ package akka.stream.scaladsl
 import java.nio.ByteOrder
 import java.util.concurrent.ThreadLocalRandom
 
-import scala.annotation.nowarn
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -384,7 +383,7 @@ class FramingSpec extends StreamSpec {
     "ignore length field value when provided computeFrameSize (#27884)" in {
       implicit val bo = java.nio.ByteOrder.LITTLE_ENDIAN
 
-      def computeFrameSize(@nowarn("msg=never used") arr: Array[Byte], @nowarn("msg=never used") l: Int): Int = 8
+      def computeFrameSize(arr: Array[Byte], l: Int): Int = 8
 
       val bs = ByteString.newBuilder.putInt(0xFF010203).putInt(0x04050607).result()
 
@@ -400,7 +399,7 @@ class FramingSpec extends StreamSpec {
     "fail the stage on computeFrameSize values less than minimum chunk size" in {
       implicit val bo = java.nio.ByteOrder.LITTLE_ENDIAN
 
-      def computeFrameSize(@nowarn("msg=never used") arr: Array[Byte], @nowarn("msg=never used") l: Int): Int = 3
+      def computeFrameSize(arr: Array[Byte], l: Int): Int = 3
 
       // A 4-byte message containing only an Int specifying the length of the payload
       val bs = ByteString.newBuilder.putInt(4).result()

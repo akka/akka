@@ -77,8 +77,8 @@ abstract class RestartFirstSeedNodeSpec
       runOn(seed2, seed3) {
         system.actorOf(Props(new Actor {
           def receive = {
-            case a: Address =>
-              seedNode1Address = a
+            case ad: Address =>
+              seedNode1Address = ad
               sender() ! "ok"
           }
         }).withDeploy(Deploy.local), name = "address-receiver")

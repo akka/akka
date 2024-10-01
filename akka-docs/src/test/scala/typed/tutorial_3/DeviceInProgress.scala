@@ -13,9 +13,6 @@ package com.example
 //#read-protocol-1
  */
 
-import akka.actor.typed.PostStop
-import akka.actor.typed.Signal
-
 object DeviceInProgress1 {
 
   //#read-protocol-1
@@ -31,7 +28,6 @@ object DeviceInProgress1 {
 }
 
 object DeviceInProgress2 {
-  import akka.actor.typed.ActorRef
 
   //#device-with-read
   import akka.actor.typed.ActorRef

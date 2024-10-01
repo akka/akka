@@ -5,14 +5,8 @@
 package akka.stream.scaladsl
 
 import akka.testkit.AkkaSpec
-import scala.annotation.nowarn
 
-@nowarn // for keeping imports
 class FlowPrependSpec extends AkkaSpec {
-
-//#prepend
-
-//#prepend
 
   "An Prepend flow" should {
 

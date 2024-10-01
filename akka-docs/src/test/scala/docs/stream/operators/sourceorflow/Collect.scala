@@ -7,6 +7,9 @@ package docs.stream.operators.sourceorflow
 import akka.NotUsed
 import akka.stream.scaladsl.Flow
 
+import scala.annotation.nowarn
+
+@nowarn("msg=never used") // sample snippets
 object Collect {
   //#collect-elements
   trait Message

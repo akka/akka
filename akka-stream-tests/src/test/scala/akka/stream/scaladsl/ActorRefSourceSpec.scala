@@ -203,7 +203,7 @@ class ActorRefSourceSpec extends StreamSpec {
     "fail the stream when receiving failure message" in {
       val s = TestSubscriber.manualProbe[Int]()
       val ref = Source
-        .actorRef(PartialFunction.empty, { case Status.Failure(exc) => exc }, 10, OverflowStrategy.fail)
+        .actorRef(PartialFunction.empty, { case Status.Failure(e) => e }, 10, OverflowStrategy.fail)
         .to(Sink.fromSubscriber(s))
         .run()
       s.expectSubscription()

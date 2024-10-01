@@ -2170,7 +2170,6 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
       }))
   }
 
-  @nowarn("msg=deprecated")
   def receiveFlushChanges(): Unit = {
     def notify(keyId: KeyId, subs: Iterator[ActorRef], sendExpiredIfMissing: Boolean): Unit = {
       val key = subscriptionKeys.get(keyId) match {
@@ -2534,7 +2533,6 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
   private def dropWildcard(keyId: KeyId): KeyId =
     keyId.dropRight(1)
 
-  @nowarn("msg=deprecated")
   def receiveTerminated(ref: ActorRef): Unit = {
     if (ref == durableStore) {
       log.error("Stopping distributed-data Replicator because durable store terminated")

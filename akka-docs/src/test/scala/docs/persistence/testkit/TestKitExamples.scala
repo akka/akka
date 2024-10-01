@@ -13,6 +13,8 @@ import docs.persistence.testkit.PersistenceTestKitSampleSpec.{ Cmd, Evt, _ }
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.wordspec.AnyWordSpecLike
 
+import scala.annotation.nowarn
+
 object PersistenceTestKitSampleSpec {
   final case class Cmd(data: String) extends CborSerializable
   final case class Evt(data: String) extends CborSerializable
@@ -20,6 +22,7 @@ object PersistenceTestKitSampleSpec {
     val empty: State = new State
   }
   final class State extends CborSerializable {
+    @nowarn("msg=never used")
     def updated(event: Evt): State = this
   }
 }
@@ -91,6 +94,7 @@ class SampleEventStoragePolicy extends EventStorage.JournalPolicies.PolicyType {
 }
 //#set-event-storage-policy
 
+@nowarn("msg=never used") // sample snippets
 //#set-snapshot-storage-policy
 class SampleSnapshotStoragePolicy extends SnapshotStorage.SnapshotPolicies.PolicyType {
 

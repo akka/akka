@@ -7,7 +7,6 @@ package akka.cluster.protobuf
 import java.io.{ ByteArrayInputStream, ByteArrayOutputStream }
 import java.util.zip.{ GZIPInputStream, GZIPOutputStream }
 
-import scala.annotation.nowarn
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.duration.Deadline
@@ -235,7 +234,6 @@ final class ClusterMessageSerializer(val system: ExtendedActorSystem)
     builder.build()
   }
 
-  @nowarn("msg=deprecated")
   private def clusterRouterPoolSettingsToProto(settings: ClusterRouterPoolSettings): cm.ClusterRouterPoolSettings = {
     val builder = cm.ClusterRouterPoolSettings.newBuilder()
     builder

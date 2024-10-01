@@ -6,9 +6,12 @@ package docs.stream
 
 import akka.NotUsed
 import akka.stream.FlowShape
-import akka.stream.scaladsl.{ Balance, Flow, GraphDSL, Merge, Source }
+import akka.stream.scaladsl.{ Balance, Flow, GraphDSL, Merge }
 import akka.testkit.AkkaSpec
 
+import scala.annotation.nowarn
+
+@nowarn("msg=never used") // sample snippets
 class FlowParallelismDocSpec extends AkkaSpec {
 
   import GraphDSL.Implicits._

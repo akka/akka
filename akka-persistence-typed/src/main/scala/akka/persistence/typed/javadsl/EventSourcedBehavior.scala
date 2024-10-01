@@ -153,10 +153,7 @@ abstract class EventSourcedBehavior[Command, Event, State] private[akka] (
    * @return `true` if snapshot should be saved at the given `state`, `event` and `sequenceNr` when the event has
    *         been successfully persisted
    */
-  def shouldSnapshot(
-      @nowarn("msg=never used") state: State,
-      @nowarn("msg=never used") event: Event,
-      @nowarn("msg=never used") sequenceNr: Long): Boolean = false
+  def shouldSnapshot(state: State, event: Event, sequenceNr: Long): Boolean = false
 
   /**
    * Can be used to delete events after `shouldSnapshot`.

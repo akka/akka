@@ -18,7 +18,6 @@ class RecipeDroppyBroadcast extends RecipeSpec {
       val sub1 = TestSubscriber.ManualProbe[Int]()
       val sub2 = TestSubscriber.ManualProbe[Int]()
       val sub3 = TestSubscriber.Probe[Int]()
-      val futureSink = Sink.head[Seq[Int]]
       val mySink1 = Sink.fromSubscriber(sub1)
       val mySink2 = Sink.fromSubscriber(sub2)
       val mySink3 = Sink.fromSubscriber(sub3)

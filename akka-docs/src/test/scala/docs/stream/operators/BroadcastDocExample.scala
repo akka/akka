@@ -5,12 +5,13 @@
 package docs.stream.operators
 
 import java.util.concurrent.ThreadLocalRandom
-
 import scala.concurrent.Future
-
 import akka.actor.ActorSystem
 import akka.stream.scaladsl.Broadcast
 
+import scala.annotation.nowarn
+
+@nowarn("msg=never used") // sample snippets
 object BroadcastDocExample {
 
   implicit val system: ActorSystem = ActorSystem("BroadcastDocExample")

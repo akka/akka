@@ -26,7 +26,6 @@ import java.net.ConnectException
 import java.net.InetSocketAddress
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicReference
-import scala.annotation.nowarn
 import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.concurrent.Await
@@ -345,7 +344,6 @@ private[akka] class PlayerHandler(
 
   tryConnectToController()
 
-  @nowarn("msg=deprecated")
   override def exceptionCaught(ctx: ChannelHandlerContext, cause: Throwable): Unit = {
     log.error("channel {} exception {}", ctx.channel(), cause)
     cause match {

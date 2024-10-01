@@ -75,7 +75,7 @@ abstract class ClusterConsistentHashingRouterSpec
    */
   private def fullAddress(actorRef: ActorRef): Address = actorRef.path.address match {
     case Address(_, _, None, None) => cluster.selfAddress
-    case a                         => a
+    case adress                    => adress
   }
 
   "A cluster router with a consistent hashing pool" must {

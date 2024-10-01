@@ -367,7 +367,6 @@ final class UniqueAddress(val address: Address, val longUid: Long)
    * Stops `copy(Address, Long)` copy from being generated, use `apply` instead.
    */
   @deprecated("Use Long UID constructor instead", since = "2.4.11")
-  @nowarn("msg=deprecated")
   def copy(address: Address = address, uid: Int = uid) = new UniqueAddress(address, uid.toLong)
 
 }

@@ -8,6 +8,7 @@ import akka.actor.typed.scaladsl._
 import akka.actor.typed.{ ActorRef, Behavior }
 import akka.util.Timeout
 
+import scala.annotation.nowarn
 import scala.collection.mutable
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -28,6 +29,8 @@ class SharedMutableStateDocSpec {
       new MyActor(context)
     }
   }
+
+  @nowarn("msg=never used") // sample snippets
   //#mutable-state
   class MyActor(context: ActorContext[MyActor.Command]) extends AbstractBehavior[MyActor.Command](context) {
     import MyActor._

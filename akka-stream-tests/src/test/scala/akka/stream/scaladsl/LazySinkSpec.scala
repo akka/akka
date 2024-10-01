@@ -106,6 +106,7 @@ class LazySinkSpec extends StreamSpec("""
 
     "fail gracefully when factory future failed" in {
       val sourceProbe = TestPublisher.manualProbe[Int]()
+      @nowarn("cat=lint-infer-any")
       val futureProbe = Source.fromPublisher(sourceProbe).runWith(Sink.lazyInitAsync(() => Future.failed(ex)))
 
       val sourceSub = sourceProbe.expectSubscription()

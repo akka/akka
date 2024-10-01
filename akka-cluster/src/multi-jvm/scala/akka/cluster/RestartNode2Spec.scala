@@ -76,8 +76,8 @@ abstract class RestartNode2SpecSpec extends MultiNodeClusterSpec(RestartNode2Spe
       runOn(seed2) {
         system.actorOf(Props(new Actor {
           def receive = {
-            case a: Address =>
-              seedNode1Address = a
+            case ad: Address =>
+              seedNode1Address = ad
               sender() ! "ok"
           }
         }).withDeploy(Deploy.local), name = "address-receiver")

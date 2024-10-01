@@ -7,21 +7,21 @@ package docs.persistence.query
 import akka.NotUsed
 import akka.actor._
 import akka.persistence.query._
-import akka.stream.scaladsl.{ Flow, Sink, Source }
+import akka.stream.scaladsl.{ Sink, Source }
 import akka.stream.javadsl
 import akka.testkit.AkkaSpec
 import akka.util.Timeout
 import org.reactivestreams.Subscriber
+
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.duration._
-
-import akka.Done
-import akka.actor.typed.Behavior
-import akka.actor.typed.scaladsl.Behaviors
 import com.typesafe.config.Config
 
+import scala.annotation.nowarn
+
+@nowarn("msg=never used") // sample snippets
 object PersistenceQueryDocSpec {
 
   implicit val timeout: Timeout = Timeout(3.seconds)
@@ -172,6 +172,7 @@ object PersistenceQueryDocSpec {
 
 }
 
+@nowarn("msg=never used") // sample snippets
 class PersistenceQueryDocSpec(s: String) extends AkkaSpec(s) {
   import PersistenceQueryDocSpec._
 

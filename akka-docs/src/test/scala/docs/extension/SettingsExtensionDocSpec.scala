@@ -13,9 +13,11 @@ import akka.actor.ExtendedActorSystem
 
 import scala.concurrent.duration.Duration
 import com.typesafe.config.Config
-import java.util.concurrent.TimeUnit
 
+import java.util.concurrent.TimeUnit
 import akka.actor.ClassicActorSystemProvider
+
+import scala.annotation.nowarn
 
 //#imports
 
@@ -46,6 +48,7 @@ object Settings extends ExtensionId[SettingsImpl] with ExtensionIdProvider {
 }
 //#extensionid
 
+@nowarn("msg=never used") // sample snippets
 object SettingsExtensionDocSpec {
 
   val config = """
@@ -79,6 +82,7 @@ object SettingsExtensionDocSpec {
 
 }
 
+@nowarn("msg=never used") // sample snippets
 class SettingsExtensionDocSpec extends AkkaSpec(SettingsExtensionDocSpec.config) {
 
   "demonstrate how to create application specific settings extension in Scala" in {

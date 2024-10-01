@@ -10,6 +10,8 @@ import akka.{ Done, NotUsed }
 import akka.actor.ActorSystem
 import akka.stream.{ ClosedShape, OverflowStrategy }
 import akka.stream.scaladsl._
+
+import scala.annotation.nowarn
 import scala.concurrent.Await
 import scala.concurrent.Future
 import scala.io.StdIn.readLine
@@ -59,6 +61,7 @@ object TwitterStreamQuickstartDocSpec {
     Nil)
 }
 
+@nowarn("msg=never used") // sample snippets
 class TwitterStreamQuickstartDocSpec extends AkkaSpec {
   import TwitterStreamQuickstartDocSpec._
 

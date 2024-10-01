@@ -434,7 +434,6 @@ trait MetricsSelector extends Serializable {
  * A MetricsSelector producing weights from remaining capacity.
  * The weights are typically proportional to the remaining capacity.
  */
-@nowarn("msg=deprecated")
 @SerialVersionUID(1L)
 abstract class CapacityMetricsSelector extends MetricsSelector {
 

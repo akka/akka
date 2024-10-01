@@ -16,6 +16,8 @@ import akka.actor.ActorRefFactory
 import akka.testkit.TestKit
 import org.scalatest.BeforeAndAfterAll
 
+import scala.annotation.nowarn
+
 /**
  * Parent-Child examples
  */
@@ -75,6 +77,7 @@ class MockedChild extends Actor {
   }
 }
 
+@nowarn("msg=never used") // sample snippets
 class ParentChildSpec extends AnyWordSpec with Matchers with TestKitBase with BeforeAndAfterAll {
   implicit lazy val system: ActorSystem = ActorSystem("ParentChildSpec")
 

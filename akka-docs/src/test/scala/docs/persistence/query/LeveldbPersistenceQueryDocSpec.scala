@@ -10,6 +10,8 @@ import akka.persistence.query.{ EventEnvelope, PersistenceQuery, Sequence }
 import akka.persistence.query.journal.leveldb.scaladsl.LeveldbReadJournal
 import akka.stream.scaladsl.Source
 
+import scala.annotation.nowarn
+
 object LeveldbPersistenceQueryDocSpec {
   //#tagger
   import akka.persistence.journal.WriteEventAdapter
@@ -32,6 +34,8 @@ object LeveldbPersistenceQueryDocSpec {
   //#tagger
 }
 
+@nowarn("msg=deprecated")
+@nowarn("msg=never used") // sample snippets
 class LeveldbPersistenceQueryDocSpec
     extends AkkaSpec("akka.persistence.journal.plugin = akka.persistence.journal.leveldb") {
 

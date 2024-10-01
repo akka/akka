@@ -4,7 +4,6 @@
 
 package akka.persistence.journal
 
-import scala.annotation.nowarn
 import scala.concurrent.duration._
 
 import com.typesafe.config._
@@ -69,7 +68,7 @@ abstract class JournalSpec(config: Config)
    * test case. `pid` is the `persistenceId` that will be used in the test.
    * This method may be needed to clean pre-existing events from the log.
    */
-  def preparePersistenceId(@nowarn("msg=never used") pid: String): Unit = ()
+  def preparePersistenceId(pid: String): Unit = ()
 
   /**
    * Implementation may override and return false if it does not

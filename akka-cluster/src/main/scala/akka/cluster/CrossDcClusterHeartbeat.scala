@@ -36,7 +36,6 @@ import akka.util.ConstantFun
  */
 @InternalApi
 @deprecated("Use Akka Distributed Cluster instead", "2.10.0")
-@nowarn("msg=Use Akka Distributed Cluster")
 private[cluster] class CrossDcHeartbeatSender extends Actor {
   import CrossDcHeartbeatSender._
 

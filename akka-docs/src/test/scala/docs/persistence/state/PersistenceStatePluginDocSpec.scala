@@ -4,17 +4,12 @@
 
 package docs.persistence.state
 
-import akka.Done
-import akka.actor.{ ActorSystem, ExtendedActorSystem }
-
-import akka.persistence.state.scaladsl.DurableStateStore
-import akka.persistence.state.{ DurableStateStoreProvider, DurableStateStoreRegistry }
+import akka.actor.ActorSystem
+import akka.persistence.state.DurableStateStoreRegistry
 import akka.testkit.TestKit
 import com.typesafe.config._
-import docs.persistence
 import org.scalatest.wordspec.AnyWordSpec
 
-import scala.concurrent.Future
 import scala.concurrent.duration._
 
 //#plugin-imports
@@ -24,6 +19,8 @@ import akka.persistence.state.scaladsl.GetObjectResult
 //#plugin-imports
 
 class PersistenceStatePluginDocSpec extends AnyWordSpec {
+
+  val compilerPleaser = GetObjectResult
 
   val providerConfigJava =
     """

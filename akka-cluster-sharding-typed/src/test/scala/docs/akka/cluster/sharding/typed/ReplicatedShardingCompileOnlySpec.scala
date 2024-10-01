@@ -16,7 +16,6 @@ import akka.persistence.typed.ReplicaId
 import akka.persistence.typed.ReplicationId
 import scala.annotation.nowarn
 
-@nowarn("msg=never used")
 @nowarn("msg=Use Akka Distributed Cluster")
 object ReplicatedShardingCompileOnlySpec {
 

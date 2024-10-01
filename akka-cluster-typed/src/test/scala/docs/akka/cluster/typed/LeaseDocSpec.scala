@@ -16,7 +16,7 @@ import scala.annotation.nowarn
 import scala.concurrent.duration.DurationInt
 
 object LeaseDocSpec {
-  @nowarn("msg=interpolation")
+
   def config = ConfigFactory.parseString("""
       // #singleton-config
       my.app.my-singleton-lease {

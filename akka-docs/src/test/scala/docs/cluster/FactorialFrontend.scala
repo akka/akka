@@ -13,8 +13,6 @@ import akka.actor.Props
 import akka.cluster.Cluster
 import akka.routing.FromConfig
 import akka.actor.ReceiveTimeout
-import scala.util.Try
-import scala.concurrent.Await
 
 //#frontend
 class FactorialFrontend(upToN: Int, repeat: Boolean) extends Actor with ActorLogging {

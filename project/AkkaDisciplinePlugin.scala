@@ -66,14 +66,12 @@ object AkkaDisciplinePlugin extends AutoPlugin {
     "akka-testkit")
 
   // cat=lint-deprecation: we want to keep using both Java and Scala deprecation annotations
-  val defaultScala2Options = "-Wconf:cat=unused-nowarn:s,cat=lint-infer-any:s,cat=lint-deprecation:s,any:e"
-  // cat=other-shadowing: a good warning, but we do re-use names so much all over the tests that it is a ton of work to fix
-  val defaultScala2TestOptions =
-    "-Wconf:cat=unused-nowarn:s,cat=lint-infer-any:s,cat=other-shadowing:s,any:e"
+  val defaultScala2Options = "-Wconf:any:e,cat=lint-deprecation:s"
+  val defaultScala2TestOptions = "-Wconf:any:e"
 
   // deprecation doesn't quite seem to work, warns for the location of the annotation
   // We have SerialVersionUID on traits which doesn't make sense but needs to stay for historical/compat reasons
-  val defaultScala3Options = "-Wconf:cat=deprecation:s,msg=SerialVersionUID does nothing:s,any:e"
+  val defaultScala3Options = "-Wconf:any:e,cat=deprecation:s,msg=SerialVersionUID does nothing:s"
 
   lazy val nowarnSettings = Seq(
     Compile / scalacOptions += (
@@ -92,12 +90,12 @@ object AkkaDisciplinePlugin extends AutoPlugin {
   val docs =
     Seq(
       Compile / scalacOptions --= Seq(defaultScala2Options, defaultScala3Options),
-      Compile / scalacOptions += "-Wconf:cat=unused:s,cat=deprecation:s,cat=unchecked:s,any:e",
+      Compile / scalacOptions += "-Wconf:any:e,cat=unused:s,cat=deprecation:s,cat=unchecked:s",
       Test / scalacOptions --= Seq("-Xlint", "-unchecked", "-deprecation"),
       Test / scalacOptions --= Seq(defaultScala2Options, defaultScala3Options),
       Test / scalacOptions +=
         (if (scalaVersion.value.startsWith("3.")) defaultScala3Options
-         else "-Wconf:cat=unused:s,cat=deprecation:s,cat=unchecked:s,any:e"),
+         else "-Wconf:cat=any:e,unused:s,cat=deprecation:s,cat=unchecked:s"),
       Compile / doc / scalacOptions := Seq())
 
   lazy val disciplineSettings =

@@ -7,7 +7,6 @@ package akka.remote.artery
 import java.io.NotSerializableException
 import java.util.concurrent.ThreadLocalRandom
 
-import scala.annotation.nowarn
 import scala.concurrent.duration._
 
 import akka.actor.Actor
@@ -102,7 +101,7 @@ class RemoteMessageSerializationSpec extends ArteryMultiNodeSpec with ImplicitSe
         case x      => sender() ! x
       }
     }), bigBounceId)
-    @nowarn
+
     val bigBounceHere =
       RARP(system).provider.resolveActorRef(s"akka://${remoteSystem.name}@localhost:$remotePort/user/$bigBounceId")
 

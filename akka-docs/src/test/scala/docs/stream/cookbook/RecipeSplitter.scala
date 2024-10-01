@@ -46,7 +46,7 @@ class RecipeSplitter extends AnyWordSpec with BeforeAndAfterAll with Matchers wi
       val result = source
         .map(s => s.split("-").toList)
         //split all messages into sub-streams
-        .splitWhen(a => true)
+        .splitWhen(_ => true)
         //now split each collection
         .mapConcat(identity)
         //Sub-streams logic
