@@ -65,4 +65,5 @@ jobs:
           -Dakka.test.multi-node=false \
           -Dsbt.log.noformat=false \
           -Dakka.log.timestamps=true \
+          -Dakka.warn-on-no-license-key=false \
           validateCompile validatePullRequest
