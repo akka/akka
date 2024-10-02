@@ -10,6 +10,9 @@ on:
       - docs/v*
     tags: ["*"]
 
+permissions:
+  contents: read
+
 jobs:
   documentation:
     name: Documentation
@@ -28,13 +31,13 @@ jobs:
       - name: Publish
         run: |-
           eval "$(ssh-agent -s)"
-          echo $SCP_SECRET | base64 -d > /tmp/id_rsa
-          chmod 600 /tmp/id_rsa
-          ssh-add /tmp/id_rsa
+          echo $AKKA_RSYNC_GUSTAV | base64 -d > .github/id_rsa
+          chmod 600 .github/id_rsa
+          ssh-add .github/id_rsa
           # using Scala 2.13 here to avoid the infamous problem with missing AskSupport in classpath
           sbt -Dakka.genjavadoc.enabled=true "+~ 2.13 publishRsync"
         env:
-          SCP_SECRET: ${{ secrets.SCP_SECRET }}
+          AKKA_RSYNC_GUSTAV: ${{ secrets.AKKA_RSYNC_GUSTAV }}
 
       - name: Email on failure
         if: ${{ failure() }}
