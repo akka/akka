@@ -92,6 +92,7 @@ jobs:
             -Dmultinode.Xmx512M \
             -Dmultinode.Xlog:gc \
             -Dmultinode.XX:+AlwaysActAsServerClassMachine \
+            -Dakka.warn-on-no-license-key=false \
             multiNodeTest
 
       - name: Email on failure
