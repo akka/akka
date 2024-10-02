@@ -16,11 +16,11 @@ object MiMa extends AutoPlugin {
   private val firstPatchOf26 = 6
   private val latestPatchOf26 = 21
   private val firstPatchOf27 = 0
-  private val latestPatchOf27 = 0
+  private val latestPatchOf27 = 1
   private val firstPatchOf28 = 0
-  private val latestPatchOf28 = 6
+  private val latestPatchOf28 = 7
   private val firstPatchOf29 = 0
-  private val latestPatchOf29 = 5
+  private val latestPatchOf29 = 6
 
   override def requires = MimaPlugin
   override def trigger = allRequirements
@@ -45,7 +45,7 @@ object MiMa extends AutoPlugin {
       projectName: String,
       organization: String,
       scalaBinaryVersion: String): Set[sbt.ModuleID] = {
-    val akka28Previous = expandVersions(2, 8, firstPatchOf28 to latestPatchOf28) :+ "2.7.0"
+    val akka28Previous = expandVersions(2, 8, firstPatchOf28 to latestPatchOf28) :+ "2.7.1"
     val akka29Previous = expandVersions(2, 9, firstPatchOf29 to latestPatchOf29)
     val versions: Seq[String] =
       if (scalaBinaryVersion.startsWith("3")) {
