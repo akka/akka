@@ -276,7 +276,7 @@ abstract class AbstractActor extends Actor {
   @throws(classOf[Exception])
   override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
     import scala.jdk.OptionConverters._
-    preRestart(reason, message.asJava)
+    preRestart(reason, message.toJava)
   }
 
   /**
