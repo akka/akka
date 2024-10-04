@@ -405,8 +405,8 @@ class DistributedDataDocSpec extends AkkaSpec(DistributedDataDocSpec.config) {
     s1.getElements.asScala should be(Set("a", "c"))
     val serializer = SerializationExtension(system).findSerializerFor(s1)
     val blob = serializer.toBinary(s1)
-    val s2 = serializer.fromBinary(blob, None)
-    s1 should be(s2)
+    val s2 = serializer.fromBinary(blob, None).asInstanceOf[ddata.TwoPhaseSet]
+    s1.getElements should be(s2.getElements) // no equals on ddata.TwoPhaseSet
   }
 
 }
