@@ -7,7 +7,6 @@ package akka.persistence
 import scala.collection.immutable
 import java.util.concurrent.atomic.AtomicInteger
 
-import scala.annotation.nowarn
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.Random
@@ -357,7 +356,6 @@ object PersistentActorSpec {
       extends AsyncPersistSameEventTwicePersistentActor(name)
       with InmemRuntimePluginConfig
 
-  @nowarn // compiler knows persistAll(Nil)(lambda) will never invoke lambda
   class PersistAllNilPersistentActor(name: String) extends ExamplePersistentActor(name) {
 
     val receiveCommand: Receive = commonBehavior.orElse {

@@ -3322,7 +3322,7 @@ trait FlowOps[+Out, +Mat] {
     that match {
       case source if TraversalBuilder.isEmptySource(source) => this.asInstanceOf[Repr[U]]
       case other =>
-        TraversalBuilder.getSingleSource(other) match {
+        TraversalBuilder.getSingleSource[Any](other) match {
           case OptionVal.Some(singleSource) =>
             via(new SingleConcat(singleSource.elem.asInstanceOf[U]))
           case _ => via(concatGraph(other, detached))

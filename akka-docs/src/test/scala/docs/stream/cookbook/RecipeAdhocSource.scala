@@ -23,7 +23,7 @@ class RecipeAdhocSource extends RecipeSpec {
         source
           .backpressureTimeout(timeout)
           .recoverWithRetries(maxRetries, {
-            case t: TimeoutException =>
+            case _: TimeoutException =>
               Source.lazySource(() => source.backpressureTimeout(timeout)).mapMaterializedValue(_ => NotUsed)
           }))
   //#adhoc-source

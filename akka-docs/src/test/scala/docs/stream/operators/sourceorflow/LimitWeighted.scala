@@ -9,8 +9,10 @@ import akka.actor.typed.ActorSystem
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 
+import scala.annotation.nowarn
 import scala.concurrent.Future
 
+@nowarn("msg=never used") // sample snippets
 object LimitWeighted {
 
   implicit val system: ActorSystem[_] = ???

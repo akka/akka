@@ -6,11 +6,7 @@ package akka.cluster.sharding.typed.internal
 
 import java.util.{ Map => JMap }
 import java.util.concurrent.atomic.AtomicLong
-
-import scala.annotation.nowarn
-
 import org.slf4j.LoggerFactory
-
 import akka.actor.typed.ActorSystem
 import akka.annotation.InternalApi
 import akka.cluster.ClusterSettings.DataCenter
@@ -23,13 +19,14 @@ import akka.cluster.sharding.typed.scaladsl.EntityRef
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
 import akka.persistence.typed.ReplicaId
 import akka.persistence.typed.ReplicationId
+
+import scala.annotation.nowarn
 import scala.jdk.CollectionConverters._
 
 /**
  * INTERNAL API
  */
 @InternalApi
-@nowarn("msg=Use Akka Distributed Cluster")
 private[akka] final class ReplicatedShardingExtensionImpl(system: ActorSystem[_]) extends ReplicatedShardingExtension {
 
   private val counter = new AtomicLong(0)

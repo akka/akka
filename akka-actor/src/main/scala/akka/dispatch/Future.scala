@@ -193,7 +193,7 @@ object japi {
       internal(t)
       BoxedUnit.UNIT
     }
-    protected def internal(@nowarn("msg=never used") result: T): Unit = ()
+    protected def internal(result: T): Unit = ()
   }
 
   @deprecated("Do not use this directly, use 'Recover'", "2.0")
@@ -206,7 +206,7 @@ object japi {
   @deprecated("Do not use this directly, use subclasses of this", "2.0")
   class BooleanFunctionBridge[-T] extends scala.Function1[T, Boolean] {
     override final def apply(t: T): Boolean = internal(t)
-    protected def internal(@nowarn("msg=never used") result: T): Boolean = false
+    protected def internal(result: T): Boolean = false
   }
 
   @deprecated("Do not use this directly, use subclasses of this", "2.0")
@@ -216,7 +216,7 @@ object japi {
     final def apply$mcLF$sp(f: Float): BoxedUnit = { internal(f.asInstanceOf[T]); BoxedUnit.UNIT }
     final def apply$mcLD$sp(d: Double): BoxedUnit = { internal(d.asInstanceOf[T]); BoxedUnit.UNIT }
     override final def apply(t: T): BoxedUnit = { internal(t); BoxedUnit.UNIT }
-    protected def internal(@nowarn("msg=never used") result: T): Unit = ()
+    protected def internal(result: T): Unit = ()
   }
 }
 
@@ -376,6 +376,6 @@ abstract class Mapper[-T, +R] extends scala.runtime.AbstractFunction1[T, R] {
    * Throws UnsupportedOperation by default.
    */
   @throws(classOf[Throwable])
-  def checkedApply(@nowarn("msg=never used") parameter: T): R =
+  def checkedApply(parameter: T): R =
     throw new UnsupportedOperationException("Mapper.checkedApply has not been implemented")
 }

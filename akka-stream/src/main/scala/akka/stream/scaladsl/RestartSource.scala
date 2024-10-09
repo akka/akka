@@ -5,7 +5,6 @@
 package akka.stream.scaladsl
 
 import scala.concurrent.duration.FiniteDuration
-
 import akka.NotUsed
 import akka.stream.{ Attributes, Outlet, RestartSettings, SourceShape }
 import akka.stream.stage.{ GraphStage, GraphStageLogic }

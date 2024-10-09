@@ -10,7 +10,7 @@ import java.util.ArrayList
 import java.util.Optional
 import java.util.concurrent.CompletionStage
 
-import scala.annotation.{ nowarn, switch }
+import scala.annotation.switch
 import scala.concurrent.ExecutionContext
 import scala.concurrent.{ ExecutionContextExecutor, Future }
 import scala.jdk.DurationConverters._
@@ -233,7 +233,6 @@ import akka.util.Timeout
     }
 
   // Java API impl
-  @nowarn("msg=never used") // resClass is just a pretend param
   override def ask[Req, Res](
       resClass: Class[Res],
       target: RecipientRef[Req],
@@ -269,7 +268,7 @@ import akka.util.Timeout
 
   // Scala API impl
   def pipeToSelf[Value](future: Future[Value])(mapResult: Try[Value] => T): Unit = {
-    future.onComplete(value => self.unsafeUpcast ! AdaptMessage(value, mapResult))(ExecutionContext.parasitic)
+    future.onComplete(value => self.unsafeUpcast[Any] ! AdaptMessage(value, mapResult))(ExecutionContext.parasitic)
   }
 
   // Java API impl
@@ -278,8 +277,8 @@ import akka.util.Timeout
       applyToResult: akka.japi.function.Function2[Value, Throwable, T]): Unit = {
     future.whenComplete { (value, ex) =>
       if (ex != null)
-        self.unsafeUpcast ! AdaptMessage(ex, applyToResult.apply(null.asInstanceOf[Value], _: Throwable))
-      else self.unsafeUpcast ! AdaptMessage(value, applyToResult.apply(_: Value, null))
+        self.unsafeUpcast[Any] ! AdaptMessage(ex, applyToResult.apply(null.asInstanceOf[Value], _: Throwable))
+      else self.unsafeUpcast[Any] ! AdaptMessage(value, applyToResult.apply(_: Value, null))
     }
   }
 

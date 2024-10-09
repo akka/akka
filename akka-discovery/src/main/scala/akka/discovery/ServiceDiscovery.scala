@@ -8,16 +8,16 @@ import java.net.InetAddress
 import java.util.Optional
 import java.util.concurrent.CompletionStage
 import java.util.concurrent.TimeUnit
-
 import scala.collection.immutable
 import scala.jdk.DurationConverters._
 import scala.jdk.FutureConverters._
 import scala.jdk.OptionConverters._
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
-
 import akka.actor.{ DeadLetterSuppression, NoSerializationVerificationNeeded }
 import akka.util.HashCode
+
+import scala.annotation.nowarn
 
 object ServiceDiscovery {
 
@@ -184,7 +184,7 @@ final class Lookup(
       serviceName: String = serviceName,
       portName: Option[String] = portName,
       protocol: Option[String] = protocol,
-      discardCache: Boolean = discardCache): Lookup =
+      @nowarn("cat=unused-params") discardCache: Boolean = discardCache): Lookup =
     new Lookup(serviceName, portName, protocol)
 
   override def toString: String = s"Lookup($serviceName,$portName,$protocol)"

@@ -30,7 +30,6 @@ import akka.remote.HeartbeatMessage
  * Receives Heartbeat messages and replies.
  */
 @InternalApi
-@nowarn("msg=Use Akka Distributed Cluster")
 private[cluster] final class ClusterHeartbeatReceiver(getCluster: () => Cluster) extends Actor {
   import ClusterHeartbeatSender._
 

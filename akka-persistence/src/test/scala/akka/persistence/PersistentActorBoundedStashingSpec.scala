@@ -5,16 +5,16 @@
 package akka.persistence
 
 import scala.concurrent.duration._
-
 import com.typesafe.config.Config
 import org.scalatest.BeforeAndAfterEach
-
 import akka.actor.DeadLetter
 import akka.persistence.PersistentActorBoundedStashingSpec._
 import akka.persistence.journal.SteppingInmemJournal
 import akka.testkit.EventFilter
 import akka.testkit.ImplicitSender
 import akka.testkit.TestEvent.Mute
+
+import scala.annotation.nowarn
 
 object PersistentActorBoundedStashingSpec {
   final case class Cmd(data: Any)
@@ -117,6 +117,7 @@ class ThrowExceptionStrategyPersistentActorBoundedStashingSpec
   }
 }
 
+@nowarn("cat=lint-infer-any")
 class DiscardStrategyPersistentActorBoundedStashingSpec
     extends SteppingInMemPersistentActorBoundedStashingSpec(PersistentActorBoundedStashingSpec.discardConfig) {
   "Stashing with DiscardToDeadLetterStrategy in a persistence actor " should {
@@ -149,6 +150,7 @@ class DiscardStrategyPersistentActorBoundedStashingSpec
   }
 }
 
+@nowarn("cat=lint-infer-any")
 class ReplyToStrategyPersistentActorBoundedStashingSpec
     extends SteppingInMemPersistentActorBoundedStashingSpec(PersistentActorBoundedStashingSpec.replyToConfig) {
   "Stashing with DiscardToDeadLetterStrategy in a persistence actor" should {

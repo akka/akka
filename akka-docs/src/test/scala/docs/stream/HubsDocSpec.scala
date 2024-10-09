@@ -11,8 +11,10 @@ import akka.testkit.AkkaSpec
 import docs.CompileOnlySpec
 
 import scala.concurrent.duration._
-import akka.stream.ThrottleMode
 
+import scala.annotation.nowarn
+
+@nowarn("msg=never used") // sample snippets
 class HubsDocSpec extends AkkaSpec with CompileOnlySpec {
 
   "Hubs" must {

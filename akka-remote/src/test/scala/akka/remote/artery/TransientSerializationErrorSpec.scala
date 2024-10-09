@@ -97,7 +97,7 @@ class TransientSerializationErrorSpec
       expectMsg("ping")
 
       // none of these should tear down the connection
-      List(
+      List[AnyRef](
         ManifestIllegal,
         ManifestNotSerializable,
         ToBinaryIllegal,

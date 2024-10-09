@@ -6,6 +6,9 @@ package docs.actor.typed
 
 import akka.actor.typed.scaladsl.ActorContext
 
+import scala.annotation.nowarn
+
+@nowarn("msg=never used") // sample snippets
 object DispatcherDocSpec {
 
   val context: ActorContext[Integer] = ???

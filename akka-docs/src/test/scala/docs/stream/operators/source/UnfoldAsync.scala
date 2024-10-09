@@ -12,9 +12,11 @@ import akka.util.ByteString
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.util.Timeout
 
+import scala.annotation.nowarn
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
+@nowarn("msg=never used") // sample snippets
 object UnfoldAsync {
 
   // #unfoldAsync-actor-protocol

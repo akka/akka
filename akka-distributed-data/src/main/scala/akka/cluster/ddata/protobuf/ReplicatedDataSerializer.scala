@@ -11,7 +11,6 @@ import java.util.ArrayList
 import java.util.Collections
 import java.util.Comparator
 
-import scala.annotation.nowarn
 import scala.annotation.tailrec
 import scala.collection.immutable
 
@@ -44,7 +43,6 @@ private object ReplicatedDataSerializer {
     def getKey(entry: A): Any
     final def compare(x: A, y: A): Int = compareKeys(getKey(x), getKey(y))
 
-    @nowarn("msg=deprecated")
     private final def compareKeys(t1: Any, t2: Any): Int = (t1, t2) match {
       case (k1: String, k2: String)             => k1.compareTo(k2)
       case (_: String, _)                       => -1

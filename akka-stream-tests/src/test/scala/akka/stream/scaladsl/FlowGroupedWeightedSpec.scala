@@ -4,7 +4,6 @@
 
 package akka.stream.scaladsl
 
-import scala.annotation.nowarn
 import scala.collection.immutable
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -19,7 +18,7 @@ class FlowGroupedWeightedSpec extends StreamSpec("""
   "A GroupedWeighted" must {
     "produce no group (empty sink sequence) when source is empty" in {
       val input = immutable.Seq.empty
-      def costFn(@nowarn("msg=never used") e: Int): Long = 999999L // set to an arbitrarily big value
+      def costFn(e: Int): Long = 999999L // set to an arbitrarily big value
       val future = Source(input).groupedWeighted(1)(costFn).runWith(Sink.seq)
       val result = Await.result(future, remainingOrDefault)
       result should be(Seq.empty)
@@ -27,7 +26,7 @@ class FlowGroupedWeightedSpec extends StreamSpec("""
 
     "always exhaust a source into a single group if cost is 0" in {
       val input = (1 to 15)
-      def costFn(@nowarn("msg=never used") e: Int): Long = 0L
+      def costFn(e: Int): Long = 0L
       val minWeight = 1 // chose the least possible value for minWeight
       val future = Source(input).groupedWeighted(minWeight)(costFn).runWith(Sink.seq)
       val result = Await.result(future, remainingOrDefault)
@@ -36,7 +35,7 @@ class FlowGroupedWeightedSpec extends StreamSpec("""
 
     "exhaust source into one group if minWeight equals the accumulated cost of the source" in {
       val input = (1 to 16)
-      def costFn(@nowarn("msg=never used") e: Int): Long = 1L
+      def costFn(e: Int): Long = 1L
       val minWeight = input.length
       val future = Source(input).groupedWeighted(minWeight)(costFn).runWith(Sink.seq)
       val result = Await.result(future, remainingOrDefault)

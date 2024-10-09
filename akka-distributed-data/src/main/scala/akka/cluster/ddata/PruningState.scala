@@ -4,8 +4,6 @@
 
 package akka.cluster.ddata
 
-import scala.annotation.nowarn
-
 import akka.actor.Address
 import akka.annotation.InternalApi
 import akka.cluster.Member
@@ -24,7 +22,7 @@ import akka.cluster.UniqueAddress
   }
   final case class PruningPerformed(obsoleteTime: Long) extends PruningState {
     def isObsolete(currentTime: Long): Boolean = obsoleteTime <= currentTime
-    def addSeen(@nowarn("msg=never used") node: Address): PruningState = this
+    def addSeen(node: Address): PruningState = this
     def estimatedSize: Int = EstimatedSize.LongValue
   }
 }

@@ -9,9 +9,11 @@ import akka.stream.{ DelayOverflowStrategy, KillSwitches }
 import akka.testkit.AkkaSpec
 import docs.CompileOnlySpec
 
+import scala.annotation.nowarn
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
+@nowarn("msg=deprecated")
 class KillSwitchDocSpec extends AkkaSpec with CompileOnlySpec {
 
   "Unique kill switch" must {

@@ -8,9 +8,10 @@ import akka.actor._
 import akka.pattern.{ BackoffOpts, BackoffSupervisor }
 import akka.persistence._
 
+import scala.annotation.nowarn
 import scala.concurrent.duration._
-import scala.language.postfixOps
 
+@nowarn("msg=never used") // sample snippets
 object PersistenceDocSpec {
 
   trait SomeOtherMessage

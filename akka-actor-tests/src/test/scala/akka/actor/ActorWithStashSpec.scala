@@ -4,7 +4,6 @@
 
 package akka.actor
 
-import scala.annotation.nowarn
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
@@ -97,7 +96,6 @@ object ActorWithStashSpec {
 
 }
 
-@nowarn
 class ActorWithStashSpec extends AkkaSpec with DefaultTimeout with BeforeAndAfterEach {
   import ActorWithStashSpec._
 

@@ -11,9 +11,11 @@ import akka.stream.scaladsl._
 import akka.testkit.AkkaSpec
 import akka.util.ByteString
 
+import scala.annotation.nowarn
 import scala.concurrent.{ Future, Promise }
 import scala.concurrent.ExecutionContext
 
+@nowarn("msg=never used") // sample snippets
 class CompositionDocSpec extends AkkaSpec {
 
   implicit val ec: ExecutionContext = system.dispatcher

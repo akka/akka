@@ -9,6 +9,10 @@ import akka.stream._
 import akka.stream.scaladsl._
 import akka.testkit.AkkaSpec
 
+import scala.annotation.nowarn
+
+@nowarn("msg=deprecated")
+@nowarn("msg=never used") // sample snippets
 class StreamBuffersRateSpec extends AkkaSpec {
 
   "Demonstrate pipelining" in {

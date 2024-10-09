@@ -4,7 +4,6 @@
 
 package akka.persistence.typed.telemetry
 
-import scala.annotation.nowarn
 import scala.collection.immutable
 import scala.jdk.CollectionConverters._
 
@@ -150,7 +149,7 @@ object EmptyEventSourcedBehaviorInstrumentation extends EmptyEventSourcedBehavio
 class EmptyEventSourcedBehaviorInstrumentation extends EventSourcedBehaviorInstrumentation {
   import EventSourcedBehaviorInstrumentation.{ Context, EmptyContext }
 
-  def this(@nowarn("msg=never used") system: ActorSystem[_]) = this()
+  def this(system: ActorSystem[_]) = this()
 
   override def actorInitialized(actorRef: ActorRef[_]): Unit = ()
 

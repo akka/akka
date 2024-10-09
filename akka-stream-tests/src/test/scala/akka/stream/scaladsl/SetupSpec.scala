@@ -9,7 +9,7 @@ import scala.annotation.nowarn
 import akka.NotUsed
 import akka.stream.testkit.StreamSpec
 
-@nowarn("msg=deprecated")
+@nowarn("msg=deprecated") @nowarn("cat=lint-infer-any")
 class SetupSpec extends StreamSpec {
 
   "Source.setup" should {

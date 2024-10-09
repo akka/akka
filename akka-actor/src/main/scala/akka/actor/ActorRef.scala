@@ -107,7 +107,6 @@ object ActorRef {
  * Not for user extension
  */
 @DoNotInherit
-@nowarn("msg=deprecated")
 abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable {
   scalaRef: InternalActorRef with ActorRefScope =>
 

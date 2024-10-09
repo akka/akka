@@ -229,7 +229,7 @@ trait ActorContext extends ActorRefFactory with ClassicActorContextProvider {
   /**
    * ActorContexts shouldn't be Serializable
    */
-  final protected def writeObject(@nowarn("msg=never used") o: ObjectOutputStream): Unit =
+  final protected def writeObject(o: ObjectOutputStream): Unit =
     throw new NotSerializableException("ActorContext is not serializable!")
 }
 
@@ -403,7 +403,6 @@ private[akka] object ActorCell {
  * INTERNAL API
  */
 @InternalApi
-@nowarn("msg=deprecated")
 private[akka] class ActorCell(
     val system: ActorSystemImpl,
     val self: InternalActorRef,

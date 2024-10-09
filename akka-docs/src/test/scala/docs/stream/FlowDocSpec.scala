@@ -6,7 +6,7 @@ package docs.stream
 
 import akka.Done
 import akka.NotUsed
-import akka.actor.{ Actor, ActorSystem, Cancellable }
+import akka.actor.{ Actor, Cancellable }
 import akka.stream.CompletionStrategy
 import akka.stream.Materializer
 import akka.stream.{ ClosedShape, FlowShape, OverflowStrategy }
@@ -14,10 +14,12 @@ import akka.stream.scaladsl._
 import akka.testkit.AkkaSpec
 import docs.CompileOnlySpec
 
+import scala.annotation.nowarn
 import scala.concurrent.{ Future, Promise }
 import scala.util.{ Failure, Success }
 import scala.concurrent.ExecutionContext
 
+@nowarn("msg=never used") // sample snippets
 class FlowDocSpec extends AkkaSpec with CompileOnlySpec {
 
   implicit val ec: ExecutionContext = system.dispatcher

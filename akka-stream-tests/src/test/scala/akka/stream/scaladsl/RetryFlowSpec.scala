@@ -283,7 +283,7 @@ class RetryFlowSpec extends StreamSpec("""
       val timesBetweenRetries = retriedAt
         .sliding(2)
         .collect {
-          case before :: after :: Nil => before - after
+          case before :: foundAfter :: Nil => before - foundAfter
         }
         .toIndexedSeq
 

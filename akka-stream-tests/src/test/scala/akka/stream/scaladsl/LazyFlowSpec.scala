@@ -142,6 +142,7 @@ class LazyFlowSpec extends StreamSpec("""
     }
 
     "fail the flow when the factory function fails" in {
+      @nowarn("cat=lint-infer-any")
       val result: (Future[NotUsed], Future[immutable.Seq[String]]) =
         Source(List(1, 2, 3))
           .viaMat(Flow.lazyFutureFlow(() => throw TE("no-flow-for-you")))(Keep.right)
@@ -156,6 +157,7 @@ class LazyFlowSpec extends StreamSpec("""
     }
 
     "fail the flow when the future is initially failed" in {
+      @nowarn("cat=lint-infer-any")
       val result: (Future[NotUsed], Future[immutable.Seq[String]]) =
         Source(List(1, 2, 3))
           .viaMat(Flow.lazyFutureFlow(() => Future.failed(TE("no-flow-for-you"))))(Keep.right)

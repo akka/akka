@@ -343,9 +343,8 @@ private[akka] class RemoteActorRefProvider(
     warnOnUnsafe(s"Remote deploy of [$path] is not allowed, falling back to local.")
 
   /** Override to add any additional checks if using `RemoteActorRefProvider` as a superclass. */
-  protected def shouldCreateRemoteActorRef(
-      @nowarn("msg=never used") system: ActorSystem,
-      @nowarn("msg=never used") address: Address): Boolean = true
+  protected def shouldCreateRemoteActorRef(system: ActorSystem, address: Address): Boolean =
+    true
 
   def actorOf(
       system: ActorSystemImpl,

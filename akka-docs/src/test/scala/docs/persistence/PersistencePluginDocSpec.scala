@@ -10,6 +10,7 @@ import akka.testkit.TestKit
 import com.typesafe.config._
 import org.scalatest.wordspec.AnyWordSpec
 
+import scala.annotation.nowarn
 import scala.concurrent.Future
 import scala.util.Try
 import scala.concurrent.duration._
@@ -139,6 +140,8 @@ object SharedLeveldbPluginDocSpec {
   //#shared-store-usage
 }
 
+@nowarn("msg=deprecated")
+@nowarn("msg=never used") // sample snippets
 trait SharedLeveldbPluginDocSpec {
   val system: ActorSystem
 

@@ -8,6 +8,9 @@ import akka.NotUsed
 import akka.stream.scaladsl._
 import akka.util.ByteString
 
+import scala.annotation.nowarn
+
+@nowarn("msg=never used") // sample snippets
 class RecipeKeepAlive extends RecipeSpec {
 
   "Recipe for injecting keepalive messages" must {

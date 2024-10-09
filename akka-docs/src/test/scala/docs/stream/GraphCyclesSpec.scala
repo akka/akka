@@ -8,6 +8,9 @@ import akka.stream.{ ClosedShape, OverflowStrategy }
 import akka.stream.scaladsl._
 import akka.testkit.AkkaSpec
 
+import scala.annotation.nowarn
+
+@nowarn("msg=never used") // sample snippets
 class GraphCyclesSpec extends AkkaSpec {
 
   "Cycle demonstration" must {

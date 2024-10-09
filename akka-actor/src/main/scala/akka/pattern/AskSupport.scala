@@ -689,12 +689,10 @@ private[akka] final class PromiseActorRef(
   }
 
   @InternalStableApi
-  private[akka] def onComplete(
-      @nowarn("msg=never used") message: Any,
-      @nowarn("msg=never used") alreadyCompleted: Boolean): Unit = {}
+  private[akka] def onComplete(message: Any, alreadyCompleted: Boolean): Unit = {}
 
   @InternalStableApi
-  private[akka] def onTimeout(@nowarn("msg=never used") timeout: Timeout): Unit = {}
+  private[akka] def onTimeout(timeout: Timeout): Unit = {}
 }
 
 /**

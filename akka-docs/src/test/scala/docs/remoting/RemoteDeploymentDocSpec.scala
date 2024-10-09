@@ -6,6 +6,8 @@ package docs.remoting
 
 import akka.actor.{ Actor, ActorRef, ActorSystem, ExtendedActorSystem }
 import akka.testkit.{ AkkaSpec, ImplicitSender }
+
+import scala.annotation.nowarn
 //#import
 import akka.actor.{ Address, AddressFromURIString, Deploy, Props }
 import akka.remote.RemoteScope
@@ -19,6 +21,7 @@ object RemoteDeploymentDocSpec {
 
 }
 
+@nowarn("msg=never used") // sample snippets
 class RemoteDeploymentDocSpec extends AkkaSpec("""
     akka.actor.provider = remote
     akka.remote.artery.canonical.port = 0

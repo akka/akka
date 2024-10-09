@@ -4,16 +4,19 @@
 
 package docs.io
 
-import akka.actor.{ Actor, ActorLogging, ActorRef, ActorSystem, Props }
+import akka.actor.{ Actor, ActorRef, Props }
 import akka.io.Tcp._
 import akka.io.{ IO, Tcp }
+
 import java.net.InetSocketAddress
 import akka.testkit.{ AkkaSpec, ImplicitSender, TestProbe }
 import akka.util.ByteString
 
+import scala.annotation.nowarn
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
+@nowarn("msg=never used") // sample snippets
 object PullReadingExample {
 
   class Listener(monitor: ActorRef) extends Actor {

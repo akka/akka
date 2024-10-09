@@ -4,8 +4,6 @@
 
 package akka.cluster.sharding.typed
 
-import scala.annotation.nowarn
-
 import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.Eventually
 import org.scalatest.concurrent.ScalaFutures
@@ -33,7 +31,6 @@ import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.serialization.jackson.CborSerializable
 
-@nowarn("msg=Use Akka Distributed Cluster")
 object ReplicatedShardingSpec extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
@@ -114,7 +111,6 @@ object ReplicatedShardingSpec extends MultiNodeConfig {
 class ReplicatedShardingSpecMultiJvmNode1 extends ReplicatedShardingSpec
 class ReplicatedShardingSpecMultiJvmNode2 extends ReplicatedShardingSpec
 
-@nowarn("msg=Use Akka Distributed Cluster")
 abstract class ReplicatedShardingSpec
     extends MultiNodeSpec(ReplicatedShardingSpec)
     with MultiNodeTypedClusterSpec

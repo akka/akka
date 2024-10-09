@@ -8,7 +8,6 @@ package scala.docs.cluster
 import akka.actor.ActorLogging
 import akka.actor.Actor
 import akka.cluster.Cluster
-import akka.cluster.metrics.ClusterMetricsEvent
 import akka.cluster.metrics.ClusterMetricsChanged
 import akka.cluster.ClusterEvent.CurrentClusterState
 import akka.cluster.metrics.NodeMetrics
@@ -16,6 +15,11 @@ import akka.cluster.metrics.StandardMetrics.HeapMemory
 import akka.cluster.metrics.StandardMetrics.Cpu
 import akka.cluster.metrics.ClusterMetricsExtension
 
+//#metrics-listener
+import scala.annotation.nowarn
+
+@nowarn("msg=never used") // sample snippets
+//#metrics-listener
 class MetricsListener extends Actor with ActorLogging {
   val selfAddress = Cluster(context.system).selfAddress
   val extension = ClusterMetricsExtension(context.system)

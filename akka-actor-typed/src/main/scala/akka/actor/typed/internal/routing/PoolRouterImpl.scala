@@ -86,7 +86,7 @@ private final class PoolRouterImpl[T](
 
   def onMessage(msg: T): Behavior[T] = {
     if ((broadcastPredicate ne ConstantFun.anyToFalse) && broadcastPredicate(msg)) {
-      ctx.children.foreach(_.unsafeUpcast ! msg)
+      ctx.children.foreach(_.unsafeUpcast[Any] ! msg)
     } else {
       logic.selectRoutee(msg) ! msg
     }

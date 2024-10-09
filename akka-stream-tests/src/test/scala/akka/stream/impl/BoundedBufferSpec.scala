@@ -4,11 +4,8 @@
 
 package akka.stream.impl
 
-import scala.annotation.nowarn
-
 import akka.stream.testkit.StreamSpec
 
-@nowarn("msg=deprecated")
 class BoundedBufferSpec extends StreamSpec {
 
   for (size <- List(1, 3, 4)) {

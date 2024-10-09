@@ -4,7 +4,6 @@
 
 package akka.stream.impl
 
-import scala.annotation.nowarn
 import scala.collection.immutable.Map.Map1
 import scala.language.existentials
 
@@ -46,7 +45,7 @@ import akka.util.OptionVal
     Concat.normalizeConcat(this, that)
   }
 
-  def rewireFirstTo(@nowarn("msg=never used") relativeOffset: Int): Traversal = null
+  def rewireFirstTo(relativeOffset: Int): Traversal = null
 }
 
 /**

@@ -464,7 +464,7 @@ class InterceptSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with 
 
       ref ! Command("a")
       probe.expectMessage("A")
-      ref.unsafeUpcast ! ExternalResponse("b")
+      ref.unsafeUpcast[Any] ! ExternalResponse("b")
       probe.expectMessage("b") // bypass toUpper interceptor
     }
 
@@ -476,7 +476,7 @@ class InterceptSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with 
 
       ref ! "a"
       probe.expectMessage("A")
-      ref.unsafeUpcast ! ExternalResponse("b")
+      ref.unsafeUpcast[Any] ! ExternalResponse("b")
       probe.expectMessage("b") // bypass transformMessages interceptor
     }
 
@@ -494,7 +494,7 @@ class InterceptSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with 
       ref ! Command("a")
       probe.expectMessage("mdc:A")
       probe.expectMessage("a")
-      ref.unsafeUpcast ! ExternalResponse("b")
+      ref.unsafeUpcast[Any] ! ExternalResponse("b")
       probe.expectMessage("b") // bypass mdc interceptor
 
     }
@@ -506,7 +506,7 @@ class InterceptSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with 
 
       ref ! Command("a")
       probe.expectMessage("a")
-      ref.unsafeUpcast ! PoisonPill
+      ref.unsafeUpcast[Any] ! PoisonPill
       probe.expectTerminated(ref, probe.remainingOrDefault)
     }
   }

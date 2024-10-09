@@ -188,8 +188,8 @@ class GraphUnzipWithSpec extends StreamSpec("""
       }
 
       leftProbe.expectError() match {
-        case a: java.lang.ArithmeticException => a.getMessage should be("/ by zero")
-        case unexpected                       => throw new RuntimeException(s"Unexpected: $unexpected")
+        case ae: java.lang.ArithmeticException => ae.getMessage should be("/ by zero")
+        case unexpected                        => throw new RuntimeException(s"Unexpected: $unexpected")
       }
       rightProbe.expectError()
 

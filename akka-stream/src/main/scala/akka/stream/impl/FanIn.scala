@@ -4,8 +4,6 @@
 
 package akka.stream.impl
 
-import scala.annotation.nowarn
-
 import org.reactivestreams.{ Subscriber, Subscription }
 
 import akka.actor._
@@ -124,7 +122,7 @@ import akka.stream.Attributes
 
     def onError(input: Int, e: Throwable): Unit
 
-    def onDepleted(@nowarn("msg=never used") input: Int): Unit = ()
+    def onDepleted(input: Int): Unit = ()
 
     def onCompleteWhenNoInput(): Unit = ()
 

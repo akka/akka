@@ -6,9 +6,12 @@ package docs.stream.cookbook
 
 import akka.NotUsed
 import akka.stream.scaladsl._
+
+import scala.annotation.nowarn
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
+@nowarn("msg=never used") // sample snippets
 class RecipeReduceByKey extends RecipeSpec {
 
   "Reduce by key recipe" must {

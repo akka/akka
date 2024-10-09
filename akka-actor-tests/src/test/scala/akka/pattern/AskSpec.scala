@@ -4,7 +4,6 @@
 
 package akka.pattern
 
-import scala.annotation.nowarn
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.Failure
@@ -16,7 +15,6 @@ import akka.testkit.{ AkkaSpec, TestProbe }
 import akka.testkit.WithLogCapturing
 import akka.util.Timeout
 
-@nowarn
 class AskSpec extends AkkaSpec("""
      akka.loglevel = DEBUG
      akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]

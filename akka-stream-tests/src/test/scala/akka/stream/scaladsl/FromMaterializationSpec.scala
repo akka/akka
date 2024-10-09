@@ -10,6 +10,8 @@ import akka.stream.Attributes.Attribute
 import akka.stream.scaladsl.AttributesSpec.{ whateverAttribute, WhateverAttribute }
 import akka.stream.testkit.StreamSpec
 
+import scala.annotation.nowarn
+
 class FromMaterializerSpec extends StreamSpec {
 
   case class MyAttribute() extends Attribute
@@ -193,6 +195,7 @@ class FromMaterializerSpec extends StreamSpec {
 
     "handle factory failure" in {
       val error = new Error("boom")
+      @nowarn("cat=lint-infer-any")
       val flow = Flow.fromMaterializer { (_, _) =>
         throw error
       }
@@ -291,6 +294,7 @@ class FromMaterializerSpec extends StreamSpec {
 
     "handle factory failure" in {
       val error = new Error("boom")
+      @nowarn("cat=lint-infer-any")
       val sink = Sink.fromMaterializer { (_, _) =>
         throw error
       }

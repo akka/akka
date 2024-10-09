@@ -15,7 +15,6 @@ class FlowStreamRefsDocSpec extends AkkaSpec with CompileOnlySpec {
   "offer a source ref" in compileOnlySpec {
     //#offer-source
     import akka.stream.SourceRef
-    import akka.pattern.pipe
 
     case class RequestLogs(streamId: Int)
     case class LogsOffer(streamId: Int, sourceRef: SourceRef[String])

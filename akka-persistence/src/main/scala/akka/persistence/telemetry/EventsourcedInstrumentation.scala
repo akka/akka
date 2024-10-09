@@ -4,7 +4,6 @@
 
 package akka.persistence.telemetry
 
-import scala.annotation.nowarn
 import scala.collection.immutable
 import scala.jdk.CollectionConverters._
 
@@ -148,7 +147,7 @@ object EmptyEventsourcedInstrumentation extends EmptyEventsourcedInstrumentation
 class EmptyEventsourcedInstrumentation extends EventsourcedInstrumentation {
   import EventsourcedInstrumentation.{ Context, EmptyContext }
 
-  def this(@nowarn("msg=never used") system: ActorSystem) = this()
+  def this(system: ActorSystem) = this()
 
   override def beforeRequestRecoveryPermit(actorRef: ActorRef): Context = EmptyContext
 

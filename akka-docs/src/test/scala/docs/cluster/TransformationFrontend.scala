@@ -4,8 +4,6 @@
 
 package scala.docs.cluster
 
-import language.postfixOps
-import scala.util.Success
 import scala.concurrent.duration._
 import akka.actor.Actor
 import akka.actor.ActorRef

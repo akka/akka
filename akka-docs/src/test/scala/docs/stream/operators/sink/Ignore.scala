@@ -5,13 +5,13 @@
 package docs.stream.operators.sink
 
 import java.util.UUID
-
 import scala.concurrent.Future
-
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
+
+import scala.annotation.nowarn
 
 object Ignore {
   implicit val system: ActorSystem = ???
@@ -28,6 +28,7 @@ object Ignore {
   private def readLinesFromFile(): Source[String, NotUsed] =
     Source.empty
 
+  @nowarn("msg=never used") // sample snippets
   private def saveLineToDatabase(line: String): Future[UUID] =
     Future.successful(UUID.randomUUID())
 

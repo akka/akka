@@ -5,7 +5,6 @@
 package akka.stream.impl
 
 import scala.collection.immutable
-import scala.annotation.nowarn
 
 import org.reactivestreams.Subscription
 
@@ -192,7 +191,7 @@ import akka.stream.Attributes
       enqueue(id, elem)
     }
 
-    def onCancel(@nowarn("msg=never used") output: Int): Unit = ()
+    def onCancel(output: Int): Unit = ()
 
     def demandAvailableFor(id: Int) = new TransferState {
       override def isCompleted: Boolean = cancelled(id) || completed(id) || errored(id)

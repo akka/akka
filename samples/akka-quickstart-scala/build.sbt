@@ -2,7 +2,7 @@ name := "akka-quickstart-scala"
 
 version := "1.0"
 
-scalaVersion := "2.13.14"
+scalaVersion := "2.13.15"
 
 resolvers += "Akka library repository".at("https://repo.akka.io/maven")
 

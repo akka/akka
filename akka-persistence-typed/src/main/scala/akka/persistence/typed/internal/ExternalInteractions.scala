@@ -4,7 +4,6 @@
 
 package akka.persistence.typed.internal
 
-import scala.annotation.nowarn
 import scala.collection.immutable
 
 import akka.actor.ActorRef
@@ -77,10 +76,7 @@ private[akka] trait JournalInteractions[C, E, S] {
 
   // FIXME remove instrumentation hook method in 2.10.0
   @InternalStableApi
-  private[akka] def onWriteInitiated(
-      @nowarn("msg=never used") ctx: ActorContext[_],
-      @nowarn("msg=never used") cmd: Any,
-      @nowarn("msg=never used") repr: PersistentRepr): Unit = ()
+  private[akka] def onWriteInitiated(ctx: ActorContext[_], cmd: Any, repr: PersistentRepr): Unit = ()
 
   protected def internalPersistAll(
       cmd: OptionVal[Any],
@@ -120,10 +116,7 @@ private[akka] trait JournalInteractions[C, E, S] {
 
   // FIXME remove instrumentation hook method in 2.10.0
   @InternalStableApi
-  private[akka] def onWritesInitiated(
-      @nowarn("msg=never used") ctx: ActorContext[_],
-      @nowarn("msg=never used") cmd: Any,
-      @nowarn("msg=never used") repr: immutable.Seq[PersistentRepr]): Unit = ()
+  private[akka] def onWritesInitiated(ctx: ActorContext[_], cmd: Any, repr: immutable.Seq[PersistentRepr]): Unit = ()
 
   protected def replayEvents(fromSeqNr: Long, toSeqNr: Long): Unit = {
     setup.internalLogger.debug("Replaying events: from: {}, to: {}", fromSeqNr, toSeqNr)

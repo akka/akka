@@ -134,7 +134,7 @@ abstract class ClusterRoundRobinSpec
    */
   private def fullAddress(actorRef: ActorRef): Address = actorRef.path.address match {
     case Address(_, _, None, None) => cluster.selfAddress
-    case a                         => a
+    case fa                        => fa
   }
 
   def currentRoutees(router: ActorRef) =

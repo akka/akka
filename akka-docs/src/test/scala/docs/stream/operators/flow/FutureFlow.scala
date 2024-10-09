@@ -9,8 +9,10 @@ import akka.actor.ActorSystem
 import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Source
 
+import scala.annotation.nowarn
 import scala.concurrent.Future
 
+@nowarn("msg=never used") // sample snippets
 class FutureFlow {
 
   implicit val system: ActorSystem = ???

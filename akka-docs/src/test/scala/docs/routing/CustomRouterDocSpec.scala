@@ -9,6 +9,7 @@ import akka.testkit.ImplicitSender
 import akka.actor.Actor
 import akka.actor.Props
 import CustomRouterDocSpec.RedundancyRoutingLogic
+
 import scala.collection.immutable
 import akka.actor.ActorSystem
 import akka.routing.FromConfig
@@ -42,7 +43,6 @@ akka.actor.deployment {
 
   //#routing-logic
   import scala.collection.immutable
-  import java.util.concurrent.ThreadLocalRandom
   import akka.routing.RoundRobinRoutingLogic
   import akka.routing.RoutingLogic
   import akka.routing.Routee

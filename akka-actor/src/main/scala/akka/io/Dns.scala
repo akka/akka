@@ -35,7 +35,7 @@ abstract class Dns {
    * the akka.actor.io.dns.resolver that is configured.
    */
   @deprecated("Use cached(DnsProtocol.Resolve)", "2.6.0")
-  def cached(@nowarn("msg=never used") name: String): Option[Dns.Resolved] = None
+  def cached(name: String): Option[Dns.Resolved] = None
 
   /**
    * If an entry is cached return it immediately. If it is not then
@@ -50,7 +50,7 @@ abstract class Dns {
     ret
   }
 
-  def cached(@nowarn("msg=never used") request: DnsProtocol.Resolve): Option[DnsProtocol.Resolved] = None
+  def cached(request: DnsProtocol.Resolve): Option[DnsProtocol.Resolved] = None
 
   def resolve(request: DnsProtocol.Resolve, system: ActorSystem, sender: ActorRef): Option[DnsProtocol.Resolved] = {
     val ret = cached(request)
@@ -64,7 +64,6 @@ object Dns extends ExtensionId[DnsExt] with ExtensionIdProvider {
   sealed trait Command
 
   @deprecated("Use cached(DnsProtocol.Resolve)", "2.6.0")
-  @nowarn("msg=deprecated")
   case class Resolve(name: String) extends Command with ConsistentHashable {
     override def consistentHashKey = name
   }
@@ -114,7 +113,6 @@ object Dns extends ExtensionId[DnsExt] with ExtensionIdProvider {
    * trigger a resolve and return None.
    */
   @deprecated("use resolve(DnsProtocol.Resolve)", "2.6.0")
-  @nowarn("msg=deprecated")
   def resolve(name: String)(system: ActorSystem, sender: ActorRef): Option[Resolved] = {
     Dns(system).cache.resolve(name)(system, sender)
   }

@@ -1488,7 +1488,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
       probe.expectMessage(Pong(1))
 
       LoggingTestKit.error[Exc1].expect {
-        ref.unsafeUpcast ! "boom"
+        ref.unsafeUpcast[Any] ! "boom"
         probe.expectMessage(ReceivedSignal(PreRestart))
       }
       ref ! Ping(2)

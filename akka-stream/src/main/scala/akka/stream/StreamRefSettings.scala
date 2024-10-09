@@ -6,7 +6,6 @@ package akka.stream
 
 import java.util.concurrent.TimeUnit
 
-import scala.annotation.nowarn
 import scala.concurrent.duration._
 
 import com.typesafe.config.Config
@@ -15,7 +14,6 @@ import akka.actor.ActorSystem
 import akka.annotation.DoNotInherit
 import akka.stream.impl.streamref.StreamRefSettingsImpl
 
-@nowarn("msg=deprecated")
 object StreamRefSettings {
 
   /** Java API */
@@ -56,7 +54,6 @@ object StreamRefSettings {
  * More detailed documentation about each of the settings is available in `reference.conf`.
  */
 @DoNotInherit
-@nowarn("msg=deprecated")
 trait StreamRefSettings {
   @deprecated("Use attribute 'StreamRefAttributes.BufferCapacity' to read the concrete setting value", "2.6.0")
   def bufferCapacity: Int

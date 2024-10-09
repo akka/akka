@@ -4,7 +4,6 @@
 
 package akka.persistence.telemetry
 
-import scala.annotation.nowarn
 import scala.collection.immutable
 
 import akka.actor.ActorRef
@@ -58,7 +57,7 @@ object EmptyRecoveryPermitterInstrumentation extends EmptyRecoveryPermitterInstr
 @InternalStableApi
 class EmptyRecoveryPermitterInstrumentation extends RecoveryPermitterInstrumentation {
 
-  def this(@nowarn("msg=never used") system: ActorSystem) = this()
+  def this(system: ActorSystem) = this()
 
   override def recoveryPermitterStatus(
       recoveryPermitter: ActorRef,

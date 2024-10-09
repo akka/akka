@@ -249,7 +249,6 @@ private[remote] class Association(
    * Holds reference to shared state of Association - *access only via helper methods*
    */
   @volatile
-  @nowarn("msg=never used")
   private[artery] var _sharedStateDoNotCallMeDirectly: AssociationState = AssociationState()
 
   /**

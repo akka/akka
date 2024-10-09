@@ -5,7 +5,6 @@
 package akka.actor
 
 import java.util.concurrent.{ CountDownLatch, TimeUnit }
-import scala.annotation.nowarn
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
@@ -29,7 +28,6 @@ object SupervisorMiscSpec {
     """
 }
 
-@nowarn
 class SupervisorMiscSpec extends AkkaSpec(SupervisorMiscSpec.config) with DefaultTimeout {
 
   "A Supervisor" must {

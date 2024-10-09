@@ -82,8 +82,8 @@ abstract class RestartNode3Spec extends MultiNodeClusterSpec(RestartNode3MultiJv
       runOn(first, third) {
         system.actorOf(Props(new Actor {
           def receive = {
-            case a: UniqueAddress =>
-              secondUniqueAddress = a
+            case ad: UniqueAddress =>
+              secondUniqueAddress = ad
               sender() ! "ok"
           }
         }).withDeploy(Deploy.local), name = "address-receiver")

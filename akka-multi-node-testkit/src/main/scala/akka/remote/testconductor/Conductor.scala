@@ -302,7 +302,6 @@ private[akka] class ConductorHandler(_createTimeout: Timeout, controller: ActorR
     }
   }
 
-  @nowarn("msg=deprecated")
   override def exceptionCaught(ctx: ChannelHandlerContext, cause: Throwable): Unit = {
     log.debug("channel {} exception {}", ctx.channel(), cause)
     ctx.close()

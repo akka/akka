@@ -6,9 +6,11 @@ package akka.util
 
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-
 import akka.util.ByteIterator.ByteArrayIterator
 
+import scala.annotation.nowarn
+
+@nowarn("cat=lint-infer-any")
 class ByteIteratorSpec extends AnyWordSpec with Matchers {
   "A ByteIterator" should {
 

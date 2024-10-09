@@ -567,7 +567,7 @@ abstract class StressSpec extends MultiNodeClusterSpec(StressMultiJvmSpec) with 
       identifyClusterResultAggregator() match {
         case Some(r) =>
           watch(r)
-          expectMsgPF() { case Terminated(a) if a.path == r.path => true }
+          expectMsgPF() { case Terminated(ac) if ac.path == r.path => true }
         case None => // ok, already terminated
       }
     }
@@ -666,7 +666,7 @@ abstract class StressSpec extends MultiNodeClusterSpec(StressMultiJvmSpec) with 
     runOn(roles.head) {
       val expectedPath = RootActorPath(removeAddress) / "user" / "watchee"
       expectMsgPF() {
-        case Terminated(a) if a.path == expectedPath => true
+        case Terminated(ac) if ac.path == expectedPath => true
       }
     }
     enterBarrier("watch-verified-" + step)

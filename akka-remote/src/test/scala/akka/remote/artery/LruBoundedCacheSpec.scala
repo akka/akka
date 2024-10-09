@@ -4,13 +4,11 @@
 
 package akka.remote.artery
 
-import scala.annotation.nowarn
 import scala.util.Random
 
 import akka.testkit.AkkaSpec
 import akka.util.Unsafe
 
-@nowarn
 class LruBoundedCacheSpec extends AkkaSpec {
 
   class TestCache(_capacity: Int, threshold: Int, hashSeed: String = "")

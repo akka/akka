@@ -154,7 +154,7 @@ private[akka] final class TopicImpl[T](
       if (topicInstances.isEmpty) {
         if (localSubscribers.isEmpty) {
           context.log.trace("Publishing message of type [{}] but no subscribers, dropping", msg.getClass)
-          context.system.deadLetters ! Dropped(message, "No topic subscribers known", context.self.toClassic)
+          context.system.deadLetters[Dropped] ! Dropped(message, "No topic subscribers known", context.self.toClassic)
         } else {
           context.log.trace(
             "Publishing message of type [{}] to local subscribers only (topic listing not seen yet)",

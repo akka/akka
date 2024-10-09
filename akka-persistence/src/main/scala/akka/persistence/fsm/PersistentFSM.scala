@@ -7,7 +7,6 @@ package akka.persistence.fsm
 import akka.annotation.InternalApi
 import akka.persistence.serialization.Message
 
-import scala.annotation.nowarn
 import scala.concurrent.duration._
 
 /**
@@ -37,7 +36,6 @@ object PersistentFSM {
    * @tparam D state data type
    */
   @InternalApi
-  @nowarn("msg=deprecated")
   private[persistence] case class PersistentFSMSnapshot[D](
       stateIdentifier: String,
       data: D,

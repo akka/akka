@@ -4,13 +4,14 @@
 
 package docs.dispatcher
 
-import language.postfixOps
-
 import akka.testkit.AkkaSpec
 import akka.event.Logging
 import akka.event.LoggingAdapter
 import akka.actor._
 
+import scala.annotation.nowarn
+
+@nowarn("msg=never used") // sample snippets
 object DispatcherDocSpec {
   val javaConfig = """
      //#prio-dispatcher-config-java
@@ -285,6 +286,7 @@ object DispatcherDocSpec {
   //#require-mailbox-on-actor
 }
 
+@nowarn("msg=never used") // sample snippets
 class DispatcherDocSpec extends AkkaSpec(DispatcherDocSpec.config) {
 
   import DispatcherDocSpec._

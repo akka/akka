@@ -5,16 +5,18 @@
 package docs.stream.io
 
 import java.nio.file.{ Files, Paths }
-
 import akka.stream._
 import akka.stream.scaladsl.{ FileIO, Sink, Source }
 import akka.stream.testkit.Utils._
 import akka.util.ByteString
 import akka.testkit.AkkaSpec
 
+import scala.annotation.nowarn
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext
 
+@nowarn("msg=never used") // sample snippets
+@nowarn("msg=Unused import")
 class StreamFileDocSpec extends AkkaSpec(UnboundedMailboxConfig) {
 
   implicit val ec: ExecutionContext = system.dispatcher

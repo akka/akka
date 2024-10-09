@@ -6,7 +6,7 @@ package docs.stream.operators.sourceorflow
 
 import akka.Done
 import akka.actor.ActorSystem
-import akka.stream.scaladsl.{ Flow, Sink, Source }
+import akka.stream.scaladsl.Source
 
 import scala.concurrent.duration._
 import scala.concurrent.{ ExecutionContextExecutor, Future }

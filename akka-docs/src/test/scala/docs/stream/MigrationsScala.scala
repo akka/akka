@@ -7,6 +7,9 @@ package docs.stream
 import akka.stream.scaladsl._
 import akka.testkit.AkkaSpec
 
+import scala.annotation.nowarn
+
+@nowarn("msg=never used") // sample snippets
 class MigrationsScala extends AkkaSpec {
 
   "Examples in migration guide" must {
