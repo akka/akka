@@ -1,18 +1,32 @@
 # Persistence Plugins 
 
-Storage backends for journals, snapshot stores, durable state stores and persistence queries are pluggable in the Akka persistence extension.
+Storage backends for journals, snapshot stores, durable state stores and persistence queries are pluggable in the Akka persistence extension. The following plugins are maintained by the Akka team.
 
-Plugins maintained within the Akka organization are:
+## R2DBC plugin
 
-* [akka-persistence-r2dbc](https://doc.akka.io/libraries/akka-persistence-r2dbc/current/)
-* [akka-persistence-cassandra](https://doc.akka.io/libraries/akka-persistence-cassandra/current/)
-* [akka-persistence-jdbc](https://doc.akka.io/libraries/akka-persistence-jdbc/current/)
+The Reactive database drivers (R2DBC) support relational databases like PostgreSQL, H2 (As a minimal in-process memory or file based database), Yugabyte and Microsoft SQL Server.
 
-Latest features have mostly been implemented in the R2DBC plugin. Be aware of that many of the new features of @extref[Akka Distributed Cluster](akka-distributed-cluster:) and @extref[Akka Edge](akka-edge:) are only implemented by the
-[R2DBC plugin](https://doc.akka.io/libraries/akka-persistence-r2dbc/current/) and are not supported by the Cassandra and JDBC plugins.
+The [Akka Persistence R2DBC plugin](https://doc.akka.io/libraries/akka-persistence-r2dbc/current/) supports the latest feature additions of Akka Persistence and is generally recommended over the JDBC-based plugin.
 
-Those features were developed for Distributed Cluster and Edge, but they are also useful in other contexts.
-Example of concrete features not supported by the Cassandra and JDBC plugins:
+## Cassandra plugin
+
+Akka supports Cassandra's data model through [Akka Persistence Cassandra](https://doc.akka.io/libraries/akka-persistence-cassandra/current/).
+
+Some later Akka Persistence feature additions are not supported by the Cassandra plugin (see below).
+
+## AWS DynamoDB plugin
+
+AWS DynamoDB can be used as backend for Akka Persistence with the [Akka Persistence DyamoDB plugin](https://doc.akka.io/libraries/akka-persistence-dynamodb/current/).
+
+## JDBC plugin
+
+Relational databases with JDBC-drivers are supported through [Akka Persistence JDBC](https://doc.akka.io/libraries/akka-persistence-jdbc/current/). For new projects, the [R2DBC plugin](#r2dbc-plugin) is recommended.
+
+Some later Akka Persistence feature additions are not supported by the Akka Persistence JDBC plugin (see below).
+
+## Feature limitations
+
+Example of concrete features _not_ supported by the Cassandra and JDBC plugins:
 
 * `eventsBySlices` query
 * Projections over gRPC
@@ -23,7 +37,7 @@ Example of concrete features not supported by the Cassandra and JDBC plugins:
 * Scalability of many Projections
 * Durable State entities (partly supported by JDBC plugin)
 
-## Enable a plugin
+## Enabling a plugin
 
 Plugins can be selected either by "default" for all persistent actors,
 or "individually", when a persistent actor defines its own set of plugins.
