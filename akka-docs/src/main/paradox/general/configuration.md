@@ -60,7 +60,7 @@ Add the key to the configuration property `akka.license-key`.
 For local development, Akka can be used without a key, but be aware of that the `ActorSystem` will terminate after
 a while when a key isn't configured.
 
-If the license key has expired when the `ActorSystem` is started the system will terminate after around 15 minutes.
+If the license key has expired when the `ActorSystem` is started the system will terminate after a while.
 The expiry date is exposed by @apidoc[akka.actor.typed.ActorSystem] {scala="#licenseKeyExpiry" java="#getLicenseKeyExpiry"}
 so that you can write a test to remind yourself of that it is time for renewal before it has expired.
 
