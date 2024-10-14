@@ -1377,14 +1377,15 @@ private[akka] class ActorSystemImpl(
     }
     val akkaVersion = akka.Version.Current
     val buildDate = LocalDate.ofInstant(Instant.ofEpochMilli(akka.Version.BuildDate), ZoneId.systemDefault())
+    val today = LocalDate.now()
     val revokedLicenseKeyIds = Seq(
       // This actually isn't a revoked license key id, but is here as an example of what one looks like
       "ece608e4a2cc927c3d31d7e1ac0b3b641c1cf569548c5462e659cce412cfcd6c")
 
-    if (LocalDate.now().isAfter(buildDate.plusYears(3))) {
+    if (today.isAfter(buildDate.plusYears(3))) {
       log.info(s"Akka $akkaVersion is more than 3 years old, license check skipped as Apache license is in use.")
     } else if (key == "") {
-      setLicenseKeyExpiry(LocalDate.now())
+      setLicenseKeyExpiry(today)
       if (config.getBoolean("akka.warn-on-no-license-key")) {
         log.warning("Dev use only. Free keys at https://akka.io/key")
       }
@@ -1495,7 +1496,7 @@ private[akka] class ActorSystemImpl(
         case None =>
       }
       expiry match {
-        case Some(expired) if expired.isBefore(LocalDate.now()) =>
+        case Some(expired) if expired.isBefore(today) =>
           setLicenseKeyExpiry(expired)
           failExpiredLicenseKey(warnOnExpiry, s"The key licensed to $issuer user $user expired on $expired.")
         case Some(valid) =>
