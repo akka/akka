@@ -853,7 +853,8 @@ private[akka] class ActorSystemImpl(
     new Settings(classLoader, config, name, setup)
   }
 
-  private var _licenseKeyExpiry: Option[LocalDate] = None
+  // initialized from `start()`
+  @volatile private var _licenseKeyExpiry: Option[LocalDate] = None
 
   override def licenseKeyExpiry: Option[LocalDate] = _licenseKeyExpiry
 
