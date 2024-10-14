@@ -4,18 +4,21 @@
 
 package akka.persistence.typed.javadsl
 
-import java.util.Collections
-import java.util.Optional
+import akka.Done
 import akka.actor.typed
 import akka.actor.typed.BackoffSupervisorStrategy
 import akka.actor.typed.Behavior
 import akka.actor.typed.internal.BehaviorImpl.DeferredBehavior
 import akka.actor.typed.javadsl.ActorContext
 import akka.annotation.InternalApi
-import akka.persistence.typed._
 import akka.persistence.typed.EventAdapter
+import akka.persistence.typed._
 import akka.persistence.typed.internal._
 import akka.util.unused
+
+import java.util.Collections
+import java.util.Optional
+import java.util.concurrent.CompletionStage
 
 /**
  * For projects using Java 17 and newer, also see [[EventSourcedOnCommandBehavior]]
@@ -212,8 +215,7 @@ abstract class EventSourcedBehavior[Command, Event, State] private[akka] (
   /**
    * INTERNAL API
    */
-  @InternalApi private[akka] final def createEventSourcedBehavior()
-      : scaladsl.EventSourcedBehavior[Command, Event, State] = {
+  @InternalApi private[akka] def createEventSourcedBehavior(): scaladsl.EventSourcedBehavior[Command, Event, State] = {
     val snapshotWhen: (State, Event, Long) => Boolean = (state, event, seqNr) => shouldSnapshot(state, event, seqNr)
 
     val tagger: (State, Event) => Set[String] = { (state, event) =>
@@ -225,7 +227,7 @@ abstract class EventSourcedBehavior[Command, Event, State] private[akka] (
 
     val commandHandlerInstance = commandHandler()
     val eventHandlerInstance = eventHandler()
-    val behavior = new internal.EventSourcedBehaviorImpl[Command, Event, State](
+    var behavior = new internal.EventSourcedBehaviorImpl[Command, Event, State](
       persistenceId,
       emptyState,
       (state, cmd) => commandHandlerInstance(state, cmd).asInstanceOf[EffectImpl[Event, State]],
@@ -241,22 +243,10 @@ abstract class EventSourcedBehavior[Command, Event, State] private[akka] (
       .withRecovery(recovery.asScala)
 
     val handler = signalHandler()
-    val behaviorWithSignalHandler =
-      if (handler.isEmpty) behavior
-      else behavior.receiveSignal(handler.handler)
-
-    val withSignalHandler =
-      if (onPersistFailure.isPresent)
-        behaviorWithSignalHandler.onPersistFailure(onPersistFailure.get)
-      else
-        behaviorWithSignalHandler
-
-    if (stashCapacity.isPresent) {
-      withSignalHandler.withStashCapacity(stashCapacity.get)
-    } else {
-      withSignalHandler
-    }
-
+    if (!handler.isEmpty) behavior = behavior.receiveSignal(handler.handler)
+    onPersistFailure.ifPresent(opf => behavior = behavior.onPersistFailure(opf))
+    stashCapacity.ifPresent(sc => behavior = behavior.withStashCapacity(sc))
+    behavior
   }
 
   /**
@@ -272,6 +262,19 @@ abstract class EventSourcedBehavior[Command, Event, State] private[akka] (
    */
   def stashCapacity: Optional[java.lang.Integer] = Optional.empty()
 
+}
+
+@FunctionalInterface
+trait ReplicationInterceptor[Event, State] {
+
+  /**
+   * @param state Current state
+   * @param event The replicated event
+   * @param originReplica The replica where the event came from
+   * @param sequenceNumber The local sequence number the event will get when persisted
+   * @return
+   */
+  def intercept(state: State, event: Event, originReplica: ReplicaId, sequenceNumber: Long): CompletionStage[Done]
 }
 
 /**

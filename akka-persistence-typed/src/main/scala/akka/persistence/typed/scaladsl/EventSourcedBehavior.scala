@@ -4,6 +4,8 @@
 
 package akka.persistence.typed.scaladsl
 
+import akka.Done
+
 import scala.annotation.tailrec
 import akka.actor.typed.BackoffSupervisorStrategy
 import akka.actor.typed.Behavior
@@ -17,9 +19,12 @@ import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
 import akka.persistence.typed.EventAdapter
 import akka.persistence.typed.PersistenceId
+import akka.persistence.typed.ReplicaId
 import akka.persistence.typed.SnapshotAdapter
 import akka.persistence.typed.SnapshotSelectionCriteria
 import akka.persistence.typed.internal._
+
+import scala.concurrent.Future
 
 object EventSourcedBehavior {
 
@@ -256,4 +261,27 @@ object EventSourcedBehavior {
    * If not defined, the default `akka.persistence.typed.stash-capacity` will be used.
    */
   def withStashCapacity(size: Int): EventSourcedBehavior[Command, Event, State]
+
+  /**
+   * Invoke this callback when an event from another replica arrives, delaying persisting the event until the returned
+   * future completes, if the future fails the actor is crashed.
+   *
+   * Only used when the entity is replicated.
+   */
+  @ApiMayChange
+  def withReplicatedEventInterceptor(
+      interceptor: ReplicationInterceptor[State, Event]): EventSourcedBehavior[Command, Event, State]
+}
+
+@FunctionalInterface
+trait ReplicationInterceptor[State, Event] {
+
+  /**
+   * @param state Current state
+   * @param event The replicated event
+   * @param originReplica The replica where the event came from
+   * @param sequenceNumber The local sequence number the event will get when persisted
+   * @return
+   */
+  def intercept(state: State, event: Event, originReplica: ReplicaId, sequenceNumber: Long): Future[Done]
 }
