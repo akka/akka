@@ -4,7 +4,7 @@ Storage backends for journals, snapshot stores, durable state stores and persist
 
 ## R2DBC plugin
 
-The Reactive database drivers (R2DBC) support relational databases like PostgreSQL, H2 (As a minimal in-process memory or file based database), Yugabyte and Microsoft SQL Server.
+The Reactive database drivers (R2DBC) support relational databases like PostgreSQL, H2 (As a minimal in-process memory or file based database) and Yugabyte.
 
 The [Akka Persistence R2DBC plugin](https://doc.akka.io/libraries/akka-persistence-r2dbc/current/) supports the latest feature additions of Akka Persistence and is generally recommended over the JDBC-based plugin.
 
@@ -12,11 +12,13 @@ The [Akka Persistence R2DBC plugin](https://doc.akka.io/libraries/akka-persisten
 
 Akka supports Cassandra's data model through [Akka Persistence Cassandra](https://doc.akka.io/libraries/akka-persistence-cassandra/current/).
 
-Some later Akka Persistence feature additions are not supported by the Cassandra plugin (see below).
+Some later Akka Persistence feature additions (including [Durable State](./typed/index-persistence-durable-state.md)) are not supported by the Cassandra plugin (see below).
 
 ## AWS DynamoDB plugin
 
 AWS DynamoDB can be used as backend for Akka Persistence with the [Akka Persistence DyamoDB plugin](https://doc.akka.io/libraries/akka-persistence-dynamodb/current/).
+
+[Durable State](./typed/index-persistence-durable-state.md) is not supported by the DynamdDB plugin.
 
 ## JDBC plugin
 
