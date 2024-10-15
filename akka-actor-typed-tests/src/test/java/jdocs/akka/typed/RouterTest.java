@@ -3,9 +3,6 @@
  */
 
 package jdocs.akka.typed;
-/*
- * Copyright (C) 2009-2023 Lightbend Inc. <https://www.lightbend.com>
- */
 
 import akka.actor.typed.ActorSystem;
 import akka.actor.typed.DispatcherSelector;

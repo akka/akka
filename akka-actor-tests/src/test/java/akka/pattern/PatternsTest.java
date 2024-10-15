@@ -28,7 +28,6 @@ import scala.concurrent.ExecutionContext;
 import scala.concurrent.Future;
 import scala.concurrent.duration.FiniteDuration;
 
-/** Copyright (C) 2009-2023 Lightbend Inc. <https://www.lightbend.com> */
 public class PatternsTest extends JUnitSuite {
 
   public static final class ExplicitAskTestActor extends AbstractActor {
