@@ -15,7 +15,6 @@ import scala.collection.immutable
 import scala.concurrent.Future
 import scala.util.Failure
 import scala.util.Success
-
 import akka.Done
 import akka.actor.UnhandledMessage
 import akka.actor.typed.{ Behavior, Signal }
@@ -318,11 +317,29 @@ private[akka] object Running {
         state.seenPerReplica)
       envelope.ack ! ReplicatedEventAck
       if (envelope.event.originReplica != replication.replicaId && !alreadySeen(envelope.event)) {
-        setup.internalLogger.debug(
-          "Saving event [{}] from [{}] as first time",
-          envelope.event.originSequenceNr,
-          envelope.event.originReplica)
-        handleExternalReplicatedEventPersist(replication, envelope.event, None)
+        setup.replicationInterceptor match {
+          case Some(interceptor) =>
+            val asyncInterceptResult =
+              interceptor.intercept(state.state, envelope.event.event, envelope.event.originReplica, state.seqNr + 1)
+            asyncInterceptResult.value match {
+              case Some(Success(_)) =>
+                // optimization for quick successful interceptors
+                handleExternalReplicatedEventPersist(replication, envelope.event, None)
+              case _ =>
+                // failed or not ready
+                waitAsyncReplicationIntercept(
+                  state,
+                  asyncInterceptResult,
+                  () => handleExternalReplicatedEventPersist(replication, envelope.event, None))
+            }
+
+          case None =>
+            setup.internalLogger.debug(
+              "Saving event [{}] from [{}] as first time",
+              envelope.event.originSequenceNr,
+              envelope.event.originReplica)
+            handleExternalReplicatedEventPersist(replication, envelope.event, None)
+        }
       } else {
         setup.internalLogger.debug(
           "Filtering event [{}] from [{}] as it was already seen",
@@ -333,6 +350,7 @@ private[akka] object Running {
     }
 
     def onPublishedEvent(state: Running.RunningState[S], event: PublishedEventImpl): Behavior[InternalProtocol] = {
+      var asyncWait: Boolean = false
       val newBehavior: Behavior[InternalProtocol] = setup.replication match {
         case None =>
           setup.internalLogger.warn(
@@ -348,10 +366,36 @@ private[akka] object Running {
                 event.persistenceId)
               this
             case Some(replicatedEventMetaData) =>
-              onPublishedEvent(state, replication, replicatedEventMetaData, event)
+              setup.replicationInterceptor match {
+                case Some(interceptor) =>
+                  val asyncInterceptResult =
+                    interceptor.intercept(
+                      state.state,
+                      event.event.asInstanceOf[E],
+                      replicatedEventMetaData.replicaId,
+                      state.seqNr + 1)
+                  asyncInterceptResult.value match {
+                    case Some(Success(_)) =>
+                      // optimization for quick successful interceptors
+                      onPublishedEvent(state, replication, replicatedEventMetaData, event)
+                    case _ =>
+                      // failed or not ready
+                      asyncWait = true
+                      waitAsyncReplicationIntercept(
+                        state,
+                        asyncInterceptResult,
+                        () => onPublishedEvent(state, replication, replicatedEventMetaData, event))
+
+                  }
+
+                case None =>
+                  onPublishedEvent(state, replication, replicatedEventMetaData, event)
+              }
+
           }
       }
-      tryUnstashOne(newBehavior)
+      if (!asyncWait) tryUnstashOne(newBehavior)
+      else newBehavior
     }
 
     private def onPublishedEvent(
@@ -409,7 +453,7 @@ private[akka] object Running {
               event.sequenceNumber)
           }
 
-          // fast forward stream for source replica
+          // fast-forward stream for source replica
           state.replicationControl.get(originReplicaId).foreach(_.fastForward(event.sequenceNumber))
 
           handleExternalReplicatedEventPersist(
@@ -739,6 +783,7 @@ private[akka] object Running {
         case RecoveryPermitGranted                     => Behaviors.unhandled
         case ContinueUnstash                           => Behaviors.unhandled
         case _: AsyncEffectCompleted[_, _, _]          => Behaviors.unhandled
+        case _: AsyncReplicationInterceptCompleted     => Behaviors.unhandled
       }
     }
 
@@ -985,6 +1030,43 @@ private[akka] object Running {
 
     override def currentSequenceNumber: Long = {
       _currentSequenceNumber
+    }
+  }
+
+  // ===============================================
+
+  def waitAsyncReplicationIntercept(
+      state: RunningState[S],
+      interceptResult: Future[Done],
+      nextBehaviorF: () => Behavior[InternalProtocol]): Behavior[InternalProtocol] = {
+    setup.setMdcPhase(PersistenceMdc.AsyncReplicationIntercept)
+    recursiveUnstashOne = 0
+    setup.context.pipeToSelf(interceptResult) {
+      case Success(_) => AsyncReplicationInterceptCompleted(nextBehaviorF)
+      case Failure(exc) =>
+        setup.internalLogger.debug(s"Async replication intercept failed: $exc")
+        throw exc
+    }
+    new WaitingAsyncReplicationIntercept(state)
+  }
+
+  /** INTERNAL API */
+  @InternalApi private[akka] final class WaitingAsyncReplicationIntercept(_state: RunningState[S])
+      extends WaitingAsyncEffect(_state)
+      with WithSeqNrAccessible {
+
+    override def onMessage(msg: InternalProtocol): Behavior[InternalProtocol] = {
+      msg match {
+        case AsyncReplicationInterceptCompleted(nextBehaviorF) => nextBehaviorF()
+        case in: IncomingCommand[C @unchecked]                 => onCommand(in)
+        case re: ReplicatedEventEnvelope[E @unchecked]         => onReplicatedEvent(re)
+        case pe: PublishedEventImpl                            => onPublishedEvent(pe)
+        case JournalResponse(r)                                => onDeleteEventsJournalResponse(r, state.state)
+        case SnapshotterResponse(r)                            => onDeleteSnapshotResponse(r, state.state)
+        case get: GetState[S @unchecked]                       => stashInternal(get)
+        case getSeqNr: GetSeenSequenceNr                       => onGetSeenSequenceNr(getSeqNr)
+        case _                                                 => Behaviors.unhandled
+      }
     }
   }
 

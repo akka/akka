@@ -7,12 +7,9 @@ package akka.persistence.journal
 import scala.collection.immutable
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
-import scala.concurrent.duration._
 import scala.util.{ Failure, Success, Try }
 import scala.util.control.NonFatal
-
 import akka.actor._
-import akka.pattern.CircuitBreaker
 import akka.pattern.CircuitBreakersRegistry
 import akka.pattern.pipe
 import akka.persistence._
@@ -30,12 +27,8 @@ trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
   private val config = extension.configFor(self)
 
   private val breaker = {
-    val maxFailures = config.getInt("circuit-breaker.max-failures")
-    val callTimeout = config.getDuration("circuit-breaker.call-timeout", MILLISECONDS).millis
-    val resetTimeout = config.getDuration("circuit-breaker.reset-timeout", MILLISECONDS).millis
     val id = extension.extensionIdFor(self)
-    CircuitBreakersRegistry(context.system).getOrCreate(id)(() =>
-      CircuitBreaker(context.system.scheduler, maxFailures, callTimeout, resetTimeout))
+    CircuitBreakersRegistry(context.system).getOrCreate(id, config.getConfig("circuit-breaker"))
   }
 
   private val replayFilterMode: ReplayFilter.Mode =

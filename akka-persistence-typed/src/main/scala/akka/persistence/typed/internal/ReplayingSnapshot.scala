@@ -68,11 +68,12 @@ private[akka] class ReplayingSnapshot[C, E, S](override val setup: BehaviorSetup
               Behaviors.unhandled
             } else
               onCommand(cmd)
-          case get: GetState[S @unchecked]      => stashInternal(get)
-          case get: GetSeenSequenceNr           => stashInternal(get)
-          case RecoveryPermitGranted            => Behaviors.unhandled // should not happen, we already have the permit
-          case ContinueUnstash                  => Behaviors.unhandled
-          case _: AsyncEffectCompleted[_, _, _] => Behaviors.unhandled
+          case get: GetState[S @unchecked]           => stashInternal(get)
+          case get: GetSeenSequenceNr                => stashInternal(get)
+          case RecoveryPermitGranted                 => Behaviors.unhandled // should not happen, we already have the permit
+          case ContinueUnstash                       => Behaviors.unhandled
+          case _: AsyncEffectCompleted[_, _, _]      => Behaviors.unhandled
+          case _: AsyncReplicationInterceptCompleted => Behaviors.unhandled
         }
         .receiveSignal(returnPermitOnStop.orElse {
           case (_, PoisonPill) =>

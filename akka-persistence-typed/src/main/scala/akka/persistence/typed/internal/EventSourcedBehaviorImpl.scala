@@ -7,9 +7,7 @@ package akka.persistence.typed.internal
 import java.util.Optional
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
-
 import org.slf4j.LoggerFactory
-
 import akka.Done
 import akka.actor.typed
 import akka.actor.typed.ActorRef
@@ -105,7 +103,8 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
     override val signalHandler: PartialFunction[(State, Signal), Unit] = PartialFunction.empty,
     replication: Option[ReplicationSetup] = None,
     publishEvents: Boolean = true,
-    customStashCapacity: Option[Int] = None)
+    customStashCapacity: Option[Int] = None,
+    replicatedEventInterceptor: Option[ReplicationInterceptor[State, Event]] = None)
     extends EventSourcedBehavior[Command, Event, State] {
 
   import EventSourcedBehaviorImpl.WriterIdentity
@@ -210,7 +209,8 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
             publishEvents = publishEvents,
             internalLoggerFactory = () => internalLogger(),
             retentionInProgress = false,
-            instrumentation)
+            instrumentation,
+            replicatedEventInterceptor)
 
           // needs to accept Any since we also can get messages from the journal
           // not part of the user facing Command protocol
@@ -321,6 +321,10 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
   override def withStashCapacity(size: Int): EventSourcedBehavior[Command, Event, State] =
     copy(customStashCapacity = Some(size))
 
+  override def withReplicatedEventInterceptor(
+      interceptor: ReplicationInterceptor[State, Event]): EventSourcedBehavior[Command, Event, State] =
+    copy(replicatedEventInterceptor = Some(interceptor))
+
 }
 
 /** Protocol used internally by the eventsourced behaviors. */
@@ -332,6 +336,8 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
   final case class RecoveryTickEvent(snapshot: Boolean) extends InternalProtocol
   final case class IncomingCommand[C](c: C) extends InternalProtocol
   final case class AsyncEffectCompleted[C, E, S](cmd: C, effect: Effect[E, S]) extends InternalProtocol
+  final case class AsyncReplicationInterceptCompleted(nextBehaviorF: () => Behavior[InternalProtocol])
+      extends InternalProtocol
   case object ContinueUnstash extends InternalProtocol
 
   final case class ReplicatedEventEnvelope[E](event: ReplicatedEvent[E], ack: ActorRef[ReplicatedEventAck.type])
