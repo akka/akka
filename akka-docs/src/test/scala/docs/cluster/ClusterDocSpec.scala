@@ -5,9 +5,10 @@
 package scala.docs.cluster
 
 import akka.cluster.Cluster
-
 import akka.testkit.AkkaSpec
 import docs.CompileOnlySpec
+
+import scala.annotation.nowarn
 
 object ClusterDocSpec {
 
@@ -17,6 +18,8 @@ object ClusterDocSpec {
     """
 }
 
+@nowarn("msg=deprecated")
+@nowarn("msg=never used") // sample snippets
 class ClusterDocSpec extends AkkaSpec(ClusterDocSpec.config) with CompileOnlySpec {
 
   "demonstrate leave" in compileOnlySpec {

@@ -931,7 +931,7 @@ abstract class ShardCoordinator(
                 if (verboseDebug)
                   log.debug(
                     "{}: Graceful shutdown of {} region [{}] with [{}] shards [{}] started",
-                    Array(
+                    Array[Any](
                       typeName,
                       if (region.path.address.hasLocalScope) "local" else "",
                       region,

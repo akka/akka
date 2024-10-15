@@ -6,11 +6,13 @@ package akka.cluster.ddata
 
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-
 import akka.actor.Address
 import akka.cluster.UniqueAddress
 import akka.cluster.ddata.Replicator.Changed
 
+import scala.annotation.nowarn
+
+@nowarn("cat=lint-infer-any")
 class LWWMapSpec extends AnyWordSpec with Matchers {
   import LWWRegister.defaultClock
 

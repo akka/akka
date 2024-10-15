@@ -39,7 +39,6 @@ import scala.jdk.CollectionConverters._
  *
  *
  */
-@nowarn("msg=deprecated")
 class TestKit(system: ActorSystem) {
 
   /**

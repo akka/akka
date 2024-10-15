@@ -4,8 +4,6 @@
 
 package akka.persistence.typed.state.internal
 
-import scala.annotation.nowarn
-
 import akka.actor.typed.Behavior
 import akka.actor.typed.internal.PoisonPill
 import akka.actor.typed.scaladsl.{ ActorContext, Behaviors }
@@ -74,7 +72,7 @@ private[akka] class RequestingRecoveryPermit[C, S](override val setup: BehaviorS
 
   // FIXME remove instrumentation hook method in 2.10.0
   @InternalStableApi
-  def onRequestingRecoveryPermit(@nowarn("msg=never used") context: ActorContext[_]): Unit = ()
+  def onRequestingRecoveryPermit(context: ActorContext[_]): Unit = ()
 
   private def becomeRecovering(receivedPoisonPill: Boolean): Behavior[InternalProtocol] = {
     setup.instrumentation.recoveryStarted(setup.context.self)

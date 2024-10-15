@@ -2094,7 +2094,6 @@ private[akka] object TakeWithin {
         })
       }
 
-      @nowarn // compiler complaining about aggregator = _: T
       override def onPush(): Unit = {
         val elem = grab(in)
         try {

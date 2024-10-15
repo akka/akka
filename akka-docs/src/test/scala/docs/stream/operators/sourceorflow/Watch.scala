@@ -9,6 +9,9 @@ import akka.actor.ActorRef
 import akka.stream.WatchedActorTerminatedException
 import akka.stream.scaladsl.Flow
 
+import scala.annotation.nowarn
+
+@nowarn("msg=never used") // sample snippets
 object Watch {
 
   def someActor(): ActorRef = ???

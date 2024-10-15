@@ -29,7 +29,6 @@ class ChainSetup[In, Out, M](
       toPublisher: (Source[Out, _], Materializer) => Publisher[Out])(implicit system: ActorSystem) =
     this(stream, settings, ActorMaterializer(settings)(system), toPublisher)(system)
 
-  @nowarn("msg=deprecated")
   def this(
       stream: Flow[In, In, NotUsed] => Flow[In, Out, M],
       settings: ActorMaterializerSettings,

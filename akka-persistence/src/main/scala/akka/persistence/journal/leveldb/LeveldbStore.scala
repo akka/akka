@@ -212,7 +212,6 @@ private[persistence] trait LeveldbStore
   protected def addPersistenceIdSubscriber(subscriber: ActorRef, persistenceId: String): Unit =
     persistenceIdSubscribers.addBinding(persistenceId, subscriber)
 
-  @nowarn("msg=deprecated")
   protected def removeSubscriber(subscriber: ActorRef): Unit = {
     val keys = persistenceIdSubscribers.collect { case (k, s) if s.contains(subscriber) => k }
     keys.foreach { key =>

@@ -4,7 +4,7 @@
 
 package docs.event
 
-import akka.actor.{ Actor, DeadLetter, Props }
+import akka.actor.{ Actor, DeadLetter }
 import akka.testkit.AkkaSpec
 
 object LoggingDocSpec {
@@ -124,6 +124,7 @@ object LoggingDocSpec {
       }
     }
     //#deadletters
+    val compilerPleaser = Props.empty
 
     //#superclass-subscription-eventstream
     abstract class AllKindsOfMusic { def artist: String }
@@ -144,6 +145,7 @@ object LoggingDocSpec {
 class LoggingDocSpec extends AkkaSpec {
 
   import LoggingDocSpec.{ MdcActor, MdcActorMixin, MyActor, Req }
+  import akka.actor.Props
 
   "use a logging actor" in {
     val myActor = system.actorOf(Props[MyActor]())

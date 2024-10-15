@@ -6,7 +6,6 @@ package docs.routing
 
 import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
-import akka.routing.FromConfig
 import akka.actor.ActorRef
 
 object ConsistentHashingRouterDocSpec {

@@ -286,7 +286,7 @@ private class RestartSupervisor[T, Thr <: Throwable: ClassTag](initial: Behavior
 
   override protected def handleExceptionOnStart(
       ctx: TypedActorContext[Any],
-      @nowarn("msg=never used") target: PreStartTarget[T]): Catcher[Behavior[T]] = {
+      target: PreStartTarget[T]): Catcher[Behavior[T]] = {
     case NonFatal(t) if isInstanceOfTheThrowableClass(t) =>
       ctx.asScala.cancelAllTimers()
       strategy match {

@@ -9,6 +9,9 @@ import akka.stream.scaladsl.{ Flow, Sink, Source }
 import akka.stream.testkit._
 import akka.testkit.AkkaSpec
 
+import scala.annotation.nowarn
+
+@nowarn("msg=never used") // sample snippets
 class ReactiveStreamsDocSpec extends AkkaSpec {
   import TwitterStreamQuickstartDocSpec._
 

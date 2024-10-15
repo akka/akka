@@ -87,7 +87,7 @@ object ChunkLargeMessageSpec extends MultiNodeConfig {
               }
             }
             .receiveSignal {
-              case (context, PostStop) =>
+              case (_, PostStop) =>
                 if (histogram.getTotalCount > 0) {
                   context.log.info(
                     s"=== Latency for [${context.self.path.name}] " +

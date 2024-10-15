@@ -4,7 +4,6 @@
 
 package akka.cluster
 
-import scala.annotation.nowarn
 import scala.collection.immutable
 import scala.concurrent.duration.{ Deadline, _ }
 
@@ -294,9 +293,7 @@ private[cluster] final class JoinSeedNodeProcess(
   }
 
   @InternalStableApi
-  private[akka] def onReceiveTimeout(
-      @nowarn("msg=never used") seedNodes: immutable.IndexedSeq[Address],
-      @nowarn("msg=never used") attempt: Int): Unit = {}
+  private[akka] def onReceiveTimeout(seedNodes: immutable.IndexedSeq[Address], attempt: Int): Unit = {}
 
   def done: Actor.Receive = {
     case InitJoinAck(_, _) => // already received one, skip rest

@@ -6,7 +6,7 @@ package docs.persistence.query
 
 import akka.persistence.query.{ EventEnvelope, Offset }
 import akka.serialization.SerializationExtension
-import akka.stream.{ ActorAttributes, ActorMaterializer, Attributes, Outlet, SourceShape }
+import akka.stream.{ ActorAttributes, Attributes, Outlet, SourceShape }
 import akka.stream.stage.{ GraphStage, GraphStageLogic, OutHandler, TimerGraphStageLogic }
 
 import scala.concurrent.duration.FiniteDuration

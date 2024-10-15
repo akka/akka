@@ -56,7 +56,6 @@ class MetricNumericConverterSpec extends AnyWordSpec with Matchers with MetricNu
   }
 }
 
-@nowarn
 class NodeMetricsSpec extends AnyWordSpec with Matchers {
 
   val node1 = Address("akka", "sys", "a", 2554)
@@ -238,7 +237,6 @@ class MetricsGossipSpec
   }
 }
 
-@nowarn
 class MetricValuesSpec extends AkkaSpec(MetricsConfig.defaultEnabled) with MetricsCollectorFactory {
   import akka.cluster.metrics.StandardMetrics._
 

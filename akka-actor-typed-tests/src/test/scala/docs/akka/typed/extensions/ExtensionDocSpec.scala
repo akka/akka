@@ -41,7 +41,6 @@ class DatabasePool(system: ActorSystem[_]) extends Extension {
 }
 //#extension
 
-@nowarn
 object ExtensionDocSpec {
   val config = ConfigFactory.parseString("""
       #config      

@@ -12,7 +12,7 @@ lazy val commonJavacOptions = Seq("-Xlint:unchecked", "-Xlint:deprecation")
 
 lazy val commonSettings = Seq(
   organization := "com.lightbend.akka.samples",
-  scalaVersion := "2.13.14",
+  scalaVersion := "2.13.15",
   Compile / scalacOptions ++= commonScalacOptions,
   Compile / javacOptions ++= commonJavacOptions,
   run / javaOptions ++= Seq("-Xms128m", "-Xmx1024m"),

@@ -16,6 +16,7 @@ package docs.serialization {
   import com.typesafe.config.ConfigFactory
   import akka.actor.ExtendedActorSystem
   import java.nio.charset.StandardCharsets
+  import scala.annotation.nowarn
 
   //#marker-interface
   import akka.serialization.jackson.JsonSerializable
@@ -120,6 +121,7 @@ package docs.serialization {
         """
   }
 
+  @nowarn("msg=never used") // sample snippets
   class SerializationDocSpec extends AkkaSpec {
     "demonstrate configuration of serialize messages" in {
       val config = ConfigFactory.parseString("""

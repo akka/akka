@@ -7,6 +7,9 @@ package docs.stream.operators
 import akka.actor.ActorSystem
 import akka.testkit.TestProbe
 
+import scala.annotation.nowarn
+
+@nowarn("msg=never used") // sample snippets
 object SourceOperators {
 
   implicit val system: ActorSystem = ???
@@ -14,7 +17,6 @@ object SourceOperators {
   def fromFuture(): Unit = {
     //#sourceFromFuture
 
-    import akka.actor.ActorSystem
     import akka.stream.scaladsl._
     import akka.{ Done, NotUsed }
 

@@ -4,7 +4,6 @@
 
 package akka.cluster.metrics
 
-import scala.annotation.nowarn
 import scala.concurrent.duration._
 import scala.language.postfixOps
 import scala.util.Try
@@ -12,7 +11,6 @@ import scala.util.Try
 import akka.cluster.metrics.StandardMetrics._
 import akka.testkit._
 
-@nowarn
 class MetricsCollectorSpec
     extends AkkaSpec(MetricsConfig.defaultEnabled)
     with ImplicitSender

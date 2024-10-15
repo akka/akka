@@ -13,7 +13,6 @@ import akka.actor.typed.SupervisorStrategy
 
 import scala.concurrent.duration.FiniteDuration
 import akka.Done
-import scala.annotation.nowarn
 
 //#oo-style
 //#fun-style
@@ -476,7 +475,6 @@ object StyleGuideDocExamples {
       }
       //#pattern-match-unhandled
 
-      @nowarn
       object partial {
         //#pattern-match-partial
         val zero: Behavior[Command] = {

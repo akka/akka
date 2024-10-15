@@ -6,7 +6,6 @@ package akka.actor
 
 import java.lang.Thread.sleep
 
-import scala.annotation.nowarn
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
@@ -19,7 +18,6 @@ import akka.testkit.EventFilter
 import akka.testkit.TestEvent._
 import akka.testkit.TestLatch
 
-@nowarn
 class RestartStrategySpec extends AkkaSpec with DefaultTimeout {
 
   override def atStartup(): Unit = {

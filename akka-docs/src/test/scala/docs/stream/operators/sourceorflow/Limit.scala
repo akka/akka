@@ -9,8 +9,10 @@ import akka.actor.typed.ActorSystem
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 
+import scala.annotation.nowarn
 import scala.concurrent.Future
 
+@nowarn("msg=never used") // sample snippets
 object Limit {
 
   implicit val system: ActorSystem[_] = ???

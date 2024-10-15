@@ -31,7 +31,6 @@ object CrossDcHeartbeatSenderSpec {
   }
 }
 
-@nowarn("msg=Use Akka Distributed Cluster")
 class CrossDcHeartbeatSenderSpec extends AkkaSpec("""
     akka.loglevel = DEBUG
     akka.actor.provider = cluster

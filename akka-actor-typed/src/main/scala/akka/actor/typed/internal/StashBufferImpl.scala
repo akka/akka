@@ -239,7 +239,7 @@ import akka.util.OptionVal
     import akka.actor.typed.scaladsl.adapter._
     val classicDeadLetters = scalaCtx.system.deadLetters.toClassic
     messages.foreach(node =>
-      scalaCtx.system.deadLetters ! DeadLetter(wrap(node.message), classicDeadLetters, ctx.asScala.self.toClassic))
+      scalaCtx.system.deadLetters[Any] ! DeadLetter(wrap(node.message), classicDeadLetters, ctx.asScala.self.toClassic))
   }
 
   override def unstash(behavior: Behavior[T], numberOfMessages: Int, wrap: JFunction[T, T]): Behavior[T] =
@@ -249,12 +249,10 @@ import akka.util.OptionVal
     s"StashBuffer($size/$capacity)"
 
   @InternalStableApi
-  private[akka] def unstashed(
-      @nowarn("msg=never used") ctx: ActorContext[T],
-      @nowarn("msg=never used") node: Node[T]): Unit = ()
+  private[akka] def unstashed(ctx: ActorContext[T], node: Node[T]): Unit = ()
 
   @InternalStableApi
-  private def stashCleared(@nowarn("msg=never used") ctx: ActorContext[T]): Unit = ()
+  private def stashCleared(ctx: ActorContext[T]): Unit = ()
 
 }
 

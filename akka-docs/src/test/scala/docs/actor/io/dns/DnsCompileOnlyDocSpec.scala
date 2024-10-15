@@ -11,9 +11,12 @@ import akka.pattern.ask
 import akka.io.{ Dns, IO }
 import akka.util.Timeout
 
+import scala.annotation.nowarn
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
+@nowarn("msg=deprecated")
+@nowarn("msg=never used") // sample snippets
 object DnsCompileOnlyDocSpec {
 
   implicit val system: ActorSystem = ActorSystem()

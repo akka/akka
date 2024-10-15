@@ -58,7 +58,7 @@ class ScalaUdpMulticastSpec
           val listener = system.actorOf(Props(classOf[Listener], iface, group, port, sink))
           try {
             expectMsgType[Udp.Bound]
-            val sender = system.actorOf(Props(classOf[Sender], iface, group, port, msg))
+            system.actorOf(Props(classOf[Sender], iface, group, port, msg))
             // fails here, so binding succeeds but sending a message does not
             expectMsg(msg)
             foundOneThatWorked = true

@@ -222,7 +222,6 @@ class RoleReplicatedShardingSpec
 class DataCenterReplicatedShardingSpec
     extends ReplicatedShardingSpec(DataCenter, ReplicatedShardingSpec.dcAConfig, ReplicatedShardingSpec.dcBConfig)
 
-@nowarn("msg=Use Akka Distributed Cluster")
 abstract class ReplicatedShardingSpec(replicationType: ReplicationType, configA: Config, configB: Config)
     extends ScalaTestWithActorTestKit(configA)
     with AnyWordSpecLike

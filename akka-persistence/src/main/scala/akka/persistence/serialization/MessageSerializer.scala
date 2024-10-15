@@ -5,7 +5,6 @@
 package akka.persistence.serialization
 
 import java.io.NotSerializableException
-import scala.annotation.nowarn
 import scala.collection.immutable
 import scala.collection.immutable.VectorBuilder
 import akka.actor.{ ActorPath, ExtendedActorSystem }
@@ -29,7 +28,6 @@ trait Message extends Serializable
 /**
  * Protobuf serializer for [[akka.persistence.PersistentRepr]], [[akka.persistence.AtLeastOnceDelivery]] and [[akka.persistence.fsm.PersistentFSM.StateChangeEvent]] messages.
  */
-@nowarn("msg=deprecated")
 class MessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer {
   import PersistentRepr.Undefined
 
@@ -127,7 +125,6 @@ class MessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer 
     AtLeastOnceDeliverySnapshot(atLeastOnceDeliverySnapshot.getCurrentDeliveryId, unconfirmedDeliveries.result())
   }
 
-  @nowarn("msg=deprecated")
   def stateChange(persistentStateChange: mf.PersistentStateChangeEvent): StateChangeEvent = {
     StateChangeEvent(
       persistentStateChange.getStateIdentifier,

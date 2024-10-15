@@ -4,8 +4,6 @@
 
 package akka.persistence.journal.leveldb
 
-import scala.annotation.nowarn
-
 import org.iq80.leveldb.DBIterator
 
 import akka.actor.Actor
@@ -71,7 +69,7 @@ private[persistence] trait LeveldbIdMapping extends Actor { this: LeveldbStore =
     numericId
   }
 
-  override protected def newPersistenceIdAdded(@nowarn("msg=never used") id: String): Unit = ()
+  override protected def newPersistenceIdAdded(id: String): Unit = ()
 
   override def preStart(): Unit = {
     idMap = readIdMap()
