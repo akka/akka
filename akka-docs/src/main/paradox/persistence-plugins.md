@@ -12,17 +12,17 @@ The [Akka Persistence R2DBC plugin](https://doc.akka.io/libraries/akka-persisten
 
 Akka supports Cassandra's data model through [Akka Persistence Cassandra](https://doc.akka.io/libraries/akka-persistence-cassandra/current/).
 
-Some later Akka Persistence feature additions (including [Durable State](./typed/index-persistence-durable-state.md)) are not supported by the Cassandra plugin (see below).
+Some later Akka Persistence feature additions (including @ref:[Durable State](./typed/index-persistence-durable-state.md)) are not supported by the Cassandra plugin (see below).
 
 ## AWS DynamoDB plugin
 
 AWS DynamoDB can be used as backend for Akka Persistence with the [Akka Persistence DyamoDB plugin](https://doc.akka.io/libraries/akka-persistence-dynamodb/current/).
 
-[Durable State](./typed/index-persistence-durable-state.md) is not supported by the DynamdDB plugin.
+@ref:[Durable State](./typed/index-persistence-durable-state.md) is not supported by the DynamdDB plugin.
 
 ## JDBC plugin
 
-Relational databases with JDBC-drivers are supported through [Akka Persistence JDBC](https://doc.akka.io/libraries/akka-persistence-jdbc/current/). For new projects, the [R2DBC plugin](#r2dbc-plugin) is recommended.
+Relational databases with JDBC-drivers are supported through [Akka Persistence JDBC](https://doc.akka.io/libraries/akka-persistence-jdbc/current/). For new projects, the @ref:[R2DBC plugin](#r2dbc-plugin) is recommended.
 
 Some later Akka Persistence feature additions are not supported by the Akka Persistence JDBC plugin (see below).
 
