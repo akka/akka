@@ -1,5 +1,5 @@
 /*
- * Copyright (C) extends Event 2009-2023 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) extends Event 2009-2024 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery.jfr
