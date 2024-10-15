@@ -4,6 +4,8 @@
 
 package akka.actor.typed
 
+import java.time.LocalDate
+import java.util.Optional
 import java.util.concurrent.{ CompletionStage, ThreadFactory }
 
 import scala.concurrent.{ ExecutionContextExecutor, Future }
@@ -186,6 +188,18 @@ abstract class ActorSystem[-T] extends ActorRef[T] with Extensions with ClassicA
    * communicate with this node.
    */
   def address: Address
+
+  /**
+   * Scala API: When the license key will expire. `None` for perpetual keys.
+   * If a license key is not defined the expiry date will be today's date.
+   */
+  def licenseKeyExpiry: Option[LocalDate]
+
+  /**
+   * Java API: When the license key will expire. `Optional.empty` for perpetual keys.
+   * If a license key is not defined the expiry date will be today's date.
+   */
+  def getLicenseKeyExpiry: Optional[LocalDate]
 
 }
 

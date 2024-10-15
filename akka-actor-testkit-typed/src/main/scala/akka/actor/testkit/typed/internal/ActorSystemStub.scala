@@ -4,6 +4,8 @@
 
 package akka.actor.testkit.typed.internal
 
+import java.time.LocalDate
+import java.util.Optional
 import java.util.concurrent.{ CompletionStage, ThreadFactory }
 
 import scala.annotation.nowarn
@@ -126,6 +128,12 @@ import akka.annotation.InternalApi
   override def log: Logger = LoggerFactory.getLogger(getClass)
 
   def address: Address = rootPath.address
+
+  override def licenseKeyExpiry: Option[LocalDate] =
+    throw new UnsupportedOperationException("licenseKeyExpiry not supported by ActorSystemStub")
+
+  def getLicenseKeyExpiry: Optional[LocalDate] =
+    throw new UnsupportedOperationException("getLicenseKeyExpiry not supported by ActorSystemStub")
 }
 
 @InternalApi private[akka] object ActorSystemStub {
