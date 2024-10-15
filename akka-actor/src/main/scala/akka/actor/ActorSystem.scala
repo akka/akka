@@ -719,6 +719,18 @@ abstract class ActorSystem extends ActorRefFactory with ClassicActorSystemProvid
    * of the payload, if is in the process of registration from another Thread of execution
    */
   def hasExtension(ext: ExtensionId[_ <: Extension]): Boolean
+
+  /**
+   * Scala API: When the license key will expire. `None` for perpetual keys.
+   * If a license key is not defined the expiry date will be today's date.
+   */
+  def licenseKeyExpiry: Option[LocalDate]
+
+  /**
+   * Java API: When the license key will expire. `Optional.empty` for perpetual keys.
+   * If a license key is not defined the expiry date will be today's date.
+   */
+  def getLicenseKeyExpiry: Optional[LocalDate]
 }
 
 /**
@@ -839,6 +851,23 @@ private[akka] class ActorSystemImpl(
       applicationConfig.withFallback(ConfigFactory.defaultReference(classLoader)),
       _dynamicAccess)
     new Settings(classLoader, config, name, setup)
+  }
+
+  // initialized from `start()`
+  @volatile private var _licenseKeyExpiry: Option[LocalDate] = None
+
+  override def licenseKeyExpiry: Option[LocalDate] = _licenseKeyExpiry
+
+  override def getLicenseKeyExpiry: Optional[LocalDate] = _licenseKeyExpiry.toJava
+
+  private def setLicenseKeyExpiry(expiry: LocalDate): Unit = {
+    _licenseKeyExpiry match {
+      case None =>
+        _licenseKeyExpiry = Some(expiry)
+      case Some(exp) =>
+        if (expiry.isBefore(exp))
+          _licenseKeyExpiry = Some(expiry)
+    }
   }
 
   override def uid: Long = {
@@ -1348,13 +1377,15 @@ private[akka] class ActorSystemImpl(
     }
     val akkaVersion = akka.Version.Current
     val buildDate = LocalDate.ofInstant(Instant.ofEpochMilli(akka.Version.BuildDate), ZoneId.systemDefault())
+    val today = LocalDate.now()
     val revokedLicenseKeyIds = Seq(
       // This actually isn't a revoked license key id, but is here as an example of what one looks like
       "ece608e4a2cc927c3d31d7e1ac0b3b641c1cf569548c5462e659cce412cfcd6c")
 
-    if (LocalDate.now().isAfter(buildDate.plusYears(3))) {
+    if (today.isAfter(buildDate.plusYears(3))) {
       log.info(s"Akka $akkaVersion is more than 3 years old, license check skipped as Apache license is in use.")
     } else if (key == "") {
+      setLicenseKeyExpiry(today)
       if (config.getBoolean("akka.warn-on-no-license-key")) {
         log.warning("Dev use only. Free keys at https://akka.io/key")
       }
@@ -1454,18 +1485,22 @@ private[akka] class ActorSystemImpl(
 
       buildExpiry match {
         case Some(expired) if expired.isBefore(buildDate) =>
+          setLicenseKeyExpiry(expired)
           failExpiredLicenseKey(
             warnOnExpiry,
             s"The key licensed to $issuer user $user is expired for all Akka builds released after $expired, but Akka $akkaVersion was released on $buildDate.")
         case Some(valid) =>
+          // no setLicenseKeyExpiry because for currently used Akka version the key will not expire
           log.info(
             s"License check succeeded for $issuer user $user. License is valid for all Akka builds released prior to $valid.")
         case None =>
       }
       expiry match {
-        case Some(expired) if expired.isBefore(LocalDate.now()) =>
+        case Some(expired) if expired.isBefore(today) =>
+          setLicenseKeyExpiry(expired)
           failExpiredLicenseKey(warnOnExpiry, s"The key licensed to $issuer user $user expired on $expired.")
         case Some(valid) =>
+          setLicenseKeyExpiry(valid)
           log.info(s"License check succeeded for $issuer user $user. License is valid until $valid.")
         case None =>
       }
