@@ -1,14 +1,13 @@
 # Licenses
 
 ## Akka License
-The Akka License can be found here:
 
-- https://github.com/akka/akka/blob/v2.10.0/LICENSE
+@@snip [LICENSE](/LICENSE) { }
 
 ## Documentation and test sources license
-The documentation and test sources license can be found here:
 
-- https://www.lightbend.com/legal/commercial-software-license-agreement
+@@snip [LICENSE](/akka-docs/LICENSE) { }
+
 
 ## Akka Committer License Agreement
 
