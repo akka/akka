@@ -337,8 +337,8 @@ Alternatively, use `akka-docs/paradoxBrowse` to open the generated docs in your 
 Akka Paradox supports directives to link to the Scaladoc- and Javadoc-generated API documentation:
 
 * `@apidoc[Flow]` searches for the class name and creates links to Scaladoc and Javadoc (see variants in [sbt-paradox-apidoc](https://github.com/lightbend/sbt-paradox-apidoc#examples))
-* `@scaladoc[Flow](akka.stream.scaladsl.Flow)` (see [Paradox docs](https://developer.lightbend.com/docs/paradox/current/directives/linking.html#scaladoc-directive))
-* `@javadoc[Flow](akka.stream.javadsl.Flow)` (see [Paradox docs](https://developer.lightbend.com/docs/paradox/current/directives/linking.html#javadoc-directive))
+* `@scaladoc[Flow](akka.stream.scaladsl.Flow)` (see [Paradox docs](https://github.com/lightbend/paradox/blob/main/docs/src/main/paradox/directives/linking.md#scaladoc-directive))
+* `@javadoc[Flow](akka.stream.javadsl.Flow)` (see [Paradox docs](https://github.com/lightbend/paradox/blob/main/docs/src/main/paradox/directives/linking.md#javadoc-directive))
 
 #### Scaladoc
 
