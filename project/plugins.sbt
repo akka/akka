@@ -1,3 +1,5 @@
+resolvers += "Akka library repository".at("https://repo.akka.io/maven")
+
 libraryDependencies += Defaults.sbtPluginExtra(
   "com.eed3si9n" % "sbt-assembly" % "2.2.0",
   (pluginCrossBuild / sbtBinaryVersion).value,
@@ -11,7 +13,7 @@ addSbtPlugin("com.github.sbt" % "sbt-unidoc" % "0.5.0")
 addSbtPlugin("com.thoughtworks.sbt-api-mappings" % "sbt-api-mappings" % "3.0.2")
 addSbtPlugin("pl.project13.scala" % "sbt-jmh" % "0.4.7")
 addSbtPlugin("com.github.sbt" % "sbt-boilerplate" % "0.7.0")
-addSbtPlugin("com.lightbend.akka" % "sbt-paradox-akka" % "0.57")
+addSbtPlugin("io.akka" % "sbt-paradox-akka" % "24.10.2")
 
 addSbtPlugin("de.heikoseeberger" % "sbt-header" % "5.10.0")
 addSbtPlugin("com.github.sbt" % "sbt-pull-request-validator" % "2.0.0")
