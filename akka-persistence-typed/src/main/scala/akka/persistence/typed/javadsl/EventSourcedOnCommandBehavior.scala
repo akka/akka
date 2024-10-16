@@ -205,8 +205,7 @@ abstract class EventSourcedOnCommandBehavior[Command, Event, State](
   /**
    * INTERNAL API
    */
-  @InternalApi private[akka] final def createEventSourcedBehavior()
-      : scaladsl.EventSourcedBehavior[Command, Event, State] = {
+  @InternalApi private[akka] def createEventSourcedBehavior(): scaladsl.EventSourcedBehavior[Command, Event, State] = {
     val snapshotWhen: (State, Event, Long) => Boolean = (state, event, seqNr) => shouldSnapshot(state, event, seqNr)
 
     val tagger: (State, Event) => Set[String] = { (state, event) =>
@@ -216,7 +215,7 @@ abstract class EventSourcedOnCommandBehavior[Command, Event, State](
       else tags.asScala.toSet
     }
 
-    val behavior = new internal.EventSourcedBehaviorImpl[Command, Event, State](
+    var behavior = new internal.EventSourcedBehaviorImpl[Command, Event, State](
       persistenceId,
       emptyState,
       (state, cmd) => this.onCommand(state, cmd).asInstanceOf[EffectImpl[Event, State]],
@@ -232,22 +231,11 @@ abstract class EventSourcedOnCommandBehavior[Command, Event, State](
       .withRecovery(recovery.asScala)
 
     val handler = signalHandler()
-    val behaviorWithSignalHandler =
-      if (handler.isEmpty) behavior
-      else behavior.receiveSignal(handler.handler)
+    if (!handler.isEmpty) behavior = behavior.receiveSignal(handler.handler)
+    onPersistFailure.ifPresent(opf => behavior = behavior.onPersistFailure(opf))
+    stashCapacity.ifPresent(sc => behavior = behavior.withStashCapacity(sc))
 
-    val withSignalHandler =
-      if (onPersistFailure.isPresent)
-        behaviorWithSignalHandler.onPersistFailure(onPersistFailure.get)
-      else
-        behaviorWithSignalHandler
-
-    if (stashCapacity.isPresent) {
-      withSignalHandler.withStashCapacity(stashCapacity.get)
-    } else {
-      withSignalHandler
-    }
-
+    behavior
   }
 
   /**
