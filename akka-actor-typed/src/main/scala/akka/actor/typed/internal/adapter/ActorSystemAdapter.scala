@@ -4,6 +4,8 @@
 
 package akka.actor.typed.internal.adapter
 
+import java.time.LocalDate
+import java.util.Optional
 import java.util.concurrent.CompletionStage
 
 import scala.compat.java8.FutureConverters
@@ -127,6 +129,10 @@ import akka.util.OptionVal
   override def refPrefix: String = "user"
 
   override def address: Address = system.provider.getDefaultAddress
+
+  override def licenseKeyExpiry: Option[LocalDate] = system.licenseKeyExpiry
+
+  override def getLicenseKeyExpiry: Optional[LocalDate] = system.getLicenseKeyExpiry
 
 }
 
