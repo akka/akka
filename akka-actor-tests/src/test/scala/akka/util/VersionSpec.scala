@@ -52,6 +52,8 @@ class VersionSpec extends AnyWordSpec with Matchers {
       Version("1.2-M1") should be < Version("1.2.0")
       Version("1.2.0-M1") should be < Version("1.2.0")
       Version("1.2.3-M2") should be > Version("1.2.3-M1")
+      Version("2.10.0-M1") should be < Version("2.10.0")
+      Version("2.10.0") should be > Version("2.10.0-M1")
     }
 
     "require digits" in {

@@ -160,7 +160,7 @@ final class Version(val version: String) extends Comparable[Version] {
             if (diff == 0) {
               if (rest == "" && other.rest != "")
                 diff = 1
-              if (other.rest == "" && rest != "")
+              else if (other.rest == "" && rest != "")
                 diff = -1
               else
                 diff = rest.compareTo(other.rest)
