@@ -16,9 +16,9 @@ Some later Akka Persistence feature additions (including @ref:[Durable State](./
 
 ## AWS DynamoDB plugin
 
-AWS DynamoDB can be used as backend for Akka Persistence with the [Akka Persistence DyamoDB plugin](https://doc.akka.io/libraries/akka-persistence-dynamodb/current/).
+AWS DynamoDB can be used as backend for Akka Persistence with the [Akka Persistence DynamoDB plugin](https://doc.akka.io/libraries/akka-persistence-dynamodb/current/).
 
-@ref:[Durable State](./typed/index-persistence-durable-state.md) is not supported by the DynamdDB plugin.
+@ref:[Durable State](./typed/index-persistence-durable-state.md) is not supported by the DynamoDB plugin.
 
 ## JDBC plugin
 
