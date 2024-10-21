@@ -23,5 +23,5 @@ All helper methods like `LoggerOps.info2` can be replaced by using the underlyin
 
 ## Deprecation of Multi-DC Cluster
 
-Use @extre[Akka Distributed Cluster](akka-distributed-cluster:) and @extre[Akka Edge](akka-edge:) instead.
+Use @extref[Akka Distributed Cluster](akka-distributed-cluster:) and @extref[Akka Edge](akka-edge:) instead.
 
