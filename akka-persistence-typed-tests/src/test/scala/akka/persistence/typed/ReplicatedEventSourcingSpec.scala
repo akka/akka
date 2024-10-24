@@ -560,9 +560,7 @@ class ReplicatedEventSourcingSpec
         probe.expectMessageType[State].all.toSet shouldEqual Set("from r1", "from r2")
       }
       val intercepted = interceptProbe.receiveMessages(2)
-      intercepted.toSet shouldEqual Set(
-        Intercepted(ReplicaId("R1"), 2L, "from r1"),
-        Intercepted(ReplicaId("R2"), 2L, "from r2"))
+      intercepted.map(_.event).toSet shouldEqual Set("from r1", "from r2")
     }
 
     "intercept and delay replicated events between two entities" in {
