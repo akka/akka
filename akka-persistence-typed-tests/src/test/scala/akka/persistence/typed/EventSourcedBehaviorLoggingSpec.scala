@@ -33,6 +33,8 @@ object EventSourcedBehaviorLoggingSpec {
 
     def apply(id: PersistenceId): Behavior[Command] = {
       Behaviors.setup { ctx =>
+        // default resolved logger name is slightly different in Scala 2.13 and 3.3 due to the object/object nesting
+        ctx.setLoggerName("test.ChattyEventSourcingBehavior")
         EventSourcedBehavior[Command, Event, Set[Event]](
           id,
           Set.empty,
@@ -66,13 +68,10 @@ abstract class EventSourcedBehaviorLoggingSpec(config: Config)
 
     "always log user message in context.log" in {
       val doneProbe = createTestProbe[Done]()
-      LoggingTestKit
-        .info("received message 'Mary'")
-        .withLoggerName("akka.persistence.typed.EventSourcedBehaviorLoggingSpec$ChattyEventSourcingBehavior$")
-        .expect {
-          chattyActor ! Hello("Mary", doneProbe.ref)
-          doneProbe.receiveMessage()
-        }
+      LoggingTestKit.info("received message 'Mary'").withLoggerName("test.ChattyEventSourcingBehavior").expect {
+        chattyActor ! Hello("Mary", doneProbe.ref)
+        doneProbe.receiveMessage()
+      }
     }
 
     s"log internal messages in '$loggerId' logger without logging user data (Persist)" in {
