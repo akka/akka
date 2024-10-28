@@ -334,4 +334,7 @@ final class Settings(val config: Config, val classicSettings: classic.ActorSyste
 
   val RestartStashCapacity: Int =
     typedConfig.getInt("restart-stash-capacity").requiring(_ >= 0, "restart-stash-capacity must be >= 0")
+
+  val PubSubDeadLettersWhenNoSubscribers: Boolean =
+    typedConfig.getBoolean("pub-sub.send-to-dead-letters-when-no-subscribers")
 }
