@@ -128,6 +128,6 @@ object EventSourcedBehaviorLoggingContextLoggerSpec {
 }
 class EventSourcedBehaviorLoggingContextLoggerSpec
     extends EventSourcedBehaviorLoggingSpec(EventSourcedBehaviorLoggingContextLoggerSpec.config) {
-  override def loggerName = "akka.persistence.typed.EventSourcedBehaviorLoggingSpec$ChattyEventSourcingBehavior$"
+  override def loggerName = "test.ChattyEventSourcingBehavior"
   override def loggerId = "context.log"
 }
