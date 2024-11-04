@@ -334,7 +334,7 @@ private abstract class RestartWithBackoffLogic[S <: Shape](
           if (log.isWarningEnabled) {
             exc match {
               case OptionVal.Some(e) if !e.isInstanceOf[NoStackTrace] && logFullStackTrace =>
-                log.warning(message + s"${Logging.stackTraceFor(e)}")
+                log.warning(e, message)
               case _ =>
                 log.warning(message)
             }
