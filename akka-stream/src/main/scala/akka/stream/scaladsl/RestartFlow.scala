@@ -322,16 +322,18 @@ private abstract class RestartWithBackoffLogic[S <: Shape](
       exc: OptionVal[Throwable],
       minLogLevel: Logging.LogLevel = Logging.ErrorLevel): Unit = {
     if (loggingEnabled) {
+      def logFullStackTrace: Boolean = logSettings.verboseLogsAfter.forall(_ >= restartCount)
+
       logLevel(minLogLevel) match {
         case Logging.ErrorLevel =>
           exc match {
-            case OptionVal.Some(e) => log.error(e, message)
-            case _                 => log.error(message)
+            case OptionVal.Some(e) if logFullStackTrace => log.error(e, message)
+            case _                                      => log.error(message)
           }
         case Logging.WarningLevel =>
           if (log.isWarningEnabled) {
             exc match {
-              case OptionVal.Some(e) if !e.isInstanceOf[NoStackTrace] =>
+              case OptionVal.Some(e) if !e.isInstanceOf[NoStackTrace] && logFullStackTrace =>
                 log.warning(message + s"${Logging.stackTraceFor(e)}")
               case _ =>
                 log.warning(message)
