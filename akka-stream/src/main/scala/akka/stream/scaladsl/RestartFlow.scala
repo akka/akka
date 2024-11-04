@@ -317,13 +317,13 @@ private abstract class RestartWithBackoffLogic[S <: Shape](
     if (level >= minLogLevel || level == Logging.OffLevel) level else minLogLevel
   }
 
+  private def logFullStackTrace: Boolean = logSettings.verboseLogsAfter.forall(_ >= restartCount)
+
   private def logIt(
       message: String,
       exc: OptionVal[Throwable],
       minLogLevel: Logging.LogLevel = Logging.ErrorLevel): Unit = {
     if (loggingEnabled) {
-      def logFullStackTrace: Boolean = logSettings.verboseLogsAfter.forall(_ >= restartCount)
-
       logLevel(minLogLevel) match {
         case Logging.ErrorLevel =>
           exc match {
