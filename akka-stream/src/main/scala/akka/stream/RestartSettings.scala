@@ -110,7 +110,15 @@ object RestartSettings {
 
   }
 
-  final class LogSettings(val logLevel: LogLevel, val criticalLogLevel: LogLevel, val criticalLogLevelAfter: Int) {
+  final class LogSettings(
+      val logLevel: LogLevel,
+      val criticalLogLevel: LogLevel,
+      val criticalLogLevelAfter: Int,
+      val verboseLogsAfter: Option[Int]) {
+
+    // For source and binary compatibility
+    def this(logLevel: LogLevel, criticalLogLevel: LogLevel, criticalLogLevelAfter: Int) =
+      this(logLevel, criticalLogLevel, criticalLogLevelAfter, None)
 
     def withLogLevel(level: LogLevel): LogSettings =
       copy(logLevel = level)
@@ -126,13 +134,25 @@ object RestartSettings {
     def withCriticalLogLevel(criticalLevel: LogLevel, afterErrors: Int): LogSettings =
       copy(criticalLogLevel = criticalLevel, criticalLogLevelAfter = afterErrors)
 
+    /**
+     * If set, warning and error logs will use only the exception message up to `afterErrors` consecutive errors,
+     * after reaching the number of consecutive errors, the entire exception with stacktrace is logged.
+     *
+     * The counter (and verbosity level) is reset after the [[RestartSettings.maxRestartsWithin]]
+     * duration.
+     */
+    def withVerboseLogsAfter(afterErrors: Int): LogSettings =
+      copy(verboseLogsAfter = Some(afterErrors))
+
     private def copy(
         logLevel: LogLevel = logLevel,
         criticalLogLevel: LogLevel = criticalLogLevel,
-        criticalLogLevelAfter: Int = criticalLogLevelAfter): LogSettings =
+        criticalLogLevelAfter: Int = criticalLogLevelAfter,
+        verboseLogsAfter: Option[Int] = verboseLogsAfter): LogSettings =
       new LogSettings(
         logLevel = logLevel,
         criticalLogLevel = criticalLogLevel,
-        criticalLogLevelAfter = criticalLogLevelAfter)
+        criticalLogLevelAfter = criticalLogLevelAfter,
+        verboseLogsAfter = verboseLogsAfter)
   }
 }
