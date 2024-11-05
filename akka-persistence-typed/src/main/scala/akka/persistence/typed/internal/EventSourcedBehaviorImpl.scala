@@ -7,6 +7,7 @@ package akka.persistence.typed.internal
 import java.util.Optional
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
+
 import org.slf4j.LoggerFactory
 import akka.Done
 import akka.actor.typed
@@ -44,6 +45,7 @@ import akka.persistence.typed.scaladsl._
 import akka.persistence.typed.scaladsl.{ Recovery => TypedRecovery }
 import akka.persistence.typed.scaladsl.RetentionCriteria
 import akka.persistence.typed.telemetry.EventSourcedBehaviorInstrumentationProvider
+import com.typesafe.config.Config
 
 @InternalApi
 private[akka] object EventSourcedBehaviorImpl {
@@ -93,6 +95,8 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
     loggerClass: Class[_],
     journalPluginId: Option[String] = None,
     snapshotPluginId: Option[String] = None,
+    journalPluginConfig: Option[Config] = None,
+    snapshotPluginConfig: Option[Config] = None,
     tagger: (State, Event) => Set[String] = (_: State, _: Event) => Set.empty[String],
     eventAdapter: EventAdapter[Event, Any] = NoOpEventAdapter.instance[Event],
     snapshotAdapter: SnapshotAdapter[State] = NoOpSnapshotAdapter.instance[State],
@@ -139,7 +143,9 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
       ctx.system,
       journalPluginId.getOrElse(""),
       snapshotPluginId.getOrElse(""),
-      customStashCapacity)
+      customStashCapacity,
+      journalPluginConfig,
+      snapshotPluginConfig)
 
     // stashState outside supervise because StashState should survive restarts due to persist failures
     val stashState = new StashState(ctx.asInstanceOf[ActorContext[InternalProtocol]], settings)
@@ -269,6 +275,14 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
   override def withSnapshotPluginId(id: String): EventSourcedBehavior[Command, Event, State] = {
     require(id != null, "snapshot plugin id must not be null; use empty string for 'default' snapshot store")
     copy(snapshotPluginId = if (id != "") Some(id) else None)
+  }
+
+  override def withJournalPluginConfig(config: Option[Config]): EventSourcedBehavior[Command, Event, State] = {
+    copy(journalPluginConfig = config)
+  }
+
+  override def withSnapshotPluginConfig(config: Option[Config]): EventSourcedBehavior[Command, Event, State] = {
+    copy(snapshotPluginConfig = config)
   }
 
   override def withSnapshotSelectionCriteria(

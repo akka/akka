@@ -120,8 +120,7 @@ private[akka] class ReplayingSnapshot[C, E, S](override val setup: BehaviorSetup
   private def onRecoveryTick(snapshot: Boolean): Behavior[InternalProtocol] =
     if (snapshot) {
       // we know we're in snapshotting mode; snapshot recovery timeout arrived
-      val ex = new RecoveryTimedOut(
-        s"Recovery timed out, didn't get snapshot within ${setup.settings.recoveryEventTimeout}")
+      val ex = new RecoveryTimedOut(s"Recovery timed out, didn't get snapshot within ${setup.recoveryEventTimeout}")
       onRecoveryFailure(ex)
     } else Behaviors.same // ignore, since we received the snapshot already
 
