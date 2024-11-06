@@ -1506,7 +1506,8 @@ private[akka] class ActorSystemImpl(
       }
 
       if (buildExpiry.isEmpty && expiry.isEmpty) {
-        log.info(s"License check succeeded for $issuer user $user. License is perpetual.")
+        val versionString = if (buildVersion.isDefined) s" only for an Akka version of ${buildVersion.get}" else ""
+        log.info(s"License check succeeded for $issuer user $user. License is perpetual$versionString.")
       }
     }
   }
