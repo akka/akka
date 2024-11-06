@@ -865,7 +865,7 @@ private[akka] class ActorSystemImpl(
       case None =>
         _licenseKeyExpiry = Some(expiry)
       case Some(exp) =>
-        if (expiry.isBefore(exp))
+        if (expiry.isBefore(exp) || expiry.isEqual(exp))
           _licenseKeyExpiry = Some(expiry)
     }
   }
@@ -1484,7 +1484,7 @@ private[akka] class ActorSystemImpl(
       }
 
       buildExpiry match {
-        case Some(expired) if expired.isBefore(buildDate) =>
+        case Some(expired) if expired.isBefore(buildDate) || expired.isEqual(buildDate) =>
           setLicenseKeyExpiry(expired)
           failExpiredLicenseKey(
             warnOnExpiry,
@@ -1496,7 +1496,7 @@ private[akka] class ActorSystemImpl(
         case None =>
       }
       expiry match {
-        case Some(expired) if expired.isBefore(today) =>
+        case Some(expired) if expired.isBefore(today) || expired.isEqual(today) =>
           setLicenseKeyExpiry(expired)
           failExpiredLicenseKey(warnOnExpiry, s"The key licensed to $issuer user $user expired on $expired.")
         case Some(valid) =>
