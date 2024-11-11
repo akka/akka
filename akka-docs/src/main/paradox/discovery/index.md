@@ -18,7 +18,6 @@ In addition the @extref:[Akka Management](akka-management:) toolbox contains Akk
 * @extref:[AWS API: EC2 Tag-Based Discovery](akka-management:discovery/aws.html#discovery-method-aws-api-ec2-tag-based-discovery)
 * @extref:[AWS API: ECS Discovery](akka-management:discovery/aws.html#discovery-method-aws-api-ecs-discovery)
 * @extref:[Consul](akka-management:discovery/consul.html)
-* @extref:[Marathon API](akka-management:discovery/marathon.html)
 
 
 @@@ note

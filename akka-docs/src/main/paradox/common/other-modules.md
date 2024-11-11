@@ -14,7 +14,7 @@ Akka gRPC provides support for building streaming gRPC servers and clients on to
 
 Alpakka is a Reactive Enterprise Integration library for Java and Scala, based on Reactive Streams and Akka.
 
-## [Alpakka Kafka Connector](https://doc.akka.io/librarires/alpakka-kafka/current/)
+## [Alpakka Kafka Connector](https://doc.akka.io/libraries/alpakka-kafka/current/)
 
 The Alpakka Kafka Connector connects Apache Kafka with Akka Streams.
 

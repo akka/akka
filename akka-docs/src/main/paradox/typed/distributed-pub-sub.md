@@ -105,6 +105,6 @@ for the topic will not be sent to it.
 As in @ref:[Message Delivery Reliability](../general/message-delivery-reliability.md) of Akka, message delivery guarantee in distributed pub sub modes is **at-most-once delivery**. In other words, messages can be lost over the wire. In addition to that the registry of nodes which have subscribers is eventually consistent
 meaning that subscribing an actor on one node will have a short delay before it is known on other nodes and published to.
 
-If you are looking for at-least-once delivery guarantee, we recommend [Alpakka Kafka](https://doc.akka.io/librarires/alpakka-kafka/current/).
+If you are looking for at-least-once delivery guarantee, we recommend [Alpakka Kafka](https://doc.akka.io/libraries/alpakka-kafka/current/).
 
 
