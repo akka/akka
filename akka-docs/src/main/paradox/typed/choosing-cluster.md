@@ -31,7 +31,7 @@ is convenient to use and has great performance.
 
 Between different services [Akka HTTP](https://doc.akka.io/libraries/akka-http/current/) or
 [Akka gRPC](https://doc.akka.io/libraries/akka-grpc/current/) can be used for synchronous (yet non-blocking)
-communication and [Akka Streams Kafka](https://doc.akka.io/librarires/alpakka-kafka/current/) or other
+communication and [Akka Streams Kafka](https://doc.akka.io/libraries/alpakka-kafka/current/) or other
 [Alpakka](https://doc.akka.io/libraries/alpakka/current/) connectors for integration asynchronous communication.
 All those communication mechanisms work well with streaming of messages with end-to-end back-pressure, and the
 synchronous communication tools can also be used for single request response interactions. It is also important
