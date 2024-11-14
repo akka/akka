@@ -297,10 +297,10 @@ the settings for generation.
 For a pull request to be considered at all, it has to meet these requirements:
 
 1. Regardless if the code introduces new features or fixes bugs or regressions, it must have comprehensive tests.
-1. The code must be well documented in the Lightbend's standard documentation format (see the 'Documentation' section below).
+1. The code must be well documented in the Akka's standard documentation format (see the 'Documentation' section below).
 1. The commit messages must properly describe the changes. See further below.
 1. A pull request must be [linked to the issue](https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue) it aims to resolve in the PR's description (or comments). This can be achieved by writing "Fixes #1234" or similar in PR description.
-1. All Lightbend projects must include Lightbend copyright notices.  Each project can choose between one of two approaches:
+1. All Akka projects must include Lightbend copyright notices.  Each project can choose between one of two approaches:
 
     1. All source files in the project must have a Lightbend copyright notice in the file header.
     1. The Notices file for the project includes the Lightbend copyright notice and no other files contain copyright notices.  See <https://www.apache.org/legal/src-headers.html> for instructions for managing this approach for copyrights.
@@ -319,7 +319,7 @@ Some additional guidelines regarding source code are:
 
 ### Documentation
 
-All documentation is preferred to be in Lightbend's standard documentation format [Paradox](https://github.com/lightbend/paradox), which among other things, allows all code in the documentation to be externalized into compiled files and imported into the documentation.
+All documentation is preferred to be in Akka's standard documentation format [Paradox](https://github.com/lightbend/paradox), which among other things, allows all code in the documentation to be externalized into compiled files and imported into the documentation.
 
 To build the documentation locally:
 

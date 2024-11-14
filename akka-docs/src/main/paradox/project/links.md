@@ -2,13 +2,13 @@
 
 ## Commercial Support
 
-Commercial support is provided by [Lightbend](https://www.lightbend.com).
+Commercial support is provided by [Akka](https://akka.io).
 
 ## Sponsors
 
-**Lightbend** is the company behind the Akka Project, Scala Programming Language,
-Play Web Framework, Lagom, sbt and many other open source and source available projects. 
-It also provides the Lightbend Reactive Platform, which is powered by a source available core and commercial Enterprise Suite for building scalable Reactive systems on the JVM. Learn more at [lightbend.com](https://www.lightbend.com).
+**Akka** is the company behind Akka product, Scala Programming Language,
+Play Web Framework, Lagom, sbt and many other open source and source available projects.
+Learn more at [akka.io](https://akka.io).
 
 ## Akka Discuss Forums
 
