@@ -4,9 +4,8 @@ project.description: Migrating to Akka 2.7.
 # Migration Guide 2.6.x to 2.7.x
 
 The license for using Akka in production has been changed to Business Source License v1.1.
-[Why We Are Changing the License for Akka](https://www.lightbend.com/blog/why-we-are-changing-the-license-for-akka)
-explains the reasons and a [detailed FAQ](https://www.lightbend.com/akka/license-faq) is available to answer many of
-the questions that you may have about the license change.
+[Why We Are Changing the License for Akka](https://akka.io/blog//why-we-are-changing-the-license-for-akka)
+explains the reasons and a [detailed FAQ](https://akka.io/bsl-license-faq) is available to answer many of the questions that you may have about the license change.
 
 Akka 2.7.x is binary backwards compatible with 2.6.x with the ordinary exceptions listed in the
 @ref:[Binary Compatibility Rules](../common/binary-compatibility-rules.md).
