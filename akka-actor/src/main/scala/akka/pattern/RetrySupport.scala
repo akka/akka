@@ -4,11 +4,15 @@
 
 package akka.pattern
 
+import java.util.concurrent.ThreadLocalRandom
+
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.concurrent.duration.{ Duration, FiniteDuration }
+import scala.util.Try
 import scala.util.control.NonFatal
 
 import akka.actor.Scheduler
+import akka.pattern.RetrySupport.calculateExponentialBackoffDelay
 import akka.util.ConstantFun
 
 /**
@@ -106,7 +110,7 @@ trait RetrySupport {
     retry(
       attempt,
       attempts,
-      attempted => Some(BackoffSupervisor.calculateDelay(attempted, minBackoff, maxBackoff, randomFactor)))
+      attempted => Some(calculateExponentialBackoffDelay(attempted, minBackoff, maxBackoff, randomFactor)))
   }
 
   /**
@@ -148,7 +152,7 @@ trait RetrySupport {
       attempt,
       shouldRetry,
       attempts,
-      attempted => Some(BackoffSupervisor.calculateDelay(attempted, minBackoff, maxBackoff, randomFactor)))
+      attempted => Some(calculateExponentialBackoffDelay(attempted, minBackoff, maxBackoff, randomFactor)))
   }
 
   /**
@@ -301,4 +305,21 @@ object RetrySupport extends RetrySupport {
       tryAttempt()
     }
   }
+
+  /**
+   * Calculates an exponential back off delay.
+   */
+  def calculateExponentialBackoffDelay(
+      attempt: Int,
+      minBackoff: FiniteDuration,
+      maxBackoff: FiniteDuration,
+      randomFactor: Double): FiniteDuration = {
+    val rnd = 1.0 + ThreadLocalRandom.current().nextDouble() * randomFactor
+    val calculatedDuration = Try(maxBackoff.min(minBackoff * math.pow(2, attempt)) * rnd).getOrElse(maxBackoff)
+    calculatedDuration match {
+      case f: FiniteDuration => f
+      case _                 => maxBackoff
+    }
+  }
+
 }
