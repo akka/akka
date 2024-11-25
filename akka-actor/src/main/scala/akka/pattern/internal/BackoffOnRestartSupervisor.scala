@@ -9,6 +9,7 @@ import scala.concurrent.duration._
 import akka.actor.{ OneForOneStrategy, _ }
 import akka.actor.SupervisorStrategy._
 import akka.annotation.InternalApi
+import akka.pattern.RetrySupport
 import akka.pattern.{
   BackoffReset,
   BackoffSupervisor,
@@ -85,7 +86,8 @@ import akka.pattern.{
     case Terminated(`childRef`) =>
       become(receive)
       child = None
-      val restartDelay = BackoffSupervisor.calculateDelay(restartCount, minBackoff, maxBackoff, randomFactor)
+      val restartDelay =
+        RetrySupport.calculateExponentialBackoffDelay(restartCount, minBackoff, maxBackoff, randomFactor)
       context.system.scheduler.scheduleOnce(restartDelay, self, BackoffSupervisor.StartChild)
       restartCount += 1
 

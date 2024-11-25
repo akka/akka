@@ -722,4 +722,14 @@ object Patterns {
       attempts,
       (attempted) => delayFunction.apply(attempted).toScala.map(_.toScala))(context, scheduler).asJava
   }
+
+  /**
+   * Calculates an exponential back off delay.
+   */
+  def calculateExponentialBackoffDelay(
+      attempt: Int,
+      minBackoff: java.time.Duration,
+      maxBackoff: java.time.Duration,
+      randomFactor: Double): java.time.Duration =
+    RetrySupport.calculateExponentialBackoffDelay(attempt, minBackoff.toScala, maxBackoff.toScala, randomFactor).toJava
 }
