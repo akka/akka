@@ -37,16 +37,7 @@ import akka.actor.testkit.typed.internal.CapturingAppender
  */
 final class LogCapturing extends TestRule {
   // eager access of CapturingAppender to fail fast if misconfigured
-  private val capturingAppender =
-    try {
-      CapturingAppender.get("")
-    } catch {
-      case iae: IllegalArgumentException if iae.getMessage.contains("it was a [org.slf4j.helpers.NOPLogger]") =>
-        throw new RuntimeException(
-          "SLF could not initialize the logger, this is may be caused by accidentally having the slf4j-api dependency " +
-          "evicted/bumped to 2.2 by transitive dependencies while Akka only supports slf4j-api 1.7",
-          iae)
-    }
+  private val capturingAppender = CapturingAppender.get("")
 
   private val myLogger = LoggerFactory.getLogger(classOf[LogCapturing])
 
