@@ -4,7 +4,7 @@ project.description: Build distributed applications that scale across the networ
 # Cluster Usage
   
 This document describes how to use Akka Cluster and the Cluster APIs. 
-The [Stateful or Stateless Applications: To Akka Cluster or not](https://akka.io/blog/news/2020/06/01/akka-cluster-motivation) video is a good starting point to understand the motivation to use Akka Cluster.
+The [Stateful or Stateless Applications: To Akka Cluster or not](https://www.youtube.com/watch?v=CiVsKjZV-Ys) video is a good starting point to understand the motivation to use Akka Cluster.
 
 For specific documentation topics see: 
 
