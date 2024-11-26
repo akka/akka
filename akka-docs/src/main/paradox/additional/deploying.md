@@ -21,7 +21,29 @@ features from Akka Management for smooth rolling updates.
  
 ### Resource limits
 
-To avoid CFS scheduler limits, it is best not to use `resources.limits.cpu` limits, but use `resources.requests.cpu` configuration instead.
+To avoid CFS scheduler limits, it is best not to use `resources.limits.cpu` limits, but use `resources.requests.cpu`
+configuration instead.
+
+For memory, it's recommended to set both `resources.requests.memory` and `resources.limits.memory` to the same value.
+The `-XX:InitialRAMPercentage` and `-XX:MaxRAMPercentage` JVM options can be used to set the heap size relative to the
+memory limit.
+
+@@@ note
+
+Thread pool sizing is based on the detected number of available processors. This will be the CPU limit, if configured,
+or otherwise all available CPU on the underlying Kubernetes node. While it's recommended to not set a CPU limit, this
+can lead to over-sized thread pools. The available processors detected by the JVM can be configured directly using the
+`-XX:ActiveProcessorCount` option.
+
+---
+
+**Example**: Akka applications are being deployed to Kubernetes on 16 CPU nodes. Workloads are variable, so to schedule
+several pods on each node, a CPU request of 2 is being used. No CPU limit is set, so that pods can burst to more CPU
+usage as needed and when available. `-XX:ActiveProcessorCount=4` is added to the JVM options so that thread pools are
+sized appropriately for 4 CPU --- rather than the full 16 CPU as detected automatically, and more than the 2 CPU
+request, for when the application is active and able to use more resources.
+
+@@@
 
 ## Deploying to Docker containers
 
@@ -37,7 +59,9 @@ Docker allows [constraining each containers' resource usage](https://docs.docker
 
 #### Memory
 
-You may want to look into using `-XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap` options for your JVM later than 8u131, which makes it understand c-group memory limits. On JVM 10 and later, the `-XX:+UnlockExperimentalVMOptions` option is no longer needed.
+Any memory limits for the Docker container are detected automatically by current JVMs by default. The
+`-XX:InitialRAMPercentage` and `-XX:MaxRAMPercentage` JVM options can be used to set the heap size relative to the
+memory limit.
 
 #### CPU
 
@@ -47,3 +71,11 @@ starved of CPU time, but your system appears idle.
 
 For this reason, it is best to avoid `--cpus` and `--cpu-quota` entirely, and instead specify relative container weights using `--cpu-shares` instead.
 
+@@@ note
+
+Thread pool sizing is based on the detected number of available processors. This will be the CPU quota, if configured,
+or otherwise all CPU available to Docker. While it's recommended to not set a CPU quota, this can lead to over-sized
+thread pools. The available processors detected by the JVM can be configured directly using the
+`-XX:ActiveProcessorCount` option.
+
+@@@
