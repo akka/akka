@@ -23,7 +23,11 @@ import akka.persistence.typed.scaladsl.ReplicationInterceptor
 import akka.persistence.typed.scaladsl.RetentionCriteria
 import akka.persistence.typed.telemetry.EventSourcedBehaviorInstrumentation
 import akka.persistence.typed.scaladsl.SnapshotWhenPredicate
+import akka.util.Helpers.ConfigOps
 import akka.util.OptionVal
+import com.typesafe.config.ConfigFactory
+
+import scala.concurrent.duration.FiniteDuration
 
 /**
  * INTERNAL API
@@ -70,8 +74,11 @@ private[akka] final class BehaviorSetup[C, E, S](
 
   val persistence: Persistence = Persistence(context.system.toClassic)
 
-  val journal: ClassicActorRef = persistence.journalFor(settings.journalPluginId)
-  val snapshotStore: ClassicActorRef = persistence.snapshotStoreFor(settings.snapshotPluginId)
+  val journal: ClassicActorRef =
+    persistence.journalFor(settings.journalPluginId, settings.journalPluginConfig.getOrElse(ConfigFactory.empty))
+  val snapshotStore: ClassicActorRef = persistence.snapshotStoreFor(
+    settings.snapshotPluginId,
+    settings.snapshotPluginConfig.getOrElse(ConfigFactory.empty))
 
   val (isSnapshotOptional: Boolean, isOnlyOneSnapshot: Boolean) = {
     val snapshotStoreConfig = Persistence(context.system.classicSystem).configFor(snapshotStore)
@@ -125,16 +132,19 @@ private[akka] final class BehaviorSetup[C, E, S](
 
   private var recoveryTimer: OptionVal[Cancellable] = OptionVal.None
 
+  val recoveryEventTimeout: FiniteDuration = persistence
+    .journalConfigFor(settings.journalPluginId, settings.journalPluginConfig.getOrElse(ConfigFactory.empty))
+    .getMillisDuration("recovery-event-timeout")
+
   def startRecoveryTimer(snapshot: Boolean): Unit = {
     cancelRecoveryTimer()
     implicit val ec: ExecutionContext = context.executionContext
     val timer =
       if (snapshot)
-        context.scheduleOnce(settings.recoveryEventTimeout, context.self, RecoveryTickEvent(snapshot = true))
+        context.scheduleOnce(recoveryEventTimeout, context.self, RecoveryTickEvent(snapshot = true))
       else
-        context.system.scheduler.scheduleWithFixedDelay(settings.recoveryEventTimeout, settings.recoveryEventTimeout) {
-          () =>
-            context.self ! RecoveryTickEvent(snapshot = false)
+        context.system.scheduler.scheduleWithFixedDelay(recoveryEventTimeout, recoveryEventTimeout) { () =>
+          context.self ! RecoveryTickEvent(snapshot = false)
         }
     recoveryTimer = OptionVal.Some(timer)
   }

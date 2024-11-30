@@ -328,7 +328,8 @@ class SnapshotTestKit(system: ActorSystem)
 
   import SnapshotTestKit._
 
-  override protected val storage: SnapshotStorage = SnapshotStorageEmulatorExtension(system)
+  override protected val storage: SnapshotStorage =
+    SnapshotStorageEmulatorExtension(system).storageFor(PersistenceTestKitSnapshotPlugin.PluginId)
 
   override def getItem(persistenceId: String, nextInd: Int): Option[Any] = {
     storage.firstInExpectNextQueue(persistenceId).map(reprToAny)

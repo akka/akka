@@ -237,7 +237,7 @@ private[akka] final class ReplayingEvents[C, E, S](
         this
       } else {
         val msg =
-          s"Replay timed out, didn't get event within [${setup.settings.recoveryEventTimeout}], highest sequence number seen [${state.seqNr}]"
+          s"Replay timed out, didn't get event within [${setup.recoveryEventTimeout}], highest sequence number seen [${state.seqNr}]"
         onRecoveryFailure(new RecoveryTimedOut(msg), None, "retrieving-events")
       }
     } else {

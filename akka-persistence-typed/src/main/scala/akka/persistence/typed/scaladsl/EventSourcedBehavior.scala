@@ -23,6 +23,7 @@ import akka.persistence.typed.ReplicaId
 import akka.persistence.typed.SnapshotAdapter
 import akka.persistence.typed.SnapshotSelectionCriteria
 import akka.persistence.typed.internal._
+import com.typesafe.config.Config
 
 import scala.concurrent.Future
 
@@ -155,6 +156,16 @@ object EventSourcedBehavior {
    * Change the snapshot store plugin id that this actor should use.
    */
   def withSnapshotPluginId(id: String): EventSourcedBehavior[Command, Event, State]
+
+  /**
+   * Change the journal plugin config that this actor should use.
+   */
+  def withJournalPluginConfig(id: Option[Config]): EventSourcedBehavior[Command, Event, State]
+
+  /**
+   * Change the snapshot store plugin config that this actor should use.
+   */
+  def withSnapshotPluginConfig(id: Option[Config]): EventSourcedBehavior[Command, Event, State]
 
   /**
    * Changes the snapshot selection criteria used by this behavior.
