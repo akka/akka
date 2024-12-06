@@ -102,7 +102,7 @@ private[akka] final class DDataRememberEntitiesCoordinatorStore(
       replyTo ! RememberEntitiesCoordinatorStore.UpdateDone(shardId)
 
     case Replicator.UpdateTimeout(AllShardsKey, Some((replyTo: ActorRef, shardId: ShardId))) =>
-      log.error(
+      log.warning(
         "Remember entities coordinator store unable to update shards state within 'updating-state-timeout': {} millis (retrying), adding shard={}",
         writeConsistency.timeout.toMillis,
         shardId)
