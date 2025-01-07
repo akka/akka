@@ -225,7 +225,9 @@ import scala.jdk.CollectionConverters._
     override def onUpstreamFinish(): Unit = {
       if (!prefixComplete) {
         // This handles the unpulled out case as well
-        emit(out, (builder.result(), Source.empty), () => completeStage())
+        val prefix = builder.result()
+        builder = null // free for GC
+        emit(out, (prefix, Source.empty), () => completeStage())
       } else {
         if (!tailSource.isClosed) tailSource.complete()
         completeStage()
