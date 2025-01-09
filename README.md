@@ -19,7 +19,7 @@ Reference Documentation
 -----------------------
 
 The reference documentation is available at [doc.akka.io](https://doc.akka.io),
-for [Scala](https://doc.akka.io/libraries/akka-core/current/scala.html) and [Java](https://doc.akka.io/libraries/akka-core/current/java.html).
+for [Scala](https://doc.akka.io/libraries/akka-core/current/?language=scala) and [Java](https://doc.akka.io/libraries/akka-core/current/?language=java).
 
 Current versions of all Akka libraries
 --------------------------------------
@@ -35,9 +35,6 @@ You can join these groups and chats to discuss and ask Akka related questions:
 
 In addition to that, you may enjoy following:
 
-- The [news](https://akka.io/blog/news-archive.html) section of the page, which is updated whenever a new version is released
-- The [Akka Team Blog](https://akka.io/blog/article-archive.html)
-- The [Akka articles in the Akka Blog](https://akka.io/blog)
 - Questions tagged [#akka on StackOverflow](https://stackoverflow.com/questions/tagged/akka)
 
 Contributing
