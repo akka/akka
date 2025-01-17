@@ -14,11 +14,14 @@ import akka.annotation.InternalApi
 import akka.persistence.typed.EventAdapter
 import akka.persistence.typed._
 import akka.persistence.typed.internal._
-
 import java.util.Collections
 import java.util.Optional
 import java.util.concurrent.CompletionStage
+
+import com.typesafe.config.Config
+
 import scala.annotation.nowarn
+import scala.jdk.OptionConverters._
 
 /**
  * For projects using Java 17 and newer, also see [[EventSourcedOnCommandBehavior]]
@@ -124,6 +127,16 @@ abstract class EventSourcedBehavior[Command, Event, State] private[akka] (
    * Override and define the snapshot store plugin id that this actor should use instead of the default.
    */
   def snapshotPluginId: String = ""
+
+  /**
+   * Override and define the journal plugin config that this actor should use instead of the default.
+   */
+  def journalPluginConfig: Optional[Config] = Optional.empty()
+
+  /**
+   * Override and define the snapshot store plugin config that this actor should use instead of the default.
+   */
+  def snapshotPluginConfig: Optional[Config] = Optional.empty()
 
   /**
    * Override and define the snapshot selection criteria used by this actor instead of the default.
@@ -241,6 +254,8 @@ abstract class EventSourcedBehavior[Command, Event, State] private[akka] (
       .withJournalPluginId(journalPluginId)
       .withSnapshotPluginId(snapshotPluginId)
       .withRecovery(recovery.asScala)
+      .withJournalPluginConfig(journalPluginConfig.toScala)
+      .withSnapshotPluginConfig(snapshotPluginConfig.toScala)
 
     val handler = signalHandler()
     if (!handler.isEmpty) behavior = behavior.receiveSignal(handler.handler)
