@@ -48,6 +48,7 @@ import akka.persistence.typed.scaladsl._
 import akka.persistence.typed.scaladsl.{ Recovery => TypedRecovery }
 import akka.persistence.typed.scaladsl.RetentionCriteria
 import akka.persistence.typed.telemetry.EventSourcedBehaviorInstrumentationProvider
+import akka.util.HashCode
 
 @InternalApi
 private[akka] object EventSourcedBehaviorImpl {
@@ -412,7 +413,30 @@ private[akka] final case class ReplicatedEvent[E](
 @InternalApi
 private[akka] case object ReplicatedEventAck
 
-final class ReplicatedPublishedEventMetaData(val replicaId: ReplicaId, private[akka] val version: VersionVector)
+final class ReplicatedPublishedEventMetaData(
+    val replicaId: ReplicaId,
+    private[akka] val version: VersionVector,
+    private[akka] val metadata: Option[Any]) {
+
+  @deprecated("Use constructor with metadata parameter", "2.10.1")
+  def this(replicaId: ReplicaId, version: VersionVector) = this(replicaId, version, None)
+
+  override def equals(obj: Any): Boolean = obj match {
+    case other: ReplicatedPublishedEventMetaData =>
+      replicaId == other.replicaId &&
+      version == other.version &&
+      metadata == other.metadata
+    case _ => false
+  }
+
+  override def hashCode: Int = {
+    var result = HashCode.SEED
+    result = HashCode.hash(result, replicaId)
+    result = HashCode.hash(result, version)
+    result = HashCode.hash(result, metadata)
+    result
+  }
+}
 
 /**
  * INTERNAL API
@@ -424,7 +448,6 @@ private[akka] final case class PublishedEventImpl(
     payload: Any,
     timestamp: Long,
     replicatedMetaData: Option[ReplicatedPublishedEventMetaData],
-    // FIXME we probably have to add the full metadata: Option[Any] here, or add it to ReplicatedPublishedEventMetaData
     replyTo: Option[ActorRef[Done]])
     extends PublishedEvent
     with InternalProtocol {

@@ -126,7 +126,7 @@ class ReplicatedEventPublishingSpec
         1L,
         "two",
         System.currentTimeMillis(),
-        Some(new ReplicatedPublishedEventMetaData(DCB, VersionVector.empty)),
+        Some(new ReplicatedPublishedEventMetaData(DCB, VersionVector.empty, None)),
         None)
       actor ! MyReplicatedBehavior.Add("three", probe.ref)
       probe.expectMessage(Done)
@@ -148,7 +148,7 @@ class ReplicatedEventPublishingSpec
         1L,
         "one",
         System.currentTimeMillis(),
-        Some(new ReplicatedPublishedEventMetaData(DCB, VersionVector.empty)),
+        Some(new ReplicatedPublishedEventMetaData(DCB, VersionVector.empty, None)),
         Some(ackProbe.ref))
       actor.asInstanceOf[ActorRef[Any]] ! publishedEvent
       ackProbe.receiveMessage()
@@ -181,7 +181,7 @@ class ReplicatedEventPublishingSpec
         2L, // missing 1L
         "two",
         System.currentTimeMillis(),
-        Some(new ReplicatedPublishedEventMetaData(DCB, VersionVector.empty)),
+        Some(new ReplicatedPublishedEventMetaData(DCB, VersionVector.empty, None)),
         None)
       actor ! MyReplicatedBehavior.Add("three", probe.ref)
       probe.expectMessage(Done)
@@ -206,7 +206,7 @@ class ReplicatedEventPublishingSpec
         2L, // missing 1L
         "two",
         System.currentTimeMillis(),
-        Some(new ReplicatedPublishedEventMetaData(DCB, VersionVector.empty)),
+        Some(new ReplicatedPublishedEventMetaData(DCB, VersionVector.empty, None)),
         Some(probe.ref))
       probe.expectMessage(Done)
       actor ! MyReplicatedBehavior.Add("three", probe.ref)
@@ -229,7 +229,7 @@ class ReplicatedEventPublishingSpec
         1L,
         "two",
         System.currentTimeMillis(),
-        Some(new ReplicatedPublishedEventMetaData(DCC, VersionVector.empty)),
+        Some(new ReplicatedPublishedEventMetaData(DCC, VersionVector.empty, None)),
         None)
       actor ! MyReplicatedBehavior.Add("three", probe.ref)
       probe.expectMessage(Done)
@@ -251,7 +251,7 @@ class ReplicatedEventPublishingSpec
         1L,
         "two",
         System.currentTimeMillis(),
-        Some(new ReplicatedPublishedEventMetaData(DCB, VersionVector.empty)),
+        Some(new ReplicatedPublishedEventMetaData(DCB, VersionVector.empty, None)),
         None)
       // simulate another published event from that replica
       actor.asInstanceOf[ActorRef[Any]] ! internal.PublishedEventImpl(
@@ -259,7 +259,7 @@ class ReplicatedEventPublishingSpec
         1L,
         "two-again", // ofc this would be the same in the real world, different just so we can detect
         System.currentTimeMillis(),
-        Some(new ReplicatedPublishedEventMetaData(DCB, VersionVector.empty)),
+        Some(new ReplicatedPublishedEventMetaData(DCB, VersionVector.empty, None)),
         None)
 
       actor ! MyReplicatedBehavior.Add("three", probe.ref)
@@ -292,7 +292,7 @@ class ReplicatedEventPublishingSpec
         1L,
         "two",
         System.currentTimeMillis(),
-        Some(new ReplicatedPublishedEventMetaData(DCB, VersionVector.empty)),
+        Some(new ReplicatedPublishedEventMetaData(DCB, VersionVector.empty, None)),
         None)
 
       incarnation2 ! MyReplicatedBehavior.Add("three", probe.ref)
@@ -316,7 +316,7 @@ class ReplicatedEventPublishingSpec
         1L,
         "two",
         System.currentTimeMillis(),
-        Some(new ReplicatedPublishedEventMetaData(DCB, VersionVector.empty)),
+        Some(new ReplicatedPublishedEventMetaData(DCB, VersionVector.empty, None)),
         None)
 
       incarnationA1 ! MyReplicatedBehavior.Stop
@@ -330,7 +330,7 @@ class ReplicatedEventPublishingSpec
         2L,
         "three",
         System.currentTimeMillis(),
-        Some(new ReplicatedPublishedEventMetaData(DCB, VersionVector.empty)),
+        Some(new ReplicatedPublishedEventMetaData(DCB, VersionVector.empty, None)),
         None)
 
       incarnationA2 ! MyReplicatedBehavior.Add("four", probe.ref)
@@ -364,7 +364,7 @@ class ReplicatedEventPublishingSpec
         1L,
         "two",
         System.currentTimeMillis(),
-        Some(new ReplicatedPublishedEventMetaData(DCB, VersionVector.empty)),
+        Some(new ReplicatedPublishedEventMetaData(DCB, VersionVector.empty, None)),
         None)
       actor ! MyReplicatedBehavior.Add("three", probe.ref)
       probe.expectMessage(Done)
@@ -399,7 +399,7 @@ class ReplicatedEventPublishingSpec
         1L,
         "two",
         System.currentTimeMillis(),
-        Some(new ReplicatedPublishedEventMetaData(DCB, VersionVector.empty)),
+        Some(new ReplicatedPublishedEventMetaData(DCB, VersionVector.empty, None)),
         None)
       actor ! MyReplicatedBehavior.Add("three", probe.ref)
       probe.expectMessage(Done)
@@ -428,7 +428,7 @@ class ReplicatedEventPublishingSpec
         1L,
         "two",
         System.currentTimeMillis(),
-        Some(new ReplicatedPublishedEventMetaData(DCB, VersionVector.empty)),
+        Some(new ReplicatedPublishedEventMetaData(DCB, VersionVector.empty, None)),
         None)
       probe.expectTerminated(actor)
     }

@@ -475,7 +475,7 @@ private[akka] object Running {
             replication,
             ReplicatedEvent(
               event.event.asInstanceOf[E],
-              metadata = None, // FIXME metadata, see PublishedEventImpl
+              replicatedMetadata.metadata,
               originReplicaId,
               event.sequenceNumber,
               replicatedMetadata.version),
@@ -875,7 +875,7 @@ private[akka] object Running {
 
         if (setup.publishEvents && shouldPublish) {
           val meta = setup.replication.map(replication =>
-            new ReplicatedPublishedEventMetaData(replication.replicaId, state.version))
+            new ReplicatedPublishedEventMetaData(replication.replicaId, state.version, p.metadata))
           context.system.eventStream ! EventStream.Publish(
             PublishedEventImpl(setup.persistenceId, p.sequenceNr, p.payload, p.timestamp, meta, None))
         }
