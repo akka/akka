@@ -194,20 +194,29 @@ private[akka] trait SnapshotInteractions[C, E, S] {
     setup.snapshotStore.tell(LoadSnapshot(setup.persistenceId.id, criteria, toSequenceNr), setup.selfClassic)
   }
 
-  protected def internalSaveSnapshot(state: Running.RunningState[S]): Unit = {
+  protected def internalSaveSnapshot(state: Running.RunningState[S], metadata: Option[Any]): Unit = {
     setup.internalLogger.debug("Saving snapshot sequenceNr [{}]", state.seqNr)
     if (state.state == null)
       throw new IllegalStateException("A snapshot must not be a null state.")
     else {
-      val meta = setup.replication match {
-        case Some(_) =>
-          val m = ReplicatedSnapshotMetadata(state.version, state.seenPerReplica)
-          Some(m)
-        case None => None
+      val replicatedSnapshotMetadata = setup.replication match {
+        case Some(_) => Some(ReplicatedSnapshotMetadata(state.version, state.seenPerReplica))
+        case None    => None
       }
+      val newMetadata = metadata match {
+        case None =>
+          replicatedSnapshotMetadata
+        case Some(CompositeMetadata(entries)) =>
+          Some(CompositeMetadata(replicatedSnapshotMetadata.toSeq ++ entries))
+        case Some(other) if replicatedSnapshotMetadata.isEmpty =>
+          Some(other)
+        case Some(other) =>
+          Some(CompositeMetadata(replicatedSnapshotMetadata.toSeq :+ other))
+      }
+
       setup.snapshotStore.tell(
         SnapshotProtocol.SaveSnapshot(
-          new SnapshotMetadata(setup.persistenceId.id, state.seqNr, meta),
+          new SnapshotMetadata(setup.persistenceId.id, state.seqNr, newMetadata),
           setup.snapshotAdapter.toJournal(state.state)),
         setup.selfClassic)
     }

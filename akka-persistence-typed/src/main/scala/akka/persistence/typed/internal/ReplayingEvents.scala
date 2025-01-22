@@ -330,7 +330,7 @@ private[akka] final class ReplayingEvents[C, E, S](
         }
         setup.retention match {
           case criteria: SnapshotCountRetentionCriteriaImpl if criteria.snapshotEveryNEvents <= state.eventsReplayed =>
-            internalSaveSnapshot(initialRunningState)
+            internalSaveSnapshot(initialRunningState, state.metadata)
             new running.StoringSnapshot(initialRunningState, immutable.Seq.empty, SnapshotWithoutRetention)
           case _ =>
             tryUnstashOne(new running.HandlingCommands(initialRunningState))

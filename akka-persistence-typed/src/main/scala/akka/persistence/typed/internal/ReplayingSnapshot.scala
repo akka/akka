@@ -152,16 +152,18 @@ private[akka] class ReplayingSnapshot[C, E, S](override val setup: BehaviorSetup
     def loadSnapshotResult(snapshot: Option[SelectedSnapshot], toSnr: Long): Behavior[InternalProtocol] = {
       var state: S = setup.emptyState
 
-      val (seqNr: Long, seenPerReplica, version) = snapshot match {
-        case Some(SelectedSnapshot(metadata, snapshot)) =>
+      val (seqNr: Long, seenPerReplica, version, metadata) = snapshot match {
+        case Some(SelectedSnapshot(snapshotMetadata, snapshot)) =>
           state = setup.snapshotAdapter.fromJournal(snapshot)
-          setup.internalLogger.debug("Loaded snapshot with metadata [{}]", metadata)
-          metadata.metadata match {
-            case Some(rm: ReplicatedSnapshotMetadata) =>
-              (metadata.sequenceNr, rm.seenPerReplica, rm.version)
-            case _ => (metadata.sequenceNr, Map.empty[ReplicaId, Long], VersionVector.empty)
+          setup.internalLogger.debug("Loaded snapshot with metadata [{}]", snapshotMetadata)
+          CompositeMetadata.extract[ReplicatedSnapshotMetadata](snapshotMetadata.metadata) match {
+            case Some(rm) =>
+              (snapshotMetadata.sequenceNr, rm.seenPerReplica, rm.version, snapshotMetadata.metadata)
+            case None =>
+              (snapshotMetadata.sequenceNr, Map.empty[ReplicaId, Long], VersionVector.empty, snapshotMetadata.metadata)
+
           }
-        case None => (0L, Map.empty[ReplicaId, Long], VersionVector.empty)
+        case None => (0L, Map.empty[ReplicaId, Long], VersionVector.empty, None)
       }
 
       setup.internalLogger.debug("Snapshot recovered from {} {} {}", seqNr, seenPerReplica, version)
@@ -180,7 +182,7 @@ private[akka] class ReplayingSnapshot[C, E, S](override val setup: BehaviorSetup
           version,
           seenPerReplica,
           eventsReplayed = 0,
-          metadata = None))
+          metadata = metadata))
     }
 
     response match {

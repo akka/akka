@@ -15,6 +15,7 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.RecoveryCompleted
+import akka.persistence.typed.SnapshotCompleted
 
 object EventSourcedMetadataSpec {
 
@@ -72,7 +73,9 @@ class EventSourcedMetadataSpec
           evt
         }).snapshotWhen((_, event, _) => event == "snapshot").receiveSignal {
           case (_, RecoveryCompleted) =>
-            probe ! s"${EventSourcedBehavior.currentMetadata[String](ctx)} onRecoveryComplete"
+            probe ! s"${EventSourcedBehavior.currentMetadata[String](ctx)} RecoveryCompleted"
+          case (_, SnapshotCompleted(_)) =>
+            probe ! s"${EventSourcedBehavior.currentMetadata[String](ctx)} SnapshotCompleted"
         })
 
   "The metadata" must {
@@ -80,7 +83,7 @@ class EventSourcedMetadataSpec
     "be accessible in the handlers" in {
       val probe = TestProbe[String]()
       val ref = spawn(behavior(PersistenceId.ofUniqueId("ess-1"), probe.ref))
-      probe.expectMessage("None onRecoveryComplete")
+      probe.expectMessage("None RecoveryCompleted")
 
       ref ! "cmd"
       probe.expectMessage("None onCommand")
@@ -109,7 +112,7 @@ class EventSourcedMetadataSpec
       probe.expectMessage("Some(meta-123) eventHandler evt1")
       probe.expectMessage("Some(meta-123) eventHandler evt2")
       probe.expectMessage("Some(meta-123) eventHandler evt3")
-      probe.expectMessage("Some(meta-123) onRecoveryComplete")
+      probe.expectMessage("Some(meta-123) RecoveryCompleted")
 
       ref2 ! "cmd"
       probe.expectMessage("None onCommand")
@@ -120,7 +123,7 @@ class EventSourcedMetadataSpec
     "be available while unstashing" in {
       val probe = TestProbe[String]()
       val ref = spawn(behavior(PersistenceId.ofUniqueId("ess-2"), probe.ref))
-      probe.expectMessage("None onRecoveryComplete")
+      probe.expectMessage("None RecoveryCompleted")
 
       ref ! "stash"
       ref ! "cmd"
@@ -144,21 +147,32 @@ class EventSourcedMetadataSpec
       probe.expectMessage("None thenRun")
     }
 
-    "not fail when snapshotting" in {
+    "recover from snapshot metadata" in {
       val probe = TestProbe[String]()
       val ref = spawn(behavior(PersistenceId.ofUniqueId("ess-3"), probe.ref))
-      probe.expectMessage("None onRecoveryComplete")
+      probe.expectMessage("None RecoveryCompleted")
 
       ref ! "cmd"
       ref ! "snapshot"
-      ref ! "cmd"
 
       probe.expectMessage("None onCommand") // first command
       probe.expectMessage("Some(meta) eventHandler evt")
       probe.expectMessage("None thenRun")
       probe.expectMessage("Some(meta-snapshot) eventHandler snapshot")
-      probe.expectMessage("None onCommand") // second command
-      probe.expectMessage("Some(meta) eventHandler evt")
+      probe.expectMessage("Some(meta-snapshot) SnapshotCompleted")
+      probe.expectNoMessage()
+
+      Thread.sleep(1000) // FIXME
+
+      val ref2 = spawn(behavior(PersistenceId.ofUniqueId("ess-3"), probe.ref))
+      probe.expectMessage("Some(meta-snapshot) RecoveryCompleted")
+      // no replayed events
+      probe.expectNoMessage()
+      ref2 ! "cmd3"
+      probe.expectMessage("None onCommand")
+      probe.expectMessage("Some(meta-123) eventHandler evt1")
+      probe.expectMessage("Some(meta-123) eventHandler evt2")
+      probe.expectMessage("Some(meta-123) eventHandler evt3")
       probe.expectMessage("None thenRun")
     }
   }

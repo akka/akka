@@ -909,7 +909,7 @@ private[akka] object Running {
             onWriteDone(setup.context, p)
             if (shouldSnapshotAfterPersist == SnapshotWithRetention)
               setup.retentionProgressSaveSnapshotStarted(state2.seqNr)
-            internalSaveSnapshot(state2)
+            internalSaveSnapshot(state2, _currentMetadata)
             new StoringSnapshot(state2.clearInstrumentationContext, sideEffects, shouldSnapshotAfterPersist)
           }
         }
