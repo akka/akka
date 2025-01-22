@@ -259,12 +259,12 @@ abstract class EventSourcedBehavior[Command, Event, State] private[akka] (
 
   /**
    * The metadata of the given type that was persisted with an event, if any.
-   * Can only be called from inside the event handler handler or `RecoveryCompleted` of an `EventSourcedBehavior`.
+   * Can only be called from inside the event handler or `RecoveryCompleted` of an `EventSourcedBehavior`.
    */
-  def getMetadata[M](ctx: ActorContext[_], metadataType: Class[M]): Optional[M] = {
+  def getCurrentMetadata[M](ctx: ActorContext[_], metadataType: Class[M]): Optional[M] = {
     import scala.jdk.OptionConverters._
     implicit val ct: ClassTag[M] = ClassTag(metadataType)
-    scaladsl.EventSourcedBehavior.eventMetadata(ctx.asScala).toJava
+    scaladsl.EventSourcedBehavior.currentMetadata(ctx.asScala).toJava
   }
 
   /**

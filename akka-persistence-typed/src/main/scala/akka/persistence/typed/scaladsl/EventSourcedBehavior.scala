@@ -123,9 +123,9 @@ object EventSourcedBehavior {
 
   /**
    * The metadata of the given type that was persisted with an event, if any.
-   * Can only be called from inside the event handler handler or `RecoveryCompleted` of an `EventSourcedBehavior`.
+   * Can only be called from inside the event handler or `RecoveryCompleted` of an `EventSourcedBehavior`.
    */
-  def eventMetadata[M: ClassTag](context: ActorContext[_]): Option[M] = {
+  def currentMetadata[M: ClassTag](context: ActorContext[_]): Option[M] = {
     @tailrec
     def extractConcreteBehavior(beh: Behavior[_]): Behavior[_] =
       beh match {

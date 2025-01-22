@@ -295,7 +295,7 @@ object EventSourcedBehaviorSpec {
       eventHandler = (state, evt) =>
         evt match {
           case Incremented(delta) =>
-            val metadata = EventSourcedBehavior.eventMetadata[String](ctx)
+            val metadata = EventSourcedBehavior.currentMetadata[String](ctx)
             probe ! ((state, evt))
             State(state.value + delta, state.history :+ state.value, metadata)
           case FilteredEvent =>
