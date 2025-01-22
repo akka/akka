@@ -71,7 +71,7 @@ final private[akka] class EventsByPersistenceIdStage[Event](
                   sequenceNr = pr.sequenceNr,
                   eventOption = unwrappedPayload,
                   timestamp = pr.timestamp,
-                  eventMetadata = pr.metadata,
+                  _eventMetadata = pr.metadata,
                   entityType = entityType,
                   slice = sliceForPid(pr.persistenceId),
                   filtered = false,

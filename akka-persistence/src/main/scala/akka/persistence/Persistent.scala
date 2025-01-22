@@ -5,9 +5,11 @@
 package akka.persistence
 
 import scala.collection.immutable
+import scala.reflect.ClassTag
 
 import akka.actor.{ ActorRef, NoSerializationVerificationNeeded }
 import akka.annotation.DoNotInherit
+import akka.annotation.InternalApi
 import akka.persistence.serialization.Message
 import akka.util.HashCode
 
@@ -18,6 +20,7 @@ import akka.util.HashCode
  *
  * In essence it is either an [[NonPersistentRepr]] or [[AtomicWrite]].
  */
+@InternalApi
 private[persistence] sealed trait PersistentEnvelope {
   def payload: Any
   def sender: ActorRef
@@ -28,6 +31,7 @@ private[persistence] sealed trait PersistentEnvelope {
  * INTERNAL API
  * Message which can be resequenced by the Journal, but will not be persisted.
  */
+@InternalApi
 private[persistence] final case class NonPersistentRepr(payload: Any, sender: ActorRef) extends PersistentEnvelope {
   override def size: Int = 1
 }
@@ -184,6 +188,7 @@ object PersistentRepr {
 /**
  * INTERNAL API.
  */
+@InternalApi
 private[persistence] final case class PersistentImpl(
     override val payload: Any,
     override val sequenceNr: Long,
@@ -246,3 +251,26 @@ private[persistence] final case class PersistentImpl(
     s"PersistentRepr($persistenceId,$sequenceNr,$writerUuid,$timestamp,$metadata)"
   }
 }
+
+/**
+ * INTERNAL API
+ */
+@InternalApi private[akka] object CompositeMetadata {
+  def extract[M: ClassTag](metadata: Option[Any]): Option[M] = {
+    val metadataType = implicitly[ClassTag[M]].runtimeClass
+    metadata.flatMap {
+      case CompositeMetadata(entries) =>
+        entries.collectFirst {
+          case m: M @unchecked if metadataType.isAssignableFrom(m.getClass) => m
+        }
+      case other: M @unchecked if metadataType.isAssignableFrom(other.getClass) => Some(other)
+      case _                                                                    => None
+    }
+  }
+}
+
+/**
+ * INTERNAL API
+ */
+@InternalApi
+private[akka] final case class CompositeMetadata(entries: immutable.Seq[Any])

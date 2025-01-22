@@ -57,3 +57,7 @@ message PersistentFSMSnapshot {
   required PersistentPayload data = 2;
   optional int64 timeoutNanos = 3;
 }
+
+message CompositeMetadata {
+  repeated PersistentPayload payloads = 1;
+}

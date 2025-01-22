@@ -179,7 +179,8 @@ private[akka] class ReplayingSnapshot[C, E, S](override val setup: BehaviorSetup
           System.nanoTime(),
           version,
           seenPerReplica,
-          eventsReplayed = 0))
+          eventsReplayed = 0,
+          metadata = None))
     }
 
     response match {

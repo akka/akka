@@ -32,14 +32,15 @@ import scala.jdk.CollectionConverters._
   /**
    * Persist a single event
    */
-  final def persist(event: Event): EffectBuilder[Event, State] = Persist(event)
+  final def persist(event: Event): EffectBuilder[Event, State] = Persist(event, Nil)
 
   /**
    * Persist all of a the given events. Each event will be applied through `applyEffect` separately but not until
    * all events has been persisted. If `callback` is added through [[EffectBuilder.thenRun]] that will invoked
    * after all the events has been persisted.
    */
-  final def persist(events: java.util.List[Event]): EffectBuilder[Event, State] = PersistAll(events.asScala.toVector)
+  final def persist(events: java.util.List[Event]): EffectBuilder[Event, State] =
+    PersistAll(events.asScala.toVector, Nil)
 
   /**
    * Do not persist anything
@@ -205,6 +206,11 @@ import scala.jdk.CollectionConverters._
    * sent for a specific command or the reply will be sent later.
    */
   def thenNoReply(): ReplyEffect[Event, State]
+
+  /**
+   * Persist additional metadata together with the event(s).
+   */
+  def persistMetadata(metadata: AnyRef): EffectBuilder[Event, State]
 
 }
 

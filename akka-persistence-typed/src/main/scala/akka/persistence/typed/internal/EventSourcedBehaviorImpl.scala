@@ -7,7 +7,11 @@ package akka.persistence.typed.internal
 import java.util.Optional
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
+
+import scala.reflect.ClassTag
+
 import org.slf4j.LoggerFactory
+
 import akka.Done
 import akka.actor.typed
 import akka.actor.typed.ActorRef
@@ -81,6 +85,14 @@ private[akka] object EventSourcedBehaviorImpl {
    * Used to start the replication stream at the correct sequence number
    */
   final case class GetSeenSequenceNr(replica: ReplicaId, replyTo: ActorRef[Long]) extends InternalProtocol
+
+  trait WithSeqNrAccessible {
+    def currentSequenceNumber: Long
+  }
+
+  trait WithMetadataAccessible {
+    def metadata[M: ClassTag]: Option[M]
+  }
 
 }
 
@@ -393,6 +405,7 @@ private[akka] final case class ReplicatedSnapshotMetadata(version: VersionVector
 @InternalApi
 private[akka] final case class ReplicatedEvent[E](
     event: E,
+    metadata: Option[Any],
     originReplica: ReplicaId,
     originSequenceNr: Long,
     originVersion: VersionVector)
@@ -411,6 +424,7 @@ private[akka] final case class PublishedEventImpl(
     payload: Any,
     timestamp: Long,
     replicatedMetaData: Option[ReplicatedPublishedEventMetaData],
+    // FIXME we probably have to add the full metadata: Option[Any] here, or add it to ReplicatedPublishedEventMetaData
     replyTo: Option[ActorRef[Done]])
     extends PublishedEvent
     with InternalProtocol {

@@ -26,10 +26,7 @@ private[akka] object JournalInteractions {
 
   type EventOrTaggedOrReplicated = Any // `Any` since can be `E` or `Tagged` or a `ReplicatedEvent`
 
-  final case class EventToPersist(
-      adaptedEvent: EventOrTaggedOrReplicated,
-      manifest: String,
-      metadata: Option[ReplicatedEventMetadata])
+  final case class EventToPersist(adaptedEvent: EventOrTaggedOrReplicated, manifest: String, metadata: Seq[Any])
 
 }
 
@@ -46,7 +43,7 @@ private[akka] trait JournalInteractions[C, E, S] {
       state: Running.RunningState[S],
       event: EventOrTaggedOrReplicated,
       eventAdapterManifest: String,
-      metadata: OptionVal[Any]): Running.RunningState[S] = {
+      metadata: Seq[Any]): Running.RunningState[S] = {
 
     val newRunningState = state.nextSequenceNr()
 
@@ -63,10 +60,15 @@ private[akka] trait JournalInteractions[C, E, S] {
 
     onWriteInitiated(setup.context, cmd.orNull, repr)
 
-    val write = AtomicWrite(metadata match {
-        case OptionVal.Some(meta) => repr.withMetadata(meta)
-        case _                    => repr
-      }) :: Nil
+    val reprWithMetadata =
+      if (metadata.isEmpty)
+        repr
+      else if (metadata.size == 1)
+        repr.withMetadata(metadata.head)
+      else
+        repr.withMetadata(CompositeMetadata(metadata))
+
+    val write = AtomicWrite(reprWithMetadata) :: Nil
 
     setup.journal
       .tell(JournalProtocol.WriteMessages(write, setup.selfClassic, setup.writerIdentity.instanceId), setup.selfClassic)
@@ -97,10 +99,13 @@ private[akka] trait JournalInteractions[C, E, S] {
             sender = ActorRef.noSender)
           val instCtx = setup.instrumentation.persistEventCalled(setup.context.self, repr.payload, cmd.orNull)
           newState = newState.updateInstrumentationContext(repr.sequenceNr, instCtx)
-          metadata match {
-            case Some(metadata) => repr.withMetadata(metadata)
-            case None           => repr
-          }
+
+          if (metadata.isEmpty)
+            repr
+          else if (metadata.size == 1)
+            repr.withMetadata(metadata.head)
+          else
+            repr.withMetadata(CompositeMetadata(metadata))
       }
 
       onWritesInitiated(setup.context, cmd.orNull, writes)

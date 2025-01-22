@@ -22,7 +22,7 @@ object Effect {
    *
    * Side effects can be chained with `thenRun`
    */
-  def persist[Event, State](event: Event): EffectBuilder[Event, State] = Persist(event)
+  def persist[Event, State](event: Event): EffectBuilder[Event, State] = Persist(event, Nil)
 
   /**
    * Persist multiple events
@@ -38,7 +38,7 @@ object Effect {
    * Side effects can be chained with `thenRun`
    */
   def persist[Event, State](events: im.Seq[Event]): EffectBuilder[Event, State] =
-    PersistAll(events)
+    PersistAll(events, Nil)
 
   /**
    * Do not persist anything
@@ -191,6 +191,11 @@ trait EffectBuilder[+Event, State] extends Effect[Event, State] {
    * sent for a specific command or the reply will be sent later.
    */
   def thenNoReply(): ReplyEffect[Event, State]
+
+  /**
+   * Persist additional metadata together with the event(s).
+   */
+  def persistMetadata(metadata: AnyRef): EffectBuilder[Event, State]
 
 }
 
