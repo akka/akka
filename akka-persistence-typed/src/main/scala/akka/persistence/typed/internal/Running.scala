@@ -283,6 +283,7 @@ private[akka] object Running {
       with WithMetadataAccessible {
 
     _currentSequenceNumber = state.seqNr
+    _currentMetadata = None
 
     private def alreadySeen(e: ReplicatedEvent[_]): Boolean = {
       e.originSequenceNr <= state.seenPerReplica.getOrElse(e.originReplica, 0L)
