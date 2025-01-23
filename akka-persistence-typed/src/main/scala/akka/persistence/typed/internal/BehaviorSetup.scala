@@ -6,19 +6,22 @@ package akka.persistence.typed.internal
 
 import scala.concurrent.ExecutionContext
 import scala.util.control.NonFatal
+
 import org.slf4j.Logger
 import org.slf4j.MDC
+
 import akka.actor.{ ActorRef => ClassicActorRef }
 import akka.actor.Cancellable
 import akka.actor.typed.Signal
 import akka.actor.typed.scaladsl.ActorContext
 import akka.annotation.InternalApi
-import akka.persistence._
+import akka.persistence.Persistence
 import akka.persistence.typed.EventAdapter
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.ReplicaId
 import akka.persistence.typed.SnapshotAdapter
 import akka.persistence.typed.scaladsl.EventSourcedBehavior
+import akka.persistence.typed.scaladsl.Recovery
 import akka.persistence.typed.scaladsl.ReplicationInterceptor
 import akka.persistence.typed.scaladsl.RetentionCriteria
 import akka.persistence.typed.telemetry.EventSourcedBehaviorInstrumentation

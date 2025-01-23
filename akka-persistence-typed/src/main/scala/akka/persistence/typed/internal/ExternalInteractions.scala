@@ -120,7 +120,7 @@ private[akka] trait JournalInteractions[C, E, S] {
 
   protected def replayEvents(fromSeqNr: Long, toSeqNr: Long): Unit = {
     val from =
-      if (setup.recovery == Recovery.replayOnlyLast) {
+      if (setup.recovery == ReplayOnlyLastRecovery) {
         setup.internalLogger.debug("Recovery from last event only.")
         -1L
       } else {
@@ -129,7 +129,7 @@ private[akka] trait JournalInteractions[C, E, S] {
       }
 
     setup.journal.tell(
-      ReplayMessages(from, toSeqNr, setup.recovery.replayMax, setup.persistenceId.id, setup.selfClassic),
+      ReplayMessages(from, toSeqNr, setup.recovery.toClassic.replayMax, setup.persistenceId.id, setup.selfClassic),
       setup.selfClassic)
   }
 

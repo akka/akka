@@ -22,7 +22,6 @@ import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation._
 import akka.persistence.JournalProtocol
-import akka.persistence.Recovery
 import akka.persistence.RecoveryPermitter
 import akka.persistence.SnapshotProtocol
 import akka.persistence.journal.Tagged
@@ -41,7 +40,6 @@ import akka.persistence.typed.SnapshotCompleted
 import akka.persistence.typed.SnapshotFailed
 import akka.persistence.typed.SnapshotSelectionCriteria
 import akka.persistence.typed.scaladsl._
-import akka.persistence.typed.scaladsl.{ Recovery => TypedRecovery }
 import akka.persistence.typed.scaladsl.RetentionCriteria
 import akka.persistence.typed.telemetry.EventSourcedBehaviorInstrumentationProvider
 
@@ -97,7 +95,7 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
     eventAdapter: EventAdapter[Event, Any] = NoOpEventAdapter.instance[Event],
     snapshotAdapter: SnapshotAdapter[State] = NoOpSnapshotAdapter.instance[State],
     snapshotWhen: SnapshotWhenPredicate[State, Event] = SnapshotWhenPredicate.noSnapshot[State, Event],
-    recovery: Recovery = Recovery(),
+    recovery: Recovery = Recovery.default,
     retention: RetentionCriteria = RetentionCriteria.disabled,
     supervisionStrategy: SupervisorStrategy = SupervisorStrategy.stop,
     override val signalHandler: PartialFunction[(State, Signal), Unit] = PartialFunction.empty,
@@ -273,7 +271,7 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
 
   override def withSnapshotSelectionCriteria(
       selection: SnapshotSelectionCriteria): EventSourcedBehavior[Command, Event, State] = {
-    copy(recovery = Recovery(selection.toClassic))
+    copy(recovery = Recovery.withSnapshotSelectionCriteria(selection))
   }
 
   override def snapshotWhen(predicate: (State, Event, Long) => Boolean): EventSourcedBehavior[Command, Event, State] =
@@ -304,8 +302,8 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
       backoffStrategy: BackoffSupervisorStrategy): EventSourcedBehavior[Command, Event, State] =
     copy(supervisionStrategy = backoffStrategy)
 
-  override def withRecovery(recovery: TypedRecovery): EventSourcedBehavior[Command, Event, State] = {
-    copy(recovery = recovery.toClassic)
+  override def withRecovery(recovery: Recovery): EventSourcedBehavior[Command, Event, State] = {
+    copy(recovery = recovery)
   }
 
   override def withEventPublishing(enabled: Boolean): EventSourcedBehavior[Command, Event, State] = {

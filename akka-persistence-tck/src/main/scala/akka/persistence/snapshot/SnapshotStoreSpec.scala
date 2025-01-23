@@ -4,8 +4,6 @@
 
 package akka.persistence.snapshot
 
-import scala.collection.immutable.Seq
-
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 
@@ -180,11 +178,6 @@ abstract class SnapshotStoreSpec(config: Config)
       val bigSnapshot = "0" * snapshotByteSizeLimit
       snapshotStore.tell(SaveSnapshot(metadata, bigSnapshot), senderProbe.ref)
       senderProbe.expectMsgPF() { case SaveSnapshotSuccess(md) => md }
-    }
-    "not load a snapshot when criteria is NoSnapshotAndReplayLastEvent" in {
-      snapshotStore.tell(
-        LoadSnapshot(pid, SnapshotSelectionCriteria.NoSnapshotAndReplayOnlyLast, Long.MaxValue), senderProbe.ref)
-      senderProbe.expectMsg(LoadSnapshotResult(None, Long.MaxValue))
     }
   }
 
