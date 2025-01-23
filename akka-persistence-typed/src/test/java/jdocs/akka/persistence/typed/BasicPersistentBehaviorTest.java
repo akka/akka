@@ -420,6 +420,13 @@ public class BasicPersistentBehaviorTest {
       }
       // #custom-stash-buffer
 
+      // #replay-last
+      @Override
+      public Recovery recovery() {
+        return Recovery.replayOnlyLast();
+      }
+      // #replay-last
+
       // #wrapPersistentBehavior
       @Override
       public boolean shouldSnapshot(State state, Event event, long sequenceNr) {

@@ -546,6 +546,19 @@ Please refer to @ref[snapshots](persistence-snapshot.md#snapshots) if you need t
 
 In any case, the highest sequence number will always be recovered so you can keep persisting new events without corrupting your event log.
 
+### Recovery from only last event
+
+For some use cases it is enough to recover the actor from the last event, as an optimization to not replay all events.
+You can enable this recovery mode with:
+
+Scala
+:  @@snip [BasicPersistentBehaviorCompileOnly.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BasicPersistentBehaviorCompileOnly.scala) { #replay-last }
+
+Java
+:  @@snip [BasicPersistentBehaviorTest.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BasicPersistentBehaviorTest.java) { #replay-last }
+
+Snapshots are not loaded when recovery from last event is selected.
+
 ## Tagging
 
 Persistence allows you to use event tags without using an @ref[`EventAdapter`](../persistence.md#event-adapters):

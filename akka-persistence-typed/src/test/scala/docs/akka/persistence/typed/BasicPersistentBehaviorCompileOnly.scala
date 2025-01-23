@@ -133,6 +133,18 @@ object BasicPersistentBehaviorCompileOnly {
     //#recovery-disabled
   }
 
+  object ReplayLastBehavior {
+    def apply(): Behavior[Command] =
+      //#replay-last
+      EventSourcedBehavior[Command, Event, State](
+        persistenceId = PersistenceId.ofUniqueId("abc"),
+        emptyState = State(),
+        commandHandler = (state, cmd) => throw new NotImplementedError("TODO: process the command & return an Effect"),
+        eventHandler = (state, evt) => throw new NotImplementedError("TODO: process the event return the next state"))
+        .withRecovery(Recovery.replayOnlyLast)
+    //#replay-last
+  }
+
   object TaggingBehavior {
     def apply(): Behavior[Command] =
       //#tagging
