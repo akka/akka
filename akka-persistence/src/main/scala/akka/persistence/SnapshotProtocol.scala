@@ -192,7 +192,13 @@ object SnapshotSelectionCriteria {
   /**
    * No saved snapshot matches.
    */
-  val None = SnapshotSelectionCriteria(0L, 0L)
+  val None = SnapshotSelectionCriteria(maxSequenceNr = 0L, maxTimestamp = 0L)
+
+  /**
+   * No saved snapshot matches and the replay will start from last event, i.e.
+   * recovery is based on only the last event.
+   */
+  val NoSnapshotAndReplayOnlyLast = SnapshotSelectionCriteria(minSequenceNr = -1, maxSequenceNr = 0L, maxTimestamp = 0L)
 
   /**
    * Java API.
@@ -215,6 +221,11 @@ object SnapshotSelectionCriteria {
    * Java API.
    */
   def none() = None
+
+  /**
+   * Java API.
+   */
+  def noSnapshotAndReplayOnlyLast = NoSnapshotAndReplayOnlyLast
 }
 
 /**

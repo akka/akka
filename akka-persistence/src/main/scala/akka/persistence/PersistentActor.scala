@@ -101,6 +101,12 @@ object Recovery {
    */
   val none: Recovery = Recovery(toSequenceNr = 0L, fromSnapshot = SnapshotSelectionCriteria.None)
 
+  /**
+   * Don't load snapshot and replay only last event.
+   */
+  val replayOnlyLast: Recovery =
+    Recovery(fromSnapshot = SnapshotSelectionCriteria.NoSnapshotAndReplayOnlyLast)
+
 }
 
 final class RecoveryTimedOut(message: String) extends RuntimeException(message) with NoStackTrace

@@ -6,7 +6,9 @@ package akka.persistence.typed.javadsl
 
 import akka.annotation.InternalApi
 import akka.persistence.typed.SnapshotSelectionCriteria
-import akka.persistence.typed.internal.{ DefaultRecovery, DisabledRecovery, RecoveryWithSnapshotSelectionCriteria }
+import akka.persistence.typed.internal.ReplayOnlyLastRecovery
+import akka.persistence.typed.internal.{DefaultRecovery, DisabledRecovery, RecoveryWithSnapshotSelectionCriteria}
+import akka.persistence.typed.scaladsl.Recovery
 
 /**
  * Strategy for recovery of snapshots and events.
@@ -46,5 +48,10 @@ object Recovery {
    */
   def withSnapshotSelectionCriteria(snapshotSelectionCriteria: SnapshotSelectionCriteria) =
     RecoveryWithSnapshotSelectionCriteria(snapshotSelectionCriteria)
+
+  /**
+   * Don't load snapshot and replay only last event.
+   */
+  val replayOnlyLast: Recovery = ReplayOnlyLastRecovery
 
 }

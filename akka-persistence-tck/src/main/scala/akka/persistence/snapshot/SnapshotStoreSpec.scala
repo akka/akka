@@ -181,6 +181,11 @@ abstract class SnapshotStoreSpec(config: Config)
       snapshotStore.tell(SaveSnapshot(metadata, bigSnapshot), senderProbe.ref)
       senderProbe.expectMsgPF() { case SaveSnapshotSuccess(md) => md }
     }
+    "not load a snapshot when criteria is NoSnapshotAndReplayLastEvent" in {
+      snapshotStore.tell(
+        LoadSnapshot(pid, SnapshotSelectionCriteria.NoSnapshotAndReplayOnlyLast, Long.MaxValue), senderProbe.ref)
+      senderProbe.expectMsg(LoadSnapshotResult(None, Long.MaxValue))
+    }
   }
 
   "A snapshot store optionally".may {
@@ -222,5 +227,6 @@ abstract class SnapshotStoreSpec(config: Config)
         }
       }
     }
+
   }
 }
