@@ -277,4 +277,7 @@ private[persistence] final case class PersistentImpl(
  * Otherwise it could have been a `Map[Class, Any]`.
  */
 @InternalApi
-private[akka] final case class CompositeMetadata(entries: immutable.Seq[Any])
+private[akka] final case class CompositeMetadata(entries: immutable.Seq[Any]) {
+  if (entries.isEmpty)
+    throw new IllegalArgumentException("CompositeMetadata must have at least one entry")
+}

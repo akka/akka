@@ -68,10 +68,9 @@ final class EventEnvelope(
   @deprecated("Use metadata with metadataType parameter")
   def eventMetadata: Option[Any] = {
     // For backwards compatibility this will use the metadata that was added last (ReplicatedEventMetaData)
-    _eventMetadata match {
-      case Some(CompositeMetadata(entries)) => entries.headOption
-      case s @ Some(_)                      => s
-      case None                             => None
+    _eventMetadata.collect {
+      case CompositeMetadata(entries) => entries.head
+      case other                      => other
     }
   }
 
