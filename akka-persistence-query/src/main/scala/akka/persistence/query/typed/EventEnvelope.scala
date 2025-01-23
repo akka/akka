@@ -224,8 +224,14 @@ final class EventEnvelope[Event](
    * Scala API
    */
   @deprecated("Use metadata with metadataType parameter")
-  def eventMetadata: Option[Any] =
-    metadata[Any]
+  def eventMetadata: Option[Any] = {
+    // For backwards compatibility this will use the metadata that was added last (ReplicatedEventMetaData)
+    _eventMetadata match {
+      case Some(CompositeMetadata(entries)) => entries.headOption
+      case s @ Some(_)                      => s
+      case None                             => None
+    }
+  }
 
   /**
    * Java API

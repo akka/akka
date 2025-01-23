@@ -261,16 +261,20 @@ private[persistence] final case class PersistentImpl(
     metadata.flatMap {
       case CompositeMetadata(entries) =>
         entries.collectFirst {
-          case m: M @unchecked if metadataType.isAssignableFrom(m.getClass) => m
+          case m: M if metadataType == m.getClass => m
         }
-      case other: M @unchecked if metadataType.isAssignableFrom(other.getClass) => Some(other)
-      case _                                                                    => None
+      case other: M if metadataType == other.getClass => Some(other)
+      case _                                          => None
     }
   }
 }
 
 /**
- * INTERNAL API
+ * INTERNAL API: Metadata entries keyed by metadata class.
+ *
+ * For backwards compatibility of for example EventEnvelope.eventMetadata the entries is a Seq
+ * with the metadata that was added last (ReplicatedEventMetaData) at the head of the Seq.
+ * Otherwise it could have been a `Map[Class, Any]`.
  */
 @InternalApi
 private[akka] final case class CompositeMetadata(entries: immutable.Seq[Any])
