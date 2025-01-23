@@ -51,8 +51,6 @@ private[akka] class ReplayingSnapshot[C, E, S](override val setup: BehaviorSetup
     // protect against snapshot stalling forever because of journal overloaded and such
     setup.startRecoveryTimer(snapshot = true)
 
-    // FIXME we could bypass loadSnapshot when the snapshot criteria is none or replayOnlyLast
-    // For replayOnlyLast we must also use fromSequenceNr = -1 for the replay
     loadSnapshot(setup.recovery.fromSnapshot, setup.recovery.toSequenceNr)
 
     def stay(receivedPoisonPill: Boolean): Behavior[InternalProtocol] = {

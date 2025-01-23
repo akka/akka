@@ -5,6 +5,8 @@
 package akka.persistence
 import scala.runtime.AbstractFunction3
 
+import akka.annotation.InternalApi
+
 /**
  * Snapshot metadata.
  *
@@ -195,12 +197,6 @@ object SnapshotSelectionCriteria {
   val None = SnapshotSelectionCriteria(maxSequenceNr = 0L, maxTimestamp = 0L)
 
   /**
-   * No saved snapshot matches and the replay will start from last event, i.e.
-   * recovery is based on only the last event.
-   */
-  val NoSnapshotAndReplayOnlyLast = SnapshotSelectionCriteria(minSequenceNr = -1, maxSequenceNr = 0L, maxTimestamp = 0L)
-
-  /**
    * Java API.
    */
   def create(maxSequenceNr: Long, maxTimestamp: Long) =
@@ -223,9 +219,13 @@ object SnapshotSelectionCriteria {
   def none() = None
 
   /**
-   * Java API.
+   * INTERNAL API: No saved snapshot matches and the replay will start from last event, i.e.
+   * recovery is based on only the last event.
+   *
+   * Doesn't need to be public because it is used via `Recovery.replayOnlyLast`.
    */
-  def noSnapshotAndReplayOnlyLast = NoSnapshotAndReplayOnlyLast
+  @InternalApi private[akka] val NoSnapshotAndReplayOnlyLast =
+    SnapshotSelectionCriteria(minSequenceNr = -1, maxSequenceNr = 0L, maxTimestamp = 0L)
 }
 
 /**

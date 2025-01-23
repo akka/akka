@@ -8,7 +8,6 @@ import akka.annotation.InternalApi
 import akka.persistence.typed.SnapshotSelectionCriteria
 import akka.persistence.typed.internal.ReplayOnlyLastRecovery
 import akka.persistence.typed.internal.{ DefaultRecovery, DisabledRecovery, RecoveryWithSnapshotSelectionCriteria }
-import akka.persistence.typed.scaladsl.Recovery
 
 /**
  * Strategy for recovery of snapshots and events.

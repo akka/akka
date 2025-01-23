@@ -59,10 +59,15 @@ class PersistenceTestKitPlugin(@nowarn("msg=never used") cfg: Config, cfgPath: S
 
   override def asyncReplayMessages(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long)(
       recoveryCallback: PersistentRepr => Unit): Future[Unit] =
-    Future.fromTry(
-      Try(
+    Future.fromTry(Try {
+      val highest = storage.tryReadSeqNumber(persistenceId)
+      if (highest != 0L && max != 0L) {
+        val to = math.min(toSequenceNr, highest)
+        // read only last when fromSequenceNr is -1
+        val from = if (fromSequenceNr == -1) to else fromSequenceNr
+
         storage
-          .tryRead(persistenceId, fromSequenceNr, toSequenceNr, max)
+          .tryRead(persistenceId, from, to, max)
           .map { repr =>
             // we keep the tags in the repr, so remove those here
             repr.payload match {
@@ -71,7 +76,11 @@ class PersistenceTestKitPlugin(@nowarn("msg=never used") cfg: Config, cfgPath: S
             }
 
           }
-          .foreach(recoveryCallback)))
+          .foreach(recoveryCallback)
+      } else {
+        Future.successful(())
+      }
+    })
 
   override def asyncReadHighestSequenceNr(persistenceId: String, fromSequenceNr: Long): Future[Long] =
     Future.fromTry(Try {
