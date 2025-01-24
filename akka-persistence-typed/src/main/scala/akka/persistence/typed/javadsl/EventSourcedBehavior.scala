@@ -178,7 +178,7 @@ abstract class EventSourcedBehavior[Command, Event, State] private[akka] (
    * Override to change the strategy for recovery of snapshots and events.
    * By default, snapshots and events are recovered.
    */
-  def recovery: Recovery = Recovery.default
+  def recovery: Recovery = Recovery.enabled
 
   /**
    * Return tags to store for the given event, the tags can then be used in persistence query.
