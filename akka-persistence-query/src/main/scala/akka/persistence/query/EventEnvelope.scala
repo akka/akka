@@ -10,6 +10,7 @@ import scala.reflect.ClassTag
 import scala.runtime.AbstractFunction4
 
 import akka.annotation.InternalApi
+import akka.annotation.InternalStableApi
 import akka.persistence.CompositeMetadata
 import akka.util.HashCode
 
@@ -101,7 +102,7 @@ final class EventEnvelope(
   /**
    * INTERNAL API
    */
-  @InternalApi private[akka] def internalEventMetadata: Option[Any] =
+  @InternalStableApi private[akka] def internalEventMetadata: Option[Any] =
     _eventMetadata
 
   override def hashCode(): Int = {

@@ -12,7 +12,7 @@ import akka.util.HashCode
 import scala.jdk.CollectionConverters._
 import scala.reflect.ClassTag
 
-import akka.annotation.InternalApi
+import akka.annotation.InternalStableApi
 import akka.persistence.CompositeMetadata
 
 object EventEnvelope {
@@ -259,7 +259,7 @@ final class EventEnvelope[Event](
   /**
    * INTERNAL API
    */
-  @InternalApi private[akka] def internalEventMetadata: Option[Any] =
+  @InternalStableApi private[akka] def internalEventMetadata: Option[Any] =
     _eventMetadata
 
   /**

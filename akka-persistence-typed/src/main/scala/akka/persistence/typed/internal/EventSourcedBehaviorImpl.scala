@@ -369,12 +369,14 @@ object ReplicatedEventMetadata {
 }
 
 /**
+ * INTERNAL API
+ *
  * @param originReplica Where the event originally was created
  * @param originSequenceNr The original sequenceNr in the origin DC
  * @param version The version with which the event was persisted at the different DC. The same event will have different version vectors
  *                at each location as they are received at different times
  */
-@InternalApi
+@InternalStableApi
 private[akka] final case class ReplicatedEventMetadata(
     originReplica: ReplicaId,
     originSequenceNr: Long,
