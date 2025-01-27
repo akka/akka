@@ -708,8 +708,8 @@ private[akka] object Running {
         case Persist(event, metadata) =>
           handleEventPersist(event, msg, metadata, sideEffects)
 
-        case PersistAll(eventsWithMetadata) =>
-          handleEventPersistAll(eventsWithMetadata, msg, sideEffects)
+        case persistAll: PersistAll[E, S] @unchecked =>
+          handleEventPersistAll(persistAll.eventsWithMetadata, msg, sideEffects)
 
         case _: PersistNothing.type =>
           (applySideEffects(sideEffects, state), true)

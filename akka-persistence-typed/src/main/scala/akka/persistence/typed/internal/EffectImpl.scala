@@ -79,7 +79,7 @@ private[akka] final case class Persist[Event, State](event: Event, metadataEntri
 
 /** INTERNAL API */
 @InternalApi
-private[akka] final case class PersistAll[Event, State](val eventsWithMetadata: immutable.Seq[EventWithMetadata[Event]])
+private[akka] final case class PersistAll[Event, State](eventsWithMetadata: immutable.Seq[EventWithMetadata[Event]])
     extends EffectImpl[Event, State] {
 
   override def events: immutable.Seq[Event] =
