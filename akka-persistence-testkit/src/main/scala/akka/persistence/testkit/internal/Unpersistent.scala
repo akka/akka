@@ -147,11 +147,13 @@ private[akka] object Unpersistent {
             shouldSnapshot = shouldSnapshot || snapshotRequested(event)
             sideEffect(sideEffects)
 
-          case PersistAll(events, metadataEntries) =>
-            metadata = if (metadataEntries.isEmpty) None else Some(CompositeMetadata(metadataEntries))
+          case PersistAll(eventsWithMetadata) =>
             val eventsWithSeqNrsAndTags =
-              events.map { event =>
+              eventsWithMetadata.map { evtWithMeta =>
+                val event = evtWithMeta.event
+                val metadataEntries = evtWithMeta.metadataEntries
                 sequenceNr += 1
+                metadata = if (metadataEntries.isEmpty) None else Some(CompositeMetadata(metadataEntries))
                 state = eventHandler(state, event)
                 val tags = tagger(state, event)
                 (event, sequenceNr, tags)

@@ -252,10 +252,11 @@ object EventSourcedBehaviorSpec {
               }
 
           case IncrementWithMetadata(meta: Any) =>
-            Effect.persist(Incremented(1)).persistMetadata(meta)
+            Effect.persistWithMetadata(EventWithMetadata(Incremented(1), meta))
 
           case IncrementTwiceWithMetadata(meta: Any) =>
-            Effect.persist(Incremented(1), Incremented(1)).persistMetadata(meta)
+            Effect.persistWithMetadata(
+              List(EventWithMetadata(Incremented(1), meta), EventWithMetadata(Incremented(1), meta)))
 
           case EmptyEventsListAndThenLog =>
             Effect

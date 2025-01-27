@@ -43,7 +43,7 @@ class EventSourcedMetadataSpec
                 command match {
                   case "unstash" =>
                     probe ! s"${EventSourcedBehavior.currentMetadata[String](ctx)} unstash"
-                    Effect.persist("normal").persistMetadata("meta-unstashing").thenUnstashAll()
+                    Effect.persistWithMetadata(EventWithMetadata("normal", "meta-unstashing")).thenUnstashAll()
                   case _ =>
                     Effect.stash()
                 }
@@ -52,20 +52,22 @@ class EventSourcedMetadataSpec
                   case "cmd" =>
                     probe ! s"${EventSourcedBehavior.currentMetadata[String](ctx)} onCommand"
                     Effect
-                      .persist("evt")
-                      .persistMetadata("meta")
+                      .persistWithMetadata(EventWithMetadata("evt", "meta"))
                       .thenRun(_ => probe ! s"${EventSourcedBehavior.currentMetadata[String](ctx)} thenRun")
                   case "cmd3" =>
                     probe ! s"${EventSourcedBehavior.currentMetadata[String](ctx)} onCommand"
                     Effect
-                      .persist("evt1", "evt2", "evt3")
-                      .persistMetadata("meta-123")
+                      .persistWithMetadata(
+                        List(
+                          EventWithMetadata("evt1", "meta-1"),
+                          EventWithMetadata("evt2", "meta-2"),
+                          EventWithMetadata("evt3", "meta-3")))
                       .thenRun(_ => probe ! s"${EventSourcedBehavior.currentMetadata[String](ctx)} thenRun")
                   case "stash" =>
                     probe ! s"${EventSourcedBehavior.currentMetadata[String](ctx)} stash"
-                    Effect.persist("stashing").persistMetadata("meta-stashing")
+                    Effect.persistWithMetadata(EventWithMetadata("stashing", "meta-stashing"))
                   case "snapshot" =>
-                    Effect.persist("snapshot").persistMetadata("meta-snapshot")
+                    Effect.persistWithMetadata(EventWithMetadata("snapshot", "meta-snapshot"))
                 }
             }
         }, { (_, evt) =>
@@ -97,9 +99,9 @@ class EventSourcedMetadataSpec
 
       ref ! "cmd3"
       probe.expectMessage("None onCommand")
-      probe.expectMessage("Some(meta-123) eventHandler evt1")
-      probe.expectMessage("Some(meta-123) eventHandler evt2")
-      probe.expectMessage("Some(meta-123) eventHandler evt3")
+      probe.expectMessage("Some(meta-1) eventHandler evt1")
+      probe.expectMessage("Some(meta-2) eventHandler evt2")
+      probe.expectMessage("Some(meta-3) eventHandler evt3")
       probe.expectMessage("None thenRun")
 
       testKit.stop(ref)
@@ -109,10 +111,10 @@ class EventSourcedMetadataSpec
       val ref2 = spawn(behavior(PersistenceId.ofUniqueId("ess-1"), probe.ref))
       probe.expectMessage("Some(meta) eventHandler evt")
       probe.expectMessage("Some(meta) eventHandler evt")
-      probe.expectMessage("Some(meta-123) eventHandler evt1")
-      probe.expectMessage("Some(meta-123) eventHandler evt2")
-      probe.expectMessage("Some(meta-123) eventHandler evt3")
-      probe.expectMessage("Some(meta-123) RecoveryCompleted")
+      probe.expectMessage("Some(meta-1) eventHandler evt1")
+      probe.expectMessage("Some(meta-2) eventHandler evt2")
+      probe.expectMessage("Some(meta-3) eventHandler evt3")
+      probe.expectMessage("Some(meta-3) RecoveryCompleted")
 
       ref2 ! "cmd"
       probe.expectMessage("None onCommand")
@@ -141,9 +143,9 @@ class EventSourcedMetadataSpec
       probe.expectMessage("Some(meta) eventHandler evt")
       probe.expectMessage("None thenRun")
       probe.expectMessage("None onCommand") // cmd3
-      probe.expectMessage("Some(meta-123) eventHandler evt1")
-      probe.expectMessage("Some(meta-123) eventHandler evt2")
-      probe.expectMessage("Some(meta-123) eventHandler evt3")
+      probe.expectMessage("Some(meta-1) eventHandler evt1")
+      probe.expectMessage("Some(meta-2) eventHandler evt2")
+      probe.expectMessage("Some(meta-3) eventHandler evt3")
       probe.expectMessage("None thenRun")
     }
 
@@ -170,9 +172,9 @@ class EventSourcedMetadataSpec
       probe.expectNoMessage()
       ref2 ! "cmd3"
       probe.expectMessage("None onCommand")
-      probe.expectMessage("Some(meta-123) eventHandler evt1")
-      probe.expectMessage("Some(meta-123) eventHandler evt2")
-      probe.expectMessage("Some(meta-123) eventHandler evt3")
+      probe.expectMessage("Some(meta-1) eventHandler evt1")
+      probe.expectMessage("Some(meta-2) eventHandler evt2")
+      probe.expectMessage("Some(meta-3) eventHandler evt3")
       probe.expectMessage("None thenRun")
     }
   }

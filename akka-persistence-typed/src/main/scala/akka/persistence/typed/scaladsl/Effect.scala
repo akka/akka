@@ -38,7 +38,24 @@ object Effect {
    * Side effects can be chained with `thenRun`
    */
   def persist[Event, State](events: im.Seq[Event]): EffectBuilder[Event, State] =
-    PersistAll(events, Nil)
+    PersistAll(events.map(EventWithMetadata(_, Nil)))
+
+  /**
+   * Persist a single event and additional metadata together with the event.
+   *
+   * Side effects can be chained with `thenRun`
+   */
+  def persistWithMetadata[Event, State](eventWithMetadata: EventWithMetadata[Event]): EffectBuilder[Event, State] =
+    Persist(eventWithMetadata.event, eventWithMetadata.metadataEntries)
+
+  /**
+   * Persist multiple events and additional metadata together with the events.
+   *
+   * Side effects can be chained with `thenRun`
+   */
+  def persistWithMetadata[Event, State](
+      eventsWithMetadata: im.Seq[EventWithMetadata[Event]]): EffectBuilder[Event, State] =
+    PersistAll(eventsWithMetadata)
 
   /**
    * Do not persist anything
@@ -192,11 +209,6 @@ trait EffectBuilder[+Event, State] extends Effect[Event, State] {
    */
   def thenNoReply(): ReplyEffect[Event, State]
 
-  /**
-   * Persist additional metadata together with the event(s).
-   */
-  def persistMetadata(metadata: AnyRef): EffectBuilder[Event, State]
-
 }
 
 /**
@@ -220,3 +232,13 @@ trait EffectBuilder[+Event, State] extends Effect[Event, State] {
   /** Stops the actor as a side effect */
   def thenStop(): ReplyEffect[Event, State]
 }
+
+object EventWithMetadata {
+  def apply[E](event: E, metadata: Any) =
+    new EventWithMetadata(event, metadata :: Nil)
+
+  def apply[E](event: E, metadataEntries: Seq[Any]) =
+    new EventWithMetadata(event, metadataEntries)
+}
+
+final class EventWithMetadata[E](val event: E, val metadataEntries: Seq[Any])

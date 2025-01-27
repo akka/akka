@@ -12,6 +12,7 @@ import akka.annotation.InternalApi
 import akka.persistence.typed.javadsl
 import akka.persistence.typed.scaladsl
 import akka.persistence.typed.scaladsl.Effect
+import akka.persistence.typed.scaladsl.EventWithMetadata
 
 /** INTERNAL API */
 @InternalApi
@@ -39,9 +40,6 @@ private[akka] abstract class EffectImpl[+Event, State]
   override def thenStop(): EffectImpl[Event, State] =
     CompositeEffect(this, Stop.asInstanceOf[SideEffect[State]])
 
-  override def persistMetadata(metadata: AnyRef): EffectImpl[Event, State] =
-    this
-
 }
 
 /** INTERNAL API */
@@ -62,9 +60,6 @@ private[akka] final case class CompositeEffect[Event, State](
 
   override val events: immutable.Seq[Event] = persistingEffect.events
 
-  override def persistMetadata(metadata: AnyRef): CompositeEffect[Event, State] =
-    copy(persistingEffect = persistingEffect.persistMetadata(metadata))
-
   override def toString: String =
     s"CompositeEffect($persistingEffect, sideEffects: ${_sideEffects.size})"
 }
@@ -79,21 +74,16 @@ private[akka] final case class Persist[Event, State](event: Event, metadataEntri
     extends EffectImpl[Event, State] {
   override def events = event :: Nil
 
-  override def persistMetadata(metadata: AnyRef): Persist[Event, State] =
-    copy(metadataEntries = metadata +: metadataEntries)
-
   override def toString: String = s"Persist(${event.getClass.getName})"
 }
 
 /** INTERNAL API */
 @InternalApi
-private[akka] final case class PersistAll[Event, State](
-    override val events: immutable.Seq[Event],
-    metadataEntries: Seq[Any])
+private[akka] final case class PersistAll[Event, State](val eventsWithMetadata: immutable.Seq[EventWithMetadata[Event]])
     extends EffectImpl[Event, State] {
 
-  override def persistMetadata(metadata: AnyRef): PersistAll[Event, State] =
-    copy(metadataEntries = metadata +: metadataEntries)
+  override def events: immutable.Seq[Event] =
+    eventsWithMetadata.map(_.event)
 
   override def toString: String = s"PersistAll(${events.map(_.getClass.getName).mkString(",")})"
 }

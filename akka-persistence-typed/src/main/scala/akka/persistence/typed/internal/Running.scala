@@ -67,6 +67,7 @@ import akka.persistence.typed.internal.InternalProtocol.ReplicatedEventEnvelope
 import akka.persistence.typed.internal.JournalInteractions.EventToPersist
 import akka.persistence.typed.internal.Running.MaxRecursiveUnstash
 import akka.persistence.typed.scaladsl.Effect
+import akka.persistence.typed.scaladsl.EventWithMetadata
 import akka.persistence.typed.telemetry.EventSourcedBehaviorInstrumentation
 import akka.stream.{ RestartSettings, SystemMaterializer, WatchedActorTerminatedException }
 import akka.stream.scaladsl.{ RestartSource, Sink }
@@ -617,17 +618,15 @@ private[akka] object Running {
     }
 
     private def handleEventPersistAll(
-        events: immutable.Seq[E],
+        eventsWithMetadata: immutable.Seq[EventWithMetadata[E]],
         cmd: C,
-        metadataEntries: Seq[Any],
         sideEffects: immutable.Seq[SideEffect[S]]): (Behavior[InternalProtocol], Boolean) = {
-      if (events.nonEmpty) {
+      if (eventsWithMetadata.nonEmpty) {
         try {
           // apply the event before persist so that validation exception is handled before persisting
           // the invalid event, in case such validation is implemented in the event handler.
           // also, ensure that there is an event handler for each single event
           _currentSequenceNumber = state.seqNr
-          updateMetadata(metadataEntries)
 
           val replicatedEventMetadataTemplate: Option[ReplicatedEventMetadata] = setup.replication match {
             case Some(replication) =>
@@ -640,8 +639,10 @@ private[akka] object Running {
           var shouldSnapshotAfterPersist: SnapshotAfterPersist = NoSnapshot
           var eventsToPersist: List[EventToPersist] = Nil
 
-          events.foreach { event =>
+          eventsWithMetadata.foreach { evtWithMeta =>
+            val event = evtWithMeta.event
             _currentSequenceNumber += 1
+            updateMetadata(evtWithMeta.metadataEntries)
             val evtManifest = setup.eventAdapter.manifest(event)
             val eventMetadata = replicatedEventMetadataTemplate match {
               case Some(template) =>
@@ -652,8 +653,8 @@ private[akka] object Running {
                     Logging.simpleName(event.getClass),
                     updatedVersion)
                 currentState = currentState.copy(version = updatedVersion)
-                template.copy(originSequenceNr = _currentSequenceNumber, version = updatedVersion) +: metadataEntries
-              case None => metadataEntries
+                template.copy(originSequenceNr = _currentSequenceNumber, version = updatedVersion) +: evtWithMeta.metadataEntries
+              case None => evtWithMeta.metadataEntries
             }
 
             currentState = currentState.applyEvent(setup, event)
@@ -673,7 +674,7 @@ private[akka] object Running {
               newState2,
               state,
               command = OptionVal.Some(cmd),
-              events.size,
+              eventsWithMetadata.size,
               shouldSnapshotAfterPersist,
               shouldPublish = true,
               sideEffects = sideEffects),
@@ -707,8 +708,8 @@ private[akka] object Running {
         case Persist(event, metadata) =>
           handleEventPersist(event, msg, metadata, sideEffects)
 
-        case PersistAll(events, metadata) =>
-          handleEventPersistAll(events, msg, metadata, sideEffects)
+        case PersistAll(eventsWithMetadata) =>
+          handleEventPersistAll(eventsWithMetadata, msg, sideEffects)
 
         case _: PersistNothing.type =>
           (applySideEffects(sideEffects, state), true)
