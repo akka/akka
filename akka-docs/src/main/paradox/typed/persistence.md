@@ -546,6 +546,13 @@ Please refer to @ref[snapshots](persistence-snapshot.md#snapshots) if you need t
 
 In any case, the highest sequence number will always be recovered so you can keep persisting new events without corrupting your event log.
 
+@@@ warning
+
+Disable of recovery is not normal behavior of an event sourced actor, since events and snapshots are not used for
+the recovery of the actor.
+
+@@@
+
 ### Recovery from only last event
 
 For some use cases it is enough to recover the actor from the last event, as an optimization to not replay all events.
@@ -558,6 +565,15 @@ Java
 :  @@snip [BasicPersistentBehaviorTest.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BasicPersistentBehaviorTest.java) { #replay-last }
 
 Snapshots are not loaded when recovery from last event is selected.
+
+@@@ warning
+
+Recovery from only last event is not normal behavior of an event sourced actor, since it typically would need
+all events, or a snapshot and events after the snapshot, to recover its state.
+
+This feature is currently only supported by the R2DBC plugin.
+
+@@@
 
 ## Tagging
 
