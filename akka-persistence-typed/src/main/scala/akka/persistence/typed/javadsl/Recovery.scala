@@ -28,7 +28,13 @@ object Recovery {
   /**
    * Snapshots and events are recovered
    */
+  @deprecated("Use Recovery.enabled, since default is a reserved word in Java", "2.10.1")
   val default: Recovery = DefaultRecovery
+
+  /**
+   * Snapshots and events are recovered
+   */
+  val enabled: Recovery = DefaultRecovery
 
   /**
    * Neither snapshots nor events are recovered

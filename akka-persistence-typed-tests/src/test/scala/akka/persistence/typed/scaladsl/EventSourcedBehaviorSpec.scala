@@ -106,6 +106,8 @@ object EventSourcedBehaviorSpec {
   case object IncrementTwiceAndThenLog extends Command
   final case class IncrementWithConfirmation(replyTo: ActorRef[Done]) extends Command
   final case class AsyncIncrement(when: Future[Done]) extends Command
+  final case class IncrementWithMetadata(meta: AnyRef) extends Command
+  final case class IncrementTwiceWithMetadata(meta: AnyRef) extends Command
   case object DoNothingAndThenLog extends Command
   case object EmptyEventsListAndThenLog extends Command
   final case class GetValue(replyTo: ActorRef[State]) extends Command
@@ -121,7 +123,7 @@ object EventSourcedBehaviorSpec {
   final case class Incremented(delta: Int) extends Event
   case object FilteredEvent extends Event
 
-  final case class State(value: Int, history: Vector[Int]) extends CborSerializable
+  final case class State(value: Int, history: Vector[Int], metadata: Option[String] = None) extends CborSerializable
 
   case object Tick
 
@@ -249,6 +251,13 @@ object EventSourcedBehaviorSpec {
                 loggingActor ! secondLogging
               }
 
+          case IncrementWithMetadata(meta: Any) =>
+            Effect.persistWithMetadata(EventWithMetadata(Incremented(1), meta))
+
+          case IncrementTwiceWithMetadata(meta: Any) =>
+            Effect.persistWithMetadata(
+              List(EventWithMetadata(Incremented(1), meta), EventWithMetadata(Incremented(1), meta)))
+
           case EmptyEventsListAndThenLog =>
             Effect
               .persist(List.empty) // send empty list of events
@@ -287,8 +296,9 @@ object EventSourcedBehaviorSpec {
       eventHandler = (state, evt) =>
         evt match {
           case Incremented(delta) =>
+            val metadata = EventSourcedBehavior.currentMetadata[String](ctx)
             probe ! ((state, evt))
-            State(state.value + delta, state.history :+ state.value)
+            State(state.value + delta, state.history :+ state.value, metadata)
           case FilteredEvent =>
             state
 
@@ -680,6 +690,34 @@ class EventSourcedBehaviorSpec
       val events = queries.currentEventsByTag("higher-than-one", Offset.noOffset).runWith(Sink.seq).futureValue
       events should have size 1
       events.head shouldEqual EventEnvelope(Sequence(2), pid.id, 2, Incremented(1), 0L)
+    }
+
+    "persist metadata" in {
+      val pid = nextPid()
+      val c = spawn(counter(pid))
+      val probe = TestProbe[State]()
+      c ! IncrementWithMetadata("meta1")
+      c ! IncrementWithMetadata("meta2")
+      c ! GetValue(probe.ref)
+      probe.expectMessage(State(2, Vector(0, 1), Some("meta2")))
+
+      val c2 = spawn(counter(pid))
+      c2 ! GetValue(probe.ref)
+      probe.expectMessage(State(2, Vector(0, 1), Some("meta2")))
+    }
+
+    "persist metadata for several events" in {
+      val pid = nextPid()
+      val c = spawn(counter(pid))
+      val probe = TestProbe[State]()
+      c ! IncrementTwiceWithMetadata("meta1")
+      c ! IncrementTwiceWithMetadata("meta2")
+      c ! GetValue(probe.ref)
+      probe.expectMessage(State(4, Vector(0, 1, 2, 3), Some("meta2")))
+
+      val c2 = spawn(counter(pid))
+      c2 ! GetValue(probe.ref)
+      probe.expectMessage(State(4, Vector(0, 1, 2, 3), Some("meta2")))
     }
 
     "handle scheduled message arriving before recovery completed " in {

@@ -12,6 +12,7 @@ import akka.annotation.InternalApi
 import akka.persistence.typed.javadsl
 import akka.persistence.typed.scaladsl
 import akka.persistence.typed.scaladsl.Effect
+import akka.persistence.typed.scaladsl.EventWithMetadata
 
 /** INTERNAL API */
 @InternalApi
@@ -69,7 +70,8 @@ private[akka] case object PersistNothing extends EffectImpl[Nothing, Nothing]
 
 /** INTERNAL API */
 @InternalApi
-private[akka] final case class Persist[Event, State](event: Event) extends EffectImpl[Event, State] {
+private[akka] final case class Persist[Event, State](event: Event, metadataEntries: Seq[Any])
+    extends EffectImpl[Event, State] {
   override def events = event :: Nil
 
   override def toString: String = s"Persist(${event.getClass.getName})"
@@ -77,8 +79,11 @@ private[akka] final case class Persist[Event, State](event: Event) extends Effec
 
 /** INTERNAL API */
 @InternalApi
-private[akka] final case class PersistAll[Event, State](override val events: immutable.Seq[Event])
+private[akka] final case class PersistAll[Event, State](eventsWithMetadata: immutable.Seq[EventWithMetadata[Event]])
     extends EffectImpl[Event, State] {
+
+  override def events: immutable.Seq[Event] =
+    eventsWithMetadata.map(_.event)
 
   override def toString: String = s"PersistAll(${events.map(_.getClass.getName).mkString(",")})"
 }

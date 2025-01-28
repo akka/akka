@@ -14,11 +14,12 @@ import akka.annotation.InternalApi
 import akka.persistence.typed.EventAdapter
 import akka.persistence.typed._
 import akka.persistence.typed.internal._
-
 import java.util.Collections
 import java.util.Optional
 import java.util.concurrent.CompletionStage
+
 import scala.annotation.nowarn
+import scala.reflect.ClassTag
 
 /**
  * For projects using Java 17 and newer, also see [[EventSourcedOnCommandBehavior]]
@@ -177,7 +178,7 @@ abstract class EventSourcedBehavior[Command, Event, State] private[akka] (
    * Override to change the strategy for recovery of snapshots and events.
    * By default, snapshots and events are recovered.
    */
-  def recovery: Recovery = Recovery.default
+  def recovery: Recovery = Recovery.enabled
 
   /**
    * Return tags to store for the given event, the tags can then be used in persistence query.
@@ -254,6 +255,16 @@ abstract class EventSourcedBehavior[Command, Event, State] private[akka] (
    */
   final def lastSequenceNumber(ctx: ActorContext[_]): Long = {
     scaladsl.EventSourcedBehavior.lastSequenceNumber(ctx.asScala)
+  }
+
+  /**
+   * The metadata of the given type that was persisted with an event, if any.
+   * Can only be called from inside the event handler or `RecoveryCompleted` of an `EventSourcedBehavior`.
+   */
+  def getCurrentMetadata[M](ctx: ActorContext[_], metadataType: Class[M]): Optional[M] = {
+    import scala.jdk.OptionConverters._
+    implicit val ct: ClassTag[M] = ClassTag(metadataType)
+    scaladsl.EventSourcedBehavior.currentMetadata(ctx.asScala).toJava
   }
 
   /**

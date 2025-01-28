@@ -17,11 +17,14 @@ import akka.actor.typed.scaladsl.{ AbstractBehavior, ActorContext, Behaviors }
 import akka.annotation.InternalApi
 import akka.persistence.testkit.{ javadsl, scaladsl }
 import akka.persistence.typed.internal.EventSourcedBehaviorImpl
-import akka.persistence.typed.internal.Running.WithSeqNrAccessible
+import akka.persistence.typed.internal.EventSourcedBehaviorImpl.WithSeqNrAccessible
 import akka.persistence.typed.state.internal.DurableStateBehaviorImpl
 import akka.persistence.typed.state.internal.Running.WithRevisionAccessible
 import akka.util.ConstantFun.{ scalaAnyToUnit => doNothing }
 import scala.jdk.CollectionConverters._
+
+import akka.persistence.CompositeMetadata
+import akka.persistence.typed.internal.EventSourcedBehaviorImpl.WithMetadataAccessible
 
 /**
  * INTERNAL API
@@ -89,7 +92,8 @@ private[akka] object Unpersistent {
       onEvent: (Event, Long, Set[String]) => Unit,
       onSnapshot: (State, Long) => Unit)
       extends AbstractBehavior[Command](context)
-      with WithSeqNrAccessible {
+      with WithSeqNrAccessible
+      with WithMetadataAccessible {
     import akka.persistence.typed.{ EventSourcedSignal, RecoveryCompleted, SnapshotCompleted, SnapshotMetadata }
     import akka.persistence.typed.internal._
 
@@ -104,6 +108,7 @@ private[akka] object Unpersistent {
 
     private var sequenceNr: Long = initialSequenceNr
     private var state: State = initialState
+    private var metadata: Option[Any] = None
     private val stashedCommands = ListBuffer.empty[Command]
 
     private def snapshotMetadata() =
@@ -134,17 +139,21 @@ private[akka] object Unpersistent {
           case CompositeEffect(eff: EffectImpl[Event, State], se) =>
             applyEffects(eff, se ++ sideEffects)
 
-          case Persist(event) =>
+          case Persist(event, metadataEntries) =>
             sequenceNr += 1
+            metadata = if (metadataEntries.isEmpty) None else Some(CompositeMetadata(metadataEntries))
             state = eventHandler(state, event)
             onEvent(event, sequenceNr, tagger(state, event))
             shouldSnapshot = shouldSnapshot || snapshotRequested(event)
             sideEffect(sideEffects)
 
-          case PersistAll(events) =>
+          case PersistAll(eventsWithMetadata) =>
             val eventsWithSeqNrsAndTags =
-              events.map { event =>
+              eventsWithMetadata.map { evtWithMeta =>
+                val event = evtWithMeta.event
+                val metadataEntries = evtWithMeta.metadataEntries
                 sequenceNr += 1
+                metadata = if (metadataEntries.isEmpty) None else Some(CompositeMetadata(metadataEntries))
                 state = eventHandler(state, event)
                 val tags = tagger(state, event)
                 (event, sequenceNr, tags)
@@ -206,6 +215,9 @@ private[akka] object Unpersistent {
         }
       } else this
     }
+
+    override def metadata[M: ClassTag]: Option[M] =
+      CompositeMetadata.extract[M](metadata)
   }
 
   private class WrappedDurableStateBehavior[Command, State](

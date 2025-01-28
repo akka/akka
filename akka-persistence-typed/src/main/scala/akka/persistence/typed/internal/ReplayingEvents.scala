@@ -6,6 +6,7 @@ package akka.persistence.typed.internal
 
 import scala.collection.immutable
 import scala.concurrent.duration._
+import scala.reflect.ClassTag
 import scala.util.control.NonFatal
 
 import akka.actor.typed.internal.PoisonPill
@@ -30,8 +31,9 @@ import akka.persistence.typed.SingleEventSeq
 import akka.persistence.typed.internal.BehaviorSetup.SnapshotWithoutRetention
 import akka.persistence.typed.internal.EventSourcedBehaviorImpl.GetSeenSequenceNr
 import akka.persistence.typed.internal.EventSourcedBehaviorImpl.GetState
+import akka.persistence.typed.internal.EventSourcedBehaviorImpl.WithMetadataAccessible
+import akka.persistence.typed.internal.EventSourcedBehaviorImpl.WithSeqNrAccessible
 import akka.persistence.typed.internal.ReplayingEvents.ReplayingState
-import akka.persistence.typed.internal.Running.WithSeqNrAccessible
 import akka.persistence.typed.internal.Running.startReplicationStream
 import akka.util.OptionVal
 import akka.util.PrettyDuration._
@@ -63,7 +65,8 @@ private[akka] object ReplayingEvents {
       recoveryStartTime: Long,
       version: VersionVector,
       seenSeqNrPerReplica: Map[ReplicaId, Long],
-      eventsReplayed: Long)
+      eventsReplayed: Long,
+      metadata: Option[Any])
 
   def apply[C, E, S](setup: BehaviorSetup[C, E, S], state: ReplayingState[S]): Behavior[InternalProtocol] =
     Behaviors.setup { _ =>
@@ -82,7 +85,8 @@ private[akka] final class ReplayingEvents[C, E, S](
     with JournalInteractions[C, E, S]
     with SnapshotInteractions[C, E, S]
     with StashManagement[C, E, S]
-    with WithSeqNrAccessible {
+    with WithSeqNrAccessible
+    with WithMetadataAccessible {
 
   import InternalProtocol._
   import ReplayingEvents.ReplayingState
@@ -138,21 +142,21 @@ private[akka] final class ReplayingEvents[C, E, S](
 
           def handleEvent(event: E): Unit = {
             eventForErrorReporting = OptionVal.Some(event)
-            state = state.copy(seqNr = repr.sequenceNr, eventsReplayed = state.eventsReplayed + 1)
+            state =
+              state.copy(seqNr = repr.sequenceNr, eventsReplayed = state.eventsReplayed + 1, metadata = repr.metadata)
 
             val replicatedMetaAndSelfReplica: Option[(ReplicatedEventMetadata, ReplicaId, ReplicationSetup)] =
               setup.replication match {
                 case Some(replication) =>
-                  val meta = repr.metadata match {
-                    case Some(m) => m.asInstanceOf[ReplicatedEventMetadata]
-                    case None    =>
+                  val meta =
+                    CompositeMetadata.extract[ReplicatedEventMetadata](repr.metadata).getOrElse {
                       // migrated from non-replicated, fill in metadata
                       ReplicatedEventMetadata(
                         originReplica = replication.replicaId,
                         originSequenceNr = repr.sequenceNr,
                         version = VersionVector(replication.replicaId.id, repr.sequenceNr),
                         concurrent = false)
-                  }
+                    }
                   replication.setContext(recoveryRunning = true, meta.originReplica, meta.concurrent)
                   Some((meta, replication.replicaId, replication))
                 case None => None
@@ -192,7 +196,7 @@ private[akka] final class ReplayingEvents[C, E, S](
           this
         } catch {
           case NonFatal(ex) =>
-            state = state.copy(repr.sequenceNr)
+            state = state.copy(seqNr = repr.sequenceNr, metadata = repr.metadata)
             onRecoveryFailure(ex, eventForErrorReporting.toOption, "replaying-event")
         }
 
@@ -313,7 +317,7 @@ private[akka] final class ReplayingEvents[C, E, S](
           seqNr = state.seqNr,
           state = state.state,
           receivedPoisonPill = state.receivedPoisonPill,
-          state.version,
+          version = state.version,
           seenPerReplica = state.seenSeqNrPerReplica,
           replicationControl = Map.empty,
           instrumentationContexts = Map.empty)
@@ -326,7 +330,7 @@ private[akka] final class ReplayingEvents[C, E, S](
         }
         setup.retention match {
           case criteria: SnapshotCountRetentionCriteriaImpl if criteria.snapshotEveryNEvents <= state.eventsReplayed =>
-            internalSaveSnapshot(initialRunningState)
+            internalSaveSnapshot(initialRunningState, state.metadata)
             new running.StoringSnapshot(initialRunningState, immutable.Seq.empty, SnapshotWithoutRetention)
           case _ =>
             tryUnstashOne(new running.HandlingCommands(initialRunningState))
@@ -336,6 +340,12 @@ private[akka] final class ReplayingEvents[C, E, S](
       setup.cancelRecoveryTimer()
     }
 
+  // WithSeqNrAccessible
   override def currentSequenceNumber: Long =
     state.seqNr
+
+  // WithMetadataAccessible
+  override def metadata[M: ClassTag]: Option[M] =
+    CompositeMetadata.extract[M](state.metadata)
+
 }

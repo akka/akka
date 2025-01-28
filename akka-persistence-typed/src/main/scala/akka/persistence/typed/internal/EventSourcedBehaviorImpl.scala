@@ -7,7 +7,11 @@ package akka.persistence.typed.internal
 import java.util.Optional
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
+
+import scala.reflect.ClassTag
+
 import org.slf4j.LoggerFactory
+
 import akka.Done
 import akka.actor.typed
 import akka.actor.typed.ActorRef
@@ -44,6 +48,7 @@ import akka.persistence.typed.scaladsl._
 import akka.persistence.typed.scaladsl.{ Recovery => TypedRecovery }
 import akka.persistence.typed.scaladsl.RetentionCriteria
 import akka.persistence.typed.telemetry.EventSourcedBehaviorInstrumentationProvider
+import akka.util.HashCode
 
 @InternalApi
 private[akka] object EventSourcedBehaviorImpl {
@@ -81,6 +86,14 @@ private[akka] object EventSourcedBehaviorImpl {
    * Used to start the replication stream at the correct sequence number
    */
   final case class GetSeenSequenceNr(replica: ReplicaId, replyTo: ActorRef[Long]) extends InternalProtocol
+
+  trait WithSeqNrAccessible {
+    def currentSequenceNumber: Long
+  }
+
+  trait WithMetadataAccessible {
+    def metadata[M: ClassTag]: Option[M]
+  }
 
 }
 
@@ -356,12 +369,14 @@ object ReplicatedEventMetadata {
 }
 
 /**
+ * INTERNAL API
+ *
  * @param originReplica Where the event originally was created
  * @param originSequenceNr The original sequenceNr in the origin DC
  * @param version The version with which the event was persisted at the different DC. The same event will have different version vectors
  *                at each location as they are received at different times
  */
-@InternalApi
+@InternalStableApi
 private[akka] final case class ReplicatedEventMetadata(
     originReplica: ReplicaId,
     originSequenceNr: Long,
@@ -393,13 +408,37 @@ private[akka] final case class ReplicatedSnapshotMetadata(version: VersionVector
 @InternalApi
 private[akka] final case class ReplicatedEvent[E](
     event: E,
+    metadata: Option[Any],
     originReplica: ReplicaId,
     originSequenceNr: Long,
     originVersion: VersionVector)
 @InternalApi
 private[akka] case object ReplicatedEventAck
 
-final class ReplicatedPublishedEventMetaData(val replicaId: ReplicaId, private[akka] val version: VersionVector)
+final class ReplicatedPublishedEventMetaData(
+    val replicaId: ReplicaId,
+    private[akka] val version: VersionVector,
+    private[akka] val metadata: Option[Any]) {
+
+  @deprecated("Use constructor with metadata parameter", "2.10.1")
+  def this(replicaId: ReplicaId, version: VersionVector) = this(replicaId, version, None)
+
+  override def equals(obj: Any): Boolean = obj match {
+    case other: ReplicatedPublishedEventMetaData =>
+      replicaId == other.replicaId &&
+      version == other.version &&
+      metadata == other.metadata
+    case _ => false
+  }
+
+  override def hashCode: Int = {
+    var result = HashCode.SEED
+    result = HashCode.hash(result, replicaId)
+    result = HashCode.hash(result, version)
+    result = HashCode.hash(result, metadata)
+    result
+  }
+}
 
 /**
  * INTERNAL API

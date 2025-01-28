@@ -159,12 +159,15 @@ import scala.jdk.CollectionConverters._
 
     impl.replicatedMetaData match {
       case Some(m) =>
-        builder.setMetadata(
+        val replicatedPublishedEventMetaDataBuilder =
           ReplicatedEventSourcing.ReplicatedPublishedEventMetaData
             .newBuilder()
             .setReplicaId(m.replicaId.id)
             .setVersionVector(versionVectorToProto(m.version))
-            .build())
+        m.metadata.foreach { metadataPayload =>
+          replicatedPublishedEventMetaDataBuilder.setMetadata(wrappedSupport.payloadBuilder(metadataPayload))
+        }
+        builder.setMetadata(replicatedPublishedEventMetaDataBuilder)
       case None =>
     }
 
@@ -184,11 +187,18 @@ import scala.jdk.CollectionConverters._
       wrappedSupport.deserializePayload(p.getPayload),
       p.getTimestamp,
       if (p.hasMetadata) {
-        val protoMeta = p.getMetadata
+        val protoReplicatedMeta = p.getMetadata
+        val meta =
+          if (protoReplicatedMeta.hasMetadata)
+            Some(wrappedSupport.deserializePayload(protoReplicatedMeta.getMetadata))
+          else
+            None
+
         Some(
           new ReplicatedPublishedEventMetaData(
-            ReplicaId(protoMeta.getReplicaId),
-            versionVectorFromProto(protoMeta.getVersionVector)))
+            ReplicaId(protoReplicatedMeta.getReplicaId),
+            versionVectorFromProto(protoReplicatedMeta.getVersionVector),
+            meta))
       } else None,
       if (!p.hasReplyTo) None
       else Some(resolver.resolveActorRef(p.getReplyTo)))

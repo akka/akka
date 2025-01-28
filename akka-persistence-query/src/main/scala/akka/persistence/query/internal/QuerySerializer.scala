@@ -85,7 +85,7 @@ import scala.jdk.CollectionConverters._
       }
 
       env.eventOption.foreach(event => builder.setEvent(payloadBuilder(event, serialization, log)))
-      env.eventMetadata.foreach(meta => builder.setMetadata(payloadBuilder(meta, serialization, log)))
+      env.internalEventMetadata.foreach(meta => builder.setMetadata(payloadBuilder(meta, serialization, log)))
 
       builder.build().toByteArray()
 

@@ -10,6 +10,10 @@ import java.util.Optional
 import akka.persistence.query.Offset
 import akka.util.HashCode
 import scala.jdk.CollectionConverters._
+import scala.reflect.ClassTag
+
+import akka.annotation.InternalStableApi
+import akka.persistence.CompositeMetadata
 
 object EventEnvelope {
 
@@ -126,7 +130,8 @@ final class EventEnvelope[Event](
     val sequenceNr: Long,
     val eventOption: Option[Event],
     val timestamp: Long,
-    val eventMetadata: Option[Any],
+    @deprecatedName("eventMetadata")
+    _eventMetadata: Option[Any],
     val entityType: String,
     val slice: Int,
     val filtered: Boolean,
@@ -216,12 +221,46 @@ final class EventEnvelope[Event](
   }
 
   /**
+   * Scala API
+   */
+  @deprecated("Use metadata with metadataType parameter")
+  def eventMetadata: Option[Any] = {
+    // For backwards compatibility this will use the metadata that was added last (ReplicatedEventMetaData)
+    _eventMetadata.collect {
+      case CompositeMetadata(entries) => entries.head
+      case other                      => other
+    }
+  }
+
+  /**
    * Java API
    */
+  @deprecated("Use getMetadata with metadataType parameter")
   def getEventMetaData(): Optional[AnyRef] = {
     import scala.jdk.OptionConverters._
     eventMetadata.map(_.asInstanceOf[AnyRef]).toJava
   }
+
+  /**
+   * Scala API: The metadata of a given type that is associated with the event.
+   */
+  def metadata[M: ClassTag]: Option[M] =
+    CompositeMetadata.extract[M](_eventMetadata)
+
+  /**
+   * Java API: The metadata of a given type that is associated with the event.
+   */
+  def getMetadata[M](metadataType: Class[M]): Optional[M] = {
+    import scala.jdk.OptionConverters._
+    implicit val ct: ClassTag[M] = ClassTag(metadataType)
+    metadata.toJava
+  }
+
+  /**
+   * INTERNAL API
+   */
+  @InternalStableApi private[akka] def internalEventMetadata: Option[Any] =
+    _eventMetadata
 
   /**
    * Java API:
@@ -248,8 +287,17 @@ final class EventEnvelope[Event](
   def withTags(tags: Set[String]): EventEnvelope[Event] =
     copy(tags = tags)
 
-  def withMetadata(metadata: Any): EventEnvelope[Event] =
-    copy(eventMetadata = Option(metadata))
+  def withMetadata(metadata: Any): EventEnvelope[Event] = {
+    _eventMetadata match {
+      case Some(c: CompositeMetadata) =>
+        copy(eventMetadata = Some(CompositeMetadata(metadata +: c.entries)))
+      case Some(other) =>
+        copy(eventMetadata = Some(CompositeMetadata(metadata :: other :: Nil)))
+      case None =>
+        copy(eventMetadata = Option(metadata))
+    }
+
+  }
 
   private def copy(
       offset: Offset = offset,
@@ -257,7 +305,7 @@ final class EventEnvelope[Event](
       sequenceNr: Long = sequenceNr,
       eventOption: Option[Event] = eventOption,
       timestamp: Long = timestamp,
-      eventMetadata: Option[Any] = eventMetadata,
+      eventMetadata: Option[Any] = _eventMetadata,
       entityType: String = entityType,
       slice: Int = slice,
       filtered: Boolean = filtered,
@@ -288,7 +336,7 @@ final class EventEnvelope[Event](
   override def equals(obj: Any): Boolean = obj match {
     case other: EventEnvelope[_] =>
       offset == other.offset && persistenceId == other.persistenceId && sequenceNr == other.sequenceNr &&
-      eventOption == other.eventOption && timestamp == other.timestamp && eventMetadata == other.eventMetadata &&
+      eventOption == other.eventOption && timestamp == other.timestamp && _eventMetadata == other.internalEventMetadata &&
       entityType == other.entityType && slice == other.slice && filtered == other.filtered &&
       tags == other.tags
     case _ => false
@@ -299,9 +347,10 @@ final class EventEnvelope[Event](
       case Some(evt) => evt.getClass.getName
       case None      => ""
     }
-    val metaStr = eventMetadata match {
-      case Some(meta) => meta.getClass.getName
-      case None       => ""
+    val metaStr = _eventMetadata match {
+      case Some(CompositeMetadata(entries)) => entries.map(_.getClass.getName).mkString("[", ",", "]")
+      case Some(other)                      => other.getClass.getName
+      case None                             => ""
     }
     s"EventEnvelope($offset,$persistenceId,$sequenceNr,$eventStr,$timestamp,$metaStr,$entityType,$slice,$filtered,$source,${tags
       .mkString("[", ", ", "]")})"

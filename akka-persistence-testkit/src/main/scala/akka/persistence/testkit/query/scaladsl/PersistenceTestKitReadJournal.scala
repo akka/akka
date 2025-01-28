@@ -117,7 +117,7 @@ final class PersistenceTestKitReadJournal(
             env.sequenceNr,
             env.event,
             env.timestamp,
-            env.eventMetadata))
+            env.internalEventMetadata))
 
   override def eventsByPersistenceIdTyped[Event](
       persistenceId: String,

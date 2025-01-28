@@ -5,8 +5,8 @@
 package akka.persistence.typed.scaladsl
 
 import akka.Done
-
 import scala.annotation.tailrec
+
 import akka.actor.typed.BackoffSupervisorStrategy
 import akka.actor.typed.Behavior
 import akka.actor.typed.Signal
@@ -23,8 +23,8 @@ import akka.persistence.typed.ReplicaId
 import akka.persistence.typed.SnapshotAdapter
 import akka.persistence.typed.SnapshotSelectionCriteria
 import akka.persistence.typed.internal._
-
 import scala.concurrent.Future
+import scala.reflect.ClassTag
 
 object EventSourcedBehavior {
 
@@ -115,9 +115,28 @@ object EventSourcedBehavior {
       }
 
     extractConcreteBehavior(context.currentBehavior) match {
-      case w: Running.WithSeqNrAccessible => w.currentSequenceNumber
+      case w: EventSourcedBehaviorImpl.WithSeqNrAccessible => w.currentSequenceNumber
       case s =>
         throw new IllegalStateException(s"Cannot extract the lastSequenceNumber in state ${s.getClass.getName}")
+    }
+  }
+
+  /**
+   * The metadata of the given type that was persisted with an event, if any.
+   * Can only be called from inside the event handler or `RecoveryCompleted` of an `EventSourcedBehavior`.
+   */
+  def currentMetadata[M: ClassTag](context: ActorContext[_]): Option[M] = {
+    @tailrec
+    def extractConcreteBehavior(beh: Behavior[_]): Behavior[_] =
+      beh match {
+        case interceptor: InterceptorImpl[_, _] => extractConcreteBehavior(interceptor.nestedBehavior)
+        case concrete                           => concrete
+      }
+
+    extractConcreteBehavior(context.currentBehavior) match {
+      case w: EventSourcedBehaviorImpl.WithMetadataAccessible => w.metadata[M]
+      case s =>
+        throw new IllegalStateException(s"Cannot extract the metadata in state ${s.getClass.getName}")
     }
   }
 

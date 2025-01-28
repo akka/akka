@@ -40,7 +40,8 @@ final class SnapshotMetadata(
       timestamp: Long = this.timestamp): SnapshotMetadata =
     SnapshotMetadata(persistenceId, sequenceNr, timestamp, metadata)
 
-  override def toString = s"SnapshotMetadata($persistenceId, $sequenceNr, $timestamp, $metadata)"
+  override def toString =
+    s"SnapshotMetadata($persistenceId, $sequenceNr, $timestamp, ${metadata.map(_.getClass.getName)})"
 
   // Product 3
   override def productPrefix = "SnapshotMetadata"

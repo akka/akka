@@ -39,13 +39,13 @@ class ReplicatedEventSourcingSerializerSpec extends ScalaTestWithActorTestKit wi
           10,
           "payload",
           1,
-          Some(new ReplicatedPublishedEventMetaData(ReplicaId("R1"), VersionVector.empty)),
+          Some(new ReplicatedPublishedEventMetaData(ReplicaId("R1"), VersionVector.empty, Some("meta"))),
           Some(system.deadLetters)),
-        assertEquality = false)
+        assertEquality = true)
 
       serializationTestKit.verifySerialization(
         PublishedEventImpl(PersistenceId.ofUniqueId("cat"), 10, "payload", 1, None, None),
-        assertEquality = false)
+        assertEquality = true)
     }
   }
 

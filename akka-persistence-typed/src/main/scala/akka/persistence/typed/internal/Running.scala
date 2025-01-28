@@ -13,8 +13,10 @@ import java.util.concurrent.atomic.AtomicReference
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.Future
+import scala.reflect.ClassTag
 import scala.util.Failure
 import scala.util.Success
+
 import akka.Done
 import akka.actor.UnhandledMessage
 import akka.actor.typed.{ Behavior, Signal }
@@ -24,6 +26,7 @@ import akka.actor.typed.internal.PoisonPill
 import akka.actor.typed.scaladsl.{ AbstractBehavior, ActorContext, Behaviors }
 import akka.annotation.{ InternalApi, InternalStableApi }
 import akka.event.Logging
+import akka.persistence.CompositeMetadata
 import akka.persistence.DeleteMessagesFailure
 import akka.persistence.DeleteMessagesSuccess
 import akka.persistence.DeleteSnapshotFailure
@@ -56,12 +59,15 @@ import akka.persistence.typed.{
 }
 import akka.persistence.typed.ReplicaId
 import akka.persistence.typed.ReplicationId
+import akka.persistence.typed.internal
+import akka.persistence.typed.internal.EventSourcedBehaviorImpl.WithMetadataAccessible
 import akka.persistence.typed.internal.EventSourcedBehaviorImpl.{ GetSeenSequenceNr, GetState, GetStateReply }
+import akka.persistence.typed.internal.EventSourcedBehaviorImpl.WithSeqNrAccessible
 import akka.persistence.typed.internal.InternalProtocol.ReplicatedEventEnvelope
 import akka.persistence.typed.internal.JournalInteractions.EventToPersist
 import akka.persistence.typed.internal.Running.MaxRecursiveUnstash
-import akka.persistence.typed.internal.Running.WithSeqNrAccessible
 import akka.persistence.typed.scaladsl.Effect
+import akka.persistence.typed.scaladsl.EventWithMetadata
 import akka.persistence.typed.telemetry.EventSourcedBehaviorInstrumentation
 import akka.stream.{ RestartSettings, SystemMaterializer, WatchedActorTerminatedException }
 import akka.stream.scaladsl.{ RestartSource, Sink }
@@ -93,10 +99,6 @@ import akka.util.Timeout
 private[akka] object Running {
 
   private val MaxRecursiveUnstash = 100
-
-  trait WithSeqNrAccessible {
-    def currentSequenceNumber: Long
-  }
 
   final case class RunningState[State](
       seqNr: Long,
@@ -169,8 +171,8 @@ private[akka] object Running {
                 replication
                   .eventsByPersistenceId(pid.persistenceId.id, seqNr + 1, Long.MaxValue)
                   .mapConcat(eventEnvelope =>
-                    eventEnvelope.eventMetadata match {
-                      case Some(replicatedMeta: ReplicatedEventMetadata) =>
+                    eventEnvelope.metadata[ReplicatedEventMetadata] match {
+                      case Some(replicatedMeta) =>
                         // skip events originating from self replica (break the cycle)
                         if (replicatedMeta.originReplica == replicationSetup.replicaId)
                           Nil
@@ -193,14 +195,15 @@ private[akka] object Running {
           // needs to be outside of the restart source so that it actually cancels when terminating the replica
           .via(ActorFlow
             .ask[EventEnvelope, ReplicatedEventEnvelope[E], ReplicatedEventAck.type](ref) { (eventEnvelope, replyTo) =>
-              val meta = eventEnvelope.eventMetadata.get.asInstanceOf[ReplicatedEventMetadata]
+              val replicatedEventMetadata = eventEnvelope.metadata[internal.ReplicatedEventMetadata].get
 
               val re =
                 ReplicatedEvent[E](
                   eventEnvelope.event.asInstanceOf[E],
-                  meta.originReplica,
-                  meta.originSequenceNr,
-                  meta.version)
+                  eventEnvelope.internalEventMetadata,
+                  replicatedEventMetadata.originReplica,
+                  replicatedEventMetadata.originSequenceNr,
+                  replicatedEventMetadata.version)
               ReplicatedEventEnvelope(re, replyTo)
             }
             .recoverWithRetries(1, {
@@ -261,13 +264,27 @@ private[akka] object Running {
   // Needed for WithSeqNrAccessible, when unstashing
   private var _currentSequenceNumber = 0L
 
+  // Needed for WithMetadataAccessible
+  private var _currentMetadata: Option[Any] = None
+
   private var recursiveUnstashOne = 0
+
+  private def updateMetadata(metadataEntries: Seq[Any]): Unit = {
+    if (metadataEntries.isEmpty)
+      _currentMetadata = None
+    else if (metadataEntries.size == 1)
+      _currentMetadata = Some(metadataEntries.head)
+    else
+      _currentMetadata = Some(CompositeMetadata(metadataEntries))
+  }
 
   final class HandlingCommands(state: RunningState[S])
       extends AbstractBehavior[InternalProtocol](setup.context)
-      with WithSeqNrAccessible {
+      with WithSeqNrAccessible
+      with WithMetadataAccessible {
 
     _currentSequenceNumber = state.seqNr
+    _currentMetadata = None
 
     private def alreadySeen(e: ReplicatedEvent[_]): Boolean = {
       e.originSequenceNr <= state.seenPerReplica.getOrElse(e.originReplica, 0L)
@@ -460,6 +477,7 @@ private[akka] object Running {
             replication,
             ReplicatedEvent(
               event.event.asInstanceOf[E],
+              replicatedMetadata.metadata,
               originReplicaId,
               event.sequenceNumber,
               replicatedMetadata.version),
@@ -485,6 +503,7 @@ private[akka] object Running {
         event: ReplicatedEvent[E],
         ackToOnPersisted: Option[ActorRef[Done]]): Behavior[InternalProtocol] = {
       _currentSequenceNumber = state.seqNr + 1
+      _currentMetadata = event.metadata
       val isConcurrent: Boolean = event.originVersion <> state.version
       val updatedVersion = event.originVersion.merge(state.version)
 
@@ -513,13 +532,22 @@ private[akka] object Running {
           } :: Nil
       }
 
+      val replicatedEventMetadata =
+        ReplicatedEventMetadata(event.originReplica, event.originSequenceNr, updatedVersion, isConcurrent)
+      val metadataEntriesFromReplicatedEvent =
+        event.metadata match {
+          case None                             => Nil
+          case Some(CompositeMetadata(entries)) => entries.filterNot(_.isInstanceOf[ReplicatedEventMetadata])
+          case Some(meta)                       => meta :: Nil
+        }
+
       val newState2: RunningState[S] = internalPersist(
         OptionVal.none,
         stateAfterApply,
         eventToPersist,
         eventAdapterManifest,
-        OptionVal.Some(
-          ReplicatedEventMetadata(event.originReplica, event.originSequenceNr, updatedVersion, isConcurrent)))
+        replicatedEventMetadata +: metadataEntriesFromReplicatedEvent)
+
       val shouldSnapshotAfterPersist = setup.shouldSnapshot(newState2.state, event.event, newState2.seqNr)
       val updatedSeen = newState2.seenPerReplica.updated(event.originReplica, event.originSequenceNr)
       persistingEvents(
@@ -535,12 +563,14 @@ private[akka] object Running {
     private def handleEventPersist(
         event: E,
         cmd: C,
+        metadataEntries: Seq[Any],
         sideEffects: immutable.Seq[SideEffect[S]]): (Behavior[InternalProtocol], Boolean) = {
       try {
         // apply the event before persist so that validation exception is handled before persisting
         // the invalid event, in case such validation is implemented in the event handler.
         // also, ensure that there is an event handler for each single event
         _currentSequenceNumber = state.seqNr + 1
+        updateMetadata(metadataEntries)
 
         setup.replication.foreach(r => r.setContext(recoveryRunning = false, r.replicaId, concurrent = false))
 
@@ -551,17 +581,14 @@ private[akka] object Running {
         val newState2 = setup.replication match {
           case Some(replication) =>
             val updatedVersion = stateAfterApply.version.updated(replication.replicaId.id, _currentSequenceNumber)
+            val replicatedEventMetadata =
+              ReplicatedEventMetadata(replication.replicaId, _currentSequenceNumber, updatedVersion, concurrent = false)
             val r = internalPersist(
               OptionVal.Some(cmd),
               stateAfterApply,
               eventToPersist,
               eventAdapterManifest,
-              OptionVal.Some(
-                ReplicatedEventMetadata(
-                  replication.replicaId,
-                  _currentSequenceNumber,
-                  updatedVersion,
-                  concurrent = false))).copy(version = updatedVersion)
+              replicatedEventMetadata +: metadataEntries).copy(version = updatedVersion)
 
             if (setup.internalLogger.isTraceEnabled())
               setup.internalLogger.trace(
@@ -571,7 +598,7 @@ private[akka] object Running {
 
             r
           case None =>
-            internalPersist(OptionVal.Some(cmd), stateAfterApply, eventToPersist, eventAdapterManifest, OptionVal.None)
+            internalPersist(OptionVal.Some(cmd), stateAfterApply, eventToPersist, eventAdapterManifest, metadataEntries)
         }
 
         val shouldSnapshotAfterPersist = setup.shouldSnapshot(newState2.state, event, newState2.seqNr)
@@ -591,17 +618,17 @@ private[akka] object Running {
     }
 
     private def handleEventPersistAll(
-        events: immutable.Seq[E],
+        eventsWithMetadata: immutable.Seq[EventWithMetadata[E]],
         cmd: C,
         sideEffects: immutable.Seq[SideEffect[S]]): (Behavior[InternalProtocol], Boolean) = {
-      if (events.nonEmpty) {
+      if (eventsWithMetadata.nonEmpty) {
         try {
           // apply the event before persist so that validation exception is handled before persisting
           // the invalid event, in case such validation is implemented in the event handler.
           // also, ensure that there is an event handler for each single event
           _currentSequenceNumber = state.seqNr
 
-          val metadataTemplate: Option[ReplicatedEventMetadata] = setup.replication match {
+          val replicatedEventMetadataTemplate: Option[ReplicatedEventMetadata] = setup.replication match {
             case Some(replication) =>
               replication.setContext(recoveryRunning = false, replication.replicaId, concurrent = false) // local events are never concurrent
               Some(ReplicatedEventMetadata(replication.replicaId, 0L, state.version, concurrent = false)) // we replace it with actual seqnr later
@@ -612,10 +639,12 @@ private[akka] object Running {
           var shouldSnapshotAfterPersist: SnapshotAfterPersist = NoSnapshot
           var eventsToPersist: List[EventToPersist] = Nil
 
-          events.foreach { event =>
+          eventsWithMetadata.foreach { evtWithMeta =>
+            val event = evtWithMeta.event
             _currentSequenceNumber += 1
+            updateMetadata(evtWithMeta.metadataEntries)
             val evtManifest = setup.eventAdapter.manifest(event)
-            val eventMetadata = metadataTemplate match {
+            val eventMetadata = replicatedEventMetadataTemplate match {
               case Some(template) =>
                 val updatedVersion = currentState.version.updated(template.originReplica.id, _currentSequenceNumber)
                 if (setup.internalLogger.isDebugEnabled)
@@ -624,8 +653,8 @@ private[akka] object Running {
                     Logging.simpleName(event.getClass),
                     updatedVersion)
                 currentState = currentState.copy(version = updatedVersion)
-                Some(template.copy(originSequenceNr = _currentSequenceNumber, version = updatedVersion))
-              case None => None
+                template.copy(originSequenceNr = _currentSequenceNumber, version = updatedVersion) +: evtWithMeta.metadataEntries
+              case None => evtWithMeta.metadataEntries
             }
 
             currentState = currentState.applyEvent(setup, event)
@@ -645,7 +674,7 @@ private[akka] object Running {
               newState2,
               state,
               command = OptionVal.Some(cmd),
-              events.size,
+              eventsWithMetadata.size,
               shouldSnapshotAfterPersist,
               shouldPublish = true,
               sideEffects = sideEffects),
@@ -655,6 +684,7 @@ private[akka] object Running {
         }
       } else {
         // run side-effects even when no events are emitted
+        _currentMetadata = None
         (applySideEffects(sideEffects, state), true)
       }
     }
@@ -675,11 +705,11 @@ private[akka] object Running {
           // unwrap and accumulate effects
           applyEffects(msg, state, eff, currentSideEffects ++ sideEffects)
 
-        case Persist(event) =>
-          handleEventPersist(event, msg, sideEffects)
+        case Persist(event, metadata) =>
+          handleEventPersist(event, msg, metadata, sideEffects)
 
-        case PersistAll(events) =>
-          handleEventPersistAll(events, msg, sideEffects)
+        case persistAll: PersistAll[E, S] @unchecked =>
+          handleEventPersistAll(persistAll.eventsWithMetadata, msg, sideEffects)
 
         case _: PersistNothing.type =>
           (applySideEffects(sideEffects, state), true)
@@ -729,8 +759,14 @@ private[akka] object Running {
 
     setup.setMdcPhase(PersistenceMdc.RunningCmds)
 
+    // WithSeqNrAccessible
     override def currentSequenceNumber: Long =
       _currentSequenceNumber
+
+    // WithMetadataAccessible
+    override def metadata[M: ClassTag]: Option[M] =
+      CompositeMetadata.extract[M](_currentMetadata)
+
   }
 
   // ===============================================
@@ -766,7 +802,8 @@ private[akka] object Running {
       var sideEffects: immutable.Seq[SideEffect[S]],
       persistStartTime: Long = System.nanoTime())
       extends AbstractBehavior[InternalProtocol](setup.context)
-      with WithSeqNrAccessible {
+      with WithSeqNrAccessible
+      with WithMetadataAccessible {
 
     private var eventCounter = 0
 
@@ -840,7 +877,7 @@ private[akka] object Running {
 
         if (setup.publishEvents && shouldPublish) {
           val meta = setup.replication.map(replication =>
-            new ReplicatedPublishedEventMetaData(replication.replicaId, state.version))
+            new ReplicatedPublishedEventMetaData(replication.replicaId, state.version, p.metadata))
           context.system.eventStream ! EventStream.Publish(
             PublishedEventImpl(setup.persistenceId, p.sequenceNr, p.payload, p.timestamp, meta, None))
         }
@@ -873,7 +910,7 @@ private[akka] object Running {
             onWriteDone(setup.context, p)
             if (shouldSnapshotAfterPersist == SnapshotWithRetention)
               setup.retentionProgressSaveSnapshotStarted(state2.seqNr)
-            internalSaveSnapshot(state2)
+            internalSaveSnapshot(state2, _currentMetadata)
             new StoringSnapshot(state2.clearInstrumentationContext, sideEffects, shouldSnapshotAfterPersist)
           }
         }
@@ -940,9 +977,13 @@ private[akka] object Running {
         else Behaviors.unhandled
     }
 
-    override def currentSequenceNumber: Long = {
+    // WithSeqNrAccessible
+    override def currentSequenceNumber: Long =
       _currentSequenceNumber
-    }
+
+    // WithMetadataAccessible
+    override def metadata[M: ClassTag]: Option[M] =
+      CompositeMetadata.extract[M](_currentMetadata)
   }
 
   // ===============================================
@@ -965,7 +1006,8 @@ private[akka] object Running {
   /** INTERNAL API */
   @InternalApi private[akka] class WaitingAsyncEffect(var state: RunningState[S])
       extends AbstractBehavior[InternalProtocol](setup.context)
-      with WithSeqNrAccessible {
+      with WithSeqNrAccessible
+      with WithMetadataAccessible {
 
     override def onMessage(msg: InternalProtocol): Behavior[InternalProtocol] = {
       msg match {
@@ -1028,9 +1070,13 @@ private[akka] object Running {
         else Behaviors.unhandled
     }
 
-    override def currentSequenceNumber: Long = {
+    // WithSeqNrAccessible
+    override def currentSequenceNumber: Long =
       _currentSequenceNumber
-    }
+
+    // WithMetadataAccessible
+    override def metadata[M: ClassTag]: Option[M] =
+      CompositeMetadata.extract[M](_currentMetadata)
   }
 
   // ===============================================
@@ -1053,7 +1099,8 @@ private[akka] object Running {
   /** INTERNAL API */
   @InternalApi private[akka] final class WaitingAsyncReplicationIntercept(_state: RunningState[S])
       extends WaitingAsyncEffect(_state)
-      with WithSeqNrAccessible {
+      with WithSeqNrAccessible
+      with WithMetadataAccessible {
 
     override def onMessage(msg: InternalProtocol): Behavior[InternalProtocol] = {
       msg match {
@@ -1078,7 +1125,8 @@ private[akka] object Running {
       sideEffects: immutable.Seq[SideEffect[S]],
       snapshotReason: SnapshotAfterPersist)
       extends AbstractBehavior[InternalProtocol](setup.context)
-      with WithSeqNrAccessible {
+      with WithSeqNrAccessible
+      with WithMetadataAccessible {
     setup.setMdcPhase(PersistenceMdc.StoringSnapshot)
     recursiveUnstashOne = 0
 
@@ -1190,8 +1238,13 @@ private[akka] object Running {
           Behaviors.unhandled
     }
 
+    // WithSeqNrAccessible
     override def currentSequenceNumber: Long =
       _currentSequenceNumber
+
+    // WithMetadataAccessible
+    override def metadata[M: ClassTag]: Option[M] =
+      CompositeMetadata.extract[M](_currentMetadata)
   }
 
   // ===============================================
@@ -1199,7 +1252,8 @@ private[akka] object Running {
   /** INTERNAL API */
   @InternalApi private[akka] class WaitingForContinueUnstash(state: RunningState[S])
       extends AbstractBehavior[InternalProtocol](setup.context)
-      with WithSeqNrAccessible {
+      with WithSeqNrAccessible
+      with WithMetadataAccessible {
 
     def onCommand(cmd: IncomingCommand[C]): Behavior[InternalProtocol] = {
       if (state.receivedPoisonPill) {
@@ -1235,8 +1289,13 @@ private[akka] object Running {
           Behaviors.unhandled
     }
 
+    // WithSeqNrAccessible
     override def currentSequenceNumber: Long =
       _currentSequenceNumber
+
+    // WithMetadataAccessible
+    override def metadata[M: ClassTag]: Option[M] =
+      CompositeMetadata.extract[M](_currentMetadata)
   }
 
   // --------------------------
