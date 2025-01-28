@@ -1,6 +1,3 @@
-/*
- * Copyright (C) 2009-2025 Lightbend Inc. <https://www.lightbend.com>
- */
 package sharding.kafka.producer
 
 import com.typesafe.config.Config

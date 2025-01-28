@@ -1,6 +1,3 @@
-/*
- * Copyright (C) 2009-2025 Lightbend Inc. <https://www.lightbend.com>
- */
 package sample.cluster.stats
 
 import akka.actor.testkit.typed.scaladsl.TestProbe
