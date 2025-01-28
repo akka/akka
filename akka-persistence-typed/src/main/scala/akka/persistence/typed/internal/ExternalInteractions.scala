@@ -124,9 +124,17 @@ private[akka] trait JournalInteractions[C, E, S] {
   private[akka] def onWritesInitiated(ctx: ActorContext[_], cmd: Any, repr: immutable.Seq[PersistentRepr]): Unit = ()
 
   protected def replayEvents(fromSeqNr: Long, toSeqNr: Long): Unit = {
-    setup.internalLogger.debug("Replaying events: from: {}, to: {}", fromSeqNr, toSeqNr)
+    val from =
+      if (setup.recovery == ReplayOnlyLastRecovery) {
+        setup.internalLogger.debug("Recovery from last event only.")
+        -1L
+      } else {
+        setup.internalLogger.debug("Replaying events: from: {}, to: {}", fromSeqNr, toSeqNr)
+        fromSeqNr
+      }
+
     setup.journal.tell(
-      ReplayMessages(fromSeqNr, toSeqNr, setup.recovery.replayMax, setup.persistenceId.id, setup.selfClassic),
+      ReplayMessages(from, toSeqNr, setup.recovery.toClassic.replayMax, setup.persistenceId.id, setup.selfClassic),
       setup.selfClassic)
   }
 

@@ -20,6 +20,8 @@ AWS DynamoDB can be used as backend for Akka Persistence with the [Akka Persiste
 
 @ref:[Durable State](./typed/index-persistence-durable-state.md) is not supported by the DynamoDB plugin.
 
+Recovery from only last event is not supported by the DynamoDB plugin.
+
 ## JDBC plugin
 
 Relational databases with JDBC-drivers are supported through [Akka Persistence JDBC](https://doc.akka.io/libraries/akka-persistence-jdbc/current/). For new projects, the @ref:[R2DBC plugin](#r2dbc-plugin) is recommended.
@@ -38,6 +40,7 @@ Example of concrete features _not_ supported by the Cassandra and JDBC plugins:
 * Projections starting from snapshots
 * Scalability of many Projections
 * Durable State entities (partly supported by JDBC plugin)
+* Recovery from only last event
 
 ## Enabling a plugin
 

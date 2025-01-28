@@ -9,5 +9,7 @@ import akka.persistence.PersistenceSpec
 import akka.persistence.journal.JournalSpec
 
 class InmemJournalSpec extends JournalSpec(config = PersistenceSpec.config("inmem", "InmemJournalSpec")) {
-  override protected def supportsRejectingNonSerializableObjects: CapabilityFlag = CapabilityFlag.off()
+  override protected def supportsRejectingNonSerializableObjects: CapabilityFlag = false
+
+  override protected def supportsReplayOnlyLast: CapabilityFlag = true
 }

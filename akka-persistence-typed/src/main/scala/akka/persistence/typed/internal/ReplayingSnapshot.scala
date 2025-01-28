@@ -51,7 +51,8 @@ private[akka] class ReplayingSnapshot[C, E, S](override val setup: BehaviorSetup
     // protect against snapshot stalling forever because of journal overloaded and such
     setup.startRecoveryTimer(snapshot = true)
 
-    loadSnapshot(setup.recovery.fromSnapshot, setup.recovery.toSequenceNr)
+    val classicRecovery = setup.recovery.toClassic
+    loadSnapshot(classicRecovery.fromSnapshot, classicRecovery.toSequenceNr)
 
     def stay(receivedPoisonPill: Boolean): Behavior[InternalProtocol] = {
       Behaviors
@@ -195,7 +196,7 @@ private[akka] class ReplayingSnapshot[C, E, S](override val setup: BehaviorSetup
             "Snapshot load error for persistenceId [{}]. Replaying all events since snapshot-is-optional=true",
             setup.persistenceId)
 
-          loadSnapshotResult(snapshot = None, setup.recovery.toSequenceNr)
+          loadSnapshotResult(snapshot = None, setup.recovery.toClassic.toSequenceNr)
         } else {
           onRecoveryFailure(cause)
         }

@@ -58,6 +58,11 @@ trait JournalCapabilityFlags extends CapabilityFlags {
    */
   protected def supportsMetadata: CapabilityFlag
 
+  /**
+   * When `true` enables tests which check if the Journal can replay only the last event.
+   */
+  protected def supportsReplayOnlyLast: CapabilityFlag
+
 }
 //#journal-flags
 

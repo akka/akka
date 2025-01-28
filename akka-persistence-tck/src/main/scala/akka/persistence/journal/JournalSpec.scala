@@ -55,6 +55,8 @@ abstract class JournalSpec(config: Config)
 
   override protected def supportsMetadata: CapabilityFlag = false
 
+  override protected def supportsReplayOnlyLast: CapabilityFlag = false
+
   override protected def beforeEach(): Unit = {
     super.beforeEach()
     senderProbe = TestProbe()
@@ -188,6 +190,12 @@ abstract class JournalSpec(config: Config)
       journal ! ReplayMessages(0, Long.MaxValue, Long.MaxValue, "non-existing-pid", receiverProbe.ref)
       receiverProbe.expectMsg(RecoverySuccess(highestSequenceNr = 0L))
     }
+    "retrieve highest sequenceNr without replaying events" in {
+      journal ! ReplayMessages(0, 0, 1, pid, receiverProbe.ref)
+      // no replayedMessage
+      receiverProbe.expectMsg(RecoverySuccess(highestSequenceNr = 5L))
+    }
+
     "not replay permanently deleted messages (range deletion)" in {
       val receiverProbe2 = TestProbe()
       val cmd = DeleteMessagesTo(pid, 3, receiverProbe2.ref)
@@ -236,6 +244,7 @@ abstract class JournalSpec(config: Config)
       journal ! ReplayMessages(0, Long.MaxValue, Long.MaxValue, pid, receiverProbe.ref)
       receiverProbe.expectMsg(RecoverySuccess(highestSequenceNr = 5L))
     }
+
   }
 
   "A Journal optionally".may {
@@ -348,5 +357,14 @@ abstract class JournalSpec(config: Config)
 
       }
     }
+
+    optional(flag = supportsReplayOnlyLast) {
+      "replay only last when fromSequenceNr is -1" in {
+        journal ! ReplayMessages(-1, Long.MaxValue, Long.MaxValue, pid, receiverProbe.ref)
+        receiverProbe.expectMsg(replayedMessage(snr = 5))
+        receiverProbe.expectMsg(RecoverySuccess(highestSequenceNr = 5L))
+      }
+    }
+
   }
 }

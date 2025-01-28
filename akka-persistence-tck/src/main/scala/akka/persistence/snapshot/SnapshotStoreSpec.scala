@@ -4,8 +4,6 @@
 
 package akka.persistence.snapshot
 
-import scala.collection.immutable.Seq
-
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 
@@ -222,5 +220,6 @@ abstract class SnapshotStoreSpec(config: Config)
         }
       }
     }
+
   }
 }

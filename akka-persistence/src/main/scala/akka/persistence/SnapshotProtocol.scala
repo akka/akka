@@ -193,7 +193,7 @@ object SnapshotSelectionCriteria {
   /**
    * No saved snapshot matches.
    */
-  val None = SnapshotSelectionCriteria(0L, 0L)
+  val None = SnapshotSelectionCriteria(maxSequenceNr = 0L, maxTimestamp = 0L)
 
   /**
    * Java API.
@@ -216,6 +216,7 @@ object SnapshotSelectionCriteria {
    * Java API.
    */
   def none() = None
+
 }
 
 /**

@@ -38,6 +38,8 @@ class PersistenceTestKitJournalCompatSpec extends JournalSpec(config = Persisten
 
   override protected def supportsRejectingNonSerializableObjects: CapabilityFlag = true
   override protected def supportsMetadata: CapabilityFlag = true
+  override protected def supportsReplayOnlyLast: CapabilityFlag = true
+
 }
 
 class PersistenceTestKitSnapshotStoreCompatSpec

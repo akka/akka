@@ -17,7 +17,7 @@ import akka.persistence.typed.{ javadsl, scaladsl, SnapshotSelectionCriteria }
   /**
    * INTERNAL API
    */
-  override private[akka] def toClassic = akka.persistence.Recovery()
+  override private[akka] def toClassic = akka.persistence.Recovery.default
 }
 
 /**
@@ -31,6 +31,20 @@ import akka.persistence.typed.{ javadsl, scaladsl, SnapshotSelectionCriteria }
    * INTERNAL API
    */
   override private[akka] def toClassic = akka.persistence.Recovery.none
+}
+
+/**
+ * INTERNAL API
+ */
+@InternalApi private[akka] case object ReplayOnlyLastRecovery extends javadsl.Recovery with scaladsl.Recovery {
+  override def asScala: scaladsl.Recovery = this
+  override def asJava: javadsl.Recovery = this
+
+  /**
+   * INTERNAL API
+   */
+  override private[akka] val toClassic =
+    akka.persistence.Recovery(akka.persistence.SnapshotSelectionCriteria.None)
 }
 
 /**

@@ -17,7 +17,6 @@ import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.typed._
 import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
-import akka.persistence.{ Recovery => ClassicRecovery }
 import akka.persistence.typed.NoOpEventAdapter
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.RecoveryCompleted
@@ -69,7 +68,7 @@ class EventSourcedBehaviorWatchSpec
       NoOpEventAdapter.instance[String],
       NoOpSnapshotAdapter.instance[String],
       snapshotWhen = SnapshotWhenPredicate.noSnapshot,
-      ClassicRecovery(),
+      Recovery.default,
       RetentionCriteria.disabled,
       holdingRecoveryPermit = false,
       settings = settings,

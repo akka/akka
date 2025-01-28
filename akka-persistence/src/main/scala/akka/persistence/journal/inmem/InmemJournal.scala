@@ -107,10 +107,15 @@ object InmemJournal {
   override def asyncReplayMessages(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long)(
       recoveryCallback: PersistentRepr => Unit): Future[Unit] = {
     val highest = highestSequenceNr(persistenceId)
-    if (highest != 0L && max != 0L)
-      read(persistenceId, fromSequenceNr, math.min(toSequenceNr, highest), max).foreach {
+    if (highest != 0L && max != 0L) {
+      val to = math.min(toSequenceNr, highest)
+      // read only last when fromSequenceNr is -1
+      val from = if (fromSequenceNr == -1) to else fromSequenceNr
+
+      read(persistenceId, from, to, max).foreach {
         case (pr, _) => recoveryCallback(pr)
       }
+    }
     Future.successful(())
   }
 
