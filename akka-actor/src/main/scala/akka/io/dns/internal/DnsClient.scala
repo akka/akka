@@ -35,6 +35,8 @@ import akka.pattern.{ BackoffOpts, BackoffSupervisor }
 
   final case class DropRequest(question: DnsQuestion)
 
+  case object TcpDropped
+
   // sent as an indication that as of the time of sending, `id` is not being used
   //  by an active question.  Useful for a questioner which tracks which ids it can use
   final case class Dropped(id: Short) extends NoSerializationVerificationNeeded
@@ -63,6 +65,7 @@ import akka.pattern.{ BackoffOpts, BackoffSupervisor }
   val tcp = IO(Tcp)
 
   private[internal] var inflightRequests: Map[Short, (ActorRef, Message)] = Map.empty
+  private var tcpRequests: Set[Short] = Set.empty
 
   lazy val tcpDnsClient: ActorRef = createTcpClient()
 
@@ -186,7 +189,9 @@ import akka.pattern.{ BackoffOpts, BackoffSupervisor }
         log.debug("DNS response truncated, falling back to TCP")
         inflightRequests.get(msg.id) match {
           case Some((_, msg)) =>
+            tcpRequests = tcpRequests.incl(msg.id)
             tcpDnsClient ! msg
+
           case _ =>
             log.debug("Client for id {} not found. Discarding unsuccessful response.", msg.id)
         }
@@ -227,6 +232,15 @@ import akka.pattern.{ BackoffOpts, BackoffSupervisor }
         case None =>
           log.debug("Client for id [{}] not found. Discarding response.", response.id)
       }
+
+    case TcpDropped =>
+      log.warning("TCP client failed, clearing inflight resolves which were being resolved by TCP")
+
+      inflightRequests = inflightRequests.filterNot {
+        case (id, _) => tcpRequests(id)
+      }
+
+      tcpRequests = Set.empty
 
     case Udp.Unbind  => socket ! Udp.Unbind
     case Udp.Unbound => context.stop(self)
