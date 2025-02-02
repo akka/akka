@@ -54,6 +54,7 @@ import scala.collection.mutable
     case Ack          => writer = writer.ack()
 
     case failure: Tcp.CommandFailed =>
+      writer.connection ! Tcp.Abort
       throwFailure("TCP command failed", failure.cause)
 
     case Tcp.Received(newData) =>
