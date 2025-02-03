@@ -78,29 +78,13 @@ import akka.event.LoggingAdapter
         log.debug("Unexpected Ack in TCP DNS client")
       }
 
+    case Tcp.Received(newData) =>
+      onNewResponseData(connection, requestBuffer, waitingForWriteAck, responseBuffer ++ newData)
+
     case failure: Tcp.CommandFailed =>
       connection ! Tcp.Abort
       val extra = if (requestBuffer.nonEmpty) s" (dropping ${requestBuffer.size} buffered requests)" else ""
       throwFailure(s"TCP command failed$extra", failure.cause)
-
-    case Tcp.Received(newData) =>
-      val newResponseBuffer = responseBuffer ++ newData
-      // TCP DNS responses are prefixed by 2 bytes encoding the length of the response
-      val prefixSize = 2
-      if (newResponseBuffer.length < prefixSize)
-        context.become(ready(connection, requestBuffer, newResponseBuffer, waitingForWriteAck))
-      else {
-        val expectedPayloadLength = decodeLength(newResponseBuffer)
-        if (newResponseBuffer.drop(prefixSize).length < expectedPayloadLength)
-          context.become(ready(connection, requestBuffer, newResponseBuffer, waitingForWriteAck))
-        else {
-          answerRecipient ! parseResponse(newResponseBuffer.drop(prefixSize))
-          context.become(ready(connection, requestBuffer, ByteString.empty, waitingForWriteAck))
-          if (newResponseBuffer.length > prefixSize + expectedPayloadLength) {
-            self ! Tcp.Received(newResponseBuffer.drop(prefixSize + expectedPayloadLength))
-          }
-        }
-      }
 
     case Tcp.PeerClosed =>
       if (requestBuffer.nonEmpty) {
@@ -111,6 +95,33 @@ import akka.event.LoggingAdapter
     case Tcp.ErrorClosed(cause) =>
       val extra = if (requestBuffer.nonEmpty) s" (dropping ${requestBuffer.size} buffered requests)" else ""
       throwFailure(s"Connection closed with error $cause ($extra)", None)
+
+  }
+
+  private def onNewResponseData(
+      connection: ActorRef,
+      requestBuffer: Vector[Message],
+      waitingForWriteAck: Boolean,
+      responseBuffer: ByteString): Unit = {
+    // TCP DNS responses are prefixed by 2 bytes encoding the length of the response
+    val prefixSize = 2
+    if (responseBuffer.length < prefixSize)
+      context.become(ready(connection, requestBuffer, responseBuffer, waitingForWriteAck))
+    else {
+      val expectedPayloadLength = decodeLength(responseBuffer)
+      if (responseBuffer.drop(prefixSize).length < expectedPayloadLength)
+        context.become(ready(connection, requestBuffer, responseBuffer, waitingForWriteAck))
+      else {
+        answerRecipient ! parseResponse(responseBuffer.drop(prefixSize))
+        if (responseBuffer.length > prefixSize + expectedPayloadLength) {
+          val newBuffer = responseBuffer.drop(prefixSize + expectedPayloadLength)
+          // needs to happen right away to not risk re-order with additional replies
+          onNewResponseData(connection, requestBuffer, waitingForWriteAck, newBuffer)
+        } else {
+          context.become(ready(connection, requestBuffer, ByteString.empty, waitingForWriteAck))
+        }
+      }
+    }
 
   }
 

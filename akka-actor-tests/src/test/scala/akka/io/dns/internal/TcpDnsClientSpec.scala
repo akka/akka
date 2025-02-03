@@ -73,6 +73,40 @@ class TcpDnsClientSpec extends AkkaSpec("""akka.loglevel = DEBUG
       answerProbe.expectMsg(Answer(42, Nil))
     }
 
+    "accept multiple fragmented TCP responses" in {
+      val tcpExtensionProbe = TestProbe()
+      val answerProbe = TestProbe()
+
+      val client = system.actorOf(Props(new TcpDnsClient(tcpExtensionProbe.ref, dnsServerAddress, answerProbe.ref)))
+
+      client ! exampleRequestMessage
+
+      tcpExtensionProbe.expectMsg(Tcp.Connect(dnsServerAddress))
+      tcpExtensionProbe.lastSender ! Connected(dnsServerAddress, localAddress)
+      expectMsgType[Register]
+      val registered = tcpExtensionProbe.lastSender
+
+      // pretend write+ack+write happened, so three requests written, now both coming back.
+      // (we need to make sure buffer is not reordered by sandwitched responses)
+      expectMsgType[Tcp.Write]
+      val fullResponse1 = encodeLength(exampleResponseMessage.write().length) ++ exampleResponseMessage.write()
+      val exampleResponseMessage2 = exampleResponseMessage.copy(id = 43)
+      val fullResponse2 = encodeLength(exampleResponseMessage2.write().length) ++ exampleResponseMessage2.write()
+      val exampleResponseMessage3 = exampleResponseMessage.copy(id = 44)
+      val fullResponse3 = encodeLength(exampleResponseMessage3.write().length) ++ exampleResponseMessage3.write()
+      registered ! Tcp.Received(fullResponse1.take(8))
+      Thread.sleep(30) // give things some time to go wrong
+      registered ! Tcp.Received(fullResponse1.drop(8) ++ fullResponse2.take(8))
+      Thread.sleep(30)
+      registered ! Tcp.Received(fullResponse2.drop(8) ++ fullResponse3.take(8))
+      Thread.sleep(30)
+      registered ! Tcp.Received(fullResponse3.drop(8))
+
+      answerProbe.expectMsg(Answer(42, Nil))
+      answerProbe.expectMsg(Answer(43, Nil))
+      answerProbe.expectMsg(Answer(44, Nil))
+    }
+
     "respect backpressure from the TCP actor" in {
       val tcpExtensionProbe = TestProbe()
 
