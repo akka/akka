@@ -6,17 +6,17 @@ package akka.io.dns.internal
 
 import java.net.InetSocketAddress
 import java.util.concurrent.atomic.AtomicBoolean
-
 import scala.collection.immutable.Seq
 import scala.concurrent.duration._
-
 import akka.actor.Props
 import akka.io.Udp
 import akka.io.dns.{ RecordClass, RecordType }
 import akka.io.dns.internal.DnsClient.{ Answer, Question4 }
+import akka.testkit.WithLogCapturing
 import akka.testkit.{ AkkaSpec, ImplicitSender, TestProbe }
 
-class DnsClientSpec extends AkkaSpec with ImplicitSender {
+class DnsClientSpec extends AkkaSpec("""akka.loglevel = DEBUG
+      akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]""") with ImplicitSender with WithLogCapturing {
   "The async DNS client" should {
     val exampleRequest = Question4(42, "akka.io")
     val exampleRequestMessage =

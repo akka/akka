@@ -189,7 +189,7 @@ import akka.pattern.{ BackoffOpts, BackoffSupervisor }
         inflightRequests.get(msg.id) match {
           case Some(inFlight) =>
             inflightRequests = inflightRequests.updated(msg.id, inFlight.copy(tcpRequest = true))
-            tcpDnsClient ! msg
+            tcpDnsClient ! inFlight.message
 
           case _ =>
             log.debug("Client for id {} not found. Discarding unsuccessful response.", msg.id)
