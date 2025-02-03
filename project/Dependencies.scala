@@ -23,7 +23,7 @@ object Dependencies {
   val agronaVersion = "1.22.0"
   val nettyVersion = "4.1.114.Final"
   val protobufJavaVersion = "3.25.5" // also sync with protocVersion in Protobuf.scala
-  val logbackVersion = "1.5.15"
+  val logbackVersion = "1.5.16"
   val scalaFortifyVersion = "1.0.22"
   val fortifySCAVersion = "22.1"
   val jacksonCoreVersion = "2.17.2" // https://github.com/FasterXML/jackson/wiki/Jackson-Releases
