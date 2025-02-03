@@ -30,7 +30,7 @@ object Dependencies {
   val jacksonDatabindVersion = jacksonCoreVersion // https://github.com/FasterXML/jackson/wiki/Jackson-Releases
 
   // Also update URLs in link-validator.conf
-  val scala213Version = "2.13.15"
+  val scala213Version = "2.13.16"
   val scala3Version = "3.3.4"
 
   val allScalaVersions = Seq(scala213Version, scala3Version)

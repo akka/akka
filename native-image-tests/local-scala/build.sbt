@@ -2,7 +2,7 @@ import scala.collection.Seq
 
 name := "local-scala"
 version := "1.0"
-scalaVersion := "2.13.15"
+scalaVersion := "2.13.16"
 resolvers += "Akka library repository".at("https://repo.akka.io/maven")
 
 // Note: this default isn't really used anywhere so not important to bump
