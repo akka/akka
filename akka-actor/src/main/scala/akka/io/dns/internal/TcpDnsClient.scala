@@ -5,7 +5,6 @@
 package akka.io.dns.internal
 
 import java.net.InetSocketAddress
-
 import akka.AkkaException
 import akka.actor.{ Actor, ActorLogging, ActorRef, Stash }
 import akka.annotation.InternalApi
@@ -13,8 +12,6 @@ import akka.io.Tcp
 import akka.io.dns.internal.DnsClient.Answer
 import akka.util.ByteString
 import akka.event.LoggingAdapter
-
-import scala.collection.mutable
 
 /**
  * INTERNAL API
@@ -41,49 +38,91 @@ import scala.collection.mutable
     case _: Tcp.Connected =>
       log.debug("Connected to TCP address [{}]", ns)
       val connection = sender()
-      writer = new Writing(connection, log)
-      context.become(ready())
+      context.become(ready(connection, Vector.empty, ByteString.empty, waitingForWriteAck = false))
       connection ! Tcp.Register(self)
       unstashAll()
     case _: Message =>
       stash()
   }
 
-  def ready(buffer: ByteString = ByteString.empty): Receive = {
-    case msg: Message => writer = writer.maybeWriteMessage(msg)
-    case Ack          => writer = writer.ack()
+  private def ready(
+      connection: ActorRef,
+      requestBuffer: Vector[Message],
+      responseBuffer: ByteString,
+      waitingForWriteAck: Boolean): Receive = {
+    case msg: Message =>
+      if (!waitingForWriteAck) {
+        if (requestBuffer.nonEmpty)
+          throwFailure("Unexpected state, not waiting for ack but request buffer is not empty, this is a bug", None)
+        sendWrite(connection, Vector.empty, responseBuffer, msg)
+      } else if (requestBuffer.size < MaxRequestsBuffered) {
+        // buffer, wait for ack
+        context.become(ready(connection, requestBuffer :+ msg, responseBuffer, waitingForWriteAck))
+      } else {
+        val oldest = requestBuffer.head
+        val newRequestBuffer = requestBuffer.tail :+ msg
+        log.warning("Dropping oldest buffered DNS request [{}] due to TCP backpressure", oldest)
+        context.become(ready(connection, newRequestBuffer, responseBuffer, waitingForWriteAck))
+      }
+
+    case Ack =>
+      if (waitingForWriteAck) {
+        if (requestBuffer.nonEmpty) {
+          val bufferedRequest = requestBuffer.head
+          val newRequestBuffer = requestBuffer.tail
+          sendWrite(connection, newRequestBuffer, responseBuffer, bufferedRequest)
+        } else {
+          context.become(ready(connection, Vector.empty, responseBuffer, waitingForWriteAck = false))
+        }
+      } else {
+        log.debug("Unexpected Ack in TCP DNS client")
+      }
 
     case failure: Tcp.CommandFailed =>
-      writer.connection ! Tcp.Abort
-      throwFailure("TCP command failed", failure.cause)
+      connection ! Tcp.Abort
+      val extra = if (requestBuffer.nonEmpty) s" (dropping ${requestBuffer.size} buffered requests)" else ""
+      throwFailure(s"TCP command failed$extra", failure.cause)
 
     case Tcp.Received(newData) =>
-      val data = buffer ++ newData
+      val newResponseBuffer = responseBuffer ++ newData
       // TCP DNS responses are prefixed by 2 bytes encoding the length of the response
       val prefixSize = 2
-      if (data.length < prefixSize)
-        context.become(ready(data))
+      if (newResponseBuffer.length < prefixSize)
+        context.become(ready(connection, requestBuffer, newResponseBuffer, waitingForWriteAck))
       else {
-        val expectedPayloadLength = decodeLength(data)
-        if (data.drop(prefixSize).length < expectedPayloadLength)
-          context.become(ready(data))
+        val expectedPayloadLength = decodeLength(newResponseBuffer)
+        if (newResponseBuffer.drop(prefixSize).length < expectedPayloadLength)
+          context.become(ready(connection, requestBuffer, newResponseBuffer, waitingForWriteAck))
         else {
-          answerRecipient ! parseResponse(data.drop(prefixSize))
-          context.become(ready(ByteString.empty))
-          if (data.length > prefixSize + expectedPayloadLength) {
-            self ! Tcp.Received(data.drop(prefixSize + expectedPayloadLength))
+          answerRecipient ! parseResponse(newResponseBuffer.drop(prefixSize))
+          context.become(ready(connection, requestBuffer, ByteString.empty, waitingForWriteAck))
+          if (newResponseBuffer.length > prefixSize + expectedPayloadLength) {
+            self ! Tcp.Received(newResponseBuffer.drop(prefixSize + expectedPayloadLength))
           }
         }
       }
+
     case Tcp.PeerClosed =>
+      if (requestBuffer.nonEmpty) {
+        log.warning("Connection closed, dropping {} buffered requests)", requestBuffer.size)
+      }
       context.become(idle)
 
     case Tcp.ErrorClosed(cause) =>
-      throwFailure(s"Connection closed with error $cause", None)
+      val extra = if (requestBuffer.nonEmpty) s" (dropping ${requestBuffer.size} buffered requests)" else ""
+      throwFailure(s"Connection closed with error $cause ($extra)", None)
 
   }
 
-  private var writer: Writer = _
+  private def sendWrite(
+      connection: ActorRef,
+      requestBuffer: Vector[Message],
+      responseBuffer: ByteString,
+      message: Message): Unit = {
+    val bytes = message.write()
+    connection ! Tcp.Write(encodeLength(bytes.length) ++ bytes, Ack)
+    context.become(ready(connection, requestBuffer, responseBuffer, waitingForWriteAck = true))
+  }
 
   private def parseResponse(data: ByteString) = {
     val msg = Message.parse(data)
@@ -99,14 +138,26 @@ import scala.collection.mutable
   private def throwFailure(message: String, cause: Option[Throwable]): Nothing =
     TcpDnsClient.throwFailure(message, cause, log, answerRecipient)
 }
+
+/**
+ * INTERNAL API
+ */
+@InternalApi
 private[internal] object TcpDnsClient {
-  def encodeLength(length: Int): ByteString =
+
+  private val MaxRequestsBuffered = 10
+
+  private[internal] def encodeLength(length: Int): ByteString =
     ByteString((length / 256).toByte, length.toByte)
 
-  def decodeLength(data: ByteString): Int =
+  private def decodeLength(data: ByteString): Int =
     ((data(0).toInt + 256) % 256) * 256 + ((data(1) + 256) % 256)
 
-  def throwFailure(message: String, cause: Option[Throwable], log: LoggingAdapter, reportTo: ActorRef): Nothing = {
+  private def throwFailure(
+      message: String,
+      cause: Option[Throwable],
+      log: LoggingAdapter,
+      reportTo: ActorRef): Nothing = {
     cause match {
       case None =>
         log.warning("TCP DNS client failed: {}", message)
@@ -120,58 +171,5 @@ private[internal] object TcpDnsClient {
     }
   }
 
-  abstract class Writer(val connection: ActorRef, val log: LoggingAdapter) {
-    def maybeWriteMessage(msg: Message): Writer
-    def ack(): Writer
-
-    protected def writeMessage(msg: Message): Unit = {
-      val bytes = msg.write()
-      connection ! Tcp.Write(encodeLength(bytes.length) ++ bytes, Ack)
-    }
-  }
-
-  class Writing(connection: ActorRef, log: LoggingAdapter) extends Writer(connection, log) {
-    def maybeWriteMessage(msg: Message): Writer = {
-      writeMessage(msg)
-
-      new Buffering(connection, log)
-    }
-
-    def ack(): Writer = {
-      log.warning("Unexpected Ack in TCP DNS client")
-      this
-    }
-  }
-
-  class Buffering(connection: ActorRef, log: LoggingAdapter) extends Writer(connection, log) {
-    def maybeWriteMessage(msg: Message): Writer = {
-      buffer.enqueue(msg)
-
-      if (buffer.size < 11) {
-        // do nothing, just the above enqueue
-      } else if (toDrop < 1) {
-        toDrop = buffer.size - 10
-      } else {
-        log.info("Dropping DNS request [{}] due to TCP backpressure", buffer.dequeue())
-        toDrop -= 1
-      }
-
-      this
-    }
-
-    def ack(): Writer =
-      if (buffer.isEmpty) new Writing(connection, log)
-      else {
-        writeMessage(buffer.dequeue())
-        if (toDrop > 0) {
-          toDrop -= 1
-        }
-        this
-      }
-
-    private val buffer = mutable.Queue.empty[Message]
-    private var toDrop: Int = 0
-  }
-
-  case object Ack extends Tcp.Event
+  private case object Ack extends Tcp.Event
 }

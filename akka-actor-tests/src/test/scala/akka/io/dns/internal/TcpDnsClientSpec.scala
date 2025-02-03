@@ -5,18 +5,18 @@
 package akka.io.dns.internal
 
 import java.net.InetSocketAddress
-
-import scala.collection.immutable.Seq
-
 import akka.actor.ActorRef
 import akka.actor.Props
 import akka.io.Tcp
 import akka.io.Tcp.{ Connected, PeerClosed, Register }
 import akka.io.dns.{ RecordClass, RecordType }
 import akka.io.dns.internal.DnsClient.Answer
+import akka.testkit.EventFilter
+import akka.testkit.WithLogCapturing
 import akka.testkit.{ AkkaSpec, ImplicitSender, TestProbe }
 
-class TcpDnsClientSpec extends AkkaSpec with ImplicitSender {
+class TcpDnsClientSpec extends AkkaSpec("""akka.loglevel = DEBUG
+      akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]""") with ImplicitSender with WithLogCapturing {
   import TcpDnsClient._
 
   "The async TCP DNS client" should {
@@ -153,13 +153,15 @@ class TcpDnsClientSpec extends AkkaSpec with ImplicitSender {
       answerProbe.expectMsg(DnsClient.TcpDropped)
     }
 
-    "should resort to dropping older requests in response to sufficient backpressure" in {
+    "should drop older requests when TCP connection backpressures" in {
       val tcpExtensionProbe = TestProbe()
       val connectionProbe = TestProbe()
 
       val client = system.actorOf(Props(new TcpDnsClient(tcpExtensionProbe.ref, dnsServerAddress, ActorRef.noSender)))
 
-      client ! exampleRequestMessage
+      // initial request
+      val initialRequest = exampleRequestMessage.copy(id = 1)
+      client ! initialRequest
 
       tcpExtensionProbe.expectMsg(Tcp.Connect(dnsServerAddress))
       tcpExtensionProbe.lastSender.tell(Connected(dnsServerAddress, localAddress), connectionProbe.ref)
@@ -167,24 +169,23 @@ class TcpDnsClientSpec extends AkkaSpec with ImplicitSender {
       val registered = connectionProbe.lastSender
 
       var write = connectionProbe.expectMsgType[Tcp.Write]
-      write.data.drop(2) shouldBe (exampleRequestMessage.write())
+      write.data.drop(2) shouldBe initialRequest.write()
 
-      // Send 20 requests before the ack...
-      // - first 11 get added without dropping (buffer is 1 - 11)
-      // - drop #1 to make room for #12 (buffer is 2 - 12)
-      // - expand for #13 (buffer is 2 - 13)
-      // - drop #2 and #3 to make room for #14 and #15 (buffer is 4 - 15)
-      // - expand for #16 (buffer is 4 - 16)
-      // - drop #4, #5, and #6 to make room for #17, #18, #19 (buffer is 7 - 19)
-      // - expand for #20 (buffer is 7 - 20)
-      (1 to 20).foreach { i =>
-        client ! exampleRequestMessage.copy(id = (exampleRequestMessage.id + i).toShort)
+      // 1 in flight, 14 more, buffer fits 10, should drop 5 oldest (id 2 - 6)
+      EventFilter.warning(occurrences = 5, pattern = "Dropping oldest buffered DNS request").intercept {
+        (2 to 16).foreach { i =>
+          client ! exampleRequestMessage.copy(id = i.toShort)
+        }
       }
 
-      (7 to 20).foreach { i =>
-        registered ! write.ack
+      // initial write is acked
+      registered ! write.ack
+
+      // the rest of the buffered should be handled
+      (7 to 16).foreach { i =>
         write = connectionProbe.expectMsgType[Tcp.Write]
-        write.data.drop(2) shouldBe (exampleRequestMessage.copy(id = (exampleRequestMessage.id + i).toShort).write())
+        write.data.drop(2) shouldBe exampleRequestMessage.copy(id = i.toShort).write()
+        registered ! write.ack // next ack
       }
     }
   }
