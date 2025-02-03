@@ -6,6 +6,7 @@ package akka.io.dns.internal
 
 import java.net.InetSocketAddress
 import akka.AkkaException
+import akka.actor.Terminated
 import akka.actor.{ Actor, ActorLogging, ActorRef, Stash }
 import akka.annotation.InternalApi
 import akka.io.Tcp
@@ -38,6 +39,7 @@ import akka.event.LoggingAdapter
     case _: Tcp.Connected =>
       log.debug("Connected to TCP address [{}]", ns)
       val connection = sender()
+      context.watch(connection)
       context.become(ready(connection, Vector.empty, ByteString.empty, waitingForWriteAck = false))
       connection ! Tcp.Register(self)
       unstashAll()
@@ -50,10 +52,12 @@ import akka.event.LoggingAdapter
       requestBuffer: Vector[Message],
       responseBuffer: ByteString,
       waitingForWriteAck: Boolean): Receive = {
+
     case msg: Message =>
       if (!waitingForWriteAck) {
         if (requestBuffer.nonEmpty)
-          throwFailure("Unexpected state, not waiting for ack but request buffer is not empty, this is a bug", None)
+          throwFailure(
+            s"Unexpected state, not waiting for ack but request buffer is not empty, this is a bug${requestBufferExtraMsg(requestBuffer)}")
         sendWrite(connection, Vector.empty, responseBuffer, msg)
       } else if (requestBuffer.size < MaxRequestsBuffered) {
         // buffer, wait for ack
@@ -83,20 +87,24 @@ import akka.event.LoggingAdapter
 
     case failure: Tcp.CommandFailed =>
       connection ! Tcp.Abort
-      val extra = if (requestBuffer.nonEmpty) s" (dropping ${requestBuffer.size} buffered requests)" else ""
-      throwFailure(s"TCP command failed$extra", failure.cause)
+      throwFailure(s"TCP command failed${requestBufferExtraMsg(requestBuffer)}", failure.cause)
 
     case Tcp.PeerClosed =>
       if (requestBuffer.nonEmpty) {
         log.warning("Connection closed, dropping {} buffered requests)", requestBuffer.size)
       }
+      context.unwatch(connection)
       context.become(idle)
 
     case Tcp.ErrorClosed(cause) =>
-      val extra = if (requestBuffer.nonEmpty) s" (dropping ${requestBuffer.size} buffered requests)" else ""
-      throwFailure(s"Connection closed with error $cause ($extra)", None)
+      throwFailure(s"Connection closed with error $cause${requestBufferExtraMsg(requestBuffer)}")
 
+    case Terminated(`connection`) =>
+      throwFailure(s"Connection terminated unexpectedly${requestBufferExtraMsg(requestBuffer)}")
   }
+
+  private def requestBufferExtraMsg(requestBuffer: Vector[Message]): String =
+    if (requestBuffer.nonEmpty) s" (dropping ${requestBuffer.size} buffered requests)" else ""
 
   private def onNewResponseData(
       connection: ActorRef,
@@ -146,7 +154,7 @@ import akka.event.LoggingAdapter
     Answer(msg.id, recs, additionalRecs)
   }
 
-  private def throwFailure(message: String, cause: Option[Throwable]): Nothing =
+  private def throwFailure(message: String, cause: Option[Throwable] = None): Nothing =
     TcpDnsClient.throwFailure(message, cause, log, answerRecipient)
 }
 

@@ -6,6 +6,7 @@ package akka.io.dns.internal
 
 import java.net.InetSocketAddress
 import akka.actor.ActorRef
+import akka.actor.PoisonPill
 import akka.actor.Props
 import akka.io.Tcp
 import akka.io.Tcp.{ Connected, PeerClosed, Register }
@@ -50,6 +51,27 @@ class TcpDnsClientSpec extends AkkaSpec("""akka.loglevel = DEBUG
 
       // Expect a reconnect
       tcpExtensionProbe.expectMsg(Tcp.Connect(dnsServerAddress))
+    }
+
+    "terminated if the connection terminates unexpectedly" in {
+      val tcpExtensionProbe = TestProbe()
+      val answerProbe = TestProbe()
+
+      val client = system.actorOf(Props(new TcpDnsClient(tcpExtensionProbe.ref, dnsServerAddress, answerProbe.ref)))
+
+      client ! exampleRequestMessage
+
+      tcpExtensionProbe.expectMsg(Tcp.Connect(dnsServerAddress))
+      tcpExtensionProbe.lastSender ! Connected(dnsServerAddress, localAddress)
+      expectMsgType[Register]
+      val registered = tcpExtensionProbe.lastSender
+
+      expectMsgType[Tcp.Write]
+
+      answerProbe.watch(client)
+
+      registered ! PoisonPill
+      answerProbe.expectTerminated(client)
     }
 
     "accept a fragmented TCP response" in {
