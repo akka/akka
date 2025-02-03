@@ -92,6 +92,8 @@ import akka.event.LoggingAdapter
     case Tcp.PeerClosed =>
       if (requestBuffer.nonEmpty) {
         log.warning("Connection closed, dropping {} buffered requests)", requestBuffer.size)
+        // gracefully handled but we are still dropping requests
+        answerRecipient ! DnsClient.TcpDropped
       }
       context.unwatch(connection)
       context.become(idle)
