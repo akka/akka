@@ -7,8 +7,10 @@ package akka.persistence.typed
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
+
 import org.scalatest.concurrent.Eventually
 import org.scalatest.wordspec.AnyWordSpecLike
+
 import akka.Done
 import akka.actor.testkit.typed.TestException
 import akka.actor.testkit.typed.scaladsl.LogCapturing
@@ -20,10 +22,11 @@ import akka.persistence.testkit.query.scaladsl.PersistenceTestKitReadJournal
 import akka.persistence.testkit.scaladsl.PersistenceTestKit
 import akka.persistence.typed.scaladsl.{ Effect, EventSourcedBehavior, ReplicatedEventSourcing, ReplicationContext }
 import akka.serialization.jackson.CborSerializable
-
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
+
+import akka.persistence.typed.scaladsl.EventWithMetadata
 
 object ReplicatedEventSourcingSpec {
 
@@ -609,8 +612,8 @@ class ReplicatedEventSourcingSpec
       val probe = createTestProbe[Done]()
       val addTransformation
           : EventSourcedBehavior[Command, String, State] => EventSourcedBehavior[Command, String, State] =
-        _.withReplicatedEventTransformation { (_, event) =>
-          (event.toUpperCase, None)
+        _.withReplicatedEventTransformation { (_, eventWithMeta) =>
+          EventWithMetadata(eventWithMeta.event.toUpperCase, Nil)
         }
       val r1 = spawn(testBehavior(entityId, "R1", modifyBehavior = addTransformation))
       val r2 = spawn(testBehavior(entityId, "R2", modifyBehavior = addTransformation))

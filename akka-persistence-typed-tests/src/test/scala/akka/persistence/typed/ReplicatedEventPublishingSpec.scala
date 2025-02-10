@@ -5,6 +5,7 @@
 package akka.persistence.typed
 
 import org.scalatest.wordspec.AnyWordSpecLike
+
 import akka.Done
 import akka.actor.testkit.typed.TestException
 import akka.actor.testkit.typed.scaladsl.LogCapturing
@@ -18,10 +19,11 @@ import akka.persistence.typed.internal.{ ReplicatedPublishedEventMetaData, Versi
 import akka.persistence.typed.scaladsl.Effect
 import akka.persistence.typed.scaladsl.EventSourcedBehavior
 import akka.persistence.typed.scaladsl.ReplicatedEventSourcing
-
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
+
+import akka.persistence.typed.scaladsl.EventWithMetadata
 
 object ReplicatedEventPublishingSpec {
 
@@ -442,8 +444,8 @@ class ReplicatedEventPublishingSpec
             MyReplicatedBehavior.Command,
             String,
             Set[String]] =
-        _.withReplicatedEventTransformation { (_, event) =>
-          (event.toUpperCase, None)
+        _.withReplicatedEventTransformation { (_, eventWithMeta) =>
+          EventWithMetadata(eventWithMeta.event.toUpperCase, Nil)
         }
       val actor = spawn(MyReplicatedBehavior(id, DCA, Set(DCA, DCB), modifyBehavior = addTransformation))
       actor ! MyReplicatedBehavior.Add("one", probe.ref)
