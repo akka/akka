@@ -7,8 +7,10 @@ package akka.persistence.typed
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
+
 import org.scalatest.concurrent.Eventually
 import org.scalatest.wordspec.AnyWordSpecLike
+
 import akka.Done
 import akka.actor.testkit.typed.TestException
 import akka.actor.testkit.typed.scaladsl.LogCapturing
@@ -20,10 +22,11 @@ import akka.persistence.testkit.query.scaladsl.PersistenceTestKitReadJournal
 import akka.persistence.testkit.scaladsl.PersistenceTestKit
 import akka.persistence.typed.scaladsl.{ Effect, EventSourcedBehavior, ReplicatedEventSourcing, ReplicationContext }
 import akka.serialization.jackson.CborSerializable
-
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
+
+import akka.persistence.typed.scaladsl.EventWithMetadata
 
 object ReplicatedEventSourcingSpec {
 
@@ -602,6 +605,30 @@ class ReplicatedEventSourcingSpec
       r1 ! StoreMe("from r1", probe.ref)
       r2 ! StoreMe("from r2", probe.ref)
       probe.expectTerminated(r1)
+    }
+
+    "transform replicated events between two entities" in {
+      val entityId = nextEntityId
+      val probe = createTestProbe[Done]()
+      val addTransformation
+          : EventSourcedBehavior[Command, String, State] => EventSourcedBehavior[Command, String, State] =
+        _.withReplicatedEventTransformation { (_, eventWithMeta) =>
+          EventWithMetadata(eventWithMeta.event.toUpperCase, Nil)
+        }
+      val r1 = spawn(testBehavior(entityId, "R1", modifyBehavior = addTransformation))
+      val r2 = spawn(testBehavior(entityId, "R2", modifyBehavior = addTransformation))
+      r1 ! StoreMe("from r1", probe.ref)
+      r2 ! StoreMe("from r2", probe.ref)
+      eventually {
+        val probe = createTestProbe[State]()
+        r1 ! GetState(probe.ref)
+        probe.expectMessageType[State].all.toSet shouldEqual Set("from r1", "FROM R2")
+      }
+      eventually {
+        val probe = createTestProbe[State]()
+        r2 ! GetState(probe.ref)
+        probe.expectMessageType[State].all.toSet shouldEqual Set("from r2", "FROM R1")
+      }
     }
   }
 }
