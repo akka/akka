@@ -303,7 +303,7 @@ object EventSourcedBehavior {
   @ApiMayChange
   @InternalStableApi
   def withReplicatedEventTransformation(
-      f: (State, Event) => (Event, Option[Any])): EventSourcedBehavior[Command, Event, State]
+      f: (State, EventWithMetadata[Event]) => EventWithMetadata[Event]): EventSourcedBehavior[Command, Event, State]
 }
 
 @FunctionalInterface

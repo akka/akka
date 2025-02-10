@@ -513,8 +513,20 @@ private[akka] object Running {
       replication.setContext(recoveryRunning = false, event.originReplica, concurrent = isConcurrent)
 
       val (transformedEvent, additionalMetadata) = setup.replicatedEventTransformation match {
-        case None    => (event.event, None)
-        case Some(f) => f(state.state, event.event)
+        case None =>
+          (event.event, Nil)
+        case Some(f) =>
+          val metadataEntries = event.metadata match {
+            case None                             => Nil
+            case Some(CompositeMetadata(entries)) => entries
+            case Some(meta)                       => meta :: Nil
+          }
+          val eventWithMetadata = EventWithMetadata(event.event, metadataEntries)
+          val newEventWithMetadata = f(state.state, eventWithMetadata)
+          if (newEventWithMetadata eq eventWithMetadata)
+            (event.event, Nil) // no change
+          else
+            (newEventWithMetadata.event, newEventWithMetadata.metadataEntries)
       }
 
       val stateAfterApply = state.applyEvent(setup, transformedEvent)

@@ -6,9 +6,11 @@ package akka.persistence.typed.scaladsl
 
 import scala.collection.{ immutable => im }
 import scala.concurrent.Future
+import scala.reflect.ClassTag
 
 import akka.actor.typed.ActorRef
 import akka.annotation.DoNotInherit
+import akka.persistence.CompositeMetadata
 import akka.persistence.typed.internal._
 import akka.persistence.typed.internal.SideEffect
 
@@ -241,4 +243,12 @@ object EventWithMetadata {
     new EventWithMetadata(event, metadataEntries)
 }
 
-final class EventWithMetadata[E](val event: E, val metadataEntries: Seq[Any])
+final class EventWithMetadata[E](val event: E, val metadataEntries: Seq[Any]) {
+
+  /**
+   * The metadata of a given type that is associated with the event.
+   */
+  def metadata[M: ClassTag]: Option[M] =
+    CompositeMetadata.extract[M](metadataEntries)
+
+}

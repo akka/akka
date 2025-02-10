@@ -267,6 +267,13 @@ private[persistence] final case class PersistentImpl(
       case _                                          => None
     }
   }
+
+  def extract[M: ClassTag](metadataEntries: Seq[Any]): Option[M] = {
+    val metadataType = implicitly[ClassTag[M]].runtimeClass
+    metadataEntries.collectFirst {
+      case m: M if metadataType == m.getClass => m
+    }
+  }
 }
 
 /**
