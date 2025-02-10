@@ -26,6 +26,8 @@ import akka.persistence.typed.internal._
 import scala.concurrent.Future
 import scala.reflect.ClassTag
 
+import akka.annotation.InternalStableApi
+
 object EventSourcedBehavior {
 
   /**
@@ -290,6 +292,18 @@ object EventSourcedBehavior {
   @ApiMayChange
   def withReplicatedEventInterceptor(
       interceptor: ReplicationInterceptor[State, Event]): EventSourcedBehavior[Command, Event, State]
+
+  /**
+   * INTERNAL API: Invoke this transformation function when an event from another replica arrives, before persisting the event and
+   * before calling the ordinary event handler. The transformation function returns the updated event and optionally
+   * additional metadata that will be stored together with the event.
+   *
+   * Only used when the entity is replicated.
+   */
+  @ApiMayChange
+  @InternalStableApi
+  def withReplicatedEventTransformation(
+      f: (State, Event) => (Event, Option[Any])): EventSourcedBehavior[Command, Event, State]
 }
 
 @FunctionalInterface

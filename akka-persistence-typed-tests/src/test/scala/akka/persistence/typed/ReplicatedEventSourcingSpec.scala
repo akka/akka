@@ -603,5 +603,29 @@ class ReplicatedEventSourcingSpec
       r2 ! StoreMe("from r2", probe.ref)
       probe.expectTerminated(r1)
     }
+
+    "transform replicated events between two entities" in {
+      val entityId = nextEntityId
+      val probe = createTestProbe[Done]()
+      val addTransformation
+          : EventSourcedBehavior[Command, String, State] => EventSourcedBehavior[Command, String, State] =
+        _.withReplicatedEventTransformation { (_, event) =>
+          (event.toUpperCase, None)
+        }
+      val r1 = spawn(testBehavior(entityId, "R1", modifyBehavior = addTransformation))
+      val r2 = spawn(testBehavior(entityId, "R2", modifyBehavior = addTransformation))
+      r1 ! StoreMe("from r1", probe.ref)
+      r2 ! StoreMe("from r2", probe.ref)
+      eventually {
+        val probe = createTestProbe[State]()
+        r1 ! GetState(probe.ref)
+        probe.expectMessageType[State].all.toSet shouldEqual Set("from r1", "FROM R2")
+      }
+      eventually {
+        val probe = createTestProbe[State]()
+        r2 ! GetState(probe.ref)
+        probe.expectMessageType[State].all.toSet shouldEqual Set("from r2", "FROM R1")
+      }
+    }
   }
 }

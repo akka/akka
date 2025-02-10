@@ -512,9 +512,14 @@ private[akka] object Running {
 
       replication.setContext(recoveryRunning = false, event.originReplica, concurrent = isConcurrent)
 
-      val stateAfterApply = state.applyEvent(setup, event.event)
-      val eventToPersist = adaptEvent(stateAfterApply.state, event.event)
-      val eventAdapterManifest = setup.eventAdapter.manifest(event.event)
+      val (transformedEvent, additionalMetadata) = setup.replicatedEventTransformation match {
+        case None    => (event.event, None)
+        case Some(f) => f(state.state, event.event)
+      }
+
+      val stateAfterApply = state.applyEvent(setup, transformedEvent)
+      val eventToPersist = adaptEvent(stateAfterApply.state, transformedEvent)
+      val eventAdapterManifest = setup.eventAdapter.manifest(transformedEvent)
 
       replication.clearContext()
 
@@ -531,6 +536,7 @@ private[akka] object Running {
       val metadataEntriesFromReplicatedEvent =
         event.metadata match {
           case None                             => Nil
+          case Some(_: ReplicatedEventMetadata) => Nil
           case Some(CompositeMetadata(entries)) => entries.filterNot(_.isInstanceOf[ReplicatedEventMetadata])
           case Some(meta)                       => meta :: Nil
         }
@@ -540,9 +546,9 @@ private[akka] object Running {
         stateAfterApply,
         eventToPersist,
         eventAdapterManifest,
-        replicatedEventMetadata +: metadataEntriesFromReplicatedEvent)
+        replicatedEventMetadata +: additionalMetadata ++: metadataEntriesFromReplicatedEvent)
 
-      val shouldSnapshotAfterPersist = setup.shouldSnapshot(newState2.state, event.event, newState2.seqNr)
+      val shouldSnapshotAfterPersist = setup.shouldSnapshot(newState2.state, transformedEvent, newState2.seqNr)
       val updatedSeen = newState2.seenPerReplica.updated(event.originReplica, event.originSequenceNr)
       persistingEvents(
         newState2.copy(seenPerReplica = updatedSeen, version = updatedVersion),

@@ -64,7 +64,8 @@ private[akka] final class BehaviorSetup[C, E, S](
     private val internalLoggerFactory: () => Logger,
     private var retentionInProgress: Boolean,
     val instrumentation: EventSourcedBehaviorInstrumentation,
-    val replicationInterceptor: Option[ReplicationInterceptor[S, E]]) {
+    val replicationInterceptor: Option[ReplicationInterceptor[S, E]],
+    val replicatedEventTransformation: Option[(S, E) => (E, Option[Any])]) {
 
   import BehaviorSetup._
   import InternalProtocol.RecoveryTickEvent

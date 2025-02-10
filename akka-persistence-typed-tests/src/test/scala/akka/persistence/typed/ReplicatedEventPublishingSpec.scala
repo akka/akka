@@ -433,6 +433,37 @@ class ReplicatedEventPublishingSpec
       probe.expectTerminated(actor)
     }
 
+    "transform replicated events between two entities" in {
+      val id = nextEntityId()
+      val probe = createTestProbe[Any]()
+      case class Intercepted(origin: ReplicaId, seqNr: Long, event: String)
+      val addTransformation
+          : EventSourcedBehavior[MyReplicatedBehavior.Command, String, Set[String]] => EventSourcedBehavior[
+            MyReplicatedBehavior.Command,
+            String,
+            Set[String]] =
+        _.withReplicatedEventTransformation { (_, event) =>
+          (event.toUpperCase, None)
+        }
+      val actor = spawn(MyReplicatedBehavior(id, DCA, Set(DCA, DCB), modifyBehavior = addTransformation))
+      actor ! MyReplicatedBehavior.Add("one", probe.ref)
+      probe.expectMessage(Done)
+
+      // simulate a published event from another replica
+      actor.asInstanceOf[ActorRef[Any]] ! internal.PublishedEventImpl(
+        ReplicationId(EntityType, id, DCB).persistenceId,
+        1L,
+        "two",
+        System.currentTimeMillis(),
+        Some(new ReplicatedPublishedEventMetaData(DCB, VersionVector.empty, None)),
+        None)
+      actor ! MyReplicatedBehavior.Add("three", probe.ref)
+      probe.expectMessage(Done)
+
+      actor ! MyReplicatedBehavior.Get(probe.ref)
+      probe.expectMessage(Set("one", "TWO", "three"))
+    }
+
   }
 
 }
