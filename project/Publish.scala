@@ -35,7 +35,7 @@ object Publish extends AutoPlugin {
   override lazy val projectSettings = Seq(
       publishRsyncHost := "akkarepo@gustav.akka.io",
       organizationName := "Lightbend Inc.",
-      organizationHomepage := Some(url("https://www.lightbend.com")),
+      organizationHomepage := Some(url("https://akka.io")),
       startYear := Some(2009),
       developers := List(
           Developer(
