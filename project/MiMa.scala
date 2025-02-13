@@ -20,7 +20,7 @@ object MiMa extends AutoPlugin {
   private val firstPatchOf28 = 0
   private val latestPatchOf28 = 7
   private val firstPatchOf29 = 0
-  private val latestPatchOf29 = 7
+  private val latestPatchOf29 = 8
   private val firstPatchOf210 = 0
   private val latestPatchOf210 = 1
 
