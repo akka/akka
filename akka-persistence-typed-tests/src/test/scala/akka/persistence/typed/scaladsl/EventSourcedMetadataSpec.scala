@@ -109,6 +109,12 @@ class EventSourcedMetadataSpec
 
       // and during replay
       val ref2 = spawn(behavior(PersistenceId.ofUniqueId("ess-1"), probe.ref))
+
+      // This command will be handled after the replay.
+      // It will most likely be stashed during the replay and it should see seqNr 5 when handled.
+      // Reproducer of issue #32651
+      ref2 ! "cmd"
+
       probe.expectMessage("Some(meta) eventHandler evt")
       probe.expectMessage("Some(meta) eventHandler evt")
       probe.expectMessage("Some(meta-1) eventHandler evt1")
@@ -116,7 +122,6 @@ class EventSourcedMetadataSpec
       probe.expectMessage("Some(meta-3) eventHandler evt3")
       probe.expectMessage("Some(meta-3) RecoveryCompleted")
 
-      ref2 ! "cmd"
       probe.expectMessage("None onCommand")
       probe.expectMessage("Some(meta) eventHandler evt")
       probe.expectMessage("None thenRun")

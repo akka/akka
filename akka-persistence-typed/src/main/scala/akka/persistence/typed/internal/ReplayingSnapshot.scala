@@ -171,6 +171,9 @@ private[akka] class ReplayingSnapshot[C, E, S](override val setup: BehaviorSetup
 
       setup.cancelRecoveryTimer()
 
+      setup.currentSequenceNumber = seqNr
+      setup.currentMetadata = metadata
+
       ReplayingEvents[C, E, S](
         setup,
         ReplayingEvents.ReplayingState(
@@ -182,8 +185,7 @@ private[akka] class ReplayingSnapshot[C, E, S](override val setup: BehaviorSetup
           System.nanoTime(),
           version,
           seenPerReplica,
-          eventsReplayed = 0,
-          metadata = metadata))
+          eventsReplayed = 0))
     }
 
     response match {

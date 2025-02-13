@@ -102,6 +102,12 @@ private[akka] final class BehaviorSetup[C, E, S](
 
   private var mdcPhase = PersistenceMdc.Initializing
 
+  // Needed for WithSeqNrAccessible
+  var currentSequenceNumber = 0L
+
+  // Needed for WithMetadataAccessible
+  var currentMetadata: Option[Any] = None
+
   if (isOnlyOneSnapshot) {
     retention match {
       case SnapshotCountRetentionCriteriaImpl(_, keepNSnapshots, _) if keepNSnapshots > 1 =>
