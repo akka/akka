@@ -261,21 +261,15 @@ private[akka] object Running {
   import Running.RunningState
   import Running.formatTimestamp
 
-  // Needed for WithSeqNrAccessible, when unstashing
-  private var _currentSequenceNumber = 0L
-
-  // Needed for WithMetadataAccessible
-  private var _currentMetadata: Option[Any] = None
-
   private var recursiveUnstashOne = 0
 
   private def updateMetadata(metadataEntries: Seq[Any]): Unit = {
     if (metadataEntries.isEmpty)
-      _currentMetadata = None
+      setup.currentMetadata = None
     else if (metadataEntries.size == 1)
-      _currentMetadata = Some(metadataEntries.head)
+      setup.currentMetadata = Some(metadataEntries.head)
     else
-      _currentMetadata = Some(CompositeMetadata(metadataEntries))
+      setup.currentMetadata = Some(CompositeMetadata(metadataEntries))
   }
 
   final class HandlingCommands(state: RunningState[S])
@@ -283,8 +277,8 @@ private[akka] object Running {
       with WithSeqNrAccessible
       with WithMetadataAccessible {
 
-    _currentSequenceNumber = state.seqNr
-    _currentMetadata = None
+    setup.currentSequenceNumber = state.seqNr
+    setup.currentMetadata = None
 
     private def alreadySeen(e: ReplicatedEvent[_]): Boolean = {
       e.originSequenceNr <= state.seenPerReplica.getOrElse(e.originReplica, 0L)
@@ -502,8 +496,8 @@ private[akka] object Running {
         replication: ReplicationSetup,
         event: ReplicatedEvent[E],
         ackToOnPersisted: Option[ActorRef[Done]]): Behavior[InternalProtocol] = {
-      _currentSequenceNumber = state.seqNr + 1
-      _currentMetadata = event.metadata
+      setup.currentSequenceNumber = state.seqNr + 1
+      setup.currentMetadata = event.metadata
       val isConcurrent: Boolean = event.originVersion <> state.version
       val updatedVersion = event.originVersion.merge(state.version)
 
@@ -569,7 +563,7 @@ private[akka] object Running {
         // apply the event before persist so that validation exception is handled before persisting
         // the invalid event, in case such validation is implemented in the event handler.
         // also, ensure that there is an event handler for each single event
-        _currentSequenceNumber = state.seqNr + 1
+        setup.currentSequenceNumber = state.seqNr + 1
         updateMetadata(metadataEntries)
 
         setup.replication.foreach(r => r.setContext(recoveryRunning = false, r.replicaId, concurrent = false))
@@ -580,9 +574,13 @@ private[akka] object Running {
 
         val newState2 = setup.replication match {
           case Some(replication) =>
-            val updatedVersion = stateAfterApply.version.updated(replication.replicaId.id, _currentSequenceNumber)
+            val updatedVersion = stateAfterApply.version.updated(replication.replicaId.id, setup.currentSequenceNumber)
             val replicatedEventMetadata =
-              ReplicatedEventMetadata(replication.replicaId, _currentSequenceNumber, updatedVersion, concurrent = false)
+              ReplicatedEventMetadata(
+                replication.replicaId,
+                setup.currentSequenceNumber,
+                updatedVersion,
+                concurrent = false)
             val r = internalPersist(
               OptionVal.Some(cmd),
               stateAfterApply,
@@ -626,7 +624,7 @@ private[akka] object Running {
           // apply the event before persist so that validation exception is handled before persisting
           // the invalid event, in case such validation is implemented in the event handler.
           // also, ensure that there is an event handler for each single event
-          _currentSequenceNumber = state.seqNr
+          setup.currentSequenceNumber = state.seqNr
 
           val replicatedEventMetadataTemplate: Option[ReplicatedEventMetadata] = setup.replication match {
             case Some(replication) =>
@@ -641,25 +639,26 @@ private[akka] object Running {
 
           eventsWithMetadata.foreach { evtWithMeta =>
             val event = evtWithMeta.event
-            _currentSequenceNumber += 1
+            setup.currentSequenceNumber += 1
             updateMetadata(evtWithMeta.metadataEntries)
             val evtManifest = setup.eventAdapter.manifest(event)
             val eventMetadata = replicatedEventMetadataTemplate match {
               case Some(template) =>
-                val updatedVersion = currentState.version.updated(template.originReplica.id, _currentSequenceNumber)
+                val updatedVersion =
+                  currentState.version.updated(template.originReplica.id, setup.currentSequenceNumber)
                 if (setup.internalLogger.isDebugEnabled)
                   setup.internalLogger.trace(
                     "Processing event [{}] with version vector [{}]",
                     Logging.simpleName(event.getClass),
                     updatedVersion)
                 currentState = currentState.copy(version = updatedVersion)
-                template.copy(originSequenceNr = _currentSequenceNumber, version = updatedVersion) +: evtWithMeta.metadataEntries
+                template.copy(originSequenceNr = setup.currentSequenceNumber, version = updatedVersion) +: evtWithMeta.metadataEntries
               case None => evtWithMeta.metadataEntries
             }
 
             currentState = currentState.applyEvent(setup, event)
             if (shouldSnapshotAfterPersist == NoSnapshot)
-              shouldSnapshotAfterPersist = setup.shouldSnapshot(currentState.state, event, _currentSequenceNumber)
+              shouldSnapshotAfterPersist = setup.shouldSnapshot(currentState.state, event, setup.currentSequenceNumber)
 
             val adaptedEvent = adaptEvent(currentState.state, event)
 
@@ -684,7 +683,7 @@ private[akka] object Running {
         }
       } else {
         // run side-effects even when no events are emitted
-        _currentMetadata = None
+        setup.currentMetadata = None
         (applySideEffects(sideEffects, state), true)
       }
     }
@@ -761,11 +760,11 @@ private[akka] object Running {
 
     // WithSeqNrAccessible
     override def currentSequenceNumber: Long =
-      _currentSequenceNumber
+      setup.currentSequenceNumber
 
     // WithMetadataAccessible
     override def metadata[M: ClassTag]: Option[M] =
-      CompositeMetadata.extract[M](_currentMetadata)
+      CompositeMetadata.extract[M](setup.currentMetadata)
 
   }
 
@@ -910,7 +909,7 @@ private[akka] object Running {
             onWriteDone(setup.context, p)
             if (shouldSnapshotAfterPersist == SnapshotWithRetention)
               setup.retentionProgressSaveSnapshotStarted(state2.seqNr)
-            internalSaveSnapshot(state2, _currentMetadata)
+            internalSaveSnapshot(state2, setup.currentMetadata)
             new StoringSnapshot(state2.clearInstrumentationContext, sideEffects, shouldSnapshotAfterPersist)
           }
         }
@@ -979,11 +978,11 @@ private[akka] object Running {
 
     // WithSeqNrAccessible
     override def currentSequenceNumber: Long =
-      _currentSequenceNumber
+      setup.currentSequenceNumber
 
     // WithMetadataAccessible
     override def metadata[M: ClassTag]: Option[M] =
-      CompositeMetadata.extract[M](_currentMetadata)
+      CompositeMetadata.extract[M](setup.currentMetadata)
   }
 
   // ===============================================
@@ -1072,11 +1071,11 @@ private[akka] object Running {
 
     // WithSeqNrAccessible
     override def currentSequenceNumber: Long =
-      _currentSequenceNumber
+      setup.currentSequenceNumber
 
     // WithMetadataAccessible
     override def metadata[M: ClassTag]: Option[M] =
-      CompositeMetadata.extract[M](_currentMetadata)
+      CompositeMetadata.extract[M](setup.currentMetadata)
   }
 
   // ===============================================
@@ -1240,11 +1239,11 @@ private[akka] object Running {
 
     // WithSeqNrAccessible
     override def currentSequenceNumber: Long =
-      _currentSequenceNumber
+      setup.currentSequenceNumber
 
     // WithMetadataAccessible
     override def metadata[M: ClassTag]: Option[M] =
-      CompositeMetadata.extract[M](_currentMetadata)
+      CompositeMetadata.extract[M](setup.currentMetadata)
   }
 
   // ===============================================
@@ -1291,11 +1290,11 @@ private[akka] object Running {
 
     // WithSeqNrAccessible
     override def currentSequenceNumber: Long =
-      _currentSequenceNumber
+      setup.currentSequenceNumber
 
     // WithMetadataAccessible
     override def metadata[M: ClassTag]: Option[M] =
-      CompositeMetadata.extract[M](_currentMetadata)
+      CompositeMetadata.extract[M](setup.currentMetadata)
   }
 
   // --------------------------
