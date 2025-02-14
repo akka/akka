@@ -274,6 +274,16 @@ private[persistence] final case class PersistentImpl(
       case m: M if metadataType == m.getClass => m
     }
   }
+
+  def construct(metadataEntries: Seq[Any]): Option[Any] = {
+    if (metadataEntries.isEmpty)
+      None
+    else if (metadataEntries.size == 1)
+      Some(metadataEntries.head)
+    else
+      Some(CompositeMetadata(metadataEntries))
+  }
+
 }
 
 /**

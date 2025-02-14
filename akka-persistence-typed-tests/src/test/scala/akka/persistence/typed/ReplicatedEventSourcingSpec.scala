@@ -44,12 +44,13 @@ object ReplicatedEventSourcingSpec {
       replyTo: ActorRef[Done],
       latch: CountDownLatch = new CountDownLatch(1))
       extends Command
+  final case class StoreMeWithMeta(description: String, replyTo: ActorRef[Done], meta: Meta) extends Command
   final case class GetReplica(replyTo: ActorRef[(ReplicaId, Set[ReplicaId])]) extends Command
   final case object Stop extends Command
-  final case class GetMeta(replyTo: ActorRef[Meta]) extends Command
-  final case class Meta(value: String) extends CborSerializable
 
-  final case class State(all: List[String]) extends CborSerializable
+  final case class State(all: Vector[String]) extends CborSerializable
+
+  final case class Meta(value: String) extends CborSerializable
 
   final case class EventAndContext(
       event: Any,
@@ -67,7 +68,7 @@ object ReplicatedEventSourcingSpec {
       probe: Option[ActorRef[EventAndContext]]): EventSourcedBehavior[Command, String, State] = {
     EventSourcedBehavior[Command, String, State](
       replicationContext.persistenceId,
-      State(Nil),
+      State(Vector.empty),
       (state, command) =>
         command match {
           case GetState(replyTo) =>
@@ -84,6 +85,8 @@ object ReplicatedEventSourcingSpec {
             latch.countDown()
             latch.await(10, TimeUnit.SECONDS)
             Effect.persist(evts).thenRun(_ => replyTo ! Done)
+          case StoreMeWithMeta(evt, ack, meta) =>
+            Effect.persistWithMetadata(EventWithMetadata(evt, meta)).thenRun(_ => ack ! Done)
           case Stop =>
             Effect.stop()
         },
@@ -96,7 +99,7 @@ object ReplicatedEventSourcingSpec {
             replicationContext.recoveryRunning,
             replicationContext.concurrent,
             meta))
-        state.copy(all = event :: state.all)
+        state.copy(all = state.all :+ event)
       })
   }
 
@@ -134,7 +137,7 @@ object ReplicatedEventSourcingSpec {
       probe: Option[ActorRef[String]]): EventSourcedBehavior[Command, String, State] = {
     EventSourcedBehavior[Command, String, State](
       persistenceId,
-      State(Nil),
+      State(Vector.empty),
       (state, command) =>
         command match {
           case GetState(replyTo) =>
@@ -150,12 +153,14 @@ object ReplicatedEventSourcingSpec {
             latch.countDown()
             latch.await(10, TimeUnit.SECONDS)
             Effect.persist(evts).thenRun(_ => replyTo ! Done)
+          case StoreMeWithMeta(evt, ack, meta) =>
+            Effect.persistWithMetadata(EventWithMetadata(evt, meta)).thenRun(_ => ack ! Done)
           case Stop =>
             Effect.stop()
         },
       (state, event) => {
         probe.foreach(_ ! event)
-        state.copy(all = event :: state.all)
+        state.copy(all = state.all :+ event)
       })
   }
 
@@ -525,9 +530,9 @@ class ReplicatedEventSourcingSpec
 
       // ensure recovery is complete
       r1 ! GetState(stateProbe.ref)
-      stateProbe.expectMessage(State(Nil))
+      stateProbe.expectMessage(State(Vector.empty))
       r2 ! GetState(stateProbe.ref)
-      stateProbe.expectMessage(State(Nil))
+      stateProbe.expectMessage(State(Vector.empty))
 
       // make reads fail for the replication
       testkit.failNextNReads(s"$entityId|R2", 1)
@@ -552,21 +557,21 @@ class ReplicatedEventSourcingSpec
       val r1 = spawn(testBehavior(entityId, "", allReplicas = allReplicas))
       val stateProbe = createTestProbe[State]()
       r1 ! GetState(stateProbe.ref)
-      stateProbe.expectMessageType[State].all.reverse shouldEqual List("from es1")
+      stateProbe.expectMessageType[State].all shouldEqual List("from es1")
 
       r1 ! StoreMe("from r1", probe.ref)
       probe.expectMessage(Done)
       val r2 = spawn(testBehavior(entityId, "R2", allReplicas = allReplicas))
       eventually {
         r2 ! GetState(stateProbe.ref)
-        stateProbe.expectMessageType[State].all.reverse shouldEqual List("from es1", "from r1")
+        stateProbe.expectMessageType[State].all shouldEqual List("from es1", "from r1")
       }
 
       r2 ! StoreMe("from r2", probe.ref)
       probe.expectMessage(Done)
       eventually {
         r1 ! GetState(stateProbe.ref)
-        stateProbe.expectMessageType[State].all.reverse shouldEqual List("from es1", "from r1", "from r2")
+        stateProbe.expectMessageType[State].all shouldEqual List("from es1", "from r1", "from r2")
       }
     }
 
@@ -648,8 +653,13 @@ class ReplicatedEventSourcingSpec
           EventSourcedBehavior[Command, String, State],
           ActorContext[Command]) => EventSourcedBehavior[Command, String, State] = { (behv, context) =>
         behv.withReplicatedEventTransformation { (_, eventWithMeta) =>
-          val from = EventSourcedBehavior.currentMetadata[ReplicatedEventMetadata](context).get.originReplica.id
-          EventWithMetadata(eventWithMeta.event.toUpperCase, List(Meta(s"from:$from")))
+          val resMeta1 = EventSourcedBehavior.currentMetadata[ReplicatedEventMetadata](context)
+          val resMeta2 = eventWithMeta.metadata[ReplicatedEventMetadata]
+          if (resMeta1 != resMeta2)
+            throw new IllegalStateException(s"Expected RES metadata to be the same, $resMeta1 != $resMeta2")
+
+          val newMeta = eventWithMeta.metadata[Meta].map(m => m.copy(m.value.toUpperCase)).toList
+          EventWithMetadata(eventWithMeta.event.toUpperCase, newMeta)
         }
       }
       val r1 = spawn(
@@ -657,9 +667,14 @@ class ReplicatedEventSourcingSpec
       val r2 = spawn(
         testBehaviorWithContext(entityId, "R2", probe = Some(eventProbe2.ref), modifyBehavior = addTransformation))
 
-      r1 ! StoreMe("from r1", probe.ref)
+      r1 ! StoreMeWithMeta("from r1", probe.ref, Meta("meta from r1"))
       eventProbe1.expectMessage(
-        EventAndContext("from r1", ReplicaId("R1"), recoveryRunning = false, concurrent = false))
+        EventAndContext(
+          "from r1",
+          ReplicaId("R1"),
+          recoveryRunning = false,
+          concurrent = false,
+          Some(Meta("meta from r1"))))
       // replicated to r2, and transformed
       eventProbe2.expectMessage(
         EventAndContext(
@@ -667,11 +682,16 @@ class ReplicatedEventSourcingSpec
           ReplicaId("R1"),
           recoveryRunning = false,
           concurrent = false,
-          meta = Some(Meta("from:R1"))))
+          meta = Some(Meta("META FROM R1"))))
 
-      r2 ! StoreMe("from r2", probe.ref)
+      r2 ! StoreMeWithMeta("from r2", probe.ref, Meta("meta from r2"))
       eventProbe2.expectMessage(
-        EventAndContext("from r2", ReplicaId("R2"), recoveryRunning = false, concurrent = false))
+        EventAndContext(
+          "from r2",
+          ReplicaId("R2"),
+          recoveryRunning = false,
+          concurrent = false,
+          Some(Meta("meta from r2"))))
       // replicated to r1, and transformed
       eventProbe1.expectMessage(
         EventAndContext(
@@ -679,14 +699,14 @@ class ReplicatedEventSourcingSpec
           ReplicaId("R2"),
           recoveryRunning = false,
           concurrent = false,
-          meta = Some(Meta("from:R2"))))
+          meta = Some(Meta("META FROM R2"))))
 
       val stateProbe = createTestProbe[State]()
       r1 ! GetState(stateProbe.ref)
-      stateProbe.expectMessage(State(List("from r1", "FROM R2")))
+      stateProbe.expectMessage(State(Vector("from r1", "FROM R2")))
 
       r2 ! GetState(stateProbe.ref)
-      stateProbe.expectMessage(State(List("FROM R1", "from r2")))
+      stateProbe.expectMessage(State(Vector("FROM R1", "from r2")))
     }
   }
 }

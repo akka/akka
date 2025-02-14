@@ -26,7 +26,7 @@ private[akka] object JournalInteractions {
 
   type EventOrTaggedOrReplicated = Any // `Any` since can be `E` or `Tagged` or a `ReplicatedEvent`
 
-  final case class EventToPersist(adaptedEvent: EventOrTaggedOrReplicated, manifest: String, metadata: Seq[Any])
+  final case class EventToPersist(adaptedEvent: EventOrTaggedOrReplicated, manifest: String, metadata: Option[Any])
 
 }
 
@@ -43,7 +43,7 @@ private[akka] trait JournalInteractions[C, E, S] {
       state: Running.RunningState[S],
       event: EventOrTaggedOrReplicated,
       eventAdapterManifest: String,
-      metadata: Seq[Any]): Running.RunningState[S] = {
+      metadata: Option[Any]): Running.RunningState[S] = {
 
     val newRunningState = state.nextSequenceNr()
 
@@ -60,13 +60,10 @@ private[akka] trait JournalInteractions[C, E, S] {
 
     onWriteInitiated(setup.context, cmd.orNull, repr)
 
-    val reprWithMetadata =
-      if (metadata.isEmpty)
-        repr
-      else if (metadata.size == 1)
-        repr.withMetadata(metadata.head)
-      else
-        repr.withMetadata(CompositeMetadata(metadata))
+    val reprWithMetadata = metadata match {
+      case None    => repr
+      case Some(m) => repr.withMetadata(m)
+    }
 
     val write = AtomicWrite(reprWithMetadata) :: Nil
 
@@ -100,12 +97,10 @@ private[akka] trait JournalInteractions[C, E, S] {
           val instCtx = setup.instrumentation.persistEventCalled(setup.context.self, repr.payload, cmd.orNull)
           newState = newState.updateInstrumentationContext(repr.sequenceNr, instCtx)
 
-          if (metadata.isEmpty)
-            repr
-          else if (metadata.size == 1)
-            repr.withMetadata(metadata.head)
-          else
-            repr.withMetadata(CompositeMetadata(metadata))
+          metadata match {
+            case None    => repr
+            case Some(m) => repr.withMetadata(m)
+          }
       }
 
       onWritesInitiated(setup.context, cmd.orNull, writes)

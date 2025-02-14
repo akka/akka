@@ -263,15 +263,6 @@ private[akka] object Running {
 
   private var recursiveUnstashOne = 0
 
-  private def updateMetadata(metadataEntries: Seq[Any]): Unit = {
-    if (metadataEntries.isEmpty)
-      setup.currentMetadata = None
-    else if (metadataEntries.size == 1)
-      setup.currentMetadata = Some(metadataEntries.head)
-    else
-      setup.currentMetadata = Some(CompositeMetadata(metadataEntries))
-  }
-
   final class HandlingCommands(state: RunningState[S])
       extends AbstractBehavior[InternalProtocol](setup.context)
       with WithSeqNrAccessible
@@ -529,6 +520,20 @@ private[akka] object Running {
             (newEventWithMetadata.event, newEventWithMetadata.metadataEntries)
       }
 
+      val replicatedEventMetadata =
+        ReplicatedEventMetadata(event.originReplica, event.originSequenceNr, updatedVersion, isConcurrent)
+      val metadataEntriesFromReplicatedEvent =
+        event.metadata match {
+          case None                             => Nil
+          case Some(_: ReplicatedEventMetadata) => Nil
+          case Some(CompositeMetadata(entries)) => entries.filterNot(_.isInstanceOf[ReplicatedEventMetadata])
+          case Some(meta)                       => meta :: Nil
+        }
+
+      val newMetadataEntries = replicatedEventMetadata +: additionalMetadata ++: metadataEntriesFromReplicatedEvent
+      val newMetadata = CompositeMetadata.construct(newMetadataEntries)
+      setup.currentMetadata = newMetadata // make new metadata visible to event handler
+
       val stateAfterApply = state.applyEvent(setup, transformedEvent)
       val eventToPersist = adaptEvent(stateAfterApply.state, transformedEvent)
       val eventAdapterManifest = setup.eventAdapter.manifest(transformedEvent)
@@ -543,22 +548,8 @@ private[akka] object Running {
           } :: Nil
       }
 
-      val replicatedEventMetadata =
-        ReplicatedEventMetadata(event.originReplica, event.originSequenceNr, updatedVersion, isConcurrent)
-      val metadataEntriesFromReplicatedEvent =
-        event.metadata match {
-          case None                             => Nil
-          case Some(_: ReplicatedEventMetadata) => Nil
-          case Some(CompositeMetadata(entries)) => entries.filterNot(_.isInstanceOf[ReplicatedEventMetadata])
-          case Some(meta)                       => meta :: Nil
-        }
-
-      val newState2: RunningState[S] = internalPersist(
-        OptionVal.none,
-        stateAfterApply,
-        eventToPersist,
-        eventAdapterManifest,
-        replicatedEventMetadata +: additionalMetadata ++: metadataEntriesFromReplicatedEvent)
+      val newState2: RunningState[S] =
+        internalPersist(OptionVal.none, stateAfterApply, eventToPersist, eventAdapterManifest, newMetadata)
 
       val shouldSnapshotAfterPersist = setup.shouldSnapshot(newState2.state, transformedEvent, newState2.seqNr)
       val updatedSeen = newState2.seenPerReplica.updated(event.originReplica, event.originSequenceNr)
@@ -582,7 +573,8 @@ private[akka] object Running {
         // the invalid event, in case such validation is implemented in the event handler.
         // also, ensure that there is an event handler for each single event
         setup.currentSequenceNumber = state.seqNr + 1
-        updateMetadata(metadataEntries)
+        val metadata = CompositeMetadata.construct(metadataEntries)
+        setup.currentMetadata = metadata
 
         setup.replication.foreach(r => r.setContext(recoveryRunning = false, r.replicaId, concurrent = false))
 
@@ -599,12 +591,10 @@ private[akka] object Running {
                 setup.currentSequenceNumber,
                 updatedVersion,
                 concurrent = false)
-            val r = internalPersist(
-              OptionVal.Some(cmd),
-              stateAfterApply,
-              eventToPersist,
-              eventAdapterManifest,
-              replicatedEventMetadata +: metadataEntries).copy(version = updatedVersion)
+            val metadata2 = CompositeMetadata.construct(replicatedEventMetadata +: metadataEntries)
+            val r =
+              internalPersist(OptionVal.Some(cmd), stateAfterApply, eventToPersist, eventAdapterManifest, metadata2)
+                .copy(version = updatedVersion)
 
             if (setup.internalLogger.isTraceEnabled())
               setup.internalLogger.trace(
@@ -614,7 +604,7 @@ private[akka] object Running {
 
             r
           case None =>
-            internalPersist(OptionVal.Some(cmd), stateAfterApply, eventToPersist, eventAdapterManifest, metadataEntries)
+            internalPersist(OptionVal.Some(cmd), stateAfterApply, eventToPersist, eventAdapterManifest, metadata)
         }
 
         val shouldSnapshotAfterPersist = setup.shouldSnapshot(newState2.state, event, newState2.seqNr)
@@ -658,9 +648,9 @@ private[akka] object Running {
           eventsWithMetadata.foreach { evtWithMeta =>
             val event = evtWithMeta.event
             setup.currentSequenceNumber += 1
-            updateMetadata(evtWithMeta.metadataEntries)
+            setup.currentMetadata = CompositeMetadata.construct(evtWithMeta.metadataEntries)
             val evtManifest = setup.eventAdapter.manifest(event)
-            val eventMetadata = replicatedEventMetadataTemplate match {
+            val metadataEntries = replicatedEventMetadataTemplate match {
               case Some(template) =>
                 val updatedVersion =
                   currentState.version.updated(template.originReplica.id, setup.currentSequenceNumber)
@@ -673,6 +663,7 @@ private[akka] object Running {
                 template.copy(originSequenceNr = setup.currentSequenceNumber, version = updatedVersion) +: evtWithMeta.metadataEntries
               case None => evtWithMeta.metadataEntries
             }
+            val metadata = CompositeMetadata.construct(metadataEntries)
 
             currentState = currentState.applyEvent(setup, event)
             if (shouldSnapshotAfterPersist == NoSnapshot)
@@ -680,7 +671,7 @@ private[akka] object Running {
 
             val adaptedEvent = adaptEvent(currentState.state, event)
 
-            eventsToPersist = EventToPersist(adaptedEvent, evtManifest, eventMetadata) :: eventsToPersist
+            eventsToPersist = EventToPersist(adaptedEvent, evtManifest, metadata) :: eventsToPersist
           }
 
           val newState2 =
