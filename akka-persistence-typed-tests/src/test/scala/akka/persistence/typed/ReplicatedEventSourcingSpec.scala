@@ -26,6 +26,9 @@ import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
+import akka.actor.typed.scaladsl.ActorContext
+import akka.actor.typed.scaladsl.Behaviors
+import akka.persistence.typed.internal.ReplicatedEventMetadata
 import akka.persistence.typed.scaladsl.EventWithMetadata
 
 object ReplicatedEventSourcingSpec {
@@ -33,20 +36,33 @@ object ReplicatedEventSourcingSpec {
   val AllReplicas = Set(ReplicaId("R1"), ReplicaId("R2"), ReplicaId("R3"))
 
   sealed trait Command
-  case class GetState(replyTo: ActorRef[State]) extends Command
-  case class StoreMe(description: String, replyTo: ActorRef[Done], latch: CountDownLatch = new CountDownLatch(1))
+  final case class GetState(replyTo: ActorRef[State]) extends Command
+  final case class StoreMe(description: String, replyTo: ActorRef[Done], latch: CountDownLatch = new CountDownLatch(1))
       extends Command
-  case class StoreUs(descriptions: List[String], replyTo: ActorRef[Done], latch: CountDownLatch = new CountDownLatch(1))
+  final case class StoreUs(
+      descriptions: List[String],
+      replyTo: ActorRef[Done],
+      latch: CountDownLatch = new CountDownLatch(1))
       extends Command
-  case class GetReplica(replyTo: ActorRef[(ReplicaId, Set[ReplicaId])]) extends Command
-  case object Stop extends Command
+  final case class GetReplica(replyTo: ActorRef[(ReplicaId, Set[ReplicaId])]) extends Command
+  final case object Stop extends Command
+  final case class GetMeta(replyTo: ActorRef[Meta]) extends Command
+  final case class Meta(value: String) extends CborSerializable
 
-  case class State(all: List[String]) extends CborSerializable
+  final case class State(all: List[String]) extends CborSerializable
+
+  final case class EventAndContext(
+      event: Any,
+      origin: ReplicaId,
+      recoveryRunning: Boolean,
+      concurrent: Boolean,
+      meta: Option[Meta] = None)
 
   def testBehavior(entityId: String, replicaId: String, probe: ActorRef[EventAndContext]): Behavior[Command] =
     testBehavior(entityId, replicaId, Some(probe))
 
   def eventSourcedBehavior(
+      context: ActorContext[Command],
       replicationContext: ReplicationContext,
       probe: Option[ActorRef[EventAndContext]]): EventSourcedBehavior[Command, String, State] = {
     EventSourcedBehavior[Command, String, State](
@@ -72,12 +88,14 @@ object ReplicatedEventSourcingSpec {
             Effect.stop()
         },
       (state, event) => {
+        val meta = EventSourcedBehavior.currentMetadata[Meta](context)
         probe.foreach(
           _ ! EventAndContext(
             event,
             replicationContext.origin,
             replicationContext.recoveryRunning,
-            replicationContext.concurrent))
+            replicationContext.concurrent,
+            meta))
         state.copy(all = event :: state.all)
       })
   }
@@ -88,12 +106,28 @@ object ReplicatedEventSourcingSpec {
       probe: Option[ActorRef[EventAndContext]] = None,
       allReplicas: Set[ReplicaId] = AllReplicas,
       modifyBehavior: EventSourcedBehavior[Command, String, State] => EventSourcedBehavior[Command, String, State] =
-        identity): Behavior[Command] =
-    ReplicatedEventSourcing.commonJournalConfig(
-      ReplicationId("ReplicatedEventSourcingSpec", entityId, ReplicaId(replicaId)),
-      allReplicas,
-      PersistenceTestKitReadJournal.Identifier)(replicationContext =>
-      modifyBehavior(eventSourcedBehavior(replicationContext, probe)))
+        identity): Behavior[Command] = {
+    testBehaviorWithContext(entityId, replicaId, probe, allReplicas, (b, _) => modifyBehavior(b))
+  }
+
+  def testBehaviorWithContext(
+      entityId: String,
+      replicaId: String,
+      probe: Option[ActorRef[EventAndContext]] = None,
+      allReplicas: Set[ReplicaId] = AllReplicas,
+      modifyBehavior: (
+          EventSourcedBehavior[Command, String, State],
+          ActorContext[Command]) => EventSourcedBehavior[Command, String, State]): Behavior[Command] = {
+    Behaviors.setup[Command] { context =>
+      ReplicatedEventSourcing.commonJournalConfig(
+        ReplicationId("ReplicatedEventSourcingSpec", entityId, ReplicaId(replicaId)),
+        allReplicas,
+        PersistenceTestKitReadJournal.Identifier) { replicationContext =>
+        val behv = eventSourcedBehavior(context, replicationContext, probe)
+        modifyBehavior(behv, context)
+      }
+    }
+  }
 
   def nonReplicatedEventSourcedBehavior(
       persistenceId: PersistenceId,
@@ -129,8 +163,6 @@ object ReplicatedEventSourcingSpec {
     nonReplicatedEventSourcedBehavior(PersistenceId.of("ReplicatedEventSourcingSpec", entityId), probe)
 
 }
-
-case class EventAndContext(event: Any, origin: ReplicaId, recoveryRunning: Boolean, concurrent: Boolean)
 
 class ReplicatedEventSourcingSpec
     extends ScalaTestWithActorTestKit(PersistenceTestKitPlugin.config)
@@ -610,25 +642,51 @@ class ReplicatedEventSourcingSpec
     "transform replicated events between two entities" in {
       val entityId = nextEntityId
       val probe = createTestProbe[Done]()
-      val addTransformation
-          : EventSourcedBehavior[Command, String, State] => EventSourcedBehavior[Command, String, State] =
-        _.withReplicatedEventTransformation { (_, eventWithMeta) =>
-          EventWithMetadata(eventWithMeta.event.toUpperCase, Nil)
+      val eventProbe1 = createTestProbe[EventAndContext]()
+      val eventProbe2 = createTestProbe[EventAndContext]()
+      val addTransformation: (
+          EventSourcedBehavior[Command, String, State],
+          ActorContext[Command]) => EventSourcedBehavior[Command, String, State] = { (behv, context) =>
+        behv.withReplicatedEventTransformation { (_, eventWithMeta) =>
+          val from = EventSourcedBehavior.currentMetadata[ReplicatedEventMetadata](context).get.originReplica.id
+          EventWithMetadata(eventWithMeta.event.toUpperCase, List(Meta(s"from:$from")))
         }
-      val r1 = spawn(testBehavior(entityId, "R1", modifyBehavior = addTransformation))
-      val r2 = spawn(testBehavior(entityId, "R2", modifyBehavior = addTransformation))
+      }
+      val r1 = spawn(
+        testBehaviorWithContext(entityId, "R1", probe = Some(eventProbe1.ref), modifyBehavior = addTransformation))
+      val r2 = spawn(
+        testBehaviorWithContext(entityId, "R2", probe = Some(eventProbe2.ref), modifyBehavior = addTransformation))
+
       r1 ! StoreMe("from r1", probe.ref)
+      eventProbe1.expectMessage(
+        EventAndContext("from r1", ReplicaId("R1"), recoveryRunning = false, concurrent = false))
+      // replicated to r2, and transformed
+      eventProbe2.expectMessage(
+        EventAndContext(
+          "FROM R1",
+          ReplicaId("R1"),
+          recoveryRunning = false,
+          concurrent = false,
+          meta = Some(Meta("from:R1"))))
+
       r2 ! StoreMe("from r2", probe.ref)
-      eventually {
-        val probe = createTestProbe[State]()
-        r1 ! GetState(probe.ref)
-        probe.expectMessageType[State].all.toSet shouldEqual Set("from r1", "FROM R2")
-      }
-      eventually {
-        val probe = createTestProbe[State]()
-        r2 ! GetState(probe.ref)
-        probe.expectMessageType[State].all.toSet shouldEqual Set("from r2", "FROM R1")
-      }
+      eventProbe2.expectMessage(
+        EventAndContext("from r2", ReplicaId("R2"), recoveryRunning = false, concurrent = false))
+      // replicated to r1, and transformed
+      eventProbe1.expectMessage(
+        EventAndContext(
+          "FROM R2",
+          ReplicaId("R2"),
+          recoveryRunning = false,
+          concurrent = false,
+          meta = Some(Meta("from:R2"))))
+
+      val stateProbe = createTestProbe[State]()
+      r1 ! GetState(stateProbe.ref)
+      stateProbe.expectMessage(State(List("from r1", "FROM R2")))
+
+      r2 ! GetState(stateProbe.ref)
+      stateProbe.expectMessage(State(List("FROM R1", "from r2")))
     }
   }
 }
