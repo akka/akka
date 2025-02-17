@@ -57,11 +57,7 @@ Key links:
 
 ### Announcements
 
-For important patch releases, and only if critical issues have been fixed:
-
-- [ ] Send a release notification to [Lightbend discuss](https://discuss.akka.io)
-- [ ] Tweet using the [@akkateam](https://twitter.com/akkateam/) account (or ask someone to) about the new release
-- [ ] Announce internally (with links to Tweet, discuss)
+- Add a summary of relevant changes into [release notes](https://github.com/akka/akka-sdk/blob/main/docs/src/modules/reference/pages/release-notes.adoc)
 
 For minor or major releases:
 

@@ -10,16 +10,6 @@ $ sh ./scripts/create-release-issue.sh 0.x.y
 
 ## Prerequisites
 
-### JDK 8 and JDK 11
-
-Releasing Akka requires running on JDK 11, but also having JDK 8
-installed. The reason for this is that we want the Akka artifacts to be
-usable with JRE 8, but also want to compile some classes with JDK11-specific
-types.
-
-In the future we might be able to update the build to work
-without having JDK 8 installed, by using the `-release` option.
-
 ### One Time GPG and sbt-pgp setup
 
 If you have not set up GPG or used `sbt-pgp` on the release machine
