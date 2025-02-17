@@ -381,7 +381,7 @@ object ReplicatedEventMetadata {
  *                at each location as they are received at different times
  */
 @InternalStableApi
-private[akka] final case class ReplicatedEventMetadata(
+final case class ReplicatedEventMetadata(
     originReplica: ReplicaId,
     originSequenceNr: Long,
     version: VersionVector,
