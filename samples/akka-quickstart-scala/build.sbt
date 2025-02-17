@@ -6,7 +6,7 @@ scalaVersion := "2.13.15"
 
 resolvers += "Akka library repository".at("https://repo.akka.io/maven")
 
-lazy val akkaVersion = sys.props.getOrElse("akka.version", "2.10.1")
+lazy val akkaVersion = sys.props.getOrElse("akka.version", "2.10.2")
 
 // Run in a separate JVM, to make sure sbt waits until all threads have
 // finished before returning.
