@@ -21,6 +21,7 @@ import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.ReplicaId
 import akka.persistence.typed.SnapshotAdapter
 import akka.persistence.typed.scaladsl.EventSourcedBehavior
+import akka.persistence.typed.scaladsl.EventWithMetadata
 import akka.persistence.typed.scaladsl.Recovery
 import akka.persistence.typed.scaladsl.ReplicationInterceptor
 import akka.persistence.typed.scaladsl.RetentionCriteria
@@ -64,7 +65,8 @@ private[akka] final class BehaviorSetup[C, E, S](
     private val internalLoggerFactory: () => Logger,
     private var retentionInProgress: Boolean,
     val instrumentation: EventSourcedBehaviorInstrumentation,
-    val replicationInterceptor: Option[ReplicationInterceptor[S, E]]) {
+    val replicationInterceptor: Option[ReplicationInterceptor[S, E]],
+    val replicatedEventTransformation: Option[(S, EventWithMetadata[E]) => EventWithMetadata[E]]) {
 
   import BehaviorSetup._
   import InternalProtocol.RecoveryTickEvent

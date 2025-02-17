@@ -10,6 +10,7 @@ import org.scalatest.wordspec.AnyWordSpecLike
 
 import akka.Done
 import akka.actor.testkit.typed.scaladsl.{ LogCapturing, ScalaTestWithActorTestKit }
+import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ ActorRef, Behavior }
 import akka.persistence.testkit.{ PersistenceTestKitPlugin, PersistenceTestKitSnapshotPlugin }
 import akka.persistence.testkit.query.scaladsl.PersistenceTestKitReadJournal
@@ -36,11 +37,15 @@ object ReplicationSnapshotSpec {
       entityId: String,
       replicaId: ReplicaId,
       probe: Option[ActorRef[EventAndContext]]): Behavior[Command] = {
-    ReplicatedEventSourcing.commonJournalConfig(
-      ReplicationId(EntityType, entityId, replicaId),
-      AllReplicas,
-      PersistenceTestKitReadJournal.Identifier)(replicationContext =>
-      eventSourcedBehavior(replicationContext, probe).snapshotWhen((_, _, sequenceNr) => sequenceNr % 2 == 0))
+    Behaviors.setup[Command] { context =>
+      ReplicatedEventSourcing.commonJournalConfig(
+        ReplicationId(EntityType, entityId, replicaId),
+        AllReplicas,
+        PersistenceTestKitReadJournal.Identifier)(
+        replicationContext =>
+          eventSourcedBehavior(context, replicationContext, probe).snapshotWhen((_, _, sequenceNr) =>
+            sequenceNr % 2 == 0))
+    }
 
   }
 }
@@ -79,8 +84,8 @@ class ReplicationSnapshotSpec
         r2EventProbe.expectMessageType[EventAndContext]
         r2EventProbe.expectMessageType[EventAndContext]
 
-        snapshotTestKit.expectNextPersisted(persistenceIdR1, State(List("r1 2", "r1 1")))
-        snapshotTestKit.expectNextPersisted(persistenceIdR2, State(List("r1 2", "r1 1")))
+        snapshotTestKit.expectNextPersisted(persistenceIdR1, State(Vector("r1 1", "r1 2")))
+        snapshotTestKit.expectNextPersisted(persistenceIdR2, State(Vector("r1 1", "r1 2")))
 
         r2.asInstanceOf[ActorRef[Any]] ! internal.PublishedEventImpl(
           ReplicationId(EntityType, entityId, R1).persistenceId,
@@ -108,7 +113,7 @@ class ReplicationSnapshotSpec
 
         val stateProbe = createTestProbe[State]()
         r2 ! GetState(stateProbe.ref)
-        stateProbe.expectMessage(State(List("r1 2", "r1 1")))
+        stateProbe.expectMessage(State(Vector("r1 1", "r1 2")))
       }
     }
   }

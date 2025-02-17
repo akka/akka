@@ -78,6 +78,7 @@ class EventSourcedBehaviorWatchSpec
       internalLoggerFactory = () => logger,
       retentionInProgress = false,
       EmptyEventSourcedBehaviorInstrumentation,
+      None,
       None)
 
   "A typed persistent parent actor watching a child" must {

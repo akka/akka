@@ -5,6 +5,7 @@
 package akka.persistence.typed
 
 import org.scalatest.wordspec.AnyWordSpecLike
+
 import akka.Done
 import akka.actor.testkit.typed.TestException
 import akka.actor.testkit.typed.scaladsl.LogCapturing
@@ -18,10 +19,11 @@ import akka.persistence.typed.internal.{ ReplicatedPublishedEventMetaData, Versi
 import akka.persistence.typed.scaladsl.Effect
 import akka.persistence.typed.scaladsl.EventSourcedBehavior
 import akka.persistence.typed.scaladsl.ReplicatedEventSourcing
-
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
+
+import akka.persistence.typed.scaladsl.EventWithMetadata
 
 object ReplicatedEventPublishingSpec {
 
@@ -431,6 +433,37 @@ class ReplicatedEventPublishingSpec
         Some(new ReplicatedPublishedEventMetaData(DCB, VersionVector.empty, None)),
         None)
       probe.expectTerminated(actor)
+    }
+
+    "transform replicated events between two entities" in {
+      val id = nextEntityId()
+      val probe = createTestProbe[Any]()
+      case class Intercepted(origin: ReplicaId, seqNr: Long, event: String)
+      val addTransformation
+          : EventSourcedBehavior[MyReplicatedBehavior.Command, String, Set[String]] => EventSourcedBehavior[
+            MyReplicatedBehavior.Command,
+            String,
+            Set[String]] =
+        _.withReplicatedEventTransformation { (_, eventWithMeta) =>
+          EventWithMetadata(eventWithMeta.event.toUpperCase, Nil)
+        }
+      val actor = spawn(MyReplicatedBehavior(id, DCA, Set(DCA, DCB), modifyBehavior = addTransformation))
+      actor ! MyReplicatedBehavior.Add("one", probe.ref)
+      probe.expectMessage(Done)
+
+      // simulate a published event from another replica
+      actor.asInstanceOf[ActorRef[Any]] ! internal.PublishedEventImpl(
+        ReplicationId(EntityType, id, DCB).persistenceId,
+        1L,
+        "two",
+        System.currentTimeMillis(),
+        Some(new ReplicatedPublishedEventMetaData(DCB, VersionVector.empty, None)),
+        None)
+      actor ! MyReplicatedBehavior.Add("three", probe.ref)
+      probe.expectMessage(Done)
+
+      actor ! MyReplicatedBehavior.Get(probe.ref)
+      probe.expectMessage(Set("one", "TWO", "three"))
     }
 
   }

@@ -5,6 +5,7 @@
 package akka.persistence.typed.javadsl
 
 import java.util.Collections
+import java.util.Optional
 import java.util.concurrent.CompletionStage
 
 import scala.concurrent.ExecutionContext
@@ -17,6 +18,9 @@ import akka.persistence.typed.internal._
 import akka.persistence.typed.internal.SideEffect
 import akka.persistence.typed.scaladsl
 import scala.jdk.CollectionConverters._
+import scala.reflect.ClassTag
+
+import akka.persistence.CompositeMetadata
 
 /**
  * INTERNAL API: see `class EffectFactories`
@@ -255,4 +259,14 @@ object EventWithMetadata {
     new EventWithMetadata(event, metadataEntries)
 }
 
-final class EventWithMetadata[E](val event: E, val metadataEntries: java.util.List[AnyRef])
+final class EventWithMetadata[E](val event: E, val metadataEntries: java.util.List[AnyRef]) {
+
+  /**
+   * The metadata of a given type that is associated with the event.
+   */
+  def getMetadata[M](metadataType: Class[M]): Optional[M] = {
+    import scala.jdk.OptionConverters._
+    implicit val ct: ClassTag[M] = ClassTag(metadataType)
+    CompositeMetadata.extract[M](metadataEntries.asScala.toSeq).toJava
+  }
+}
