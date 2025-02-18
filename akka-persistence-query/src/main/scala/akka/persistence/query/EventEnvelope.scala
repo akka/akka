@@ -100,6 +100,26 @@ final class EventEnvelope(
   }
 
   /**
+   * Java API: Drop metadata of the given type if present
+   */
+  def removeMetadata(metadataType: Class[_]): EventEnvelope =
+    removeMetadata(ClassTag(metadataType))
+
+  /**
+   * Scala API: Drop metadata of the given type if present
+   */
+  def removeMetadata[M](implicit classTag: ClassTag[M]): EventEnvelope = {
+    internalEventMetadata match {
+      case Some(c: CompositeMetadata) =>
+        val filtered = c.entries.filterNot(_.getClass == classTag.runtimeClass)
+        if (filtered eq c.entries) this
+        else internalCopy(internalEventMetadata = Some(CompositeMetadata(filtered)))
+      case Some(m) if m.getClass == classTag.runtimeClass => internalCopy(internalEventMetadata = None)
+      case _                                              => this
+    }
+  }
+
+  /**
    * INTERNAL API
    */
   @InternalStableApi private[akka] def internalEventMetadata: Option[Any] =
@@ -139,9 +159,24 @@ final class EventEnvelope(
       event: Any = this.event): EventEnvelope =
     new EventEnvelope(offset, persistenceId, sequenceNr, event, timestamp, this._eventMetadata)
 
+  private def internalCopy(
+      offset: Offset = this.offset,
+      persistenceId: String = this.persistenceId,
+      sequenceNr: Long = this.sequenceNr,
+      event: Any = this.event,
+      internalEventMetadata: Option[Any]): EventEnvelope =
+    new EventEnvelope(offset, persistenceId, sequenceNr, event, timestamp, internalEventMetadata)
+
   @InternalApi
   private[akka] def withMetadata(metadata: Any): EventEnvelope =
-    new EventEnvelope(offset, persistenceId, sequenceNr, event, timestamp, Some(metadata))
+    _eventMetadata match {
+      case Some(c: CompositeMetadata) =>
+        internalCopy(internalEventMetadata = Some(CompositeMetadata(metadata +: c.entries)))
+      case Some(other) =>
+        internalCopy(internalEventMetadata = Some(CompositeMetadata(metadata :: other :: Nil)))
+      case None =>
+        internalCopy(internalEventMetadata = Option(metadata))
+    }
 
   // Product4, for binary compatibility (used to be a case class)
   override def productPrefix = "EventEnvelope"

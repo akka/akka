@@ -268,9 +268,9 @@ final class EventEnvelope[Event](
   def removeMetadata[M](implicit classTag: ClassTag[M]): EventEnvelope[Event] = {
     internalEventMetadata match {
       case Some(c: CompositeMetadata) =>
-        val filtered = c.entries.filter(_.getClass == classTag.runtimeClass)
-        if (filtered ne c.entries) copy(eventMetadata = Some(CompositeMetadata(filtered)))
-        else this
+        val filtered = c.entries.filterNot(_.getClass == classTag.runtimeClass)
+        if (filtered eq c.entries) this
+        else copy(eventMetadata = Some(CompositeMetadata(filtered)))
       case Some(m) if m.getClass == classTag.runtimeClass => copy(eventMetadata = None)
       case _                                              => this
     }
