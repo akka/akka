@@ -36,12 +36,16 @@ class EventEnvelopeSpec extends AnyWordSpecLike with Matchers {
       env.metadata[java.time.Instant] shouldBe None
       env.metadata[AnyRef] shouldBe None
       env.eventMetadata shouldBe Some("meta") // deprecated
+      env.removeMetadata[String].metadata[String] shouldBe None
+      env.removeMetadata[AnyRef] shouldBe theSameInstanceAs(env)
 
       // Java API
       env.getMetadata(classOf[String]) shouldBe Optional.of("meta")
       env.getMetadata(classOf[java.time.Instant]) shouldBe Optional.empty
       env.getMetadata(classOf[AnyRef]) shouldBe Optional.empty
       env.getEventMetaData() shouldBe Optional.of("meta") // deprecated
+      env.removeMetadata(classOf[String]).getMetadata(classOf[String]) shouldBe Optional.empty()
+      env.removeMetadata(classOf[AnyRef]) shouldBe theSameInstanceAs(env)
     }
 
     "support composite event metadata" in {
@@ -77,6 +81,9 @@ class EventEnvelopeSpec extends AnyWordSpecLike with Matchers {
       env4.metadata[java.time.Instant] shouldBe Some(instant2)
       env4.eventMetadata shouldBe Some(instant2) // deprecated
 
+      env.removeMetadata[String].metadata[String] shouldBe None
+      env.removeMetadata[AnyRef] shouldBe theSameInstanceAs(env)
+
       // Java API
       env.getMetadata(classOf[String]) shouldBe Optional.empty
       env.getEventMetaData() shouldBe Optional.empty // deprecated
@@ -93,6 +100,9 @@ class EventEnvelopeSpec extends AnyWordSpecLike with Matchers {
       env4.getMetadata(classOf[String]) shouldBe Optional.of("meta")
       env4.getMetadata(classOf[java.time.Instant]) shouldBe Optional.of(instant2)
       env4.getEventMetaData() shouldBe Optional.of(instant2) // deprecated
+
+      env.removeMetadata(classOf[String]).getMetadata(classOf[String]) shouldBe Optional.empty()
+      env.removeMetadata(classOf[AnyRef]) shouldBe theSameInstanceAs(env)
     }
   }
 
