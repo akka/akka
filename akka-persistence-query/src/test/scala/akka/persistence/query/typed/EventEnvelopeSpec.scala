@@ -2,18 +2,15 @@
  * Copyright (C) 2025 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.persistence.query.typed.internal
+package akka.persistence.query.typed
 
-import java.time.Instant
-import java.util.Optional
-
-import scala.annotation.nowarn
-
+import akka.persistence.query.NoOffset
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
-import akka.persistence.query.NoOffset
-import akka.persistence.query.typed.EventEnvelope
+import java.time.Instant
+import java.util.Optional
+import scala.annotation.nowarn
 
 @nowarn("msg=deprecated")
 class EventEnvelopeSpec extends AnyWordSpecLike with Matchers {
@@ -36,12 +33,16 @@ class EventEnvelopeSpec extends AnyWordSpecLike with Matchers {
       env.metadata[java.time.Instant] shouldBe None
       env.metadata[AnyRef] shouldBe None
       env.eventMetadata shouldBe Some("meta") // deprecated
+      env.removeMetadata[String].metadata[String] shouldBe None
+      env.removeMetadata[AnyRef] shouldBe theSameInstanceAs(env)
 
       // Java API
       env.getMetadata(classOf[String]) shouldBe Optional.of("meta")
       env.getMetadata(classOf[java.time.Instant]) shouldBe Optional.empty
       env.getMetadata(classOf[AnyRef]) shouldBe Optional.empty
       env.getEventMetaData() shouldBe Optional.of("meta") // deprecated
+      env.removeMetadata(classOf[String]).getMetadata(classOf[String]) shouldBe Optional.empty()
+      env.removeMetadata(classOf[AnyRef]) shouldBe theSameInstanceAs(env)
     }
 
     "support composite event metadata" in {
@@ -77,6 +78,9 @@ class EventEnvelopeSpec extends AnyWordSpecLike with Matchers {
       env4.metadata[java.time.Instant] shouldBe Some(instant2)
       env4.eventMetadata shouldBe Some(instant2) // deprecated
 
+      env4.removeMetadata[String].metadata[String] shouldBe None
+      env4.removeMetadata[AnyRef] shouldBe theSameInstanceAs(env4)
+
       // Java API
       env.getMetadata(classOf[String]) shouldBe Optional.empty
       env.getEventMetaData() shouldBe Optional.empty // deprecated
@@ -93,6 +97,9 @@ class EventEnvelopeSpec extends AnyWordSpecLike with Matchers {
       env4.getMetadata(classOf[String]) shouldBe Optional.of("meta")
       env4.getMetadata(classOf[java.time.Instant]) shouldBe Optional.of(instant2)
       env4.getEventMetaData() shouldBe Optional.of(instant2) // deprecated
+
+      env4.removeMetadata(classOf[String]).getMetadata(classOf[String]) shouldBe Optional.empty()
+      env4.removeMetadata(classOf[AnyRef]) shouldBe theSameInstanceAs(env4)
     }
   }
 

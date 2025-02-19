@@ -257,6 +257,26 @@ final class EventEnvelope[Event](
   }
 
   /**
+   * Java API: Drop metadata of the given type if present
+   */
+  def removeMetadata(metadataType: Class[_]): EventEnvelope[Event] =
+    removeMetadata(ClassTag(metadataType))
+
+  /**
+   * Scala API: Drop metadata of the given type if present
+   */
+  def removeMetadata[M](implicit classTag: ClassTag[M]): EventEnvelope[Event] = {
+    internalEventMetadata match {
+      case Some(c: CompositeMetadata) =>
+        val filtered = c.entries.filterNot(_.getClass == classTag.runtimeClass)
+        if (filtered eq c.entries) this
+        else copy(eventMetadata = Some(CompositeMetadata(filtered)))
+      case Some(m) if m.getClass == classTag.runtimeClass => copy(eventMetadata = None)
+      case _                                              => this
+    }
+  }
+
+  /**
    * INTERNAL API
    */
   @InternalStableApi private[akka] def internalEventMetadata: Option[Any] =
