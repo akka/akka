@@ -97,7 +97,7 @@ object Main {
             Behaviors.stopped
         }
         .receiveSignal {
-          case (ctx, Terminated(`processor`)) =>
+          case (_, Terminated(`processor`)) =>
             ctx.log.warn("Kafka event processor stopped. Shutting down")
             binding.map(_.unbind())(ctx.executionContext)
             Behaviors.stopped
