@@ -1,7 +1,7 @@
 val AkkaVersion = "2.10.2"
 val AkkaHttpVersion = "10.6.3"
 val AkkaDiagnostics = "2.1.1"
-val LogbackVersion = "1.2.11"
+val LogbackVersion = "1.5.16"
 
 resolvers += "Akka library repository".at("https://repo.akka.io/maven")
 
@@ -29,6 +29,7 @@ lazy val killrweather = project
         "com.typesafe.akka" %% "akka-cluster-sharding-typed" % AkkaVersion,
         "com.typesafe.akka" %% "akka-serialization-jackson" % AkkaVersion,
         "com.typesafe.akka" %% "akka-distributed-data" % AkkaVersion,
+        "com.typesafe.akka" %% "akka-pki" % AkkaVersion,
         "com.typesafe.akka" %% "akka-slf4j" % AkkaVersion,
         "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
         "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
@@ -43,6 +44,7 @@ lazy val `killrweather-fog` = project
     libraryDependencies ++= Seq(
         "com.typesafe.akka" %% "akka-actor-typed" % AkkaVersion,
         "com.typesafe.akka" %% "akka-stream-typed" % AkkaVersion,
+        "com.typesafe.akka" %% "akka-pki" % AkkaVersion,
         "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
         "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
         "com.typesafe.akka" %% "akka-serialization-jackson" % AkkaVersion,
