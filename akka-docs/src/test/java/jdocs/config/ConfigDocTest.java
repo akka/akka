@@ -21,6 +21,8 @@ import java.time.chrono.ChronoLocalDate;
 import java.util.Optional;
 //#check-is-key-valid
 
+import static org.junit.Assert.*;
+
 public class ConfigDocTest {
 
   private Behavior<Void> rootBehavior = Behaviors.empty();
@@ -75,14 +77,16 @@ public class ConfigDocTest {
     return system;
   }
 
-  public Boolean compileOnlyIsLicenseKeyValid() {
+  public void compileOnlyIsLicenseKeyValid() {
     //#check-is-key-valid
-    ActorSystem<Void> actorSystem = ActorSystem.create(rootBehavior, "name");
-    Optional<LocalDate> licenseKey = actorSystem.getLicenseKeyExpiry();
-    if(licenseKey.isEmpty()) return false;
+    Optional<LocalDate> licenseKey = ActorSystem
+            .create(rootBehavior, "name")
+            .getLicenseKeyExpiry();
+
+    assertFalse(licenseKey.isEmpty());
 
     ChronoLocalDate today = LocalDate.from(ZonedDateTime.now());
-    return licenseKey.get().isBefore(today);
+    assertTrue(licenseKey.get().isBefore(today));
     //#check-is-key-valid
   }
 }
