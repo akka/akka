@@ -236,6 +236,8 @@ import akka.dispatch.UnboundedMessageQueueSemantics
           logInfo("event {}, {} members [{}]", event, s.members.size, s.members.mkString(", "))
         case MemberTombstonesChanged(tombstones) =>
           logInfo("event MemberTombstonesChanged({})", tombstones.size)
+        case _: ReachabilityChanged =>
+        // ignore ReachabilityChanged because it's changed often, and typically not interesting
         case _ =>
           logInfo("event {}", event)
       }
