@@ -79,14 +79,15 @@ public class ConfigDocTest {
 
   public void compileOnlyIsLicenseKeyValid() {
     //#check-is-key-valid
-    Optional<LocalDate> licenseKey = ActorSystem
-            .create(rootBehavior, "name")
-            .getLicenseKeyExpiry();
+    ActorSystem<Void> system = ActorSystem.create(rootBehavior, "name");
+    Optional<LocalDate> licenseKey = system.getLicenseKeyExpiry();
 
     assertFalse(licenseKey.isEmpty());
 
-    ChronoLocalDate today = LocalDate.from(ZonedDateTime.now());
-    assertTrue(licenseKey.get().isBefore(today));
+    ChronoLocalDate lastMonth = LocalDate.from(ZonedDateTime.now().minusMonths(1));
+    assertTrue(licenseKey.get().isBefore(lastMonth));
+
+    system.terminate();
     //#check-is-key-valid
   }
 }
