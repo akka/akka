@@ -14,6 +14,13 @@ import com.typesafe.config.ConfigFactory;
 // #imports
 import akka.actor.testkit.typed.javadsl.ActorTestKit;
 
+//#check-is-key-valid
+import java.time.LocalDate;
+import java.time.ZonedDateTime;
+import java.time.chrono.ChronoLocalDate;
+import java.util.Optional;
+//#check-is-key-valid
+
 public class ConfigDocTest {
 
   private Behavior<Void> rootBehavior = Behaviors.empty();
@@ -66,5 +73,16 @@ public class ConfigDocTest {
     ActorSystem system = ActorSystem.create(rootBehavior, "myname", complete);
     // #custom-config-2
     return system;
+  }
+
+  public Boolean compileOnlyIsLicenseKeyValid() {
+    //#check-is-key-valid
+    ActorSystem<Void> actorSystem = ActorSystem.create(rootBehavior, "name");
+    Optional<LocalDate> licenseKey = actorSystem.getLicenseKeyExpiry();
+    if(licenseKey.isEmpty()) return false;
+
+    ChronoLocalDate today = LocalDate.from(ZonedDateTime.now());
+    return licenseKey.get().isBefore(today);
+    //#check-is-key-valid
   }
 }

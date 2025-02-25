@@ -64,6 +64,14 @@ If the license key has expired when the `ActorSystem` is started the system will
 The expiry date is exposed by @apidoc[akka.actor.typed.ActorSystem] {scala="#licenseKeyExpiry" java="#getLicenseKeyExpiry"}
 so that you can write a test to remind yourself that it is time for renewal before it has expired.
 
+To test if you license key is still valid (for example during you CI/CD integration), you can start with the following example:
+
+Scala
+: @@snip [ConfigDocSpec.scala](/akka-docs/src/test/scala/docs/config/ConfigDocSpec.scala) { #check-is-key-valid }
+
+Java
+: @@snip [ConfigDocTest.java](/akka-docs/src/test/java/jdocs/config/ConfigDocTest.java) { #check-is-key-valid }
+
 ## When using JarJar, OneJar, Assembly or any jar-bundler
 
 @@@ warning
