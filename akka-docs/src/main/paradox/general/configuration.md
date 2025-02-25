@@ -61,7 +61,7 @@ For local development, Akka can be used without a key, but be aware that the `Ac
 a while when a key isn't configured.
 
 If the license key has expired when the `ActorSystem` is started the system will terminate after a while.
-The expiry date is exposed by @apidoc[akka.actor.typed.ActorSystem] {scala="#licenseKeyExpiry" java="#getLicenseKeyExpiry"}
+The expiry date is exposed by @scala[@scaladoc[ActorSystem.licenseKeyExpiry](akka.actor.typed.ActorSystem#licenseKeyExpiry)]@java[@javadoc[ActorSystem.getLicenseKeyExpiry](akka.actor.typed.ActorSystem#getLicenseKeyExpiry())] 
 so that you can write a test to remind yourself that it is time for renewal before it has expired.
 
 ## When using JarJar, OneJar, Assembly or any jar-bundler
