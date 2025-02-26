@@ -83,8 +83,8 @@ public class ConfigDocTest {
 
     assertFalse(licenseKey.isEmpty());
 
-    LocalDate lastMonth = LocalDate.now().minusMonths(1);
-    assertTrue(licenseKey.get().isBefore(lastMonth));
+    LocalDate nextMonth = LocalDate.now().plusMonths(1);
+    assertTrue(licenseKey.get().isAfter(nextMonth));
 
     system.terminate();
     //#check-is-key-valid

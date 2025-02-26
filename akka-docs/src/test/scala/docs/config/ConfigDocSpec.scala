@@ -117,8 +117,8 @@ class ConfigDocSpec extends AnyWordSpec with Matchers {
     licenseKey.isEmpty shouldBe false
 
     import java.time.LocalDate
-    val lastMonth = LocalDate.now().minusMonths(1)
-    licenseKey.get.isBefore(lastMonth) shouldBe true
+    val nextMonth = LocalDate.now().plusMonths(1)
+    licenseKey.get.isAfter(nextMonth) shouldBe true
 
     system.terminate()
   }
