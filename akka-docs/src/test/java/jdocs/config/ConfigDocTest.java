@@ -16,9 +16,8 @@ import akka.actor.testkit.typed.javadsl.ActorTestKit;
 
 //#check-is-key-valid
 import java.time.LocalDate;
-import java.time.ZonedDateTime;
-import java.time.chrono.ChronoLocalDate;
 import java.util.Optional;
+
 //#check-is-key-valid
 
 import static org.junit.Assert.*;
@@ -84,7 +83,7 @@ public class ConfigDocTest {
 
     assertFalse(licenseKey.isEmpty());
 
-    ChronoLocalDate lastMonth = LocalDate.from(ZonedDateTime.now().minusMonths(1));
+    LocalDate lastMonth = LocalDate.now().minusMonths(1);
     assertTrue(licenseKey.get().isBefore(lastMonth));
 
     system.terminate();
