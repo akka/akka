@@ -121,7 +121,6 @@ class ConfigDocSpec extends AnyWordSpec with Matchers {
     licenseKey.get.isAfter(nextMonth) shouldBe true
 
     system.terminate()
+    //#check-is-key-valid
   }
-  //#check-is-key-valid
-
 }
