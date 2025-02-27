@@ -109,4 +109,18 @@ class ConfigDocSpec extends AnyWordSpec with Matchers {
     val system = ActorSystem(rootBehavior, "MySystem", conf)
     ActorTestKit.shutdown(system)
   }
+
+  def compileOnlyIsLicenseKeyValid(): Unit = {
+    //#check-is-key-valid
+    val system = ActorSystem(rootBehavior, "name")
+    val licenseKey = system.licenseKeyExpiry
+    licenseKey.isEmpty shouldBe false
+
+    import java.time.LocalDate
+    val nextMonth = LocalDate.now().plusMonths(1)
+    licenseKey.get.isAfter(nextMonth) shouldBe true
+
+    system.terminate()
+    //#check-is-key-valid
+  }
 }
