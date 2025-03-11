@@ -1,7 +1,7 @@
 val AkkaVersion = "2.10.2"
 val AkkaHttpVersion = "10.6.3"
 val AkkaDiagnostics = "2.1.1"
-val LogbackVersion = "1.5.16"
+val LogbackVersion = "1.5.17"
 
 resolvers += "Akka library repository".at("https://repo.akka.io/maven")
 
