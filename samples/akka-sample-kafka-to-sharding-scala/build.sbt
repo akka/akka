@@ -33,7 +33,7 @@ lazy val kafka = project
     resolvers += "Akka library repository".at("https://repo.akka.io/maven"),
     libraryDependencies ++= Seq(
         "ch.qos.logback" % "logback-classic" % LogbackVersion,
-        "org.slf4j" % "log4j-over-slf4j" % "2.0.16",
+        "org.slf4j" % "log4j-over-slf4j" % "2.0.17",
         "io.github.embeddedkafka" %% "embedded-kafka" % EmbeddedKafkaVersion),
     cancelable := false)
 
