@@ -6,15 +6,14 @@ package akka.stream.stage
 
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicReference
-
 import scala.annotation.nowarn
 import scala.annotation.tailrec
 import scala.collection.{ immutable, mutable }
 import scala.concurrent.{ Future, Promise }
 import scala.concurrent.duration.FiniteDuration
-
 import akka.{ Done, NotUsed }
 import akka.actor._
+import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
 import akka.japi.function.{ Effect, Procedure }
 import akka.stream._
@@ -25,6 +24,10 @@ import akka.stream.impl.fusing.{ GraphInterpreter, GraphStageModule, SubSink, Su
 import akka.stream.scaladsl.GenericGraphWithChangedAttributes
 import akka.stream.stage.ConcurrentAsyncCallbackState.{ NoPendingEvents, State }
 import akka.util.OptionVal
+
+import java.util.concurrent.CompletionStage
+
+import scala.jdk.FutureConverters.FutureOps
 
 /**
  * Scala API: A GraphStage represents a reusable graph stream processing operator.
@@ -1240,6 +1243,9 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
     //external call
     override def invoke(event: T): Unit = invokeWithPromise(event, NoPromise)
 
+    // external call
+    override def invokeWithFeedbackCS(event: T): CompletionStage[Done] = invokeWithFeedback(event).asJava
+
     @tailrec
     private def invokeWithPromise(event: T, promise: Promise[Done]): Unit =
       get() match {
@@ -1602,7 +1608,10 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
  *
  * Typical use cases are exchanging messages between stream and substreams or invoking from external world sending
  * event to a stream
+ *
+ * Not for user extension
  */
+@DoNotInherit
 trait AsyncCallback[T] {
 
   /**
@@ -1615,7 +1624,7 @@ trait AsyncCallback[T] {
   def invoke(t: T): Unit
 
   /**
-   * Dispatch an asynchronous notification. This method is thread-safe and
+   * Scala API: Dispatch an asynchronous notification. This method is thread-safe and
    * may be invoked from external execution contexts.
    *
    * The method returns directly and the returned future is then completed once the event
@@ -1627,6 +1636,20 @@ trait AsyncCallback[T] {
    * to the invoking logic see [[AsyncCallback#invoke]]
    */
   def invokeWithFeedback(t: T): Future[Done]
+
+  /**
+   * Java API: Dispatch an asynchronous notification. This method is thread-safe and
+   * may be invoked from external execution contexts.
+   *
+   * The method returns directly and the returned future is then completed once the event
+   * has been handled by the operator, if the event triggers an exception from the handler the future
+   * is failed with that exception and finally if the operator was stopped before the event has been
+   * handled the future is failed with `StreamDetachedException`.
+   *
+   * The handling of the returned future incurs a slight overhead, so for cases where it does not matter
+   * to the invoking logic see [[AsyncCallback#invoke]]
+   */
+  def invokeWithFeedbackCS(t: T): CompletionStage[Done]
 }
 
 /**
