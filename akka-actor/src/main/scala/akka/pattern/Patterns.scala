@@ -735,7 +735,7 @@ object Patterns {
       retrySettings: RetrySettings,
       scheduler: Scheduler,
       context: ExecutionContext): CompletionStage[T] = {
-    scalaRetry(() => attempt.call().asScala, retrySettings)(context, scheduler).asJava
+    scalaRetry(retrySettings)(() => attempt.call().asScala)(context, scheduler).asJava
   }
 
   /**

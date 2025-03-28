@@ -250,19 +250,14 @@ trait RetrySupport {
     RetrySupport.retry(attempt, attempts, delayFunction, attempted = 0, shouldRetry)
   }
 
-  def retry[T](attempt: () => Future[T], retrySettings: RetrySettings)(
-      implicit ec: ExecutionContext,
-      scheduler: Scheduler): Future[T] = {
-    retrySettings match {
-      case RetrySettings.FixedDelayRetrySettings(attempts, fixedDelay, shouldRetry) =>
-        retry(attempt, shouldRetry, attempts, _ => Some(fixedDelay))
-      case RetrySettings.BackoffRetrySettings(attempts, minBackoff, maxBackoff, randomFactor, shouldRetry) =>
-        retry(attempt, shouldRetry, attempts, minBackoff, maxBackoff, randomFactor)
-      case RetrySettings.DynamicRetrySettings(attempts, delayFunction, shouldRetry) =>
-        retry(attempt, shouldRetry, attempts, delayFunction)
-      case RetrySettings.DeciderRetrySettings(attempts, shouldRetry) =>
-        retry(attempt, shouldRetry, attempts)
-    }
+  def retry[T](retrySettings: RetrySettings)(
+      attempt: () => Future[T])(implicit ec: ExecutionContext, scheduler: Scheduler): Future[T] = {
+    RetrySupport.retry(
+      attempt,
+      retrySettings.attempts,
+      retrySettings.delayFunction,
+      attempted = 0,
+      retrySettings.shouldRetry)
   }
 }
 

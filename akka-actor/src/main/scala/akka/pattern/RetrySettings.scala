@@ -4,123 +4,90 @@
 
 package akka.pattern
 
+import akka.pattern.RetrySupport.calculateExponentialBackoffDelay
+
 import java.time.Duration
 import java.util.Optional
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.duration.FiniteDuration
 import scala.jdk.DurationConverters.JavaDurationOps
 
-sealed trait RetrySettings {}
+case class RetrySettings(
+    attempts: Int,
+    delayFunction: Int => Option[FiniteDuration],
+    shouldRetry: Throwable => Boolean = _ => true) {
+
+  def withDelay(delayFunction: Int => Option[FiniteDuration]): RetrySettings = {
+    copy(delayFunction = delayFunction)
+  }
+
+  def withDelayFunction(delayFunction: java.util.function.IntFunction[Optional[java.time.Duration]]): RetrySettings = {
+    val scalaFunc: Int => Option[FiniteDuration] = attempt => {
+      val javaDuration = delayFunction.apply(attempt)
+      if (javaDuration.isPresent)
+        Some(javaDuration.get.toScala)
+      else
+        None
+    }
+    withDelay(scalaFunc)
+  }
+
+  def withDecider(shouldRetry: Throwable => Boolean): RetrySettings = {
+    copy(shouldRetry = shouldRetry)
+  }
+
+  def withDeciderFunction(shouldRetry: java.util.function.Function[Throwable, Boolean]): RetrySettings = {
+    copy(shouldRetry = shouldRetry.apply)
+  }
+}
 
 object RetrySettings {
 
-  case class RetrySettingsBuilder(attempts: Int) {
-    def withFixedDelay(fixedDelay: FiniteDuration): RetrySettings = {
-      FixedDelayRetrySettings(attempts, fixedDelay)
+  def apply(attempts: Int): RetrySettings = {
+    // Start with a reasonable minimum backoff (e.g., 100 milliseconds)
+    val minBackoff: FiniteDuration = 100.millis
+
+    // Max backoff increases with attempts, capped to a sensible upper limit (e.g., 1 minute)
+    val maxBackoff: FiniteDuration = {
+      val base = minBackoff * math.pow(2, attempts).toLong
+      base.min(1.minute)
     }
 
-    def withFixedDelay(fixedDelay: Duration): RetrySettings = {
-      FixedDelayRetrySettings(attempts, fixedDelay.toScala)
-    }
+    // Random factor can scale slightly with attempts to add more jitter
+    val randomFactor: Double = 0.1 + (attempts * 0.05).min(1.0) // cap at 1.0
 
-    def withBackoff(minBackoff: FiniteDuration, maxBackoff: FiniteDuration, randomFactor: Double): RetrySettings = {
-      BackoffRetrySettings(attempts, minBackoff, maxBackoff, randomFactor)
-    }
-
-    def withBackoff(minBackoff: Duration, maxBackoff: Duration, randomFactor: Double): RetrySettings = {
-      BackoffRetrySettings(attempts, minBackoff.toScala, maxBackoff.toScala, randomFactor)
-    }
-
-    def withBackoff(): RetrySettings = {
-      // Start with a reasonable minimum backoff (e.g., 100 milliseconds)
-      val minBackoff: FiniteDuration = 100.millis
-
-      // Max backoff increases with attempts, capped to a sensible upper limit (e.g., 1 minute)
-      val maxBackoff: FiniteDuration = {
-        val base = minBackoff * math.pow(2, attempts).toLong
-        base.min(1.minute)
-      }
-
-      // Random factor can scale slightly with attempts to add more jitter
-      val randomFactor: Double = 0.1 + (attempts * 0.05).min(1.0) // cap at 1.0
-
-      BackoffRetrySettings(attempts, minBackoff, maxBackoff, randomFactor)
-    }
-
-    def withDynamicDelay(delayFunction: Int => Option[FiniteDuration]): RetrySettings = {
-      DynamicRetrySettings(attempts, delayFunction)
-    }
-
-    def withDynamicDelayFunction(
-        delayFunction: java.util.function.IntFunction[Optional[java.time.Duration]]): RetrySettings = {
-      val scalaFunc: Int => Option[FiniteDuration] = attempt => {
-        val javaDuration = delayFunction.apply(attempt)
-        if (javaDuration.isPresent)
-          Some(javaDuration.get.toScala)
-        else
-          None
-      }
-      withDynamicDelay(scalaFunc)
-    }
-
-    def withDecider(shouldRetry: Throwable => Boolean): RetrySettings = {
-      DeciderRetrySettings(attempts, shouldRetry)
-    }
-
-    def withDeciderFunction(shouldRetry: java.util.function.Function[Throwable, Boolean]): RetrySettings = {
-      DeciderRetrySettings(attempts, shouldRetry.apply)
-    }
+    apply(attempts, minBackoff, maxBackoff, randomFactor)
   }
 
-  case class FixedDelayRetrySettings(
-      attempts: Int,
-      fixedDelay: FiniteDuration,
-      shouldRetry: Throwable => Boolean = _ => true)
-      extends RetrySettings {
-
-    def withDecider(shouldRetry: Throwable => Boolean): RetrySettings = {
-      copy(shouldRetry = shouldRetry)
-    }
-
-    def withDeciderFunction(shouldRetry: java.util.function.Function[Throwable, Boolean]): RetrySettings = {
-      copy(shouldRetry = shouldRetry.apply)
-    }
+  def create(attempts: Int): RetrySettings = {
+    apply(attempts)
   }
-  case class BackoffRetrySettings(
+
+  def apply(attempts: Int, fixedDelay: FiniteDuration): RetrySettings = {
+    RetrySettings(attempts, _ => Some(fixedDelay))
+  }
+
+  def create(attempts: Int, fixedDelay: Duration): RetrySettings = {
+    apply(attempts, fixedDelay.toScala)
+  }
+
+  def apply(
       attempts: Int,
       minBackoff: FiniteDuration,
       maxBackoff: FiniteDuration,
-      randomFactor: Double,
-      shouldRetry: Throwable => Boolean = _ => true)
-      extends RetrySettings {
+      randomFactor: Double): RetrySettings = {
+    new RetrySettings(
+      attempts,
+      attempted => Some(calculateExponentialBackoffDelay(attempted, minBackoff, maxBackoff, randomFactor))) {
 
-    def withDecider(shouldRetry: Throwable => Boolean): RetrySettings = {
-      copy(shouldRetry = shouldRetry)
-    }
-
-    def withDeciderFunction(shouldRetry: java.util.function.Function[Throwable, Boolean]): RetrySettings = {
-      copy(shouldRetry = shouldRetry.apply)
-    }
-  }
-  case class DynamicRetrySettings(
-      attempts: Int,
-      delayFunction: Int => Option[FiniteDuration],
-      shouldRetry: Throwable => Boolean = _ => true)
-      extends RetrySettings {
-
-    def withDecider(shouldRetry: Throwable => Boolean): RetrySettings = {
-      copy(shouldRetry = shouldRetry)
-    }
-
-    def withDeciderFunction(shouldRetry: java.util.function.Function[Throwable, Boolean]): RetrySettings = {
-      copy(shouldRetry = shouldRetry.apply)
+      override def toString: String = {
+        s"RetrySettings(attempts=${this.attempts}, minBackoff=$minBackoff, maxBackoff=$maxBackoff, randomFactor=$randomFactor)"
+      }
     }
   }
 
-  case class DeciderRetrySettings(attempts: Int, shouldRetry: Throwable => Boolean) extends RetrySettings
-
-  def attempts(attempts: Int): RetrySettingsBuilder = {
-    RetrySettingsBuilder(attempts)
+  def create(attempts: Int, minBackoff: Duration, maxBackoff: Duration, randomFactor: Double): RetrySettings = {
+    apply(attempts, minBackoff.toScala, maxBackoff.toScala, randomFactor)
   }
 
 }
