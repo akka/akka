@@ -5,12 +5,10 @@
 package akka.pattern
 
 import java.util.concurrent.ThreadLocalRandom
-
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.concurrent.duration.{ Duration, FiniteDuration }
 import scala.util.Try
 import scala.util.control.NonFatal
-
 import akka.actor.Scheduler
 import akka.pattern.RetrySupport.calculateExponentialBackoffDelay
 import akka.util.ConstantFun
@@ -250,6 +248,21 @@ trait RetrySupport {
       attempts: Int,
       delayFunction: Int => Option[FiniteDuration])(implicit ec: ExecutionContext, scheduler: Scheduler): Future[T] = {
     RetrySupport.retry(attempt, attempts, delayFunction, attempted = 0, shouldRetry)
+  }
+
+  def retry[T](attempt: () => Future[T], retrySettings: RetrySettings)(
+      implicit ec: ExecutionContext,
+      scheduler: Scheduler): Future[T] = {
+    retrySettings match {
+      case RetrySettings.FixedDelayRetrySettings(attempts, fixedDelay, shouldRetry) =>
+        retry(attempt, shouldRetry, attempts, _ => Some(fixedDelay))
+      case RetrySettings.BackoffRetrySettings(attempts, minBackoff, maxBackoff, randomFactor, shouldRetry) =>
+        retry(attempt, shouldRetry, attempts, minBackoff, maxBackoff, randomFactor)
+      case RetrySettings.DynamicRetrySettings(attempts, delayFunction, shouldRetry) =>
+        retry(attempt, shouldRetry, attempts, delayFunction)
+      case RetrySettings.DeciderRetrySettings(attempts, shouldRetry) =>
+        retry(attempt, shouldRetry, attempts)
+    }
   }
 }
 

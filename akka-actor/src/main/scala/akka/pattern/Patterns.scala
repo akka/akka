@@ -723,6 +723,21 @@ object Patterns {
       (attempted) => delayFunction.apply(attempted).toScala.map(_.toScala))(context, scheduler).asJava
   }
 
+  def retry[T](
+      attempt: Callable[CompletionStage[T]],
+      retrySettings: RetrySettings,
+      system: ClassicActorSystemProvider): CompletionStage[T] = {
+    retry(attempt, retrySettings, system.classicSystem.scheduler, system.classicSystem.dispatcher)
+  }
+
+  def retry[T](
+      attempt: Callable[CompletionStage[T]],
+      retrySettings: RetrySettings,
+      scheduler: Scheduler,
+      context: ExecutionContext): CompletionStage[T] = {
+    scalaRetry(() => attempt.call().asScala, retrySettings)(context, scheduler).asJava
+  }
+
   /**
    * Calculates an exponential back off delay.
    */
