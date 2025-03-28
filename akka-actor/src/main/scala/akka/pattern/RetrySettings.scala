@@ -17,6 +17,10 @@ case class RetrySettings(
     delayFunction: Int => Option[FiniteDuration],
     shouldRetry: Throwable => Boolean = _ => true) {
 
+  override def toString: String = {
+    s"RetrySettings(attempts=$attempts, delayFunction=$delayFunction)"
+  }
+
   def withDelay(delayFunction: Int => Option[FiniteDuration]): RetrySettings = {
     copy(delayFunction = delayFunction)
   }
@@ -64,7 +68,7 @@ object RetrySettings {
   }
 
   def apply(attempts: Int, fixedDelay: FiniteDuration): RetrySettings = {
-    RetrySettings(attempts, _ => Some(fixedDelay))
+    RetrySettings(attempts, new FixedDelayFunction(fixedDelay))
   }
 
   def create(attempts: Int, fixedDelay: Duration): RetrySettings = {
@@ -75,19 +79,34 @@ object RetrySettings {
       attempts: Int,
       minBackoff: FiniteDuration,
       maxBackoff: FiniteDuration,
-      randomFactor: Double): RetrySettings = {
-    new RetrySettings(
-      attempts,
-      attempted => Some(calculateExponentialBackoffDelay(attempted, minBackoff, maxBackoff, randomFactor))) {
-
-      override def toString: String = {
-        s"RetrySettings(attempts=${this.attempts}, minBackoff=$minBackoff, maxBackoff=$maxBackoff, randomFactor=$randomFactor)"
-      }
-    }
-  }
+      randomFactor: Double): RetrySettings =
+    new RetrySettings(attempts, new ExponentialBackoffFunction(minBackoff, maxBackoff, randomFactor))
 
   def create(attempts: Int, minBackoff: Duration, maxBackoff: Duration, randomFactor: Double): RetrySettings = {
     apply(attempts, minBackoff.toScala, maxBackoff.toScala, randomFactor)
   }
 
+}
+
+final class ExponentialBackoffFunction(minBackoff: FiniteDuration, maxBackoff: FiniteDuration, randomFactor: Double)
+    extends Function1[Int, Option[FiniteDuration]] {
+
+  override def apply(attempt: Int): Option[FiniteDuration] = {
+    Some(calculateExponentialBackoffDelay(attempt, minBackoff, maxBackoff, randomFactor))
+  }
+
+  override def toString: String = {
+    s"Exponential(minBackoff=$minBackoff, maxBackoff=$maxBackoff, randomFactor=$randomFactor)"
+  }
+}
+
+final class FixedDelayFunction(delay: FiniteDuration) extends Function1[Int, Option[FiniteDuration]] {
+
+  override def apply(attempt: Int): Option[FiniteDuration] = {
+    Some(delay)
+  }
+
+  override def toString: String = {
+    s"Fixed($delay)"
+  }
 }

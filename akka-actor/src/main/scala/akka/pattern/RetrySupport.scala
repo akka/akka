@@ -250,8 +250,9 @@ trait RetrySupport {
     RetrySupport.retry(attempt, attempts, delayFunction, attempted = 0, shouldRetry)
   }
 
-  def retry[T](retrySettings: RetrySettings)(
-      attempt: () => Future[T])(implicit ec: ExecutionContext, scheduler: Scheduler): Future[T] = {
+  def retry[T](attempt: () => Future[T], retrySettings: RetrySettings)(
+      implicit ec: ExecutionContext,
+      scheduler: Scheduler): Future[T] = {
     RetrySupport.retry(
       attempt,
       retrySettings.attempts,
