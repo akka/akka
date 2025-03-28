@@ -12,7 +12,7 @@ import scala.concurrent.duration.DurationInt
 import scala.concurrent.duration.FiniteDuration
 import scala.jdk.DurationConverters.JavaDurationOps
 
-case class RetrySettings(
+final case class RetrySettings(
     attempts: Int,
     delayFunction: Int => Option[FiniteDuration],
     shouldRetry: Throwable => Boolean = _ => true) {
