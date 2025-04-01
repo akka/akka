@@ -365,6 +365,8 @@ abstract class MessageDispatcherConfigurator(_config: Config, val prerequisites:
         new ThreadPoolExecutorConfigurator(config.getConfig("thread-pool-executor"), prerequisites)
       case "affinity-pool-executor" =>
         new AffinityPoolConfigurator(config.getConfig("affinity-pool-executor"), prerequisites)
+      case "virtual-thread-executor" =>
+        new VirtualThreadConfigurator(config.getConfig("virtual-thread-executor"), prerequisites)
 
       case fqcn =>
         val args = List(classOf[Config] -> config, classOf[DispatcherPrerequisites] -> prerequisites)
