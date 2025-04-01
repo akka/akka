@@ -255,7 +255,7 @@ trait RetrySupport {
       scheduler: Scheduler): Future[T] = {
     RetrySupport.retry(
       attempt,
-      retrySettings.attempts,
+      retrySettings.maxRetries,
       retrySettings.delayFunction,
       attempted = 0,
       retrySettings.shouldRetry)
