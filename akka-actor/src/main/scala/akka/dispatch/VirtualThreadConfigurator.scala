@@ -19,7 +19,10 @@ import java.util.concurrent.ThreadFactory
 private[akka] object VirtualThreadConfigurator {
 
   // Note: since we still support JDK 11 and 17, we need to access the factory method reflectively
-  private def virtualThreadFactory(dynamicAccess: DynamicAccess, virtualThreadName: String): ThreadFactory = {
+  private def createVirtualThreadFactory(
+      dynamicAccess: DynamicAccess,
+      virtualThreadName: String,
+      uncaughtExceptionHandler: Option[Thread.UncaughtExceptionHandler]): ThreadFactory = {
     val ofVirtualMethod =
       try {
         classOf[Thread].getMethod("ofVirtual")
@@ -30,13 +33,24 @@ private[akka] object VirtualThreadConfigurator {
     val ofVirtual = ofVirtualMethod.invoke(null)
     // java.lang.ThreadBuilders.VirtualThreadBuilder is package private
     val ofVirtualInterface = dynamicAccess.getClassFor[AnyRef]("java.lang.Thread$Builder$OfVirtual").get
+
+    // thread names
     val ofVirtualWithName =
       if (virtualThreadName.nonEmpty) {
         val nameMethod = ofVirtualInterface.getMethod("name", classOf[String])
         nameMethod.invoke(ofVirtual, virtualThreadName)
       } else ofVirtual
+
+    // uncaught exception handler
+    val ofVirtualWithUEH = uncaughtExceptionHandler match {
+      case Some(ueh) =>
+        val uncaughtExceptionHandlerMethod =
+          ofVirtualInterface.getMethod("uncaughtExceptionHandler", classOf[Thread.UncaughtExceptionHandler])
+        uncaughtExceptionHandlerMethod.invoke(ofVirtualWithName, ueh)
+      case None => ofVirtualWithName
+    }
     val factoryMethod = ofVirtualInterface.getMethod("factory")
-    factoryMethod.invoke(ofVirtualWithName).asInstanceOf[ThreadFactory]
+    factoryMethod.invoke(ofVirtualWithUEH).asInstanceOf[ThreadFactory]
   }
 
   private def threadPerTaskExecutor(threadFactory: ThreadFactory): ExecutorService = {
@@ -59,11 +73,22 @@ private[akka] class VirtualThreadConfigurator(config: Config, prerequisites: Dis
   import VirtualThreadConfigurator._
 
   override def createExecutorServiceFactory(id: String, threadFactory: ThreadFactory): ExecutorServiceFactory = {
+
     val tf = threadFactory match {
       case m: MonitorableThreadFactory =>
         // add the dispatcher id to the thread names
-        virtualThreadFactory(prerequisites.dynamicAccess, m.name + "-" + id)
-      case _ => virtualThreadFactory(prerequisites.dynamicAccess, "-" + id)
+        val virtualThreadFactory =
+          createVirtualThreadFactory(prerequisites.dynamicAccess, m.name + "-" + id, Some(m.exceptionHandler))
+
+        // Note: daemonic false not allowed for virtual threads, so we ignore that
+        m.contextClassLoader.fold(virtualThreadFactory)(classLoader =>
+          (r: Runnable) => {
+            val virtualThread = virtualThreadFactory.newThread(r)
+            virtualThread.setContextClassLoader(classLoader)
+            virtualThread
+          })
+
+      case _ => createVirtualThreadFactory(prerequisites.dynamicAccess, "-" + id, None)
     }
     new VirtualThreadExecutorServiceFactory(tf)
   }
