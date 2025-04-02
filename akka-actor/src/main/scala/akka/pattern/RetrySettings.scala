@@ -4,6 +4,8 @@
 
 package akka.pattern
 
+import akka.pattern.RetrySettings.ExponentialBackoffFunction
+import akka.pattern.RetrySettings.FixedDelayFunction
 import akka.pattern.RetrySupport.calculateExponentialBackoffDelay
 import com.typesafe.config.Config
 
@@ -13,34 +15,76 @@ import scala.concurrent.duration.DurationInt
 import scala.concurrent.duration.FiniteDuration
 import scala.jdk.DurationConverters.JavaDurationOps
 
-final case class RetrySettings(
-    maxRetries: Int,
-    delayFunction: Int => Option[FiniteDuration],
-    shouldRetry: Throwable => Boolean = _ => true) {
+/**
+ * Settings for retrying operations.
+ * @param maxRetries maximum number of retries
+ * @param delayFunction function to calculate the delay between retries
+ * @param shouldRetry function to determine if a failure should be retried
+ */
+final class RetrySettings private (
+    val maxRetries: Int,
+    val delayFunction: Int => Option[FiniteDuration],
+    val shouldRetry: Throwable => Boolean = _ => true) {
 
   override def toString: String = {
     s"RetrySettings(maxRetries=$maxRetries, delayFunction=$delayFunction)"
   }
 
+  /**
+   * Scala API: Set exponential backoff delay between retries.
+   *
+   * @param minBackoff minimum backoff duration
+   * @param maxBackoff maximum backoff duration
+   * @param randomFactor random factor to add jitter to the backoff
+   */
   def withExponentialBackoff(
       minBackoff: FiniteDuration,
       maxBackoff: FiniteDuration,
       randomFactor: Double): RetrySettings =
-    RetrySettings(maxRetries, minBackoff, maxBackoff, randomFactor)
+    new RetrySettings(maxRetries, new ExponentialBackoffFunction(minBackoff, maxBackoff, randomFactor))
 
+  /**
+   * Java API: Set exponential backoff delay between retries.
+   *
+   * @param minBackoff minimum backoff duration
+   * @param maxBackoff maximum backoff duration
+   * @param randomFactor random factor to add jitter to the backoff
+   * @return Updated settings
+   */
   def withExponentialBackoff(minBackoff: Duration, maxBackoff: Duration, randomFactor: Double): RetrySettings =
-    RetrySettings.create(maxRetries, minBackoff, maxBackoff, randomFactor)
+    withExponentialBackoff(minBackoff.toScala, maxBackoff.toScala, randomFactor)
 
-  def withDelay(fixedDelay: FiniteDuration): RetrySettings =
-    RetrySettings(maxRetries, fixedDelay)
+  /**
+   * Scala API: Set fixed delay between retries.
+   * @param fixedDelay fixed delay between retries
+   * @return Updated settings
+   */
+  def withFixedDelay(fixedDelay: FiniteDuration): RetrySettings =
+    new RetrySettings(maxRetries, new FixedDelayFunction(fixedDelay))
 
-  def withDelay(fixedDelay: Duration): RetrySettings =
-    RetrySettings.create(maxRetries, fixedDelay)
+  /**
+   * Java API: Set fixed delay between retries.
+   * @param fixedDelay fixed delay between retries
+   * @return Updated settings
+   */
+  def withFixedDelay(fixedDelay: Duration): RetrySettings =
+    withFixedDelay(fixedDelay.toScala)
 
-  def withDelay(delayFunction: Int => Option[FiniteDuration]): RetrySettings =
-    copy(delayFunction = delayFunction)
+  /**
+   * Scala API: Set custom delay function between retries.
+   * @param delayFunction function to calculate the delay between retries
+   * @return Updated settings
+   */
+  def withDelayFunction(delayFunction: Int => Option[FiniteDuration]): RetrySettings =
+    new RetrySettings(maxRetries, delayFunction)
 
-  def withDelayFunction(delayFunction: java.util.function.IntFunction[Optional[java.time.Duration]]): RetrySettings = {
+  /**
+   * Java API: Set custom delay function between retries.
+   * @param delayFunction function to calculate the delay between retries
+   * @return Updated settings
+   */
+  def withJavaDelayFunction(
+      delayFunction: java.util.function.IntFunction[Optional[java.time.Duration]]): RetrySettings = {
     val scalaFunc: Int => Option[FiniteDuration] = attempt => {
       val javaDuration = delayFunction.apply(attempt)
       if (javaDuration.isPresent)
@@ -48,18 +92,61 @@ final case class RetrySettings(
       else
         None
     }
-    withDelay(scalaFunc)
+    withDelayFunction(scalaFunc)
   }
 
+  /**
+   * Scala API: Set the function to determine if a failure should be retried.
+   * @param shouldRetry function to determine if a failure should be retried
+   * @return Updated settings
+   */
   def withDecider(shouldRetry: Throwable => Boolean): RetrySettings =
-    copy(shouldRetry = shouldRetry)
+    new RetrySettings(maxRetries, delayFunction, shouldRetry)
 
-  def withDeciderFunction(shouldRetry: java.util.function.Function[Throwable, Boolean]): RetrySettings =
-    copy(shouldRetry = shouldRetry.apply)
+  /**
+   * Java API: Set the function to determine if a failure should be retried.
+   * @param shouldRetry function to determine if a failure should be retried
+   * @return Updated settings
+   */
+  def withJavaDecider(shouldRetry: java.util.function.Function[Throwable, Boolean]): RetrySettings =
+    withDecider(shouldRetry.apply)
 }
 
 object RetrySettings {
 
+  private[akka] final class ExponentialBackoffFunction(
+      val minBackoff: FiniteDuration,
+      val maxBackoff: FiniteDuration,
+      val randomFactor: Double)
+      extends Function1[Int, Option[FiniteDuration]] {
+
+    override def apply(attempt: Int): Option[FiniteDuration] = {
+      Some(calculateExponentialBackoffDelay(attempt, minBackoff, maxBackoff, randomFactor))
+    }
+
+    override def toString: String = {
+      s"Exponential(minBackoff=$minBackoff, maxBackoff=$maxBackoff, randomFactor=$randomFactor)"
+    }
+  }
+
+  private[akka] final class FixedDelayFunction(val delay: FiniteDuration)
+      extends Function1[Int, Option[FiniteDuration]] {
+
+    override def apply(attempt: Int): Option[FiniteDuration] = {
+      Some(delay)
+    }
+
+    override def toString: String = {
+      s"Fixed($delay)"
+    }
+  }
+
+  /**
+   * Scala API: Create settings with exponential backoff delay between retries.
+   * The exponential backoff settings are calculated based on number of retries.
+   * @param maxRetries maximum number of retries
+   * @return RetrySettings with exponential backoff delay
+   */
   def apply(maxRetries: Int): RetrySettings = {
     // Start with a reasonable minimum backoff (e.g., 100 milliseconds)
     val minBackoff: FiniteDuration = 100.millis
@@ -75,75 +162,41 @@ object RetrySettings {
     // Random factor can scale slightly with maxRetries to add more jitter
     val randomFactor: Double = (0.1 + (maxRetries * 0.05)).min(1.0) // cap at 1.0
 
-    apply(maxRetries, minBackoff, maxBackoff, randomFactor)
+    new RetrySettings(maxRetries, new ExponentialBackoffFunction(minBackoff, maxBackoff, randomFactor))
   }
 
+  /**
+   * Scala API: Create settings with exponential backoff delay between retries.
+   * The exponential backoff settings are calculated based on number of retries.
+   * @param maxRetries maximum number of retries
+   * @return RetrySettings with exponential backoff delay
+   */
   def create(maxRetries: Int): RetrySettings = {
     apply(maxRetries)
   }
 
-  def apply(maxRetries: Int, fixedDelay: FiniteDuration): RetrySettings = {
-    RetrySettings(maxRetries, FixedDelayFunction(fixedDelay))
-  }
-
-  def create(maxRetries: Int, fixedDelay: Duration): RetrySettings = {
-    apply(maxRetries, fixedDelay.toScala)
-  }
-
-  def apply(
-      maxRetries: Int,
-      minBackoff: FiniteDuration,
-      maxBackoff: FiniteDuration,
-      randomFactor: Double): RetrySettings =
-    RetrySettings(maxRetries, ExponentialBackoffFunction(minBackoff, maxBackoff, randomFactor))
-
-  def create(maxRetries: Int, minBackoff: Duration, maxBackoff: Duration, randomFactor: Double): RetrySettings = {
-    apply(maxRetries, minBackoff.toScala, maxBackoff.toScala, randomFactor)
-  }
-
+  /**
+   * Scala API: Create settings from configuration.
+   */
   def apply(config: Config): RetrySettings = {
     val maxRetries = config.getInt("max-retries")
     if (config.hasPath("fixed-delay")) {
       val fixedDelay = config.getDuration("fixed-delay").toScala
-      RetrySettings(maxRetries, fixedDelay)
+      RetrySettings(maxRetries).withFixedDelay(fixedDelay)
     } else if (config.hasPath("min-backoff")) {
       val minBackoff = config.getDuration("min-backoff").toScala
       val maxBackoff = config.getDuration("max-backoff").toScala
       val randomFactor = config.getDouble("random-factor")
-      RetrySettings(maxRetries, minBackoff, maxBackoff, randomFactor)
+      RetrySettings(maxRetries).withExponentialBackoff(minBackoff, maxBackoff, randomFactor)
     } else
       RetrySettings(maxRetries)
   }
 
+  /**
+   * Java API: Create settings from configuration.
+   */
   def create(config: Config): RetrySettings = {
     apply(config)
   }
 
-}
-
-private[akka] final case class ExponentialBackoffFunction(
-    minBackoff: FiniteDuration,
-    maxBackoff: FiniteDuration,
-    randomFactor: Double)
-    extends Function1[Int, Option[FiniteDuration]] {
-
-  override def apply(attempt: Int): Option[FiniteDuration] = {
-    Some(calculateExponentialBackoffDelay(attempt, minBackoff, maxBackoff, randomFactor))
-  }
-
-  override def toString: String = {
-    s"Exponential(minBackoff=$minBackoff, maxBackoff=$maxBackoff, randomFactor=$randomFactor)"
-  }
-}
-
-private[akka] final case class FixedDelayFunction(delay: FiniteDuration)
-    extends Function1[Int, Option[FiniteDuration]] {
-
-  override def apply(attempt: Int): Option[FiniteDuration] = {
-    Some(delay)
-  }
-
-  override def toString: String = {
-    s"Fixed($delay)"
-  }
 }

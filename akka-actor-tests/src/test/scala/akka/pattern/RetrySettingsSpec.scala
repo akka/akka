@@ -4,6 +4,8 @@
 
 package akka.pattern
 
+import akka.pattern.RetrySettings.ExponentialBackoffFunction
+import akka.pattern.RetrySettings.FixedDelayFunction
 import com.typesafe.config.ConfigFactory
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec

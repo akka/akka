@@ -723,6 +723,14 @@ object Patterns {
       (attempted) => delayFunction.apply(attempted).toScala.map(_.toScala))(context, scheduler).asJava
   }
 
+  /**
+   * Returns an internally retrying [[java.util.concurrent.CompletionStage]].
+   * The first attempt will be made immediately, each subsequent attempt will be made based on the provided [[akka.pattern.RetrySettings]].
+   *
+   * If attempts are exhausted, the returned CompletionStage is that of the last attempt.
+   * Note that the attempt function will be executed on the actor system's dispatcher for subsequent tries
+   * and therefore must be thread safe (not touch unsafe mutable state).
+   */
   def retry[T](
       attempt: Callable[CompletionStage[T]],
       retrySettings: RetrySettings,
@@ -730,6 +738,15 @@ object Patterns {
     retry(attempt, retrySettings, system.classicSystem.scheduler, system.classicSystem.dispatcher)
   }
 
+  /**
+   * Returns an internally retrying [[java.util.concurrent.CompletionStage]].
+   * The first attempt will be made immediately, each subsequent attempt will be made based on the provided [[akka.pattern.RetrySettings]].
+   * A scheduler (e.g. context.system().scheduler()) must be provided to delay retries.
+   *
+   * If attempts are exhausted, the returned CompletionStage is that of the last attempt.
+   * Note that the attempt function will be invoked on the given execution context for subsequent tries and therefore
+   * must be thread safe (not touch unsafe mutable state).
+   */
   def retry[T](
       attempt: Callable[CompletionStage[T]],
       retrySettings: RetrySettings,
