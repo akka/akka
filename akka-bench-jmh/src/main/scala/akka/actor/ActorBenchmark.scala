@@ -45,7 +45,7 @@ class ActorBenchmark {
       "akka.actor.JCToolsMailbox"))
   var mailbox = ""
 
-  @Param(Array("fjp-dispatcher", "virtual-thread-executor")) //  @Param(Array("fjp-dispatcher", "affinity-dispatcher"))
+  @Param(Array("fjp-dispatcher", "vt-dispatcher")) //  @Param(Array("fjp-dispatcher", "affinity-dispatcher"))
   var dispatcher = ""
 
   implicit var system: ActorSystem = _
