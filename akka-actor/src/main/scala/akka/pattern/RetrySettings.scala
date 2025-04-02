@@ -4,6 +4,7 @@
 
 package akka.pattern
 
+import akka.annotation.InternalApi
 import akka.pattern.RetrySettings.ExponentialBackoffFunction
 import akka.pattern.RetrySettings.FixedDelayFunction
 import akka.pattern.RetrySupport.calculateExponentialBackoffDelay
@@ -108,12 +109,16 @@ final class RetrySettings private (
    * @param shouldRetry function to determine if a failure should be retried
    * @return Updated settings
    */
-  def withJavaDecider(shouldRetry: java.util.function.Function[Throwable, Boolean]): RetrySettings =
+  def withJavaDecider(shouldRetry: java.util.function.Function[Throwable, java.lang.Boolean]): RetrySettings =
     withDecider(shouldRetry.apply)
 }
 
 object RetrySettings {
 
+  /**
+   * INTERNAL API.
+   */
+  @InternalApi
   private[akka] final class ExponentialBackoffFunction(
       val minBackoff: FiniteDuration,
       val maxBackoff: FiniteDuration,
@@ -129,6 +134,10 @@ object RetrySettings {
     }
   }
 
+  /**
+   * INTERNAL API.
+   */
+  @InternalApi
   private[akka] final class FixedDelayFunction(val delay: FiniteDuration)
       extends Function1[Int, Option[FiniteDuration]] {
 
