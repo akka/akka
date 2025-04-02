@@ -6,6 +6,7 @@ package akka.dispatch
 
 import akka.actor.DynamicAccess
 import akka.annotation.InternalApi
+import akka.util.JavaVersion
 import com.typesafe.config.Config
 
 import java.util.concurrent.ExecutorService
@@ -17,6 +18,8 @@ import java.util.concurrent.ThreadFactory
  */
 @InternalApi
 private[akka] object VirtualThreadConfigurator {
+
+  def virtualThreadsSupported(): Boolean = JavaVersion.majorVersion >= 21
 
   // Note: since we still support JDK 11 and 17, we need to access the factory method reflectively
   private def createVirtualThreadFactory(

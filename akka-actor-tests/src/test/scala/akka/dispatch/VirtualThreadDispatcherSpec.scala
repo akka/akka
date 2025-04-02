@@ -46,7 +46,7 @@ class VirtualThreadDispatcherSpec extends AnyWordSpec with Matchers {
         // loom not available yet here
         pending
       } else {
-        val system = ActorSystem(
+        implicit val system: ActorSystem = ActorSystem(
           classOf[VirtualThreadDispatcherSpec].getSimpleName,
           ConfigFactory.parseString("""
               my-vt-dispatcher {
@@ -59,7 +59,7 @@ class VirtualThreadDispatcherSpec extends AnyWordSpec with Matchers {
           val vtDispatcher = system.dispatchers.lookup("my-vt-dispatcher")
           vtDispatcher shouldBe a[BatchingExecutor]
 
-          val threadIsVirtualProbe = TestProbe()(system)
+          val threadIsVirtualProbe = TestProbe()
           vtDispatcher.execute(() => {
             threadIsVirtualProbe.ref ! reflectiveVirtualThreadInfo()
           })
@@ -80,7 +80,7 @@ class VirtualThreadDispatcherSpec extends AnyWordSpec with Matchers {
       } else {
         // not necessarily a good idea because of the virtual thread per task overhead, but to know it works
         // and to cover running actors on it
-        implicit val system = ActorSystem(
+        implicit val system: ActorSystem = ActorSystem(
           classOf[VirtualThreadDispatcherSpec].getSimpleName,
           ConfigFactory.parseString("""
               akka.actor.default-dispatcher.executor="virtual-thread-executor"
@@ -95,6 +95,31 @@ class VirtualThreadDispatcherSpec extends AnyWordSpec with Matchers {
         } finally {
           TestKit.shutdownActorSystem(system)
         }
+      }
+    }
+
+    "can be configured with a fallback for work on all JVMs" in {
+      implicit val system: ActorSystem = ActorSystem(
+        classOf[VirtualThreadDispatcherSpec].getSimpleName,
+        ConfigFactory.parseString("""
+              my-vt-dispatcher {
+                type = "Dispatcher"
+                executor = virtual-thread-executor
+                virtual-thread-executor {
+                  fallback="fork-join-executor"
+                }
+              }
+            """).withFallback(ConfigFactory.load()))
+
+      try {
+        val dispatcher = system.dispatchers.lookup("my-vt-dispatcher")
+        val threadInfoProbe = TestProbe()
+        dispatcher.execute(() => {
+          threadInfoProbe.ref ! "ok"
+        })
+        threadInfoProbe.expectMsg("ok")
+      } finally {
+        TestKit.shutdownActorSystem(system)
       }
     }
   }
