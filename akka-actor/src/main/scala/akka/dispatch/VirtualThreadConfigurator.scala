@@ -81,7 +81,7 @@ private[akka] class VirtualThreadConfigurator(config: Config, prerequisites: Dis
           createVirtualThreadFactory(prerequisites.dynamicAccess, m.name + "-" + id, Some(m.exceptionHandler))
 
         // Note: daemonic false not allowed for virtual threads, so we ignore that
-        m.contextClassLoader.fold(virtualThreadFactory)(classLoader =>
+        m.contextClassLoader.fold[ThreadFactory](virtualThreadFactory)(classLoader =>
           (r: Runnable) => {
             val virtualThread = virtualThreadFactory.newThread(r)
             virtualThread.setContextClassLoader(classLoader)
