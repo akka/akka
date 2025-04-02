@@ -1457,7 +1457,7 @@ private[akka] class ActorSystemImpl(
         case Some("k") =>
           "Kalix"
         case _ =>
-          "Lightbend"
+          "Akka"
       }
 
       val buildExpiry = optDate("b")
