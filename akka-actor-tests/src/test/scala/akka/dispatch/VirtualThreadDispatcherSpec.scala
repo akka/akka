@@ -20,17 +20,16 @@ class VirtualThreadDispatcherSpec extends AnyWordSpec {
         // loom not available yet here
         pending
       } else {
-        var system: ActorSystem = null
-        try {
-          system = ActorSystem(
-            classOf[VirtualThreadDispatcherSpec].getSimpleName,
-            ConfigFactory.parseString("""
+        val system = ActorSystem(
+          classOf[VirtualThreadDispatcherSpec].getSimpleName,
+          ConfigFactory.parseString("""
               my-vt-dispatcher {
                 type = "Dispatcher"
                 executor = virtual-thread-executor
               }
             """).withFallback(ConfigFactory.load()))
 
+        try {
           val vtDispatcher = system.dispatchers.lookup("my-vt-dispatcher")
           val threadIsVirtualProbe = TestProbe()(system)
           vtDispatcher.execute(() => {

@@ -4,6 +4,7 @@
 
 package akka.dispatch
 
+import akka.actor.DynamicAccess
 import akka.annotation.InternalApi
 import com.typesafe.config.Config
 
@@ -18,7 +19,7 @@ import java.util.concurrent.ThreadFactory
 private[akka] object VirtualThreadConfigurator {
 
   // Note: since we still support JDK 11 and 17, we need to access the factory method reflectively
-  private def virtualThreadFactory(virtualThreadName: String): ThreadFactory = {
+  private def virtualThreadFactory(dynamicAccess: DynamicAccess, virtualThreadName: String): ThreadFactory = {
     val ofVirtualMethod =
       try {
         classOf[Thread].getMethod("ofVirtual")
@@ -28,7 +29,7 @@ private[akka] object VirtualThreadConfigurator {
       }
     val ofVirtual = ofVirtualMethod.invoke(null)
     // java.lang.ThreadBuilders.VirtualThreadBuilder is package private
-    val ofVirtualInterface = ClassLoader.getSystemClassLoader.loadClass("java.lang.Thread$Builder$OfVirtual")
+    val ofVirtualInterface = dynamicAccess.getClassFor[AnyRef]("java.lang.Thread$Builder$OfVirtual").get
     val ofVirtualWithName =
       if (virtualThreadName.nonEmpty) {
         val nameMethod = ofVirtualInterface.getMethod("name", classOf[String])
@@ -61,8 +62,8 @@ private[akka] class VirtualThreadConfigurator(config: Config, prerequisites: Dis
     val tf = threadFactory match {
       case m: MonitorableThreadFactory =>
         // add the dispatcher id to the thread names
-        virtualThreadFactory(m.name + "-" + id)
-      case _ => virtualThreadFactory("-" + id)
+        virtualThreadFactory(prerequisites.dynamicAccess, m.name + "-" + id)
+      case _ => virtualThreadFactory(prerequisites.dynamicAccess, "-" + id)
     }
     new VirtualThreadExecutorServiceFactory(tf)
   }
