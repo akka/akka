@@ -372,7 +372,7 @@ abstract class MessageDispatcherConfigurator(_config: Config, val prerequisites:
           if (fallbackExecutorName.isEmpty)
             throw new RuntimeException(
               s"Dispatcher configured to use virtual threads, but JVM version ${JavaVersion.majorVersion} does not support that. " +
-              "Use a newer Java version (21 or later), or configure 'fallback' for alternative executor on older Java versions.")
+              "Use a newer Java version (21 or later), or configure 'virtual-thread-executor.fallback' for an alternative executor on older Java versions.")
           else
             configurator(fallbackExecutorName)
         }
