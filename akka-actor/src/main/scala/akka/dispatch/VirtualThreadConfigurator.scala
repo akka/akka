@@ -34,7 +34,6 @@ private[akka] object VirtualThreadConfigurator {
           throw new IllegalStateException("Virtual thread executors only supported on JDK 21 and newer")
       }
     val ofVirtual = ofVirtualMethod.invoke(null)
-    // java.lang.ThreadBuilders.VirtualThreadBuilder is package private
     val ofVirtualInterface = dynamicAccess.getClassFor[AnyRef]("java.lang.Thread$Builder$OfVirtual").get
 
     // thread names
