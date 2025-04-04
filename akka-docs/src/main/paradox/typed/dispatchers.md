@@ -335,7 +335,7 @@ For a similar discussion specifically about Akka HTTP, refer to @extref[Handling
 If running on Java 21 or later, it is possible to use virtual threads for a blocking dispatcher, configure
 the executor of the dispatcher to be `virtual-thread-executor`.
 
-The virtual thread executor will run every task in a virtual thread, which can let go of the OS-level thread
+The virtual thread executor will run every task in a virtual thread, which can detach from of the OS-level thread
 when it is waiting for a blocking operation, much like how an async task allows threads to be handed back to
 a thread pool, until some task completes.
 
@@ -347,7 +347,7 @@ akka.actor.default-blocking-io-dispatcher {
 }
 ```
 
-Note that there is a difference in behavior compared to the using a thread pool dispatcher in that there is no limit
+Note that there is a difference in behavior compared to using a thread pool dispatcher in that there is no limit
 to how many virtual threads can block, for example hitting a service and waiting for a response, 
 while the threadpool executor puts an upper limit (16 by default) on how many threads are actually in flight, 
 once that limit has been reached, additional tasks are queued until a thread becomes available.
