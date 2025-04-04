@@ -6,21 +6,19 @@ package akka.dispatch
 
 import java.{ util => ju }
 import java.util.concurrent._
-
 import scala.annotation.nowarn
 import scala.annotation.tailrec
 import scala.concurrent.{ ExecutionContext, ExecutionContextExecutor }
 import scala.concurrent.duration.{ Duration, FiniteDuration }
 import scala.util.control.NonFatal
-
 import com.typesafe.config.Config
-
 import akka.actor._
 import akka.annotation.InternalStableApi
 import akka.dispatch.affinity.AffinityPoolConfigurator
 import akka.dispatch.sysmsg._
 import akka.event.EventStream
 import akka.event.Logging.{ Debug, Error, LogEventException }
+import akka.util.JavaVersion
 import akka.util.{ Index, Unsafe }
 
 final case class Envelope private (message: Any, sender: ActorRef) {
@@ -365,6 +363,19 @@ abstract class MessageDispatcherConfigurator(_config: Config, val prerequisites:
         new ThreadPoolExecutorConfigurator(config.getConfig("thread-pool-executor"), prerequisites)
       case "affinity-pool-executor" =>
         new AffinityPoolConfigurator(config.getConfig("affinity-pool-executor"), prerequisites)
+      case "virtual-thread-executor" =>
+        val executorConfig = config.getConfig("virtual-thread-executor")
+        if (VirtualThreadConfigurator.virtualThreadsSupported()) {
+          new VirtualThreadConfigurator(executorConfig, prerequisites)
+        } else {
+          val fallbackExecutorName = executorConfig.getString("fallback")
+          if (fallbackExecutorName.isEmpty)
+            throw new RuntimeException(
+              s"Dispatcher configured to use virtual threads, but JVM version ${JavaVersion.majorVersion} does not support that. " +
+              "Use a newer Java version (21 or later), or configure 'virtual-thread-executor.fallback' for an alternative executor on older Java versions.")
+          else
+            configurator(fallbackExecutorName)
+        }
 
       case fqcn =>
         val args = List(classOf[Config] -> config, classOf[DispatcherPrerequisites] -> prerequisites)
