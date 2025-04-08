@@ -4,6 +4,8 @@
 
 package akka.pattern
 
+import akka.actor.ClassicActorSystemProvider
+
 import java.util.concurrent.ThreadLocalRandom
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.concurrent.duration.{ Duration, FiniteDuration }
@@ -254,14 +256,6 @@ trait RetrySupport {
    * Given a function from Unit to Future, returns an internally retrying Future.
    * The first attempt will be made immediately, any subsequent attempt will be made based on provided [[RetrySettings]].
    *
-   * A scheduler (eg context.system.scheduler) must be provided to delay each retry.
-   * You could provide a function to generate the next delay duration after first attempt,
-   * this function should never return `null`, otherwise an [[IllegalArgumentException]] will be thrown.
-   *
-   * If attempts are exhausted the returned future is simply the result of invoking attempt.
-   * Note that the attempt function will be invoked on the given execution context for subsequent
-   * tries and therefore must be thread safe (not touch unsafe mutable state).
-   *
    * <b>Example usage:</b>
    *
    * // retry with backoff
@@ -273,14 +267,14 @@ trait RetrySupport {
    *   }
    * }}}
    */
-  def retry[T](retrySettings: RetrySettings)(
-      attempt: () => Future[T])(implicit ec: ExecutionContext, scheduler: Scheduler): Future[T] = {
+  def retry[T](retrySettings: RetrySettings)(attempt: () => Future[T])(
+      implicit system: ClassicActorSystemProvider): Future[T] = {
     RetrySupport.retry(
       attempt,
       retrySettings.maxRetries,
       retrySettings.delayFunction,
       attempted = 0,
-      retrySettings.shouldRetry)
+      retrySettings.shouldRetry)(system.classicSystem.dispatcher, system.classicSystem.scheduler)
   }
 }
 

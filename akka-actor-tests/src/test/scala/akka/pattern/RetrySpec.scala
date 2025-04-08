@@ -173,4 +173,12 @@ class RetrySpec extends AkkaSpec with RetrySupport {
     }
   }
 
+  "provide a retry settings based api" in {
+    // just a successful try to cover API and implicit system provider
+    val retried = retry(RetrySettings(5).withFixedDelay(40.millis)) { () =>
+      Future.successful(5)
+    }
+    retried.futureValue should ===(5)
+  }
+
 }
