@@ -37,7 +37,7 @@ object Dependencies {
 
   val reactiveStreamsVersion = "1.0.4"
 
-  val graalVmNativeImageVersion = "24.1.2"
+  val graalVmNativeImageVersion = "24.2.0"
 
   val scalaTestVersion = "3.2.17"
 
