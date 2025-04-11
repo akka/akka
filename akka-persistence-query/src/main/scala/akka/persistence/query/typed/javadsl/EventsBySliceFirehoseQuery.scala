@@ -48,7 +48,8 @@ final class EventsBySliceFirehoseQuery(delegate: scaladsl.EventsBySliceFirehoseQ
     with EventsBySliceQuery
     with EventsBySliceStartingFromSnapshotsQuery
     with EventTimestampQuery
-    with LoadEventQuery {
+    with LoadEventQuery
+    with LatestEventTimestampQuery {
 
   override def sliceForPersistenceId(persistenceId: String): Int =
     delegate.sliceForPersistenceId(persistenceId)
@@ -81,5 +82,11 @@ final class EventsBySliceFirehoseQuery(delegate: scaladsl.EventsBySliceFirehoseQ
 
   override def loadEnvelope[Event](persistenceId: String, sequenceNr: Long): CompletionStage[EventEnvelope[Event]] =
     delegate.loadEnvelope[Event](persistenceId, sequenceNr).asJava
+
+  override def latestEventTimestamp(
+      entityType: String,
+      minSlice: Int,
+      maxSlice: Int): CompletionStage[Optional[Instant]] =
+    delegate.latestEventTimestamp(entityType, minSlice, maxSlice).map(_.toJava)(ExecutionContext.parasitic).asJava
 
 }
