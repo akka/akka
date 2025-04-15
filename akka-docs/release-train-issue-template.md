@@ -23,7 +23,6 @@ Key links:
 - [ ] Create a new milestone for the [next version](https://github.com/akka/akka/milestones)
 - [ ] Close the [$VERSION$ milestone](https://github.com/akka/akka/milestones?direction=asc&sort=due_date)
 - [ ] Make sure all important PRs have been merged
-- [ ] Update the revision in Fossa in the Akka Group for the Akka umbrella version, e.g. `22.10`. Note that the revisions for the release is udpated by Akka Group > Projects > Edit. For recent dependency updates the Fossa validation can be triggered from the GitHub actions "Dependency License Scanning".
 - [ ] Wait until [main build finished](https://github.com/akka/akka/actions) after merging the latest PR
 - [ ] Update the [draft release](https://github.com/akka/akka/releases) with the next tag version `v$VERSION$`, title and release description. Use the `Publish release` button, which will create the tag.
 - [ ] Check that GitHub Actions release build has executed successfully (GitHub Actions will start a [CI build](https://github.com/akka/akka/actions) for the new tag and publish artifacts to https://repo.akka.io/maven)
@@ -44,7 +43,7 @@ Key links:
          git add libraries/akka-core/current libraries/akka-core/$VERSION$
          git add api/akka-core/current api/akka-core/$VERSION$
          git add japi/akka-core/current japi/akka-core/$VERSION$
-         git commit -m "Akka $VERSION$"
+         git commit -m "Akka core $VERSION$"
          ```
     - [ ] push changes to the [remote git repository](https://github.com/akka/doc.akka.io)
          ```
@@ -52,7 +51,6 @@ Key links:
          git push origin master
          ```
   - [ ] If this updated 'current' docs - trigger a re-index of the docs for search through [Run workflow for the scraper](https://github.com/akka/akka/actions/workflows/algolia-doc-site-scrape.yml)
-  - [ ] Update version in _config.yml in https://github.com/akka/akka.io    
   
 
 ### Announcements
