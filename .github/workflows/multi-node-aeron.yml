@@ -1,8 +1,9 @@
 name: Multi node test with Aeron
 
 on:
-  schedule:
-    - cron: '0 4 * * 1,3'
+  # No scheduled runs currently, because sometimes the K8s cluster is not removed
+  # schedule:
+  #   - cron: '0 4 * * 1,3'
   workflow_dispatch:
 
 permissions:
