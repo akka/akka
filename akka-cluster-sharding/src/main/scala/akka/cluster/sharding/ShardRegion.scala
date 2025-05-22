@@ -745,16 +745,22 @@ private[akka] class ShardRegion(
   }
 
   var coordinator: Option[ActorRef] = None
+  def coordinatorAddress: Option[Address] =
+    coordinator.map { coordRef =>
+      val a = coordRef.path.address
+
+      if (a.hasLocalScope) cluster.selfMember.address
+      else a
+    }
+
+  def coordinatorStatus(members: immutable.SortedSet[Member]): Option[MemberStatus] =
+    coordinatorAddress.flatMap { coordAddress =>
+      members.find(_.address == coordAddress).map(_.status)
+    }
 
   def reRegisterIfCoordinatorNotUp(): Unit =
     if (coordinator.nonEmpty) {
-      val coordAddress = coordinator.get.path.address // safe: guarded by nonEmpty
-      val coordinatorStatus =
-        coordinator.flatMap { _ =>
-          membersByAge.find(_.address == coordAddress).map(_.status)
-        }
-
-      coordinatorStatus match {
+      coordinatorStatus(membersByAge) match {
         case Some(MemberStatus.Up) => () // Do nothing
         case Some(notUp) =>
           if (log.isDebugEnabled)
@@ -766,11 +772,8 @@ private[akka] class ShardRegion(
           // For now, attempt to register with the oldest Up member we know about without forgetting
           // about the current coordinator
           // We only attempt one candidate so as to not flood with registration messages
-          // Important since this is level-triggered (any membership change where the coordinator is on a
-          // not-up node) while registration is otherwise edge-triggered
           coordinatorSelection.headOption.foreach(sendRegistrationMessage)
 
-          // in case we're not getting any membership changes for a while...
           if (!timers.isTimerActive(RegisterRetry)) {
             nextRegistrationDelay = initRegistrationDelay
 
@@ -779,7 +782,10 @@ private[akka] class ShardRegion(
 
         case None =>
           // coordinator is on node which has been removed... can this actually happen?
-          log.warning("{}: Coordinator was on removed node [{}], attempting to re-register", typeName, coordAddress)
+          log.warning(
+            "{}: Coordinator was on removed node [{}], attempting to re-register",
+            typeName,
+            coordinatorAddress.get) // safe: guarded by nonEmpty
           coordinator = None
           startRegistration()
       }
@@ -799,7 +805,10 @@ private[akka] class ShardRegion(
           after.map(_.address).getOrElse(""))
       coordinator = None
       startRegistration()
-    } else reRegisterIfCoordinatorNotUp()
+    } else if (coordinatorStatus(membersByAge) != coordinatorStatus(newMembers)) {
+      // coordinator status changed
+      reRegisterIfCoordinatorNotUp()
+    }
   }
 
   def receive: Receive = {
