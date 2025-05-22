@@ -769,7 +769,7 @@ private[akka] class ShardRegion(
           // Important since this is level-triggered (any membership change where the coordinator is on a
           // not-up node) while registration is otherwise edge-triggered
           coordinatorSelection.lastOption.foreach(sendRegistrationMessage)
-          
+
           if (!timers.isTimerActive(RegisterRetry)) {
             nextRegistrationDelay = initRegistrationDelay
 
