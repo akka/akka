@@ -805,6 +805,9 @@ private[akka] class ShardRegion(
           after.map(_.address).getOrElse(""))
       coordinator = None
       startRegistration()
+    } else if (coordinator.isEmpty) {
+      // NB: resets registration retry backoff, but the situation has changed
+      startRegistration()
     } else if (coordinatorStatus(membersByAge) != coordinatorStatus(newMembers)) {
       // coordinator status changed
       reRegisterIfCoordinatorNotUp()
