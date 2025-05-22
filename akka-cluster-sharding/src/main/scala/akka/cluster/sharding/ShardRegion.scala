@@ -793,10 +793,12 @@ private[akka] class ShardRegion(
     case MemberLeft(m) =>
       if (m.uniqueAddress != cluster.selfUniqueAddress && matchingCoordinatorRole(m))
         changeMembers(membersByAge.filterNot(_.uniqueAddress == m.uniqueAddress))
+      else addMember(m)
 
     case MemberExited(m) =>
       if (m.uniqueAddress != cluster.selfUniqueAddress && matchingCoordinatorRole(m))
         changeMembers(membersByAge.filterNot(_.uniqueAddress == m.uniqueAddress))
+      else addMember(m)
 
     case MemberRemoved(m, _) =>
       if (m.uniqueAddress == cluster.selfUniqueAddress)
