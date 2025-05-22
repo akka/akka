@@ -761,14 +761,14 @@ private[akka] class ShardRegion(
       coordinator = None
       startRegistration()
     } else if (coordinator.nonEmpty) {
-      val coordAddress = coordinator.get.path.address   // safe: guarded by nonEmpty
+      val coordAddress = coordinator.get.path.address // safe: guarded by nonEmpty
       val coordinatorStatus =
         coordinator.flatMap { _ =>
           newMembers.find(_.address == coordAddress).map(_.status)
         }
 
       coordinatorStatus match {
-        case Some(MemberStatus.Up) => ()    // Do nothing
+        case Some(MemberStatus.Up) => () // Do nothing
         case Some(notUp) =>
           if (log.isDebugEnabled)
             log.debug(
@@ -785,10 +785,7 @@ private[akka] class ShardRegion(
 
         case None =>
           // coordinator is on node which has been removed... can this actually happen?
-          log.warning(
-            "{}: Coordinator was on removed node [{}], attempting to re-register",
-            typeName,
-            coordAddress)
+          log.warning("{}: Coordinator was on removed node [{}], attempting to re-register", typeName, coordAddress)
           coordinator = None
           startRegistration()
       }
