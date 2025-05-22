@@ -789,10 +789,14 @@ private[akka] class ShardRegion(
   def receiveClusterEvent(evt: ClusterDomainEvent): Unit = evt match {
     case MemberUp(m) =>
       addMember(m)
+
     case MemberLeft(m) =>
-      addMember(m)
+      if (m.uniqueAddress != cluster.selfUniqueAddress && matchingCoordinatorRole(m))
+        changeMembers(membersByAge.filterNot(_.uniqueAddress == m.uniqueAddress))
+
     case MemberExited(m) =>
-      addMember(m)
+      if (m.uniqueAddress != cluster.selfUniqueAddress && matchingCoordinatorRole(m))
+        changeMembers(membersByAge.filterNot(_.uniqueAddress == m.uniqueAddress))
 
     case MemberRemoved(m, _) =>
       if (m.uniqueAddress == cluster.selfUniqueAddress)
