@@ -391,8 +391,6 @@ object ClusterSingletonManager {
         case MemberRemoved(m, _)        => remove(m)
         case MemberExited(m) if m.uniqueAddress != cluster.selfUniqueAddress =>
           remove(m)
-        case MemberLeft(m) if m.uniqueAddress != cluster.selfUniqueAddress =>
-          remove(m)
         case SelfExiting =>
           remove(cluster.readView.self)
           sender() ! Done // reply to ask
