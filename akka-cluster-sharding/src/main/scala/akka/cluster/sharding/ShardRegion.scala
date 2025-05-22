@@ -750,6 +750,7 @@ private[akka] class ShardRegion(
     val before = membersByAge.headOption
     val after = newMembers.headOption
     membersByAge = newMembers
+    // NB: equaliity check is on uniqueAddress, not status etc.
     if (before != after) {
       if (log.isDebugEnabled)
         log.debug(
@@ -759,6 +760,38 @@ private[akka] class ShardRegion(
           after.map(_.address).getOrElse(""))
       coordinator = None
       startRegistration()
+    } else if (coordinator.nonEmpty) {
+      val coordAddress = coordinator.get.path.address   // safe: guarded by nonEmpty
+      val coordinatorStatus =
+        coordinator.flatMap { _ =>
+          newMembers.find(_.address == coordAddress).map(_.status)
+        }
+
+      coordinatorStatus match {
+        case Some(MemberStatus.Up) => ()    // Do nothing
+        case Some(notUp) =>
+          if (log.isDebugEnabled)
+            log.debug(
+              "{}: Coordinator is on node with status [{}], proactively attempting to find next coordinator",
+              typeName,
+              notUp)
+
+          // For now, make one attempt to register with the oldest Up member we know about without forgetting
+          // about the current coordinator
+          // We only make one attempt to one candidate so as to not flood with registration messages
+          // Important since this is level-triggered (any membership change where the coordinator is on a
+          // not-up node) while registration is otherwise edge-triggered
+          coordinatorSelection.lastOption.foreach(sendRegistrationMessage)
+
+        case None =>
+          // coordinator is on node which has been removed... can this actually happen?
+          log.warning(
+            "{}: Coordinator was on removed node [{}], attempting to re-register",
+            typeName,
+            coordAddress)
+          coordinator = None
+          startRegistration()
+      }
     }
   }
 
@@ -791,14 +824,12 @@ private[akka] class ShardRegion(
       addMember(m)
 
     case MemberLeft(m) =>
-      if (m.uniqueAddress != cluster.selfUniqueAddress && matchingCoordinatorRole(m))
-        changeMembers(membersByAge.filterNot(_.uniqueAddress == m.uniqueAddress))
-      else addMember(m)
+      // updates the status in the set
+      addMember(m)
 
     case MemberExited(m) =>
-      if (m.uniqueAddress != cluster.selfUniqueAddress && matchingCoordinatorRole(m))
-        changeMembers(membersByAge.filterNot(_.uniqueAddress == m.uniqueAddress))
-      else addMember(m)
+      // updates the status in the set
+      addMember(m)
 
     case MemberRemoved(m, _) =>
       if (m.uniqueAddress == cluster.selfUniqueAddress)
@@ -1134,7 +1165,7 @@ private[akka] class ShardRegion(
 
   def register(): Unit = {
     val actorSelections = coordinatorSelection
-    actorSelections.foreach(_ ! registrationMessage)
+    actorSelections.foreach(sendRegistrationMessage)
     if (shardBuffers.nonEmpty && retryCount >= 5) {
       if (actorSelections.nonEmpty) {
         val coordinatorMessage =
@@ -1179,6 +1210,10 @@ private[akka] class ShardRegion(
 
       }
     }
+  }
+
+  def sendRegistrationMessage(selection: ActorSelection): Unit = {
+    selection ! registrationMessage
   }
 
   def registrationMessage: Any =
