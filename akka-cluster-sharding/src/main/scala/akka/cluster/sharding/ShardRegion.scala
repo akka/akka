@@ -763,13 +763,14 @@ private[akka] class ShardRegion(
               typeName,
               notUp)
 
-          // For now, make one attempt to register with the oldest Up member we know about without forgetting
+          // For now, attempt to register with the oldest Up member we know about without forgetting
           // about the current coordinator
-          // We only make one attempt to one candidate so as to not flood with registration messages
+          // We only attempt one candidate so as to not flood with registration messages
           // Important since this is level-triggered (any membership change where the coordinator is on a
           // not-up node) while registration is otherwise edge-triggered
           coordinatorSelection.headOption.foreach(sendRegistrationMessage)
 
+          // in case we're not getting any membership changes for a while...
           if (!timers.isTimerActive(RegisterRetry)) {
             nextRegistrationDelay = initRegistrationDelay
 
