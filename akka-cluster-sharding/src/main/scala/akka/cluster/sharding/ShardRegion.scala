@@ -745,11 +745,57 @@ private[akka] class ShardRegion(
   }
 
   var coordinator: Option[ActorRef] = None
+  def coordinatorAddress: Option[Address] =
+    coordinator.map { coordRef =>
+      val a = coordRef.path.address
+
+      if (a.hasLocalScope) cluster.selfMember.address
+      else a
+    }
+
+  def coordinatorStatus(members: immutable.SortedSet[Member]): Option[MemberStatus] =
+    coordinatorAddress.flatMap { coordAddress =>
+      members.find(_.address == coordAddress).map(_.status)
+    }
+
+  def reRegisterIfCoordinatorNotUp(): Unit =
+    if (coordinator.nonEmpty) {
+      coordinatorStatus(membersByAge) match {
+        case Some(MemberStatus.Up) => () // Do nothing
+        case Some(notUp) =>
+          if (log.isDebugEnabled)
+            log.debug(
+              "{}: Coordinator is on node with status [{}], proactively attempting to find next coordinator",
+              typeName,
+              notUp)
+
+          // For now, attempt to register with the oldest Up member we know about without forgetting
+          // about the current coordinator
+          // We only attempt one candidate so as to not flood with registration messages
+          coordinatorSelection.headOption.foreach(sendRegistrationMessage)
+
+          if (!timers.isTimerActive(RegisterRetry)) {
+            nextRegistrationDelay = initRegistrationDelay
+
+            scheduleNextRegistration()
+          }
+
+        case None =>
+          // coordinator is on node which has been removed... can this actually happen?
+          log.warning(
+            "{}: Coordinator was on removed node [{}], attempting to re-register",
+            typeName,
+            coordinatorAddress.get) // safe: guarded by nonEmpty
+          coordinator = None
+          startRegistration()
+      }
+    }
 
   def changeMembers(newMembers: immutable.SortedSet[Member]): Unit = {
     val before = membersByAge.headOption
     val after = newMembers.headOption
     membersByAge = newMembers
+    // NB: equaliity check is on uniqueAddress, not status etc.
     if (before != after) {
       if (log.isDebugEnabled)
         log.debug(
@@ -759,6 +805,12 @@ private[akka] class ShardRegion(
           after.map(_.address).getOrElse(""))
       coordinator = None
       startRegistration()
+    } else if (coordinator.isEmpty) {
+      // NB: resets registration retry backoff, but the situation has changed
+      startRegistration()
+    } else if (coordinatorStatus(membersByAge) != coordinatorStatus(newMembers)) {
+      // coordinator status changed
+      reRegisterIfCoordinatorNotUp()
     }
   }
 
@@ -789,9 +841,13 @@ private[akka] class ShardRegion(
   def receiveClusterEvent(evt: ClusterDomainEvent): Unit = evt match {
     case MemberUp(m) =>
       addMember(m)
+
     case MemberLeft(m) =>
+      // updates the status in the set
       addMember(m)
+
     case MemberExited(m) =>
+      // updates the status in the set
       addMember(m)
 
     case MemberRemoved(m, _) =>
@@ -930,7 +986,7 @@ private[akka] class ShardRegion(
       if (coordinator.isEmpty) {
         register()
         scheduleNextRegistration()
-      }
+      } else reRegisterIfCoordinatorNotUp()
 
     case GracefulShutdown =>
       if (preparingForShutdown) {
@@ -1128,7 +1184,7 @@ private[akka] class ShardRegion(
 
   def register(): Unit = {
     val actorSelections = coordinatorSelection
-    actorSelections.foreach(_ ! registrationMessage)
+    actorSelections.foreach(sendRegistrationMessage)
     if (shardBuffers.nonEmpty && retryCount >= 5) {
       if (actorSelections.nonEmpty) {
         val coordinatorMessage =
@@ -1173,6 +1229,10 @@ private[akka] class ShardRegion(
 
       }
     }
+  }
+
+  def sendRegistrationMessage(selection: ActorSelection): Unit = {
+    selection ! registrationMessage
   }
 
   def registrationMessage: Any =
