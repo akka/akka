@@ -746,25 +746,12 @@ private[akka] class ShardRegion(
 
   var coordinator: Option[ActorRef] = None
 
-  def changeMembers(newMembers: immutable.SortedSet[Member]): Unit = {
-    val before = membersByAge.headOption
-    val after = newMembers.headOption
-    membersByAge = newMembers
-    // NB: equaliity check is on uniqueAddress, not status etc.
-    if (before != after) {
-      if (log.isDebugEnabled)
-        log.debug(
-          "{}: Coordinator moved from [{}] to [{}]",
-          typeName,
-          before.map(_.address).getOrElse(""),
-          after.map(_.address).getOrElse(""))
-      coordinator = None
-      startRegistration()
-    } else if (coordinator.nonEmpty) {
+  def reRegisterIfCoordinatorNotUp(): Unit =
+    if (coordinator.nonEmpty) {
       val coordAddress = coordinator.get.path.address // safe: guarded by nonEmpty
       val coordinatorStatus =
         coordinator.flatMap { _ =>
-          newMembers.find(_.address == coordAddress).map(_.status)
+          membersByAge.find(_.address == coordAddress).map(_.status)
         }
 
       coordinatorStatus match {
@@ -782,6 +769,12 @@ private[akka] class ShardRegion(
           // Important since this is level-triggered (any membership change where the coordinator is on a
           // not-up node) while registration is otherwise edge-triggered
           coordinatorSelection.lastOption.foreach(sendRegistrationMessage)
+          
+          if (!timers.isTimerActive(RegisterRetry)) {
+            nextRegistrationDelay = initRegistrationDelay
+
+            scheduleNextRegistration()
+          }
 
         case None =>
           // coordinator is on node which has been removed... can this actually happen?
@@ -790,6 +783,22 @@ private[akka] class ShardRegion(
           startRegistration()
       }
     }
+
+  def changeMembers(newMembers: immutable.SortedSet[Member]): Unit = {
+    val before = membersByAge.headOption
+    val after = newMembers.headOption
+    membersByAge = newMembers
+    // NB: equaliity check is on uniqueAddress, not status etc.
+    if (before != after) {
+      if (log.isDebugEnabled)
+        log.debug(
+          "{}: Coordinator moved from [{}] to [{}]",
+          typeName,
+          before.map(_.address).getOrElse(""),
+          after.map(_.address).getOrElse(""))
+      coordinator = None
+      startRegistration()
+    } else reRegisterIfCoordinatorNotUp()
   }
 
   def receive: Receive = {
@@ -964,7 +973,7 @@ private[akka] class ShardRegion(
       if (coordinator.isEmpty) {
         register()
         scheduleNextRegistration()
-      }
+      } else reRegisterIfCoordinatorNotUp()
 
     case GracefulShutdown =>
       if (preparingForShutdown) {
