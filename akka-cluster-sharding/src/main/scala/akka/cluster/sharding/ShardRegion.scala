@@ -792,8 +792,10 @@ private[akka] class ShardRegion(
     }
 
   def changeMembers(newMembers: immutable.SortedSet[Member]): Unit = {
-    val before = membersByAge.headOption
+    val oldMembers = membersByAge
+    val before = oldMembers.headOption
     val after = newMembers.headOption
+    membersByAge = newMembers
     // NB: equaliity check is on uniqueAddress, not status etc.
     if (before != after) {
       if (log.isDebugEnabled)
@@ -807,11 +809,10 @@ private[akka] class ShardRegion(
     } else if (coordinator.isEmpty) {
       // NB: resets registration retry backoff, but the situation has changed
       startRegistration()
-    } else if (coordinatorStatus(membersByAge) != coordinatorStatus(newMembers)) {
+    } else if (coordinatorStatus(oldMembers) != coordinatorStatus(newMembers)) {
       // coordinator status changed
       reRegisterIfCoordinatorNotUp()
     }
-    membersByAge = newMembers
   }
 
   def receive: Receive = {
