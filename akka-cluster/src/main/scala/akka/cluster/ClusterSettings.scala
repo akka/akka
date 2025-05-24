@@ -107,6 +107,7 @@ final class ClusterSettings(val config: Config, val systemName: String) {
   val GossipTimeToLive: FiniteDuration = {
     cc.getMillisDuration("gossip-time-to-live")
   }.requiring(_ > Duration.Zero, "gossip-time-to-live must be > 0")
+  val GossipAllWhenLeavingAndOldestN: Int = cc.getInt("gossip-all-when-leaving-and-oldest-n")
   val LeaderActionsInterval: FiniteDuration = cc.getMillisDuration("leader-actions-interval")
   val UnreachableNodesReaperInterval: FiniteDuration = cc.getMillisDuration("unreachable-nodes-reaper-interval")
   val PublishStatsInterval: Duration = {
