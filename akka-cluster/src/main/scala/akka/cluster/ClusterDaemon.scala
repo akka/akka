@@ -1287,7 +1287,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
       latestGossip.overview.seen
         .count(membershipState.isInSameDc) < latestGossip.members.count(_.dataCenter == cluster.selfDataCenter) / 2
     } else {
-      latestGossip.members.exists(m => m.status == Down) ||
+      latestGossip.members.exists(m => m.status == Down || m.status == Leaving || m.status == Exiting) ||
       latestGossip.overview.seen.size < latestGossip.members.size / 2
     }
   }
