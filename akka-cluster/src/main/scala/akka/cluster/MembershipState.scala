@@ -205,11 +205,11 @@ import akka.cluster.MemberStatus._
   }
 
   /**
-   * The Exiting change is gossiped to the two oldest nodes for quick dissemination to potential Singleton nodes
+   * The Leaving and Exiting change is gossiped to the two oldest nodes for quick dissemination to potential Singleton nodes
    */
-  def gossipTargetsForExitingMembers(exitingMembers: Set[Member]): Set[Member] = {
-    if (exitingMembers.nonEmpty) {
-      val roles = exitingMembers.flatten(_.roles).filterNot(_.startsWith(ClusterSettings.DcRolePrefix))
+  def gossipTargetsForLeavingAndExitingMembers(changedMembers: Set[Member]): Set[Member] = {
+    if (changedMembers.nonEmpty) {
+      val roles = changedMembers.flatten(_.roles).filterNot(_.startsWith(ClusterSettings.DcRolePrefix))
       val membersSortedByAge = latestGossip.members.toList.filter(_.dataCenter == selfDc).sorted(Member.ageOrdering)
       var targets = Set.empty[Member]
       if (membersSortedByAge.nonEmpty) {
