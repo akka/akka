@@ -965,10 +965,29 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
     latestGossip.members.find(_.address == address).foreach { existingMember =>
       if (existingMember.status == Joining || existingMember.status == WeaklyUp || existingMember.status == Up || existingMember.status == PreparingForShutdown || existingMember.status == ReadyForShutdown) {
         // mark node as LEAVING
-        val newMembers = latestGossip.members - existingMember + existingMember.copy(status = Leaving)
+        val updatedMember = existingMember.copy(status = Leaving)
+        val newMembers = latestGossip.members - existingMember + updatedMember
         val newGossip = latestGossip.copy(members = newMembers)
 
         updateLatestGossip(newGossip)
+
+        // optimization: if this is node which either hosts singletons or could be an "heir apparent" for hosting singletons
+        // for some role, we may want to radically expedite dissemination of this change in status
+        val candidateForOldest = {
+          val extra = cluster.settings.GossipAllWhenLeavingAndOldestN
+          if (extra >= 0) {
+            def isOldestN(members: immutable.SortedSet[Member]): Boolean = {
+              val lgNumMembers =
+                if (members.size < Int.MaxValue) (31 - Integer.numberOfLeadingZeros(members.size - 1)) else 32
+              val oldestN = members.toSeq.sorted(Member.ageOrdering).take(extra + lgNumMembers)
+              oldestN.contains(updatedMember)
+            }
+
+            updatedMember.roles.foldLeft(isOldestN(newMembers)) { (result, role) =>
+              result || isOldestN(newMembers.filter(_.roles(role)))
+            }
+          } else false
+        }
 
         logInfo(
           ClusterLogMarker.memberChanged(existingMember.uniqueAddress, MemberStatus.Leaving),
@@ -977,7 +996,28 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
           Leaving)
         publishMembershipState()
         // immediate gossip to speed up the leaving process
-        gossip()
+        if (candidateForOldest) {
+          // gossip to all: our absence is potentially very important to the others, so we shouldn't "sneak out the door"
+          // since multi-DC is deprecated, "all" implies "all in this DC"
+          // however, if multi-DC is being used, this will additionally do a single (status-only) gossip with a node in another DC
+          var multiDC = false
+          newMembers.foreach { member =>
+            if (membershipState.isInSameDc(member.uniqueAddress)) {
+              if (member != updatedMember) {
+                gossipTo(member.uniqueAddress)
+              } // else we already know we're leaving
+            } else multiDC = true
+          }
+
+          if (multiDC) {
+            gossipTargetSelector
+              .gossipTargets(membershipState)
+              .find { address =>
+                !membershipState.isInSameDc(address)
+              }
+              .foreach(gossipStatusTo)
+          }
+        } else gossip()
       }
     }
   }
