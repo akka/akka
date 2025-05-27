@@ -965,7 +965,8 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
     latestGossip.members.find(_.address == address).foreach { existingMember =>
       if (existingMember.status == Joining || existingMember.status == WeaklyUp || existingMember.status == Up || existingMember.status == PreparingForShutdown || existingMember.status == ReadyForShutdown) {
         // mark node as LEAVING
-        val newMembers = latestGossip.members - existingMember + existingMember.copy(status = Leaving)
+        val leavingMember = existingMember.copy(status = Leaving)
+        val newMembers = latestGossip.members - existingMember + leavingMember
         val newGossip = latestGossip.copy(members = newMembers)
 
         updateLatestGossip(newGossip)
@@ -977,6 +978,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
           Leaving)
         publishMembershipState()
         // immediate gossip to speed up the leaving process
+        gossipToOldest(Set(leavingMember))
         gossip()
       }
     }
@@ -1321,6 +1323,23 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
     }
 
   /**
+   * Gossip the Leaving and Exiting changes to the two oldest nodes for quick dissemination to potential Singleton nodes
+   */
+  private def gossipToOldest(changedMembers: Set[Member]): Unit = {
+    val targets = membershipState.gossipTargetsForLeavingAndExitingMembers(changedMembers)
+    if (targets.nonEmpty) {
+
+      if (isDebugEnabled)
+        gossipLogger.logDebug(
+          "Gossip changed members [{}] to the two oldest (per role) [{}] (singleton optimization).",
+          changedMembers.mkString(", "),
+          targets.mkString(", "))
+
+      targets.foreach(m => gossipTo(m.uniqueAddress))
+    }
+  }
+
+  /**
    * Runs periodic leader actions, such as member status transitions, assigning partitions etc.
    */
   def leaderActions(): Unit = {
@@ -1529,24 +1548,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
     if (pruned ne latestGossip) {
       updateLatestGossip(pruned)
       publishMembershipState()
-      gossipExitingMembersToOldest(changedMembers.filter(_.status == Exiting))
-    }
-  }
-
-  /**
-   * Gossip the Exiting change to the two oldest nodes for quick dissemination to potential Singleton nodes
-   */
-  private def gossipExitingMembersToOldest(exitingMembers: Set[Member]): Unit = {
-    val targets = membershipState.gossipTargetsForExitingMembers(exitingMembers)
-    if (targets.nonEmpty) {
-
-      if (isDebugEnabled)
-        gossipLogger.logDebug(
-          "Gossip exiting members [{}] to the two oldest (per role) [{}] (singleton optimization).",
-          exitingMembers.mkString(", "),
-          targets.mkString(", "))
-
-      targets.foreach(m => gossipTo(m.uniqueAddress))
+      gossipToOldest(changedMembers.filter(_.status == Exiting))
     }
   }
 
