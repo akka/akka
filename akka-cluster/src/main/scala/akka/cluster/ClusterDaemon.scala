@@ -1323,7 +1323,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
     }
 
   /**
-   * Gossip the Exiting change to the two oldest nodes for quick dissemination to potential Singleton nodes
+   * Gossip the Leaving and Exiting changes to the two oldest nodes for quick dissemination to potential Singleton nodes
    */
   private def gossipToOldest(changedMembers: Set[Member]): Unit = {
     val targets = membershipState.gossipTargetsForLeavingAndExitingMembers(changedMembers)
