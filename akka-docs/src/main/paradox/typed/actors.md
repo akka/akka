@@ -8,7 +8,7 @@ You are viewing the documentation for the new actor APIs, to view the Akka Class
 ## Module info
 
 @@@note
-The Akka dependencies are available from Akka’s secure library repository. To access them there, you need to use a secure, tokenized URL as specified at https://account.akka.io/token.
+The Akka dependencies are available from Akka’s secure library repository. To access them you need to use a secure, tokenized URL as specified at https://account.akka.io/token.
 @@@
 
 To use Akka Actors, add the following dependency in your project:
