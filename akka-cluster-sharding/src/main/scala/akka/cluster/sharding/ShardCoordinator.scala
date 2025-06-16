@@ -1307,7 +1307,7 @@ abstract class ShardCoordinator(
     }
 
   protected def unstashOneGetShardHomeRequest(): Unit
-  protected def unstashGetShardHomeRequestsForShard(shard: ShardId): Unit
+  protected def unstashGetShardHomeRequestsForShard(shard: ShardId): Unit = ()
 
   private def regionAddress(region: ActorRef): Address = {
     if (region.path.address.host.isEmpty) cluster.selfAddress
@@ -1500,7 +1500,6 @@ class PersistentShardCoordinator(
   }
 
   override protected def unstashOneGetShardHomeRequest(): Unit = ()
-  override protected def unstashGetShardHomeRequestsForShard(shard: ShardId): Unit = ()
 }
 
 /**
