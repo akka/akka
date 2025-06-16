@@ -4,6 +4,16 @@ We follow the standard GitHub [fork & pull](https://help.github.com/articles/usi
 
 You're always welcome to submit your PR straight away and start the discussion (without reading the rest of this wonderful doc or the README.md). The goal of these notes is to make your experience contributing to Akka as smooth and pleasant as possible. We're happy to guide you through the process once you've submitted your PR.
 
+## Build Token
+
+To build locally, you need to fetch a token at https://account.akka.io/token that you have to place at `~/.sbt/.credentials` in the following format:
+```
+realm=Private Repository: lightbend/akka
+host=dl.cloudsmith.io
+user=...
+password=...
+```
+
 ## The Akka Community
 
 Reach out with questions via the forum at [discuss.akka.io](https://discuss.akka.io). 
