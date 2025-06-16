@@ -670,7 +670,7 @@ abstract class ShardCoordinator(
 
   val log = Logging.withMarker(context.system, this)
   private val verboseDebug = context.system.settings.config.getBoolean("akka.cluster.sharding.verbose-debug-logging")
-  private val ignoreRef = context.system.asInstanceOf[ExtendedActorSystem].provider.ignoreRef
+  protected val ignoreRef = context.system.asInstanceOf[ExtendedActorSystem].provider.ignoreRef
 
   val cluster = Cluster(context.system)
   val removalMargin = cluster.downingProvider.downRemovalMargin
@@ -1286,6 +1286,7 @@ abstract class ShardCoordinator(
 
               sendHostShardMsg(evt.shard, evt.region)
               getShardHomeSender ! ShardHome(evt.shard, evt.region)
+              unstashGetShardHomeRequestsForShard(evt.shard)
             }
           } else {
             if (verboseDebug)
@@ -1306,6 +1307,7 @@ abstract class ShardCoordinator(
     }
 
   protected def unstashOneGetShardHomeRequest(): Unit
+  protected def unstashGetShardHomeRequestsForShard(shard: ShardId): Unit
 
   private def regionAddress(region: ActorRef): Address = {
     if (region.path.address.host.isEmpty) cluster.selfAddress
@@ -1498,6 +1500,7 @@ class PersistentShardCoordinator(
   }
 
   override protected def unstashOneGetShardHomeRequest(): Unit = ()
+  override protected def unstashGetShardHomeRequestsForShard(shard: ShardId): Unit = ()
 }
 
 /**
@@ -1848,10 +1851,26 @@ private[akka] class DDataShardCoordinator(
   override protected def unstashOneGetShardHomeRequest(): Unit = {
     if (getShardHomeRequests.nonEmpty) {
       // unstash one, will continue unstash of next after receive GetShardHome or update completed
-      val requestTuple = getShardHomeRequests.head
+      val requestTuple = {
+        // prefer a request with a non-ignored sender
+        val hasActualSender = getShardHomeRequests.iterator.filter(_._1 != ignoreRef)
+        if (hasActualSender.hasNext) hasActualSender.next()
+        else getShardHomeRequests.head
+      }
       val (originalSender, request) = requestTuple
       self.tell(request, sender = originalSender)
       getShardHomeRequests -= requestTuple
+    }
+  }
+
+  override protected def unstashGetShardHomeRequestsForShard(shard: ShardId): Unit = {
+    if (getShardHomeRequests.nonEmpty) {
+      val requestsForShard = getShardHomeRequests.filter(_._2.shard == shard)
+      requestsForShard.foreach {
+        case (originalSender, request) =>
+          self.tell(request, sender = originalSender)
+      }
+      getShardHomeRequests = getShardHomeRequests -- requestsForShard
     }
   }
 
