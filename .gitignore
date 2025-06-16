@@ -109,3 +109,4 @@ akka-docs/src/main/paradox/attachments
 
 # to not share individual tokens
 akka.sbt
+project/akka.sbt
