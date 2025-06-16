@@ -10,6 +10,9 @@ on:
     tags: ["*"]
   workflow_dispatch:
 
+env:
+  CLOUDSMITH_MACHINE_AKKA_CREDS: ${{ secrets.CLOUDSMITH_MACHINE_AKKA_CREDS }}
+
 permissions:
   contents: read
 
