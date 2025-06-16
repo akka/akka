@@ -1,6 +1,3 @@
-resolvers += "lightbend-akka".at("https://dl.cloudsmith.io/basic/lightbend/akka/maven/")
-credentials += Credentials(Path.userHome / ".sbt" / ".credentials")
-
 libraryDependencies += Defaults.sbtPluginExtra(
   "com.eed3si9n" % "sbt-assembly" % "2.2.0",
   (pluginCrossBuild / sbtBinaryVersion).value,

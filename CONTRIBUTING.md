@@ -6,7 +6,7 @@ You're always welcome to submit your PR straight away and start the discussion (
 
 ## Build Token
 
-To build locally, you need to fetch a token at https://account.akka.io/token that you have to place into the `akka.sbt` file like this:
+To build locally, you need to fetch a token at https://account.akka.io/token that you have to place into the `akka.sbt` and `project/akka.sbt` files like this:
 ```
 ThisBuild / resolvers += "lightbend-akka".at("your token resolver here")
 ```
