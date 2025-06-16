@@ -6,12 +6,9 @@ You're always welcome to submit your PR straight away and start the discussion (
 
 ## Build Token
 
-To build locally, you need to fetch a token at https://account.akka.io/token that you have to place at `~/.sbt/.credentials` in the following format:
+To build locally, you need to fetch a token at https://account.akka.io/token that you have to place into the `akka.sbt` file like this:
 ```
-realm=Private Repository: lightbend/akka
-host=dl.cloudsmith.io
-user=...
-password=...
+ThisBuild / resolvers += "lightbend-akka".at("your token resolver here")
 ```
 
 ## The Akka Community
