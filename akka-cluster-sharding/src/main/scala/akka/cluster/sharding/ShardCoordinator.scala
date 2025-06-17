@@ -1851,13 +1851,15 @@ private[akka] class DDataShardCoordinator(
   override protected def unstashOneGetShardHomeRequest(): Unit = {
     if (getShardHomeRequests.nonEmpty) {
       // unstash one, will continue unstash of next after receive GetShardHome or update completed
-      val requestTuple = {
+      val requestTuple @ (originalSender, request) = {
         // prefer a request with a non-ignored sender
-        val hasActualSender = getShardHomeRequests.iterator.filter(_._1 != ignoreRef)
+        val hasActualSender = getShardHomeRequests.iterator.filter {
+          case (originalSender, _) => originalSender != ignoreRef
+        }
+
         if (hasActualSender.hasNext) hasActualSender.next()
         else getShardHomeRequests.head
       }
-      val (originalSender, request) = requestTuple
       self.tell(request, sender = originalSender)
       getShardHomeRequests -= requestTuple
     }
