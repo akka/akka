@@ -22,6 +22,8 @@ import akka.serialization.{ BaseSerializer, SerializationExtension, SerializerWi
 import akka.util.ClassLoaderObjectInputStream
 import scala.jdk.CollectionConverters._
 
+import akka.serialization.DisabledJavaSerializer
+
 /**
  * Protobuf serializer for [[akka.cluster.metrics.ClusterMetricsMessage]] types.
  */
@@ -186,7 +188,7 @@ class MessageSerializer(val system: ExtendedActorSystem) extends SerializerWithS
       cm.NodeMetrics.EWMA.newBuilder().setValue(x.value).setAlpha(x.alpha)
     }
 
-    def numberToProto(number: Number): cm.NodeMetrics.Number.Builder = {
+    @tailrec def numberToProto(number: Number): cm.NodeMetrics.Number.Builder = {
       import cm.NodeMetrics.Number
       import cm.NodeMetrics.NumberType
       number match {
@@ -194,15 +196,27 @@ class MessageSerializer(val system: ExtendedActorSystem) extends SerializerWithS
         case n: jl.Long    => Number.newBuilder().setType(NumberType.Long).setValue64(n)
         case n: jl.Float   => Number.newBuilder().setType(NumberType.Float).setValue32(jl.Float.floatToIntBits(n))
         case n: jl.Integer => Number.newBuilder().setType(NumberType.Integer).setValue32(n)
+        case n: java.math.BigInteger =>
+          numberToProto(n.longValue) // this truncation is anyway in MetricNumericConverter
+        case n: BigInt => numberToProto(n.toLong) // this truncation is anyway in MetricNumericConverter
+        case n: java.math.BigDecimal =>
+          numberToProto(n.doubleValue) // this rounding is anyway in MetricNumericConverter
+        case n: BigDecimal => numberToProto(n.toDouble) // this rounding is anyway in MetricNumericConverter
         case _ =>
-          val bos = new ByteArrayOutputStream
-          val out = new ObjectOutputStream(bos)
-          out.writeObject(number)
-          out.close()
-          Number
-            .newBuilder()
-            .setType(NumberType.Serialized)
-            .setSerialized(ByteStringUtils.toProtoByteStringUnsafe(bos.toByteArray))
+          if (system.settings.AllowJavaSerialization) {
+            val bos = new ByteArrayOutputStream
+            val out = new ObjectOutputStream(bos)
+            out.writeObject(number)
+            out.close()
+            Number
+              .newBuilder()
+              .setType(NumberType.Serialized)
+              .setSerialized(ByteStringUtils.toProtoByteStringUnsafe(bos.toByteArray))
+          } else {
+            // this is the default, and it shouldn't happen since all number types should be covered above
+            throw throw new DisabledJavaSerializer.JavaSerializationException(
+              s"Unsupported number [${number.getClass.getName}], when Java serialization is disabled")
+          }
       }
     }
 
@@ -253,12 +267,18 @@ class MessageSerializer(val system: ExtendedActorSystem) extends SerializerWithS
         case NumberType.Float_VALUE   => jl.Float.intBitsToFloat(number.getValue32)
         case NumberType.Integer_VALUE => number.getValue32
         case NumberType.Serialized_VALUE =>
-          val in = new ClassLoaderObjectInputStream(
-            system.dynamicAccess.classLoader,
-            new ByteArrayInputStream(number.getSerialized.toByteArray))
-          val obj = in.readObject
-          in.close()
-          obj.asInstanceOf[jl.Number]
+          if (system.settings.AllowJavaSerialization) {
+            val in = new ClassLoaderObjectInputStream(
+              system.dynamicAccess.classLoader,
+              new ByteArrayInputStream(number.getSerialized.toByteArray))
+            val obj = in.readObject
+            in.close()
+            obj.asInstanceOf[jl.Number]
+          } else {
+            // this is the default, and it shouldn't happen since all number types should be covered above
+            throw throw new DisabledJavaSerializer.JavaSerializationException(
+              s"Unsupported number [${number.getClass.getName}], when Java serialization is disabled")
+          }
       }
     }
 
