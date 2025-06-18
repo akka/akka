@@ -22,13 +22,9 @@ This page does not list all available modules, but overviews the main functional
 
 ### Actor library
 
-The Akka dependencies are available from Akka's library repository. To access them there, you need to configure the URL for this repository.
-
-@@repository [sbt,Maven,Gradle] {
-id="akka-repository"
-name="Akka library repository"
-url="https://repo.akka.io/maven"
-}
+@@@note
+The Akka dependencies are available from Akka’s secure library repository. To access them you need to use a secure, tokenized URL as specified at https://account.akka.io/token.
+@@@
 
 Additionally, add the dependency as below.
 
@@ -60,13 +56,9 @@ Challenges that actors solve include the following:
 
 ### Remoting
 
-The Akka dependencies are available from Akka's library repository. To access them there, you need to configure the URL for this repository.
-
-@@repository [sbt,Maven,Gradle] {
-id="akka-repository"
-name="Akka library repository"
-url="https://repo.akka.io/maven"
-}
+@@@note
+The Akka dependencies are available from Akka’s secure library repository. To access them you need to use a secure, tokenized URL as specified at https://account.akka.io/token.
+@@@
 
 Additionally, add the dependency as below.
 
@@ -96,13 +88,9 @@ Challenges Remoting solves include the following:
 
 ### Cluster
 
-The Akka dependencies are available from Akka's library repository. To access them there, you need to configure the URL for this repository.
-
-@@repository [sbt,Maven,Gradle] {
-id="akka-repository"
-name="Akka library repository"
-url="https://repo.akka.io/maven"
-}
+@@@note
+The Akka dependencies are available from Akka’s secure library repository. To access them you need to use a secure, tokenized URL as specified at https://account.akka.io/token.
+@@@
 
 Additionally, add the dependency as below.
 
@@ -132,13 +120,9 @@ Challenges the Cluster module solves include the following:
 
 ### Cluster Sharding
 
-The Akka dependencies are available from Akka's library repository. To access them there, you need to configure the URL for this repository.
-
-@@repository [sbt,Maven,Gradle] {
-id="akka-repository"
-name="Akka library repository"
-url="https://repo.akka.io/maven"
-}
+@@@note
+The Akka dependencies are available from Akka’s secure library repository. To access them you need to use a secure, tokenized URL as specified at https://account.akka.io/token.
+@@@
 
 Additionally, add the dependency as below.
 
@@ -164,13 +148,9 @@ Challenges that Sharding solves include the following:
 
 ### Cluster Singleton
 
-The Akka dependencies are available from Akka's library repository. To access them there, you need to configure the URL for this repository.
-
-@@repository [sbt,Maven,Gradle] {
-id="akka-repository"
-name="Akka library repository"
-url="https://repo.akka.io/maven"
-}
+@@@note
+The Akka dependencies are available from Akka’s secure library repository. To access them you need to use a secure, tokenized URL as specified at https://account.akka.io/token.
+@@@
 
 Additionally, add the dependency as below.
 
@@ -198,13 +178,9 @@ The Singleton module can be used to solve these challenges:
 
 ### Persistence
 
-The Akka dependencies are available from Akka's library repository. To access them there, you need to configure the URL for this repository.
-
-@@repository [sbt,Maven,Gradle] {
-id="akka-repository"
-name="Akka library repository"
-url="https://repo.akka.io/maven"
-}
+@@@note
+The Akka dependencies are available from Akka’s secure library repository. To access them you need to use a secure, tokenized URL as specified at https://account.akka.io/token.
+@@@
 
 Additionally, add the dependency as below.
 
@@ -233,13 +209,9 @@ Persistence tackles the following challenges:
 
 ### Projections
 
-The Akka dependencies are available from Akka's library repository. To access them there, you need to configure the URL for this repository.
-
-@@repository [sbt,Maven,Gradle] {
-id="akka-repository"
-name="Akka library repository"
-url="https://repo.akka.io/maven"
-}
+@@@note
+The Akka dependencies are available from Akka’s secure library repository. To access them you need to use a secure, tokenized URL as specified at https://account.akka.io/token.
+@@@
 
 Additionally, add the dependency as below.
 
@@ -263,13 +235,9 @@ Challenges Projections solve include the following:
 
 ### Distributed Data
 
-The Akka dependencies are available from Akka's library repository. To access them there, you need to configure the URL for this repository.
-
-@@repository [sbt,Maven,Gradle] {
-id="akka-repository"
-name="Akka library repository"
-url="https://repo.akka.io/maven"
-}
+@@@note
+The Akka dependencies are available from Akka’s secure library repository. To access them you need to use a secure, tokenized URL as specified at https://account.akka.io/token.
+@@@
 
 Additionally, add the dependency as below.
 
@@ -295,13 +263,9 @@ Distributed Data is intended to solve the following challenges:
 
 ### Streams
 
-The Akka dependencies are available from Akka's library repository. To access them there, you need to configure the URL for this repository.
-
-@@repository [sbt,Maven,Gradle] {
-id="akka-repository"
-name="Akka library repository"
-url="https://repo.akka.io/maven"
-}
+@@@note
+The Akka dependencies are available from Akka’s secure library repository. To access them you need to use a secure, tokenized URL as specified at https://account.akka.io/token.
+@@@
 
 Additionally, add the dependency as below.
 
