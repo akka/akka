@@ -113,7 +113,12 @@ class ForkJoinExecutorConfigurator(config: Config, prerequisites: DispatcherPrer
           """"task-peeking-mode" in "fork-join-executor" section could only set to "FIFO" or "LIFO".""")
     }
 
-    val maxSpareThreads = config.getInt("maximum-spare-threads")
+    val maxSpareThreads =
+      if (config.hasPath("maximum-spare-threads")) config.getInt("maximum-spare-threads")
+      else {
+        // old configs for custom dispatchers might not pick up this setting naturally (use the apparent JVM default)
+        256
+      }
 
     new ForkJoinExecutorServiceFactory(
       validate(tf),
