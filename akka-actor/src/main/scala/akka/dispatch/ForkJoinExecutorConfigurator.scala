@@ -92,6 +92,10 @@ class ForkJoinExecutorConfigurator(config: Config, prerequisites: DispatcherPrer
       extends ExecutorServiceFactory {
     def this(threadFactory: ForkJoinPool.ForkJoinWorkerThreadFactory, parallelism: Int) =
       this(threadFactory, parallelism, asyncMode = true, 256)
+
+    def this(threadFactory: ForkJoinPool.ForkJoinWorkerThreadFactory, parallelism: Int, asyncMode: Boolean) =
+      this(threadFactory, parallelism, asyncMode, 256)
+
     def createExecutorService: ExecutorService =
       new AkkaForkJoinPool(parallelism, threadFactory, MonitorableThreadFactory.doNothing, asyncMode, maxSpareThreads)
   }
