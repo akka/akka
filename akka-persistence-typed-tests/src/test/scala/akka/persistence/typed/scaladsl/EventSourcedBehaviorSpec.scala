@@ -52,6 +52,7 @@ import akka.persistence.typed.SnapshotMetadata
 import akka.persistence.typed.SnapshotSelectionCriteria
 import akka.serialization.jackson.CborSerializable
 import akka.stream.scaladsl.Sink
+import akka.persistence.typed.SnapshotRecovered
 
 object EventSourcedBehaviorSpec {
 
@@ -304,6 +305,8 @@ object EventSourcedBehaviorSpec {
 
         })
       .receiveSignal {
+        case (_, SnapshotRecovered(metadata)) =>
+          snapshotProbe ! Success(metadata)
         case (_, RecoveryCompleted) => ()
         case (_, SnapshotCompleted(metadata)) =>
           snapshotProbe ! Success(metadata)
@@ -462,6 +465,7 @@ class EventSourcedBehaviorSpec
           })
 
       val counterSetup = spawn(counterWithSnapshotSelectionCriteria(Recovery.default))
+      snapshotProbe.expectNoMessage(100.millis)
       counterSetup ! Increment
       counterSetup ! Increment
       counterSetup ! Increment
@@ -475,6 +479,7 @@ class EventSourcedBehaviorSpec
       val counterWithSnapshotSelectionCriteriaNone = spawn(
         counterWithSnapshotSelectionCriteria(Recovery.withSnapshotSelectionCriteria(SnapshotSelectionCriteria.none)))
       // replay all events, no snapshot
+      snapshotProbe.expectNoMessage(100.millis)
       eventProbe.expectMessage(State(0, Vector.empty) -> Incremented(1))
       eventProbe.expectMessage(State(1, Vector(0)) -> Incremented(1))
       eventProbe.expectMessage(State(2, Vector(0, 1)) -> Incremented(1))
@@ -485,10 +490,12 @@ class EventSourcedBehaviorSpec
 
       counterWithSnapshotSelectionCriteriaNone ! StopIt
       commandProbe.expectTerminated(counterWithSnapshotSelectionCriteriaNone)
+      snapshotProbe.receiveMessage()
 
       val counterWithSnapshotSelectionCriteriaLatest = spawn(
         counterWithSnapshotSelectionCriteria(Recovery.withSnapshotSelectionCriteria(SnapshotSelectionCriteria.latest)))
       // replay no events, only latest snapshot
+      snapshotProbe.receiveMessage().get.sequenceNr shouldBe 4
       eventProbe.expectNoMessage()
       counterWithSnapshotSelectionCriteriaLatest ! Increment
       counterWithSnapshotSelectionCriteriaLatest ! GetValue(commandProbe.ref)
