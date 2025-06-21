@@ -18,6 +18,12 @@ import akka.annotation.InternalApi
 @DoNotInherit
 sealed trait EventSourcedSignal extends Signal
 
+final case class SnapshotRecovered(metadata: SnapshotMetadata) extends EventSourcedSignal {
+
+  /** Java API */
+  def getMetadata(): SnapshotMetadata = metadata
+}
+
 @DoNotInherit sealed abstract class RecoveryCompleted extends EventSourcedSignal
 case object RecoveryCompleted extends RecoveryCompleted {
   def instance: RecoveryCompleted = this

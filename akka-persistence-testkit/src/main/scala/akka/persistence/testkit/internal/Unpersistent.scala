@@ -25,6 +25,7 @@ import scala.jdk.CollectionConverters._
 
 import akka.persistence.CompositeMetadata
 import akka.persistence.typed.internal.EventSourcedBehaviorImpl.WithMetadataAccessible
+import akka.persistence.typed.SnapshotRecovered
 
 /**
  * INTERNAL API
@@ -116,6 +117,7 @@ private[akka] object Unpersistent {
     private def sendSignal(signal: EventSourcedSignal): Unit =
       signalHandler.applyOrElse(state -> signal, doNothing)
 
+    sendSignal(SnapshotRecovered(snapshotMetadata()))
     sendSignal(RecoveryCompleted)
 
     override def onMessage(cmd: Command): Behavior[Command] = {
