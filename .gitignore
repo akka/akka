@@ -106,7 +106,3 @@ native/
 
 # attachments created by scripts/prepare-downloads.sh
 akka-docs/src/main/paradox/attachments
-
-# to not share individual tokens
-akka.sbt
-project/akka.sbt
