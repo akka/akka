@@ -25,7 +25,7 @@ object ForkJoinExecutorConfigurator {
         threadFactory,
         unhandledExceptionHandler,
         asyncMode,
-        parallelism, // corePoolSize
+        0, // corePoolSize effectively equals Math.max(0, parallelism)
         parallelism + maxSpareThreads, // maximumPoolSize
         1, // minimumRunnable
         _ => true, // saturate (don't reject execution)
