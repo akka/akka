@@ -169,16 +169,16 @@ private[akka] class ReplayingSnapshot[C, E, S](override val setup: BehaviorSetup
       }
 
       setup.internalLogger.debug("Snapshot recovered from {} {} {}", seqNr, seenPerReplica, version)
-      snapshot.foreach { snap =>
-        import akka.persistence.typed.{ SnapshotMetadata => TypedSnapshotMetadata }
-
-        setup.onSignal(state, SnapshotRecovered(TypedSnapshotMetadata.fromClassic(snap.metadata)), catchAndLog = true)
-      }
 
       setup.cancelRecoveryTimer()
 
       setup.currentSequenceNumber = seqNr
       setup.currentMetadata = metadata
+      snapshot.foreach { snap =>
+        import akka.persistence.typed.{ SnapshotMetadata => TypedSnapshotMetadata }
+
+        setup.onSignal(state, SnapshotRecovered(TypedSnapshotMetadata.fromClassic(snap.metadata)), catchAndLog = true)
+      }
 
       ReplayingEvents[C, E, S](
         setup,
