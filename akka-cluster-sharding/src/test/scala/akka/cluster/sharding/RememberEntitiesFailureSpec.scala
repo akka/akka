@@ -404,7 +404,7 @@ class RememberEntitiesFailureSpec
 
       var sharding: ActorRef = null
       val probe = TestProbe()
-      implicit val sender = probe.ref
+      implicit val sender: ActorRef = probe.ref
 
       val spawnProbe = TestProbe()
       val props = Props[EntityActor] {
