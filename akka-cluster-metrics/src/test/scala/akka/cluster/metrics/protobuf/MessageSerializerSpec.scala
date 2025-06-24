@@ -4,6 +4,8 @@
 
 package akka.cluster.metrics.protobuf
 
+import java.math.BigInteger
+
 import akka.actor.{ Address, ExtendedActorSystem }
 import akka.cluster.MemberStatus
 import akka.cluster.TestMember
@@ -52,7 +54,10 @@ class MessageSerializerSpec extends AkkaSpec("""
               Metric("bar2", Float.MaxValue, None),
               Metric("bar3", Int.MaxValue, None),
               Metric("bar4", Long.MaxValue, None),
-              Metric("bar5", BigInt(Long.MaxValue), None)))))
+              Metric("bar5", BigInt(Long.MaxValue), None),
+              Metric("bar6", new BigInteger(s"${Long.MaxValue}"), None),
+              Metric("bar7", BigDecimal.exact(s"${Long.MaxValue}.0"), None),
+              Metric("bar8", new java.math.BigDecimal(s"${Long.MaxValue}.0"), None)))))
 
       checkSerialization(MetricsGossipEnvelope(a1.address, metricsGossip, true))
 

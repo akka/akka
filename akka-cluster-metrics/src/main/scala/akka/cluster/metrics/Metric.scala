@@ -260,13 +260,15 @@ private[metrics] trait MetricNumericConverter {
    * May involve rounding or truncation.
    */
   def convertNumber(from: Any): Either[Long, Double] = from match {
-    case n: Int        => Left(n)
-    case n: Long       => Left(n)
-    case n: Double     => Right(n)
-    case n: Float      => Right(n)
-    case n: BigInt     => Left(n.longValue)
-    case n: BigDecimal => Right(n.doubleValue)
-    case x             => throw new IllegalArgumentException(s"Not a number [$x]")
+    case n: Int                  => Left(n)
+    case n: Long                 => Left(n)
+    case n: Double               => Right(n)
+    case n: Float                => Right(n)
+    case n: BigInt               => Left(n.longValue)
+    case n: java.math.BigInteger => Left(n.longValue)
+    case n: BigDecimal           => Right(n.doubleValue)
+    case n: java.math.BigDecimal => Right(n.doubleValue)
+    case x                       => throw new IllegalArgumentException(s"Not a number [$x]")
   }
 
 }
