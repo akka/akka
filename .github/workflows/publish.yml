@@ -37,6 +37,11 @@ jobs:
         with:
           jvm: temurin:1.11.0.17
 
+      - name: Set up Akka resolver
+        run: |-
+          mkdir ~/.sbt
+          printf "%s" "$CLOUDSMITH_MACHINE_AKKA_CREDS" > ~/.sbt/.credentials
+
       - name: Publish
         run: |-
           sudo apt-get install graphviz
