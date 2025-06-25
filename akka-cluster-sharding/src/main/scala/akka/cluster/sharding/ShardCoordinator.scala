@@ -650,6 +650,61 @@ object ShardCoordinator {
     Props(new RebalanceWorker(typeName, shard, shardRegionFrom, handOffTimeout, regions, isRebalance))
   }
 
+  /** INTERNAL API */
+  @InternalApi
+  private[akka] final class PendingGetShardHomes(val requestsByShard: Map[ShardRegion.ShardId, Set[ActorRef]]) {
+    import ShardRegion.ShardId
+
+    def addRequest(shard: ShardId, replyTo: Option[ActorRef]): PendingGetShardHomes =
+      replyTo match {
+        case None =>
+          // demand, but no replyTo
+          if (requestsByShard.contains(shard)) this
+          else new PendingGetShardHomes(requestsByShard + (shard -> Set.empty))
+
+        case Some(r) =>
+          new PendingGetShardHomes(requestsByShard.updatedWith(shard) { current =>
+            current.orElse(Some(Set.empty[ActorRef])).map(_.incl(r))
+          })
+      }
+
+    def removeRequestsForShard(shard: ShardId): (Set[ActorRef], PendingGetShardHomes) =
+      if (requestsByShard.contains(shard)) {
+        requestsByShard(shard) -> new PendingGetShardHomes(requestsByShard - shard)
+      } else Set.empty -> this
+
+    def removeRequest(): (Option[(ShardId, Option[ActorRef])], PendingGetShardHomes) =
+      if (requestsByShard.isEmpty) None -> this
+      else {
+        val iterator = requestsByShard.iterator
+        val first = {
+          val (shard, r2s) = iterator.next()
+          shard -> r2s.size
+        }
+
+        val (selectedShard, _) = iterator.foldLeft(first) { (acc, req) =>
+          val (_, selectedSize) = acc
+          val (requestedShard, r2s) = req
+
+          if (r2s.size > selectedSize) requestedShard -> r2s.size
+          else acc
+        }
+
+        val selectedReplyTo = requestsByShard(selectedShard).headOption
+        val nextPending = selectedReplyTo match {
+          case None => new PendingGetShardHomes(requestsByShard - selectedShard)
+          case Some(r) =>
+            new PendingGetShardHomes(requestsByShard.updatedWith(selectedShard)(_.flatMap { replyTos =>
+              val next = replyTos.excl(r)
+
+              if (next.isEmpty) None // no need to leave any ignored replyTo after removal
+              else Some(next)
+            }))
+        }
+
+        Some(selectedShard -> selectedReplyTo) -> nextPending
+      }
+  }
 }
 
 /**
@@ -1540,6 +1595,7 @@ private[akka] class DDataShardCoordinator(
     with Timers {
   import DDataShardCoordinator._
   import ShardCoordinator.Internal._
+  import ShardCoordinator.PendingGetShardHomes
 
   import akka.cluster.ddata.Replicator.Update
 
@@ -1560,7 +1616,7 @@ private[akka] class DDataShardCoordinator(
   private val initEmptyState = State.empty.withRememberEntities(settings.rememberEntities)
 
   private var terminating = false
-  private var getShardHomeRequests: Set[(ActorRef, GetShardHome)] = Set.empty
+  private var getShardHomeRequests = new PendingGetShardHomes(Map.empty)
   private var initialStateRetries = 0
   private var updateStateRetries = 0
 
@@ -1845,35 +1901,28 @@ private[akka] class DDataShardCoordinator(
       typeName,
       request.shard,
       sender)
-    getShardHomeRequests += (sender -> request)
+    val replyTo = if (sender == ignoreRef) None else Some(sender)
+    getShardHomeRequests = getShardHomeRequests.addRequest(request.shard, replyTo)
   }
 
   override protected def unstashOneGetShardHomeRequest(): Unit = {
-    if (getShardHomeRequests.nonEmpty) {
-      // unstash one, will continue unstash of next after receive GetShardHome or update completed
-      val requestTuple @ (originalSender, request) = {
-        // prefer a request with a non-ignored sender
-        val hasActualSender = getShardHomeRequests.iterator.filter {
-          case (originalSender, _) => originalSender != ignoreRef
-        }
-
-        if (hasActualSender.hasNext) hasActualSender.next()
-        else getShardHomeRequests.head
-      }
-      self.tell(request, sender = originalSender)
-      getShardHomeRequests -= requestTuple
+    // prefers shard with most requests from regions
+    val (req, nextPending) = getShardHomeRequests.removeRequest()
+    req.foreach {
+      case (shard, replyTo) =>
+        val effectiveSender = replyTo.getOrElse(ignoreRef)
+        self.tell(GetShardHome(shard), effectiveSender)
     }
+    getShardHomeRequests = nextPending
   }
 
   override protected def unstashGetShardHomeRequestsForShard(shard: ShardId): Unit = {
-    if (getShardHomeRequests.nonEmpty) {
-      val requestsForShard = getShardHomeRequests.filter(_._2.shard == shard)
-      requestsForShard.foreach {
-        case (originalSender, request) =>
-          self.tell(request, sender = originalSender)
-      }
-      getShardHomeRequests = getShardHomeRequests -- requestsForShard
+    val req = GetShardHome(shard)
+    val (r2s, nextPending) = getShardHomeRequests.removeRequestsForShard(shard)
+    r2s.foreach { originalSender =>
+      self.tell(req, originalSender)
     }
+    getShardHomeRequests = nextPending
   }
 
   def activate(): Unit = {
