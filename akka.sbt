@@ -2,6 +2,6 @@ ThisBuild / resolvers += "lightbend-akka".at("https://dl.cloudsmith.io/basic/lig
 ThisBuild / credentials ++= {
   val path = Path.userHome / ".sbt" / ".credentials"
   if(path.isFile) {
-    Seq(Credentials(Path.userHome / ".sbt" / ".credentials"))
+    Seq(Credentials(path))
   } else Nil
 }
