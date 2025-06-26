@@ -44,12 +44,10 @@ jobs:
           mkdir ~/.sbt
           printf "%s" "$CLOUDSMITH_MACHINE_AKKA_CREDS" > ~/.sbt/.credentials
 
-      - name: Get creds test
-        id: creds_test
-        run: echo "version=$(cat ~/.sbt/.credentials)" >> $GITHUB_OUTPUT
-        
-      - name: Creds test output
-        run: echo ${{ steps.creds_test.outputs.version }}
+      - name: Output SBT credentials
+        run: |
+          echo "Contents of ~/.sbt/.credentials:"
+          cat ~/.sbt/.credentials
 
       - name: Code style check
         run: |-
