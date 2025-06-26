@@ -1,5 +1,3 @@
-resolvers += "Akka library repository".at("https://repo.akka.io/maven")
-
 libraryDependencies += Defaults.sbtPluginExtra(
   "com.eed3si9n" % "sbt-assembly" % "2.2.0",
   (pluginCrossBuild / sbtBinaryVersion).value,
