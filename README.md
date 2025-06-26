@@ -1,4 +1,4 @@
-Akka
+Akka 
 ====
 The Akka family of projects is managed by teams at [Akka](https://akka.io/) with help from the community.
 
