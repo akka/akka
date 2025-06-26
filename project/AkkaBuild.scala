@@ -87,7 +87,7 @@ object AkkaBuild {
     else Seq.empty,
     // should we be allowed to use artifacts from sonatype snapshots
     if (System.getProperty("akka.build.useSnapshotSonatypeResolver", "false").toBoolean)
-      resolvers ++= Resolver.sonatypeOssRepos("snapshots")
+      resolvers += Resolver.sonatypeCentralSnapshots
     else Seq.empty,
     pomIncludeRepository := (_ => false) // do not leak internal repositories during staging
   )
