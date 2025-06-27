@@ -9,16 +9,13 @@ on:
       - v2.6.*
       - v2.7.*
 
-env:
-  CLOUDSMITH_MACHINE_AKKA_CREDS: ${{ secrets.CLOUDSMITH_MACHINE_AKKA_CREDS }}
-
 permissions:
   contents: read
 
 jobs:
   check-binary-compatibility:
     name: Check / Binary Compatibility
-    runs-on: ubuntu-22.04
+    runs-on: Default
     if: github.repository == 'akka/akka'
     strategy:
       fail-fast: false
@@ -47,11 +44,6 @@ jobs:
         uses: coursier/setup-action@7bde40eee928896f074dbb76d22dd772eed5c65f
         with:
           jvm: temurin:1.11
-
-      - name: Set up Akka resolver
-        run: |-
-          mkdir ~/.sbt
-          printf "%s" "$CLOUDSMITH_MACHINE_AKKA_CREDS" > ~/.sbt/.credentials
 
       - name: Test/compile
         run: |-

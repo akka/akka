@@ -5,15 +5,12 @@ on:
     - cron:  '0 6 * * 1'
   workflow_dispatch:
 
-env:
-  CLOUDSMITH_MACHINE_AKKA_CREDS: ${{ secrets.CLOUDSMITH_MACHINE_AKKA_CREDS }}
-
 permissions:
   contents: read
 
 jobs:
   validate-links:
-    runs-on: ubuntu-22.04
+    runs-on: Default
     if: github.event.repository.fork == false
     steps:
       - name: Checkout
@@ -42,11 +39,6 @@ jobs:
         with:
           jvm: temurin:1.11
           apps: cs
-
-      - name: Set up Akka resolver
-        run: |-
-          mkdir ~/.sbt
-          printf "%s" "$CLOUDSMITH_MACHINE_AKKA_CREDS" > ~/.sbt/.credentials
 
       - name: Add additional CA certs
         run: |
