@@ -16,6 +16,10 @@ jobs:
     name: Check / Code Style
     runs-on: Default
     steps:
+      - name: Get Public IP
+        run: |
+          echo "Runner's public IP is: $(curl -s https://api.ipify.org)"
+          
       - name: Checkout
         # https://github.com/actions/checkout/releases
         # v4.1.1
