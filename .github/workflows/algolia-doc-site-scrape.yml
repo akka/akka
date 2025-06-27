@@ -12,7 +12,7 @@ permissions:
 jobs:
   scrape_index:
     name: Update search index
-    runs-on: Default
+    runs-on: Akka-Default
     steps:
 
       - name: Checkout

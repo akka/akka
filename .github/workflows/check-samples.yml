@@ -17,7 +17,7 @@ permissions:
 jobs:
   check-samples:
     name: Check Sample Projects
-    runs-on: Default
+    runs-on: Akka-Default
     steps:
       - name: Checkout
         # https://github.com/actions/checkout/releases

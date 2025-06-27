@@ -21,7 +21,7 @@ concurrency:
 jobs:
   run-multi-node-tests:
     name: Multi Node Test
-    runs-on: Default
+    runs-on: Akka-Default
     if: github.repository == 'akka/akka'
     steps:
       - name: Checkout

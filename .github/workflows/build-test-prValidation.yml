@@ -14,7 +14,7 @@ permissions:
 jobs:
   check-code-style:
     name: Check / Code Style
-    runs-on: Default
+    runs-on: Akka-Default
     steps:
       - name: Checkout
         # https://github.com/actions/checkout/releases
@@ -46,7 +46,7 @@ jobs:
 
   pull-request-validation:
     name: Check / Tests
-    runs-on: Default
+    runs-on: Akka-Default
     steps:
       - name: Checkout
         # https://github.com/actions/checkout/releases
