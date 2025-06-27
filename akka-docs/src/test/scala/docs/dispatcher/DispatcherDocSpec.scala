@@ -60,6 +60,8 @@ object DispatcherDocSpec {
         parallelism-factor = 2.0
         # Max number of threads to cap factor-based parallelism number to
         parallelism-max = 10
+        # Max number of additional threads to spawn by ManagedBlocker
+        maximum-spare-threads = 16
       }
       # Throughput defines the maximum number of messages to be
       # processed per actor before the thread jumps to the next actor.
