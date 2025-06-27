@@ -989,6 +989,7 @@ private[akka] class Shard(
             log.debug("{}: Passivation started for [{}]", typeName, id)
           entities.entityPassivating(id)
           entity ! stopMessage
+
           val passivationTimeout = PassivationTimedOut(entity)
           timers.startSingleTimer(
             passivationTimeout,
@@ -1144,7 +1145,12 @@ private[akka] class Shard(
   def getOrCreateEntity(id: EntityId): ActorRef = {
     entities.entity(id) match {
       case OptionVal.Some(child) => child
-      case _ =>
+      case _                     =>
+        // if we're remembering entities, there's a chance we have a timer to restart, which is now moot
+        if (rememberEntitiesStore.isDefined && entities.entityState(id) == WaitingForRestart) {
+          timers.cancel(RestartTerminatedEntity(id))
+        }
+
         val name = URLEncoder.encode(id, "utf-8")
         val a = context.actorOf(entityProps(id), name)
         context.watchWith(a, EntityTerminated(a))
