@@ -5,9 +5,6 @@ on:
     - cron: "0 0 * * *"
   workflow_dispatch:
 
-env:
-  CLOUDSMITH_MACHINE_AKKA_CREDS: ${{ secrets.CLOUDSMITH_MACHINE_AKKA_CREDS }}
-
 permissions:
   contents: read
   # scacap/action-surefire-report (see https://github.com/ScaCap/action-surefire-report/pull/88/files)
@@ -18,7 +15,7 @@ jobs:
 
   akka-cluster-metrics-sigar:
     name: Akka Cluster Metrics Test with Sigar
-    runs-on: ubuntu-22.04
+    runs-on: Akka-Default
     if: github.repository == 'akka/akka'
     steps:
 
@@ -40,11 +37,6 @@ jobs:
         uses: coursier/setup-action@7bde40eee928896f074dbb76d22dd772eed5c65f
         with:
           jvm: temurin:1.11
-
-      - name: Set up Akka resolver
-        run: |-
-          mkdir ~/.sbt
-          printf "%s" "$CLOUDSMITH_MACHINE_AKKA_CREDS" > ~/.sbt/.credentials
 
       - name: sbt akka-cluster-metrics/test
         run: |-
@@ -94,7 +86,7 @@ jobs:
 
   jdk-nightly-build:
     name: JDK ${{ matrix.jdkVersion }} / Scala ${{ matrix.scalaVersion }}
-    runs-on: ubuntu-22.04
+    runs-on: Akka-Default
     if: github.repository == 'akka/akka'
     strategy:
       fail-fast: false
@@ -199,7 +191,7 @@ jobs:
 
   akka-artery-aeron-tests:
     name: Akka Artery Aeron Tests
-    runs-on: ubuntu-22.04
+    runs-on: Akka-Default
     if: github.repository == 'akka/akka'
     strategy:
       fail-fast: false
