@@ -13,7 +13,6 @@ permissions:
 
 env:
   USE_GKE_GCLOUD_AUTH_PLUGIN: True
-  CLOUDSMITH_MACHINE_AKKA_CREDS: ${{ secrets.CLOUDSMITH_MACHINE_AKKA_CREDS }}
 
 concurrency:
   # Only run once for latest commit per ref and cancel other (previous) runs.
@@ -23,7 +22,7 @@ concurrency:
 jobs:
   run-multi-node-aeron-tests:
     name: Multi Node Test with Artery Aeron UDP transport
-    runs-on: ubuntu-22.04
+    runs-on: Akka-Default
     if: github.repository == 'akka/akka'
     steps:
       - name: Checkout
@@ -74,11 +73,6 @@ jobs:
         uses: coursier/setup-action@7bde40eee928896f074dbb76d22dd772eed5c65f
         with:
           jvm: temurin:1.17
-
-      - name: Set up Akka resolver
-        run: |-
-          mkdir ~/.sbt
-          printf "%s" "$CLOUDSMITH_MACHINE_AKKA_CREDS" > ~/.sbt/.credentials
 
       - name: Multi node test with Artery Aeron UDP
         run: |
