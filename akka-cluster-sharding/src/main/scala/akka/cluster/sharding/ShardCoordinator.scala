@@ -1755,14 +1755,15 @@ private[akka] class DDataShardCoordinator(
       shardId: Option[ShardId],
       waitingForStateWrite: Boolean,
       waitingForRememberShard: Boolean,
-      afterUpdateCallback: E => Unit): Receive = {
+      afterUpdateCallback: E => Unit,
+      terminatingShardRegion: Option[Terminated]): Receive = {
 
     case UpdateSuccess(CoordinatorStateKey, Some(`evt`)) =>
       updateStateRetries = 0
       if (!waitingForRememberShard) {
         log.debug("{}: The coordinator state was successfully updated with {}", typeName, evt)
         if (shardId.isDefined) timers.cancel(RememberEntitiesTimeoutKey)
-        unbecomeAfterUpdate(evt, afterUpdateCallback)
+        unbecomeAfterUpdate(evt, afterUpdateCallback, terminatingShardRegion)
       } else {
         log.debug(
           "{}: The coordinator state was successfully updated with {}, waiting for remember shard update",
@@ -1774,7 +1775,8 @@ private[akka] class DDataShardCoordinator(
             shardId,
             waitingForStateWrite = false,
             waitingForRememberShard = true,
-            afterUpdateCallback = afterUpdateCallback))
+            afterUpdateCallback = afterUpdateCallback,
+            terminatingShardRegion = terminatingShardRegion))
       }
 
     case UpdateTimeout(CoordinatorStateKey, Some(`evt`)) =>
@@ -1821,6 +1823,25 @@ private[akka] class DDataShardCoordinator(
       if (!handleGetShardHome(shard))
         stashGetShardHomeRequest(sender(), g) // must wait for update that is in progress
 
+    case t @ Terminated(ref) if terminatingShardRegion.isEmpty && state.regions.get(ref).fold(0)(_.size) > 0 =>
+      // ensure that if this termination results in any state updates,
+      // those updates will be the next state update
+      // the effect is to bulk-deallocate shards associated with this region
+      // if there was a rebalance before this (graceful leaving) with pending
+      // RebalanceDone (which also deallocates shards), the handling for that
+      // accounts for processing Terminated before RebalanceDone
+      //
+      // Subsequent Terminateds while waiting for update will be handled like
+      // any other message (viz. stashed)
+      context.become(
+        waitingForUpdate(
+          evt,
+          shardId,
+          waitingForStateWrite = waitingForStateWrite,
+          waitingForRememberShard = waitingForRememberShard,
+          afterUpdateCallback = afterUpdateCallback,
+          terminatingShardRegion = Some(t)))
+
     case ShardCoordinator.Internal.Terminate =>
       log.debug("{}: The ShardCoordinator received termination message while waiting for update", typeName)
       terminating = true
@@ -1837,7 +1858,7 @@ private[akka] class DDataShardCoordinator(
         if (!waitingForStateWrite) {
           log.debug("{}: The ShardCoordinator saw remember shard start successfully written {}", typeName, evt)
           if (shardId.isDefined) timers.cancel(RememberEntitiesTimeoutKey)
-          unbecomeAfterUpdate(evt, afterUpdateCallback)
+          unbecomeAfterUpdate(evt, afterUpdateCallback, terminatingShardRegion)
         } else {
           log.debug(
             "{}: The ShardCoordinator saw remember shard start successfully written {}, waiting for state update",
@@ -1849,7 +1870,8 @@ private[akka] class DDataShardCoordinator(
               shardId,
               waitingForStateWrite = true,
               waitingForRememberShard = false,
-              afterUpdateCallback = afterUpdateCallback))
+              afterUpdateCallback = afterUpdateCallback,
+              terminatingShardRegion = terminatingShardRegion))
         }
       }
 
@@ -1885,8 +1907,18 @@ private[akka] class DDataShardCoordinator(
     case _ => stash()
   }
 
-  private def unbecomeAfterUpdate[E <: DomainEvent](evt: E, afterUpdateCallback: E => Unit): Unit = {
+  private def unbecomeAfterUpdate[E <: DomainEvent](
+      evt: E,
+      afterUpdateCallback: E => Unit,
+      unprocessedTermination: Option[Terminated]): Unit = {
     context.unbecome()
+
+    // want an unprocessed termination to be in the mailbox before
+    // anything else could be unstashed in the callback
+    unprocessedTermination.foreach { t =>
+      self.tell(t, ActorRef.noSender)
+    }
+
     afterUpdateCallback(evt)
     if (verboseDebug)
       log.debug("{}: New coordinator state after [{}]: [{}]", typeName, evt, state)
@@ -1959,7 +1991,8 @@ private[akka] class DDataShardCoordinator(
             shardId = Some(s.shard),
             waitingForStateWrite = true,
             waitingForRememberShard = true,
-            afterUpdateCallback = f)
+            afterUpdateCallback = f,
+            terminatingShardRegion = None)
 
         case _ =>
           // no update of shards, already known
@@ -1968,7 +2001,8 @@ private[akka] class DDataShardCoordinator(
             shardId = None,
             waitingForStateWrite = true,
             waitingForRememberShard = false,
-            afterUpdateCallback = f)
+            afterUpdateCallback = f,
+            terminatingShardRegion = None)
       }
     context.become(waitingReceive, discardOld = false)
   }
