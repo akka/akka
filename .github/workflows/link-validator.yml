@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   validate-links:
-    runs-on: ubuntu-22.04
+    runs-on: Akka-Default
     if: github.event.repository.fork == false
     steps:
       - name: Checkout
@@ -39,7 +39,7 @@ jobs:
         with:
           jvm: temurin:1.11
           apps: cs
-          
+
       - name: Add additional CA certs
         run: |
           JAVA_HOME=$(cs java-home --jvm adopt:11)

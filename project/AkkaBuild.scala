@@ -81,14 +81,10 @@ object AkkaBuild {
     }
 
   lazy val resolverSettings = Def.settings(
-    resolvers += "Akka library repository".at("https://repo.akka.io/maven"),
+    resolvers += "Akka library repository".at("https://repo.akka.io/maven/github_actions"),
     // should we be allowed to use artifacts published to the local maven repository
     if (System.getProperty("akka.build.useLocalMavenResolver", "false").toBoolean)
       resolvers += mavenLocalResolver
-    else Seq.empty,
-    // should we be allowed to use artifacts from sonatype snapshots
-    if (System.getProperty("akka.build.useSnapshotSonatypeResolver", "false").toBoolean)
-      resolvers ++= Resolver.sonatypeOssRepos("snapshots")
     else Seq.empty,
     pomIncludeRepository := (_ => false) // do not leak internal repositories during staging
   )

@@ -1,8 +1,8 @@
 import com.typesafe.sbt.MultiJvmPlugin.multiJvmSettings
 
-val AkkaVersion = "2.10.3"
+val AkkaVersion = "2.10.6"
 val AkkaDiagnosticsVersion = "2.1.1"
-val LogbackClassicVersion = "1.5.17"
+val LogbackClassicVersion = "1.5.18"
 val ScalaTestVersion = "3.2.17"
 
 val `akka-sample-distributed-data-scala` = project

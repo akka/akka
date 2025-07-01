@@ -13,6 +13,7 @@ import akka.persistence.SnapshotProtocol.LoadSnapshotFailed
 import akka.persistence.SnapshotProtocol.LoadSnapshotResult
 import akka.persistence.typed.{ RecoveryFailed, ReplicaId }
 import akka.persistence.typed.internal.EventSourcedBehaviorImpl.{ GetSeenSequenceNr, GetState }
+import akka.persistence.typed.SnapshotRecovered
 
 /**
  * INTERNAL API
@@ -173,6 +174,11 @@ private[akka] class ReplayingSnapshot[C, E, S](override val setup: BehaviorSetup
 
       setup.currentSequenceNumber = seqNr
       setup.currentMetadata = metadata
+      snapshot.foreach { snap =>
+        import akka.persistence.typed.{ SnapshotMetadata => TypedSnapshotMetadata }
+
+        setup.onSignal(state, SnapshotRecovered(TypedSnapshotMetadata.fromClassic(snap.metadata)), catchAndLog = true)
+      }
 
       ReplayingEvents[C, E, S](
         setup,

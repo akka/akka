@@ -23,10 +23,10 @@ object Dependencies {
   val agronaVersion = "1.22.0"
   val nettyVersion = "4.2.0.Final"
   val protobufJavaVersion = "3.25.5" // also sync with protocVersion in Protobuf.scala
-  val logbackVersion = "1.5.17"
+  val logbackVersion = "1.5.18"
   val scalaFortifyVersion = "1.0.22"
   val fortifySCAVersion = "22.1"
-  val jacksonCoreVersion = "2.17.3" // https://github.com/FasterXML/jackson/wiki/Jackson-Releases
+  val jacksonCoreVersion = "2.18.4" // https://github.com/FasterXML/jackson/wiki/Jackson-Releases
   val jacksonDatabindVersion = jacksonCoreVersion // https://github.com/FasterXML/jackson/wiki/Jackson-Releases
 
   // Also update URLs in link-validator.conf
@@ -37,7 +37,7 @@ object Dependencies {
 
   val reactiveStreamsVersion = "1.0.4"
 
-  val graalVmNativeImageVersion = "24.1.2"
+  val graalVmNativeImageVersion = "24.2.1"
 
   val scalaTestVersion = "3.2.17"
 
@@ -91,13 +91,13 @@ object Dependencies {
   }
   object Docs {
     val sprayJson = "io.spray" %% "spray-json" % "1.3.6" % Test
-    val gson = "com.google.code.gson" % "gson" % "2.12.1" % Test
+    val gson = "com.google.code.gson" % "gson" % "2.13.1" % Test
   }
 
   object TestDependencies {
     val commonsMath = "org.apache.commons" % "commons-math" % "2.2" % Test // ApacheV2
 
-    val commonsIo = "commons-io" % "commons-io" % "2.18.0" % Test // ApacheV2
+    val commonsIo = "commons-io" % "commons-io" % "2.19.0" % Test // ApacheV2
     val commonsCodec = "commons-codec" % "commons-codec" % "1.18.0" % Test // ApacheV2
     val junit = "junit" % "junit" % junitVersion % "test" // Common Public License 1.0
     val logback = Compile.logback % Test // EPL 1.0
@@ -124,8 +124,8 @@ object Dependencies {
     val dockerClient = "com.spotify" % "docker-client" % "8.16.0" % Test // ApacheV2
 
     // metrics, measurements, perf testing
-    val metrics = "io.dropwizard.metrics" % "metrics-core" % "4.2.30" % Test // ApacheV2
-    val metricsJvm = "io.dropwizard.metrics" % "metrics-jvm" % "4.2.30" % Test // ApacheV2
+    val metrics = "io.dropwizard.metrics" % "metrics-core" % "4.2.32" % Test // ApacheV2
+    val metricsJvm = "io.dropwizard.metrics" % "metrics-jvm" % "4.2.32" % Test // ApacheV2
     val latencyUtils = "org.latencyutils" % "LatencyUtils" % "2.0.3" % Test // Free BSD
     val hdrHistogram = "org.hdrhistogram" % "HdrHistogram" % "2.2.2" % Test // CC0
     val metricsAll = Seq(metrics, metricsJvm, latencyUtils, hdrHistogram)

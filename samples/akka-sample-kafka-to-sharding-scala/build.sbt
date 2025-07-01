@@ -1,9 +1,9 @@
-val AkkaVersion = "2.10.3"
+val AkkaVersion = "2.10.6"
 val AlpakkaKafkaVersion = "7.0.1"
 val AkkaManagementVersion = "1.6.0"
 val AkkaHttpVersion = "10.7.0"
 val EmbeddedKafkaVersion = "3.7.0"
-val LogbackVersion = "1.5.17"
+val LogbackVersion = "1.5.18"
 
 resolvers += "Akka library repository".at("https://repo.akka.io/maven")
 
