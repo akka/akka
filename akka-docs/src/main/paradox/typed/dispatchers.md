@@ -121,7 +121,7 @@ The `parallelism-max` for the `fork-join-executor` does not set the upper bound 
 allocated by the ForkJoinPool. It is a setting specifically talking about the number of *hot*
 threads the pool will keep running in order to reduce the latency of handling a new incoming task.  Threads may use
 `ManagedBlocker` (used by (among others) @scala[`Await` and `blocking {}`]@java[`CompletableFuture::get` and `CompletableFuture::join`])
-to signal the pool that it might be desirable to add a thread (note that @ref:[this is not really a solution[(#non-solution-)).
+to signal the pool that it might be desirable to add a thread (note that @ref:[this is not really a solution](#non-solution-)).
 Prior to Akka 2.10.7, dispatchers with a `fork-join-executor` did not meaningfully bound the number of the additional threads which might
 be added.  From Akka 2.10.7 onwards, the default if `maximum-spare-threads` is not set in config is "no meaningful bound", but a limit
 can be set.  A future (at least 2.11) version of Akka may change this default behavior.
