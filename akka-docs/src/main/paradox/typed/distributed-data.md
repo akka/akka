@@ -309,7 +309,8 @@ at least **N/2 + 1** replicas, where N is the number of nodes in the cluster
    Exiting nodes are excluded using `ReadAll` because those are typically about to be removed and will not be able to respond.
 
 Note that `ReadMajority` and `ReadMajorityPlus` have a `minCap` parameter that is useful to specify to achieve
-better safety for small clusters.
+better safety for small clusters.  Additionally, reads from remote replicas are incorporated into the local
+replica's state.
 
 #### Consistency and response types
 
