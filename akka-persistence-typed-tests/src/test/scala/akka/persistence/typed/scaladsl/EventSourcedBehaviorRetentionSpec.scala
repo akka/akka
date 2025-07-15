@@ -593,6 +593,12 @@ class EventSourcedBehaviorRetentionSpec
       eventProbe.expectMessageType[Success[DeleteEventsCompleted]].value.toSequenceNr shouldEqual 8
       deleteSnapshotSignalProbe.expectDeleteSnapshotCompleted(6)
 
+      // Work around race condition: Wait here for delete to complete (how is it not complete when we saw the signal?) or else the new snapshot
+      // is deferred.
+      // Observed in logs:
+      // "Skipping retention at seqNr [16] because previous retention has not completed yet. Next retention will cover skipped retention."
+      Thread.sleep(50)
+
       persistentActor ! Increment // 15
       persistentActor ! Increment // 16
       snapshotSignalProbe.expectSnapshotCompleted(16) // every-2 through criteria
