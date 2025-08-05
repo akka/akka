@@ -88,7 +88,7 @@ private[akka] final class EventSourcedRememberEntitiesShardStore(
   private val maxUpdatesPerWrite = context.system.settings.config
     .getInt("akka.cluster.sharding.event-sourced-remember-entities-store.max-updates-per-write")
 
-  log.debug("Starting up EventSourcedRememberEntitiesStore")
+  log.debug("Starting up EventSourcedRememberEntitiesStore [{}], using journal [{}]", persistenceId, journalPluginId)
   private var state = State()
   override def persistenceId = s"/sharding/${typeName}Shard/$shardId"
   override def journalPluginId: String = settings.journalPluginId

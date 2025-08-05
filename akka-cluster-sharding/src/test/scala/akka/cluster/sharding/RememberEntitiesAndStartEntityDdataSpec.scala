@@ -5,10 +5,8 @@
 package akka.cluster.sharding
 
 import scala.concurrent.duration._
-
 import com.typesafe.config.ConfigFactory
 import org.scalatest.wordspec.AnyWordSpecLike
-
 import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.PoisonPill
@@ -19,11 +17,14 @@ import akka.cluster.sharding.Shard.GetShardStats
 import akka.cluster.sharding.Shard.ShardStats
 import akka.cluster.sharding.ShardRegion.StartEntity
 import akka.cluster.sharding.ShardRegion.StartEntityAck
+import akka.cluster.sharding.internal.DDataRememberEntitiesShardStore
+import akka.cluster.sharding.internal.RememberEntitiesShardStore
 import akka.testkit.AkkaSpec
+import akka.testkit.EventFilter
 import akka.testkit.ImplicitSender
 import akka.testkit.WithLogCapturing
 
-object RememberEntitiesAndStartEntitySpec {
+object RememberEntitiesAndStartEntityDdataSpec {
   class EntityActor extends Actor {
     override def receive: Receive = {
       case "give-me-shard" => sender() ! context.parent
@@ -44,7 +45,7 @@ object RememberEntitiesAndStartEntitySpec {
     case _                     => throw new IllegalArgumentException()
   }
 
-  val config = ConfigFactory.parseString("""
+  val config = ConfigFactory.parseString(s"""
       akka.loglevel=DEBUG
       akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
       akka.actor.provider = cluster
@@ -57,13 +58,13 @@ object RememberEntitiesAndStartEntitySpec {
 }
 
 // this test covers remember entities + StartEntity
-class RememberEntitiesAndStartEntitySpec
-    extends AkkaSpec(RememberEntitiesAndStartEntitySpec.config)
+class RememberEntitiesAndStartEntityDdataSpec
+    extends AkkaSpec(RememberEntitiesAndStartEntityDdataSpec.config)
     with AnyWordSpecLike
     with ImplicitSender
     with WithLogCapturing {
 
-  import RememberEntitiesAndStartEntitySpec._
+  import RememberEntitiesAndStartEntityDdataSpec._
 
   override def atStartup(): Unit = {
     // Form a one node cluster
@@ -75,12 +76,10 @@ class RememberEntitiesAndStartEntitySpec
   "Sharding" must {
 
     "remember entities started with StartEntity" in {
-      val sharding = ClusterSharding(system).start(
-        s"startEntity",
-        Props[EntityActor](),
-        ClusterShardingSettings(system).withRememberEntities(true),
-        extractEntityId,
-        extractShardId)
+      val typeName = "startEntity"
+      val shardingSettings = ClusterShardingSettings(system).withRememberEntities(true)
+      val sharding =
+        ClusterSharding(system).start(typeName, Props[EntityActor](), shardingSettings, extractEntityId, extractShardId)
 
       sharding ! StartEntity("1")
       expectMsg(StartEntityAck("1", "1"))
@@ -103,6 +102,47 @@ class RememberEntitiesAndStartEntitySpec
         // the remembered 1 and 11 which we just triggered start of
         expectMsg(1.second, ShardStats("1", 2)) // short timeout, retry via awaitAssert
       }
+
+      // start another bunch of entities (without waiting for each to complete before starting the next)
+      EventFilter
+        .error(
+          start = "Unknown message type akka.cluster.sharding.internal.RememberEntitiesShardStore$UpdateDone",
+          occurrences = 0)
+        .intercept {
+          for (i <- 2 to 5) {
+            // mix a few StartEntity and regular startups
+            if (i % 2 == 0)
+              sharding ! StartEntity((i * 10 + 1).toString)
+            else
+              sharding ! EntityEnvelope(i * 10 + 1, "give-me-shard")
+          }
+          Thread.sleep(100)
+          for (i <- 6 to 9) {
+            // mix a few StartEntity and regular startups
+            if (i % 2 == 0)
+              sharding ! StartEntity((i * 10 + 1).toString)
+            else
+              sharding ! EntityEnvelope(i * 10 + 1, "give-me-shard")
+          }
+        }
+
+      // all started without error
+      receiveN(8)
+
+      awaitAssert {
+        secondShardIncarnation ! GetShardStats
+        // the new remembered 8 and previous 1 and 11 which we just triggered start of
+        expectMsg(1.second, ShardStats("1", 10)) // short timeout, retry via awaitAssert
+      }
+
+      // check the entity starts written to ddata
+      val replicator = system.actorSelection("/system/sharding/replicator").resolveOne(1.second).futureValue
+      val store = system.actorOf(
+        DDataRememberEntitiesShardStore.props(new ShardRegion.ShardId("1"), typeName, shardingSettings, replicator, 0),
+        "dummyStore")
+      store ! RememberEntitiesShardStore.GetEntities
+      val remembered = expectMsgType[RememberEntitiesShardStore.RememberedEntities]
+      remembered.entities shouldEqual Set("1", "11", "21", "31", "41", "51", "61", "71", "81", "91")
     }
   }
 
