@@ -38,7 +38,7 @@ object RememberEntitiesAndStartEntityEsSpec {
 
   val extractEntityId: ShardRegion.ExtractEntityId = {
     case EntityEnvelope(id, payload) => (id.toString, payload)
-    case msg                         => throw new IllegalArgumentException(s"Unknown message type ${msg.getClass.getName}")
+    case msg                         => throw new IllegalArgumentException(s"Unknown message type ${msg.getClass.getName} ($msg)")
   }
 
   val extractShardId: ShardRegion.ExtractShardId = {
