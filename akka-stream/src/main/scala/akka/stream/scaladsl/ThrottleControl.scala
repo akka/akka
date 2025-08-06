@@ -12,7 +12,7 @@ import akka.stream.impl.Throttle
 import akka.util.NanoTimeTokenBucket
 import akka.util.TokenBucket
 
-class ThrottleControl private[akka] (
+final class ThrottleControl private[akka] (
     cost: Int,
     per: FiniteDuration,
     maximumBurst: Int,
