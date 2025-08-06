@@ -16,7 +16,6 @@ import akka.cluster.sharding.ShardRegion.StartEntity
 import akka.cluster.sharding.ShardRegion.StartEntityAck
 import akka.cluster.sharding.internal.EventSourcedRememberEntitiesShardStore
 import akka.cluster.sharding.internal.RememberEntitiesShardStore
-import akka.persistence.journal.inmem.InmemJournal
 import akka.testkit.AkkaSpec
 import akka.testkit.EventFilter
 import akka.testkit.ImplicitSender
@@ -153,6 +152,7 @@ class RememberEntitiesAndStartEntityEsSpec
       store ! RememberEntitiesShardStore.GetEntities
       val remembered = expectMsgType[RememberEntitiesShardStore.RememberedEntities]
       remembered.entities shouldEqual Set("1", "11", "21", "31", "41", "51", "61", "71", "81", "91")
+      fail()
     }
   }
 
