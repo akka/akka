@@ -152,7 +152,6 @@ class RememberEntitiesAndStartEntityEsSpec
       store ! RememberEntitiesShardStore.GetEntities
       val remembered = expectMsgType[RememberEntitiesShardStore.RememberedEntities]
       remembered.entities shouldEqual Set("1", "11", "21", "31", "41", "51", "61", "71", "81", "91")
-      fail()
     }
   }
 
