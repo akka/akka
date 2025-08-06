@@ -16,6 +16,7 @@ import akka.cluster.sharding.ShardRegion.StartEntity
 import akka.cluster.sharding.ShardRegion.StartEntityAck
 import akka.cluster.sharding.internal.EventSourcedRememberEntitiesShardStore
 import akka.cluster.sharding.internal.RememberEntitiesShardStore
+import akka.persistence.journal.inmem.InmemJournal
 import akka.testkit.AkkaSpec
 import akka.testkit.EventFilter
 import akka.testkit.ImplicitSender
@@ -113,6 +114,7 @@ class RememberEntitiesAndStartEntityEsSpec
         expectMsg(1.second, ShardStats("1", 2)) // short timeout, retry via awaitAssert
       }
 
+      // below is specific test coverage for bug #32770
       EventFilter
         .error(
           start = "Unknown message type akka.cluster.sharding.internal.RememberEntitiesShardStore$UpdateDone",
@@ -126,7 +128,7 @@ class RememberEntitiesAndStartEntityEsSpec
             else
               sharding ! EntityEnvelope(i * 10 + 1, "give-me-shard")
           }
-          Thread.sleep(100)
+          Thread.sleep(20) // some time for the first update to be in flight
           for (i <- 6 to 9) {
             // mix a few StartEntity and regular startups
             if (i % 2 == 0)
@@ -135,7 +137,6 @@ class RememberEntitiesAndStartEntityEsSpec
               sharding ! EntityEnvelope(i * 10 + 1, "give-me-shard")
           }
         }
-
       // all started without error
       receiveN(8)
 
@@ -145,10 +146,7 @@ class RememberEntitiesAndStartEntityEsSpec
         expectMsg(1.second, ShardStats("1", 10)) // short timeout, retry via awaitAssert
       }
 
-      Thread.sleep(200)
-
-      // check what is persisted
-
+      // check that all all entity starts got persisted
       val store = system.actorOf(
         EventSourcedRememberEntitiesShardStore.props(typeName, new ShardRegion.ShardId("1"), shardingSettings),
         "dummyStore")

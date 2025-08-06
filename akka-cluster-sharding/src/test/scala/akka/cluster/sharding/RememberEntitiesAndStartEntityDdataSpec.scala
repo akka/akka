@@ -103,12 +103,13 @@ class RememberEntitiesAndStartEntityDdataSpec
         expectMsg(1.second, ShardStats("1", 2)) // short timeout, retry via awaitAssert
       }
 
-      // start another bunch of entities (without waiting for each to complete before starting the next)
+      // below is specific test coverage for bug #32770 (did not surface for ddata but for good measure)
       EventFilter
         .error(
           start = "Unknown message type akka.cluster.sharding.internal.RememberEntitiesShardStore$UpdateDone",
           occurrences = 0)
         .intercept {
+          // start another bunch of entities (without waiting for each to complete before starting the next)
           for (i <- 2 to 5) {
             // mix a few StartEntity and regular startups
             if (i % 2 == 0)
@@ -116,7 +117,7 @@ class RememberEntitiesAndStartEntityDdataSpec
             else
               sharding ! EntityEnvelope(i * 10 + 1, "give-me-shard")
           }
-          Thread.sleep(100)
+          Thread.sleep(20) // some time for the first update to be in flight
           for (i <- 6 to 9) {
             // mix a few StartEntity and regular startups
             if (i % 2 == 0)
@@ -125,7 +126,6 @@ class RememberEntitiesAndStartEntityDdataSpec
               sharding ! EntityEnvelope(i * 10 + 1, "give-me-shard")
           }
         }
-
       // all started without error
       receiveN(8)
 
@@ -135,7 +135,7 @@ class RememberEntitiesAndStartEntityDdataSpec
         expectMsg(1.second, ShardStats("1", 10)) // short timeout, retry via awaitAssert
       }
 
-      // check the entity starts written to ddata
+      // check that all the entity starts were written to ddata
       val replicator = system.actorSelection("/system/sharding/replicator").resolveOne(1.second).futureValue
       val store = system.actorOf(
         DDataRememberEntitiesShardStore.props(new ShardRegion.ShardId("1"), typeName, shardingSettings, replicator, 0),
