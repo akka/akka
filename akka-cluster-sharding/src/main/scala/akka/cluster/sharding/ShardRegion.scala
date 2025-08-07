@@ -318,9 +318,9 @@ object ShardRegion {
     /**
      * Java API
      */
-    def getStats(): java.util.Map[ShardId, Int] = {
+    def getStats(): java.util.Map[ShardId, Integer] = {
       import scala.jdk.CollectionConverters._
-      stats.asJava
+      stats.map { case (k, v) => k -> Integer.valueOf(v) }.asJava
     }
 
     /** Java API */
