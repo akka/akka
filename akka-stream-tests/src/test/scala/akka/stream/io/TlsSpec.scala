@@ -392,11 +392,9 @@ class TlsSpec extends StreamSpec(TlsSpec.configOverrides) with WithLogCapturing 
           LHSIgnoresBoth,
           BothSidesIgnoreBoth) ++
         (if (protocol == "TLSv1.2")
-           Seq(
-             SessionRenegotiationBySender,
-             SessionRenegotiationByReceiver,
-             SessionRenegotiationFirstOne,
-             SessionRenegotiationFirstTwo)
+           Seq(SessionRenegotiationBySender, SessionRenegotiationByReceiver, SessionRenegotiationFirstTwo) ++
+           // RSA cipher suites disabled by default in JDK 24 and later
+           (if (JavaVersion.majorVersion < 24) Seq(SessionRenegotiationFirstOne) else Nil)
          else // TLSv1.3 doesn't support renegotiation
            Nil)
 
