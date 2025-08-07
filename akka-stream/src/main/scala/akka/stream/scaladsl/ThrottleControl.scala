@@ -27,7 +27,7 @@ final class ThrottleControl private[akka] (
   private def createTokenBucket(cost: Int, per: FiniteDuration): TokenBucket = {
     require(cost > 0, "cost must be > 0")
     require(per.toNanos > 0, "per time must be > 0")
-    require(per.toNanos >= cost, "Rates larger than 1 unit / nanosecond are not supported")
+    require(cost == Int.MaxValue || per.toNanos >= cost, "Rates larger than 1 unit / nanosecond are not supported")
 
     // There is some loss of precision here because of rounding, but this only happens if nanosBetweenTokens is very
     // small which is usually at rates where that precision is highly unlikely anyway as the overhead of this stage
@@ -35,9 +35,11 @@ final class ThrottleControl private[akka] (
     val nanosBetweenTokens = per.toNanos / cost
     // 100 ms is a realistic minimum between tokens, otherwise the maximumBurst is adjusted
     // to be able to support higher rates
-    val effectiveMaximumBurst: Long =
-      if (maximumBurst == Throttle.AutomaticMaximumBurst) math.max(1, ((100 * 1000 * 1000) / nanosBetweenTokens))
+    val effectiveMaximumBurst: Long = {
+      if (cost == Int.MaxValue) Long.MaxValue
+      else if (maximumBurst == Throttle.AutomaticMaximumBurst) math.max(1, ((100 * 1000 * 1000) / nanosBetweenTokens))
       else maximumBurst
+    }
 
     require(
       !(mode == ThrottleMode.Enforcing && effectiveMaximumBurst < 0),

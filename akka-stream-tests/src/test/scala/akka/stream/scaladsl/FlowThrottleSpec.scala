@@ -59,6 +59,15 @@ class FlowThrottleSpec extends StreamSpec("""
         .cancel() // We won't wait 100 days, sorry
     }
 
+    "effectively disable with Int.MaxValue" in {
+      Source(1 to 5)
+        .throttle(Int.MaxValue, 100.days, 1, Shaping)
+        .runWith(TestSink[Int]())
+        .request(5)
+        .expectNext(1, 2, 3, 4, 5)
+        .expectComplete()
+    }
+
     "have separate counts for two throttles in different streams" in {
       val sharedThrottle = Flow[Int].throttle(1, 1.day, 1, Enforcing)
 
