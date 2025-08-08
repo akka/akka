@@ -96,9 +96,11 @@ jobs:
           - { scalaVersion: "2.13", jdkVersion: "1.11.0", jvmName: "temurin:1.11.0", extraOpts: '' }
           - { scalaVersion: "2.13", jdkVersion: "1.17.0", jvmName: "temurin:1.17.0", extraOpts: '' }
           - { scalaVersion: "2.13", jdkVersion: "1.21.0", jvmName: "temurin:1.21", extraOpts: '' }
+          - { scalaVersion: "2.13", jdkVersion: "1.24.0", jvmName: "temurin:1.24", extraOpts: '' }
 
           # { scalaVersion: "3.3",  jdkVersion: "1.11.0", jvmName: "temurin:1.11.0", extraOpts: '' }
           - { scalaVersion: "3.3",  jdkVersion: "1.17.0", jvmName: "temurin:1.17.0", extraOpts: '' }
+          - { scalaVersion: "3.3",  jdkVersion: "1.24.0", jvmName: "temurin:1.24", extraOpts: '' }
     steps:
       - name: Checkout
         # https://github.com/actions/checkout/releases
