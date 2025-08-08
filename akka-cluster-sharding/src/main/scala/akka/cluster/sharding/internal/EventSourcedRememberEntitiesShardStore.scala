@@ -88,8 +88,10 @@ private[akka] final class EventSourcedRememberEntitiesShardStore(
   private val maxUpdatesPerWrite = context.system.settings.config
     .getInt("akka.cluster.sharding.event-sourced-remember-entities-store.max-updates-per-write")
 
-  log.debug("Starting up EventSourcedRememberEntitiesStore")
+  log.debug("Starting up EventSourcedRememberEntitiesStore [{}], using journal [{}]", persistenceId, journalPluginId)
   private var state = State()
+  private val verboseDebug = context.system.settings.config.getBoolean("akka.cluster.sharding.verbose-debug-logging")
+
   override def persistenceId = s"/sharding/${typeName}Shard/$shardId"
   override def journalPluginId: String = settings.journalPluginId
   override def snapshotPluginId: String = settings.snapshotPluginId
@@ -105,6 +107,9 @@ private[akka] final class EventSourcedRememberEntitiesShardStore(
   override def receiveCommand: Receive = {
 
     case RememberEntitiesShardStore.Update(started, stopped) =>
+      if (verboseDebug)
+        log.debug("ES remember entities store asked to store started [{}] and stopped [{}]", started, stopped)
+
       val events =
         (if (started.nonEmpty) createEntityEvents(started, EntitiesStarted.apply _, maxUpdatesPerWrite) else Nil) :::
         (if (stopped.nonEmpty) createEntityEvents(stopped, EntitiesStopped.apply _, maxUpdatesPerWrite) else Nil)
@@ -114,6 +119,8 @@ private[akka] final class EventSourcedRememberEntitiesShardStore(
         left -= 1
         saveSnap = saveSnap || isSnapshotNeeded
         if (left == 0) {
+          if (verboseDebug)
+            log.debug("Persisting remembered entities update done, started [{}], stopped [{}]", started, stopped)
           sender() ! RememberEntitiesShardStore.UpdateDone(started, stopped)
           state = state.copy(state.entities.union(started).diff(stopped))
           if (saveSnap) {
