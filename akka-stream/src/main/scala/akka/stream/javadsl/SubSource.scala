@@ -2210,6 +2210,20 @@ final class SubSource[Out, Mat](
     new SubSource(delegate.throttle(cost, per.toScala, maximumBurst, costCalculation.apply _, mode))
 
   /**
+   * @see [[akka.stream.javadsl.Source.throttle]]
+   */
+  def throttle(control: ThrottleControl): javadsl.SubSource[Out, Mat] =
+    new SubSource(delegate.throttle(control.asScala))
+
+  /**
+   * @see [[akka.stream.javadsl.Soure.throttle]]
+   */
+  def throttle(
+      control: ThrottleControl,
+      costCalculation: function.Function[Out, Integer]): javadsl.SubSource[Out, Mat] =
+    new SubSource(delegate.throttle(control.asScala, elem => costCalculation.apply(elem).intValue()))
+
+  /**
    * Detaches upstream demand from downstream demand without detaching the
    * stream rates; in other words acts like a buffer of size 1.
    *

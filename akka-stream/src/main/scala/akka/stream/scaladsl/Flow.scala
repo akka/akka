@@ -2738,7 +2738,8 @@ trait FlowOps[+Out, +Mat] {
     via(new Throttle(() => new ThrottleControl(cost, per, maximumBurst, mode, shared = false), costCalculation, mode))
 
   /**
-   * The `ThrottleControl` can be updated and shared between several streams.
+   * The `ThrottleControl` can be updated to change the throttle rate from the outside of the stream
+   * and share a total rate limit between several streams.
    * Sends elements downstream with speed limited to `elements/per` as defined in the `ThrottleControl`.
    * In other words, this operator set the maximum rate for emitting messages. This operator works for streams
    * where all elements have the same cost or length.
@@ -2772,7 +2773,8 @@ trait FlowOps[+Out, +Mat] {
     throttle(control, ConstantFun.oneInt)
 
   /**
-   * The `ThrottleControl` can be updated and shared between several streams.
+   * The `ThrottleControl` can be updated to change the throttle rate from the outside of the stream
+   * and share a total rate limit between several streams.
    * Sends elements downstream with speed limited to `cost/per` as defined in the `ThrottleControl`. Cost is
    * calculating for each element individually by calling `calculateCost` function.
    * This operator works for streams when elements have different cost(length).
