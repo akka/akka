@@ -12,6 +12,10 @@ import akka.stream.impl.Throttle
 import akka.util.NanoTimeTokenBucket
 import akka.util.TokenBucket
 
+/**
+ * Control the throttle rate from the outside of the stream, or share a common throttle rate
+ * across several streams.
+ */
 final class ThrottleControl private[akka] (
     cost: Int,
     per: FiniteDuration,
@@ -51,10 +55,26 @@ final class ThrottleControl private[akka] (
   }
 
   private var tokenBucket = createTokenBucket(cost, per)
+  private var _cost = cost
+  private var _per = per
 
   def update(cost: Int, per: FiniteDuration): Unit = synchronized {
     tokenBucket = createTokenBucket(cost, per)
+    _cost = cost
+    _per = per
   }
+
+  /**
+   * Speed is limited to `cost/per`. This is the current cost.
+   */
+  def getCost(): Int =
+    _cost
+
+  /**
+   * Speed is limited to `cost/per`. This is the current per duration.
+   */
+  def getPer(): FiniteDuration =
+    _per
 
   /**
    * INTERNAL API
