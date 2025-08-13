@@ -834,11 +834,17 @@ private[akka] class Shard(
         // but for now
         stash()
       case NoState =>
-        // started manually from the outside, or the shard id extractor was changed since the entity was remembered
-        // we need to store that it was started
-        log.debug("{}: Request to start entity [{}] and ack to [{}]", typeName, entityId, ackTo)
-        entities.rememberingStart(entityId, ackTo)
-        rememberUpdate(add = Set(entityId))
+        if (entities.pendingRememberedEntitiesExist()) {
+          // No actor running and write in progress for some other entity id (can only happen with remember entities enabled)
+          log.debug("{}: Request to start entity [{}] postponed, remember entity write in progress", typeName, entityId)
+          entities.rememberingStart(entityId, ackTo = ackTo)
+        } else {
+          // started manually from the outside, or the shard id extractor was changed since the entity was remembered
+          // we need to store that it was started
+          log.debug("{}: Request to start entity [{}] and ack to [{}]", typeName, entityId, ackTo)
+          entities.rememberingStart(entityId, ackTo)
+          rememberUpdate(add = Set(entityId))
+        }
     }
   }
 
