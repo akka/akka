@@ -39,8 +39,8 @@ private[akka] object VirtualThreadConfigurator {
     // thread names
     val ofVirtualWithName =
       if (virtualThreadName.nonEmpty) {
-        val nameMethod = ofVirtualInterface.getMethod("name", classOf[String])
-        nameMethod.invoke(ofVirtual, virtualThreadName)
+        val nameMethod = ofVirtualInterface.getMethod("name", classOf[String], classOf[Long])
+        nameMethod.invoke(ofVirtual, virtualThreadName + "-", 0L)
       } else ofVirtual
 
     // uncaught exception handler
