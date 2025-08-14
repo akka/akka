@@ -39,6 +39,8 @@ class Dispatcher(
 
   import configurator.prerequisites._
 
+  private val batchingEnabled = executorServiceFactoryProvider.isInstanceOf[NoBatchingExecutorFactoryProvider]
+
   private class LazyExecutorServiceDelegate(factory: ExecutorServiceFactory) extends ExecutorServiceDelegate {
     lazy val executor: ExecutorService = factory.createExecutorService
     def copy(): LazyExecutorServiceDelegate = new LazyExecutorServiceDelegate(factory)
@@ -140,6 +142,10 @@ class Dispatcher(
       } else false
     } else false
   }
+
+  override def batchable(runnable: Runnable): Boolean =
+    if (batchingEnabled) super.batchable(runnable)
+    else false
 
   override val toString: String = Logging.simpleName(this) + "[" + id + "]"
 }

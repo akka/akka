@@ -14,6 +14,10 @@ import com.typesafe.config.ConfigFactory
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
+import scala.concurrent.ExecutionContext
+import scala.concurrent.Future
+import scala.concurrent.duration.DurationInt
+
 object VirtualThreadDispatcherSpec {
   final case class ThreadInfo(virtual: Boolean, name: String)
 
@@ -120,6 +124,46 @@ class VirtualThreadDispatcherSpec extends AnyWordSpec with Matchers {
         threadInfoProbe.expectMsg("ok")
       } finally {
         TestKit.shutdownActorSystem(system)
+      }
+    }
+
+    "nested works as expected" in {
+      if (JavaVersion.majorVersion < 21) {
+        // loom not available yet here
+        pending
+      } else {
+        implicit val system: ActorSystem = ActorSystem(
+          classOf[VirtualThreadDispatcherSpec].getSimpleName,
+          ConfigFactory.parseString("""
+              my-vt-dispatcher {
+                type = "Dispatcher"
+                executor = virtual-thread-executor
+                virtual-thread-executor {
+                  fallback="fork-join-executor"
+                }
+              }
+            """).withFallback(ConfigFactory.load()))
+
+        try {
+          implicit val dispatcher: ExecutionContext = system.dispatchers.lookup("my-vt-dispatcher")
+          val threadInfoProbe = TestProbe()
+          Future {
+            threadInfoProbe.ref ! (("parent before", Thread.currentThread().threadId()))
+            Future {
+              threadInfoProbe.ref ! (("child before", Thread.currentThread().threadId()))
+              Thread.sleep(200)
+              threadInfoProbe.ref ! (("child after", Thread.currentThread().threadId()))
+            }
+            Thread.sleep(20)
+            threadInfoProbe.ref ! (("parent after", Thread.currentThread().threadId()))
+          }
+          val all = threadInfoProbe.receiveN(4)
+          val items = all.collect { case (evt: String, threadId: Long) => (evt, threadId) }.toSeq
+          items.map(_._2).toSet should have size (2) // two different virtual threads
+          items.map(_._1) shouldEqual (Seq("parent before", "child before", "parent after", "child after"))
+        } finally {
+          TestKit.shutdownActorSystem(system)
+        }
       }
     }
   }
