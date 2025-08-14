@@ -65,7 +65,7 @@ class VirtualThreadDispatcherSpec extends AnyWordSpec with Matchers {
           })
           val info = threadIsVirtualProbe.expectMsgType[ThreadInfo]
           info.virtual shouldBe true
-          info.name should endWith("my-vt-dispatcher-0")
+          info.name should endWith("my-vt-dispatcher")
         } finally {
           TestKit.shutdownActorSystem(system)
         }
@@ -91,7 +91,7 @@ class VirtualThreadDispatcherSpec extends AnyWordSpec with Matchers {
           echo.tell("give-me-info", responseProbe.ref)
           val info = responseProbe.expectMsgType[ThreadInfo]
           info.virtual shouldBe true
-          info.name should include("akka.actor.default-dispatcher")
+          info.name should endWith("akka.actor.default-dispatcher")
         } finally {
           TestKit.shutdownActorSystem(system)
         }
