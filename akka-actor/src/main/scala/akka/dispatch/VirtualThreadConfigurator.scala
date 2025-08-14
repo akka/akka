@@ -60,7 +60,9 @@ private[akka] object VirtualThreadConfigurator {
     newThreadPerTaskMethod.invoke(null, threadFactory).asInstanceOf[ExecutorService]
   }
 
-  private class VirtualThreadExecutorServiceFactory(tf: ThreadFactory) extends ExecutorServiceFactory {
+  private class VirtualThreadExecutorServiceFactory(tf: ThreadFactory)
+      extends ExecutorServiceFactory
+      with NoBatchingExecutorFactoryProvider {
     override def createExecutorService: ExecutorService = threadPerTaskExecutor(tf)
   }
 

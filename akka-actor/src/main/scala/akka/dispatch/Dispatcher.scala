@@ -39,7 +39,7 @@ class Dispatcher(
 
   import configurator.prerequisites._
 
-  private val batchingEnabled = executorServiceFactoryProvider.isInstanceOf[NoBatchingExecutorFactoryProvider]
+  private val batchingEnabled = !executorServiceFactoryProvider.isInstanceOf[NoBatchingExecutorFactoryProvider]
 
   private class LazyExecutorServiceDelegate(factory: ExecutorServiceFactory) extends ExecutorServiceDelegate {
     lazy val executor: ExecutorService = factory.createExecutorService
