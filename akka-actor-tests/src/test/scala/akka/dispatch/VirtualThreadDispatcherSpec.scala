@@ -154,10 +154,10 @@ class VirtualThreadDispatcherSpec extends AnyWordSpec with Matchers {
             threadInfoProbe.ref ! (("parent before", currentThreadId()))
             Future {
               threadInfoProbe.ref ! (("child before", currentThreadId()))
-              Thread.sleep(200)
+              Thread.sleep(300)
               threadInfoProbe.ref ! (("child after", currentThreadId()))
             }
-            Thread.sleep(20)
+            Thread.sleep(100)
             threadInfoProbe.ref ! (("parent after", currentThreadId()))
           }
           val all = threadInfoProbe.receiveN(4)
