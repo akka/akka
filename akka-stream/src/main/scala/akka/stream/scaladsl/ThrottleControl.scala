@@ -89,7 +89,6 @@ final class ThrottleControl private[akka] (
    * calls.
    *
    * @param cost How many tokens the element costs. Can be larger than the capacity of the bucket.
-   * @return
    */
   @InternalApi private[akka] def offer(cost: Long): Long = {
     if (shared) {
