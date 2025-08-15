@@ -14,6 +14,9 @@ import com.typesafe.config.ConfigFactory
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
+import scala.concurrent.ExecutionContext
+import scala.concurrent.Future
+
 object VirtualThreadDispatcherSpec {
   final case class ThreadInfo(virtual: Boolean, name: String)
 
@@ -120,6 +123,50 @@ class VirtualThreadDispatcherSpec extends AnyWordSpec with Matchers {
         threadInfoProbe.expectMsg("ok")
       } finally {
         TestKit.shutdownActorSystem(system)
+      }
+    }
+
+    "nested works as expected" in {
+      if (JavaVersion.majorVersion < 21) {
+        // loom not available yet here
+        pending
+      } else {
+        implicit val system: ActorSystem = ActorSystem(
+          classOf[VirtualThreadDispatcherSpec].getSimpleName,
+          ConfigFactory.parseString("""
+              my-vt-dispatcher {
+                type = "Dispatcher"
+                executor = virtual-thread-executor
+                virtual-thread-executor {
+                  fallback="fork-join-executor"
+                }
+              }
+            """).withFallback(ConfigFactory.load()))
+
+        try {
+          implicit val dispatcher: ExecutionContext = system.dispatchers.lookup("my-vt-dispatcher")
+          val threadInfoProbe = TestProbe()
+          // only available on JDK 19+ so we can't use without reflection
+          def currentThreadId(): Long =
+            classOf[Thread].getMethod("threadId").invoke(Thread.currentThread()).asInstanceOf[Long]
+
+          Future {
+            threadInfoProbe.ref ! (("parent before", currentThreadId()))
+            Future {
+              threadInfoProbe.ref ! (("child before", currentThreadId()))
+              Thread.sleep(300)
+              threadInfoProbe.ref ! (("child after", currentThreadId()))
+            }
+            Thread.sleep(100)
+            threadInfoProbe.ref ! (("parent after", currentThreadId()))
+          }
+          val all = threadInfoProbe.receiveN(4)
+          val items = all.collect { case (evt: String, threadId: Long) => (evt, threadId) }
+          items.map(_._2).toSet should have size (2) // two different virtual threads
+          items.map(_._1) shouldEqual (Seq("parent before", "child before", "parent after", "child after"))
+        } finally {
+          TestKit.shutdownActorSystem(system)
+        }
       }
     }
   }

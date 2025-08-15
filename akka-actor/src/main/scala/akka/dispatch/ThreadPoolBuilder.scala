@@ -66,6 +66,11 @@ trait ExecutorServiceFactoryProvider {
 }
 
 /**
+ * Marker trait to disable dispatcher batching for a given executor
+ */
+trait NoBatchingExecutorFactoryProvider {}
+
+/**
  * A small configuration DSL to create ThreadPoolExecutors that can be provided as an ExecutorServiceFactoryProvider to Dispatcher
  */
 final case class ThreadPoolConfig(
