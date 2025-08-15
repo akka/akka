@@ -349,6 +349,24 @@ final class SourceWithContext[Out, Ctx, +Mat](delegate: scaladsl.SourceWithConte
     viaScala(_.throttle(cost, per.toScala, maximumBurst, costCalculation.apply, mode))
 
   /**
+   * Context-preserving variant of [[akka.stream.javadsl.Source.throttle]].
+   *
+   * @see [[akka.stream.javadsl.Source.throttle]]
+   */
+  def throttle(control: ThrottleControl): SourceWithContext[Out, Ctx, Mat] =
+    viaScala(_.throttle(control.asScala))
+
+  /**
+   * Context-preserving variant of [[akka.stream.javadsl.Source.throttle]].
+   *
+   * @see [[akka.stream.javadsl.Source.throttle]]
+   */
+  def throttle(
+      control: ThrottleControl,
+      costCalculation: function.Function[Out, Integer]): SourceWithContext[Out, Ctx, Mat] =
+    viaScala(_.throttle(control.asScala, elem => costCalculation.apply(elem).intValue()))
+
+  /**
    * Connect this [[akka.stream.javadsl.SourceWithContext]] to a [[akka.stream.javadsl.Sink]],
    * concatenating the processing steps of both.
    */

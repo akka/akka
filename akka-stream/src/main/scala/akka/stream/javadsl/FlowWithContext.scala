@@ -369,6 +369,24 @@ final class FlowWithContext[In, CtxIn, Out, CtxOut, +Mat](
       mode: ThrottleMode): FlowWithContext[In, CtxIn, Out, CtxOut, Mat] =
     viaScala(_.throttle(cost, per.toScala, maximumBurst, costCalculation.apply, mode))
 
+  /**
+   * Context-preserving variant of [[akka.stream.javadsl.Flow.throttle]].
+   *
+   * @see [[akka.stream.javadsl.Flow.throttle]]
+   */
+  def throttle(control: ThrottleControl): FlowWithContext[In, CtxIn, Out, CtxOut, Mat] =
+    viaScala(_.throttle(control.asScala))
+
+  /**
+   * Context-preserving variant of [[akka.stream.javadsl.Flow.throttle]].
+   *
+   * @see [[akka.stream.javadsl.Flow.throttle]]
+   */
+  def throttle(
+      control: ThrottleControl,
+      costCalculation: function.Function[Out, Integer]): FlowWithContext[In, CtxIn, Out, CtxOut, Mat] =
+    viaScala(_.throttle(control.asScala, elem => costCalculation.apply(elem).intValue()))
+
   def asScala: scaladsl.FlowWithContext[In, CtxIn, Out, CtxOut, Mat] =
     scaladsl.FlowWithContext.fromTuples(
       scaladsl

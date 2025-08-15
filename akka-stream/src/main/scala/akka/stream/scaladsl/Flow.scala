@@ -2584,15 +2584,15 @@ trait FlowOps[+Out, +Mat] {
     via(new Timers.IdleInject[Out, U](maxIdle, injectedElem))
 
   /**
-   * Sends elements downstream with speed limited to `elements/per`. In other words, this operator set the maximum rate
+   * Sends elements downstream with speed limited to `elements/per`. In other words, this operator sets the maximum rate
    * for emitting messages. This operator works for streams where all elements have the same cost or length.
    *
    * Throttle implements the token bucket model. There is a bucket with a given token capacity (burst size).
-   * Tokens drops into the bucket at a given rate and can be `spared` for later use up to bucket capacity
-   * to allow some burstiness. Whenever stream wants to send an element, it takes as many
-   * tokens from the bucket as element costs. If there isn't any, throttle waits until the
-   * bucket accumulates enough tokens. Elements that costs more than the allowed burst will be delayed proportionally
-   * to their cost minus available tokens, meeting the target rate. Bucket is full when stream just materialized and
+   * Tokens drop into the bucket at a given rate and can be kept for later use up to bucket capacity
+   * to allow some burstiness. Whenever the stream wants to send an element, it takes as many
+   * tokens from the bucket as the element costs. If there isn't any, throttle waits until the
+   * bucket accumulates enough tokens. Elements that cost more than the allowed burst will be delayed proportionally
+   * to their cost minus available tokens, meeting the target rate. Bucket is full when the stream is first materialized and
    * started.
    *
    * The burst size is calculated based on the given rate (`cost/per`) as 0.1 * rate, for example:
@@ -2601,8 +2601,8 @@ trait FlowOps[+Out, +Mat] {
    * - rate 100/second => burst size 10
    * - rate 200/second => burst size 20
    *
-   * The throttle `mode` is [[akka.stream.ThrottleMode.Shaping]], which makes pauses before emitting messages to
-   * meet throttle rate.
+   * The throttle `mode` is [[akka.stream.ThrottleMode.Shaping]], which pauses before emitting messages to
+   * meet the throttle rate.
    *
    * '''Emits when''' upstream emits an element and configured time per each element elapsed
    *
@@ -2616,18 +2616,18 @@ trait FlowOps[+Out, +Mat] {
     throttle(elements, per, maximumBurst = Throttle.AutomaticMaximumBurst, ConstantFun.oneInt, ThrottleMode.Shaping)
 
   /**
-   * Sends elements downstream with speed limited to `elements/per`. In other words, this operator set the maximum rate
+   * Sends elements downstream with speed limited to `elements/per`. In other words, this operator sets the maximum rate
    * for emitting messages. This operator works for streams where all elements have the same cost or length.
    *
    * Throttle implements the token bucket model. There is a bucket with a given token capacity (burst size or maximumBurst).
-   * Tokens drops into the bucket at a given rate and can be `spared` for later use up to bucket capacity
-   * to allow some burstiness. Whenever stream wants to send an element, it takes as many
-   * tokens from the bucket as element costs. If there isn't any, throttle waits until the
-   * bucket accumulates enough tokens. Elements that costs more than the allowed burst will be delayed proportionally
-   * to their cost minus available tokens, meeting the target rate. Bucket is full when stream just materialized and started.
+   * Tokens drop into the bucket at a given rate and can be kept for later use up to bucket capacity
+   * to allow some burstiness. Whenever the stream wants to send an element, it takes as many
+   * tokens from the bucket as the element costs. If there isn't any, throttle waits until the
+   * bucket accumulates enough tokens. Elements that cost more than the allowed burst will be delayed proportionally
+   * to their cost minus available tokens, meeting the target rate. Bucket is full when the stream is first materialized and started.
    *
    * Parameter `mode` manages behavior when upstream is faster than throttle rate:
-   *  - [[akka.stream.ThrottleMode.Shaping]] makes pauses before emitting messages to meet throttle rate
+   *  - [[akka.stream.ThrottleMode.Shaping]] makes pauses before emitting messages to meet the throttle rate
    *  - [[akka.stream.ThrottleMode.Enforcing]] fails with exception when upstream is faster than throttle rate. Enforcing
    *  cannot emit elements that cost more than the maximumBurst
    *
@@ -2662,11 +2662,11 @@ trait FlowOps[+Out, +Mat] {
    * Streams of `ByteString` for example.
    *
    * Throttle implements the token bucket model. There is a bucket with a given token capacity (burst size).
-   * Tokens drops into the bucket at a given rate and can be `spared` for later use up to bucket capacity
-   * to allow some burstiness. Whenever stream wants to send an element, it takes as many
-   * tokens from the bucket as element costs. If there isn't any, throttle waits until the
-   * bucket accumulates enough tokens. Elements that costs more than the allowed burst will be delayed proportionally
-   * to their cost minus available tokens, meeting the target rate. Bucket is full when stream just materialized and
+   * Tokens drop into the bucket at a given rate and can be kept for later use up to bucket capacity
+   * to allow some burstiness. Whenever the stream wants to send an element, it takes as many
+   * tokens from the bucket as the element costs. If there isn't any, throttle waits until the
+   * bucket accumulates enough tokens. Elements that cost more than the allowed burst will be delayed proportionally
+   * to their cost minus available tokens, meeting the target rate. Bucket is full when the stream is first materialized and
    * started.
    *
    * The burst size is calculated based on the given rate (`cost/per`) as 0.1 * rate, for example:
@@ -2675,8 +2675,8 @@ trait FlowOps[+Out, +Mat] {
    * - rate 100/second => burst size 10
    * - rate 200/second => burst size 20
    *
-   * The throttle `mode` is [[akka.stream.ThrottleMode.Shaping]], which makes pauses before emitting messages to
-   * meet throttle rate.
+   * The throttle `mode` is [[akka.stream.ThrottleMode.Shaping]], which pauses before emitting messages to
+   * meet the throttle rate.
    *
    * '''Emits when''' upstream emits an element and configured time per each element elapsed
    *
@@ -2688,7 +2688,7 @@ trait FlowOps[+Out, +Mat] {
    *
    */
   def throttle(cost: Int, per: FiniteDuration, costCalculation: (Out) => Int): Repr[Out] =
-    via(new Throttle(cost, per, Throttle.AutomaticMaximumBurst, costCalculation, ThrottleMode.Shaping))
+    throttle(cost, per, Throttle.AutomaticMaximumBurst, costCalculation, ThrottleMode.Shaping)
 
   /**
    * Sends elements downstream with speed limited to `cost/per`. Cost is
@@ -2697,14 +2697,14 @@ trait FlowOps[+Out, +Mat] {
    * Streams of `ByteString` for example.
    *
    * Throttle implements the token bucket model. There is a bucket with a given token capacity (burst size or maximumBurst).
-   * Tokens drops into the bucket at a given rate and can be `spared` for later use up to bucket capacity
-   * to allow some burstiness. Whenever stream wants to send an element, it takes as many
-   * tokens from the bucket as element costs. If there isn't any, throttle waits until the
-   * bucket accumulates enough tokens. Elements that costs more than the allowed burst will be delayed proportionally
-   * to their cost minus available tokens, meeting the target rate. Bucket is full when stream just materialized and started.
+   * Tokens drop into the bucket at a given rate and can be kept for later use up to bucket capacity
+   * to allow some burstiness. Whenever the stream wants to send an element, it takes as many
+   * tokens from the bucket as the element costs. If there isn't any, throttle waits until the
+   * bucket accumulates enough tokens. Elements that cost more than the allowed burst will be delayed proportionally
+   * to their cost minus available tokens, meeting the target rate. Bucket is full when the stream is first materialized and started.
    *
    * Parameter `mode` manages behavior when upstream is faster than throttle rate:
-   *  - [[akka.stream.ThrottleMode.Shaping]] makes pauses before emitting messages to meet throttle rate
+   *  - [[akka.stream.ThrottleMode.Shaping]] makes pauses before emitting messages to meet the throttle rate
    *  - [[akka.stream.ThrottleMode.Enforcing]] fails with exception when upstream is faster than throttle rate. Enforcing
    *  cannot emit elements that cost more than the maximumBurst
    *
@@ -2735,7 +2735,86 @@ trait FlowOps[+Out, +Mat] {
       maximumBurst: Int,
       costCalculation: (Out) => Int,
       mode: ThrottleMode): Repr[Out] =
-    via(new Throttle(cost, per, maximumBurst, costCalculation, mode))
+    via(new Throttle(() => new ThrottleControl(cost, per, maximumBurst, mode, shared = false), costCalculation, mode))
+
+  /**
+   * The `ThrottleControl` can be updated to change the throttle rate from the outside of the stream
+   * and share a total rate limit between several streams.
+   * Sends elements downstream with speed limited to `elements/per` as defined in the `ThrottleControl`.
+   * In other words, this operator sets the maximum rate for emitting messages. This operator works for streams
+   * where all elements have the same cost or length.
+   *
+   * Throttle implements the token bucket model. There is a bucket with a given token capacity (burst size).
+   * Tokens drop into the bucket at a given rate and can be kept for later use up to bucket capacity
+   * to allow some burstiness. Whenever the stream wants to send an element, it takes as many
+   * tokens from the bucket as the element costs. If there isn't any, throttle waits until the
+   * bucket accumulates enough tokens. Elements that cost more than the allowed burst will be delayed proportionally
+   * to their cost minus available tokens, meeting the target rate. Bucket is full when the stream is first materialized and
+   * started.
+   *
+   * The burst size is calculated based on the given rate (`cost/per`) as 0.1 * rate, for example:
+   * - rate < 20/second => burst size 1
+   * - rate 20/second => burst size 2
+   * - rate 100/second => burst size 10
+   * - rate 200/second => burst size 20
+   *
+   * The throttle `mode` is [[akka.stream.ThrottleMode.Shaping]], which pauses before emitting messages to
+   * meet the throttle rate.
+   *
+   * '''Emits when''' upstream emits an element and configured time per each element elapsed
+   *
+   * '''Backpressures when''' downstream backpressures or the incoming rate is higher than the speed limit
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def throttle(control: ThrottleControl): Repr[Out] =
+    throttle(control, ConstantFun.oneInt)
+
+  /**
+   * The `ThrottleControl` can be updated to change the throttle rate from the outside of the stream
+   * and share a total rate limit between several streams.
+   * Sends elements downstream with speed limited to `cost/per` as defined in the `ThrottleControl`. Cost is
+   * calculating for each element individually by calling `calculateCost` function.
+   * This operator works for streams when elements have different cost(length).
+   * Streams of `ByteString` for example.
+   *
+   * Throttle implements the token bucket model. There is a bucket with a given token capacity (burst size or maximumBurst).
+   * Tokens drop into the bucket at a given rate and can be kept for later use up to bucket capacity
+   * to allow some burstiness. Whenever the stream wants to send an element, it takes as many
+   * tokens from the bucket as the element costs. If there isn't any, throttle waits until the
+   * bucket accumulates enough tokens. Elements that cost more than the allowed burst will be delayed proportionally
+   * to their cost minus available tokens, meeting the target rate. Bucket is full when the stream is first materialized and started.
+   *
+   * Parameter `mode` manages behavior when upstream is faster than throttle rate:
+   *  - [[akka.stream.ThrottleMode.Shaping]] makes pauses before emitting messages to meet the throttle rate
+   *  - [[akka.stream.ThrottleMode.Enforcing]] fails with exception when upstream is faster than throttle rate. Enforcing
+   *  cannot emit elements that cost more than the maximumBurst
+   *
+   * It is recommended to use non-zero burst sizes as they improve both performance and throttling precision by allowing
+   * the implementation to avoid using the scheduler when input rates fall below the enforced limit and to reduce
+   * most of the inaccuracy caused by the scheduler resolution (which is in the range of milliseconds).
+   *
+   *  WARNING: Be aware that throttle is using scheduler to slow down the stream. This scheduler has minimal time of triggering
+   *  next push. Consequently it will slow down the stream as it has minimal pause for emitting. This can happen in
+   *  case burst is 0 and speed is higher than 30 events per second. You need to increase the `maximumBurst`  if
+   *  elements arrive with small interval (30 milliseconds or less). Use the overloaded `throttle` method without
+   *  `maximumBurst` parameter to automatically calculate the `maximumBurst` based on the given rate (`cost/per`).
+   *  In other words the throttler always enforces the rate limit when `maximumBurst` parameter is given, but in
+   *  certain cases (mostly due to limited scheduler resolution) it enforces a tighter bound than what was prescribed.
+   *
+   * '''Emits when''' upstream emits an element and configured time per each element elapsed
+   *
+   * '''Backpressures when''' downstream backpressures or the incoming rate is higher than the speed limit
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   *
+   */
+  def throttle(control: ThrottleControl, costCalculation: (Out) => Int): Repr[Out] =
+    via(new Throttle(() => control, costCalculation, control.mode))
 
   /**
    * Detaches upstream demand from downstream demand without detaching the

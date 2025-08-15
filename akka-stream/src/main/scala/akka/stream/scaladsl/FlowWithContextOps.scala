@@ -280,5 +280,21 @@ trait FlowWithContextOps[+Out, +Ctx, +Mat] {
       mode: ThrottleMode): Repr[Out, Ctx] =
     via(flow.throttle(cost, per, maximumBurst, a => costCalculation(a._1), mode))
 
+  /**
+   * Context-preserving variant of [[akka.stream.scaladsl.FlowOps.throttle]].
+   *
+   * @see [[akka.stream.scaladsl.FlowOps.throttle]]
+   */
+  def throttle(control: ThrottleControl): Repr[Out, Ctx] =
+    via(flow.throttle(control))
+
+  /**
+   * Context-preserving variant of [[akka.stream.scaladsl.FlowOps.throttle]].
+   *
+   * @see [[akka.stream.scaladsl.FlowOps.throttle]]
+   */
+  def throttle(control: ThrottleControl, costCalculation: (Out) => Int): Repr[Out, Ctx] =
+    via(flow.throttle(control, a => costCalculation(a._1)))
+
   private[akka] def flow[T, C]: Flow[(T, C), (T, C), NotUsed] = Flow[(T, C)]
 }
