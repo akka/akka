@@ -59,7 +59,7 @@ import akka.util.ByteString
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] class TcpFraming extends ByteStringParser[EnvelopeBuffer] {
+@InternalApi private[akka] class TcpFraming(maxFrameLength: Int) extends ByteStringParser[EnvelopeBuffer] {
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new ParsingLogic {
 
@@ -88,6 +88,8 @@ import akka.util.ByteString
 
       override def parse(reader: ByteReader): ParseResult[EnvelopeBuffer] = {
         val frameLength = reader.readIntLE()
+        if (frameLength > maxFrameLength)
+          throw new FramingException(s"Too long frame [$frameLength], max length is [$maxFrameLength]")
         val buffer = createBuffer(reader.take(frameLength))
         ParseResult(Some(buffer), this)
       }
