@@ -127,7 +127,6 @@ abstract class ClusterShardingRegionTerminationSpec(multiNodeConfig: ClusterShar
         region ! 4
         expectMsg(4)
       }
-      join(fifth, first)
       runOn(fifth) {
         region ! 5
         expectMsg(5)
