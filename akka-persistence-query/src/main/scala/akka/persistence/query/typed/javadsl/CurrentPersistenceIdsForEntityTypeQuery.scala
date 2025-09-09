@@ -1,6 +1,7 @@
 /*
  * Copyright (C) 2009-2025 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.persistence.query.typed.javadsl
 
 import akka.NotUsed
