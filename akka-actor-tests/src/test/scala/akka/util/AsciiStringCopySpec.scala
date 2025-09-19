@@ -4,16 +4,18 @@
 
 package akka.util
 import java.nio.charset.StandardCharsets
-
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+
+import java.lang.reflect.InaccessibleObjectException
 
 class AsciiStringCopySpec extends AnyWordSpec with Matchers {
 
   "The copyUSAsciiStrToBytes optimization" must {
 
     "select working algorithm" in {
-      if (Unsafe.isIsJavaVersion9Plus) {
+      if (canAccessStringInternals()) {
+        // requires --add-opens=java.base/java.lang=ALL-UNNAMED on JDK 17 and later
         Unsafe.testUSAsciiStrToBytesAlgorithm0("abc") should ===(true)
         // this is known to fail with JDK 11 on ARM32 (Raspberry Pi),
         // and therefore algorithm 0 is selected on that architecture
@@ -22,7 +24,7 @@ class AsciiStringCopySpec extends AnyWordSpec with Matchers {
       } else {
         Unsafe.testUSAsciiStrToBytesAlgorithm0("abc") should ===(true)
         Unsafe.testUSAsciiStrToBytesAlgorithm1("abc") should ===(false)
-        Unsafe.testUSAsciiStrToBytesAlgorithm2("abc") should ===(true)
+        Unsafe.testUSAsciiStrToBytesAlgorithm2("abc") should ===(false)
       }
     }
 
@@ -40,6 +42,15 @@ class AsciiStringCopySpec extends AnyWordSpec with Matchers {
       Unsafe.fastHash("abcdefghijklmnopqrstuvxyz")
     }
 
+  }
+
+  def canAccessStringInternals(): Boolean = {
+    try {
+      classOf[String].getDeclaredField("value").setAccessible(true)
+      true
+    } catch {
+      case _: InaccessibleObjectException => false
+    }
   }
 
 }
