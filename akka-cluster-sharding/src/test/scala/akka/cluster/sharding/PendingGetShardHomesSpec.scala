@@ -66,8 +66,11 @@ class PendingGetShardHomesSpec extends AnyWordSpec with BeforeAndAfterAll with M
 
       val (r2s, postRemove) = postAdds2.removeRequestsForShard(shard1)
       (r2s should contain).allOf(replyToProbe1.ref, replyToProbe2.ref)
-      postRemove.requestsByShard.keySet should contain only (shard2)
-      postRemove.requestsByShard(shard2) shouldBe empty
+      // if shard1 == shard2, there are no requests by shard, otherwise shard2 remains
+      postRemove.requestsByShard.keySet should contain theSameElementsAs Set(shard1, shard2).excl(shard1)
+      if (shard1 != shard2) {
+        postRemove.requestsByShard(shard2) shouldBe empty
+      }
     }
 
     "should remove a request for the shard with the most requests" in {
