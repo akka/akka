@@ -43,11 +43,11 @@ private[akka] trait Dispatch { this: ActorCell =>
   }
 
   @inline final def mailbox: Mailbox =
-    Unsafe.instance.getObjectVolatile(this, AbstractActorCell.mailboxOffset).asInstanceOf[Mailbox]
+    Unsafe.UNSAFE.getObjectVolatile(this, AbstractActorCell.mailboxOffset).asInstanceOf[Mailbox]
 
   @tailrec final def swapMailbox(newMailbox: Mailbox): Mailbox = {
     val oldMailbox = mailbox
-    if (!Unsafe.instance.compareAndSwapObject(this, AbstractActorCell.mailboxOffset, oldMailbox, newMailbox))
+    if (!Unsafe.UNSAFE.compareAndSwapObject(this, AbstractActorCell.mailboxOffset, oldMailbox, newMailbox))
       swapMailbox(newMailbox)
     else oldMailbox
   }

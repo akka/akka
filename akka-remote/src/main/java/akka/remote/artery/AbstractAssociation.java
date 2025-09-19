@@ -12,7 +12,7 @@ class AbstractAssociation {
   static {
     try {
       sharedStateOffset =
-          Unsafe.instance.objectFieldOffset(
+          Unsafe.UNSAFE.objectFieldOffset(
               Association.class.getDeclaredField("_sharedStateDoNotCallMeDirectly"));
     } catch (Throwable t) {
       throw new ExceptionInInitializerError(t);

@@ -16,19 +16,19 @@ final class AbstractActorCell {
   static {
     try {
       mailboxOffset =
-          Unsafe.instance.objectFieldOffset(
+          Unsafe.UNSAFE.objectFieldOffset(
               ActorCell.class.getDeclaredField(
                   "akka$actor$dungeon$Dispatch$$_mailboxDoNotCallMeDirectly"));
       childrenOffset =
-          Unsafe.instance.objectFieldOffset(
+          Unsafe.UNSAFE.objectFieldOffset(
               ActorCell.class.getDeclaredField(
                   "akka$actor$dungeon$Children$$_childrenRefsDoNotCallMeDirectly"));
       nextNameOffset =
-          Unsafe.instance.objectFieldOffset(
+          Unsafe.UNSAFE.objectFieldOffset(
               ActorCell.class.getDeclaredField(
                   "akka$actor$dungeon$Children$$_nextNameDoNotCallMeDirectly"));
       functionRefsOffset =
-          Unsafe.instance.objectFieldOffset(
+          Unsafe.UNSAFE.objectFieldOffset(
               ActorCell.class.getDeclaredField(
                   "akka$actor$dungeon$Children$$_functionRefsDoNotCallMeDirectly"));
     } catch (Throwable t) {

@@ -12,8 +12,8 @@ final class AbstractMailbox {
 
     static {
         try {
-          mailboxStatusOffset = Unsafe.instance.objectFieldOffset(Mailbox.class.getDeclaredField("_statusDoNotCallMeDirectly"));
-          systemMessageOffset = Unsafe.instance.objectFieldOffset(Mailbox.class.getDeclaredField("_systemQueueDoNotCallMeDirectly"));
+          mailboxStatusOffset = Unsafe.UNSAFE.objectFieldOffset(Mailbox.class.getDeclaredField("_statusDoNotCallMeDirectly"));
+          systemMessageOffset = Unsafe.UNSAFE.objectFieldOffset(Mailbox.class.getDeclaredField("_systemQueueDoNotCallMeDirectly"));
         } catch(Throwable t){
             throw new ExceptionInInitializerError(t);
         }

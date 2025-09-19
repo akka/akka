@@ -13,10 +13,10 @@ class AbstractCircuitBreaker {
   static {
     try {
       stateOffset =
-          Unsafe.instance.objectFieldOffset(
+          Unsafe.UNSAFE.objectFieldOffset(
               CircuitBreaker.class.getDeclaredField("_currentStateDoNotCallMeDirectly"));
       resetTimeoutOffset =
-          Unsafe.instance.objectFieldOffset(
+          Unsafe.UNSAFE.objectFieldOffset(
               CircuitBreaker.class.getDeclaredField("_currentResetTimeoutDoNotCallMeDirectly"));
     } catch (Throwable t) {
       throw new ExceptionInInitializerError(t);

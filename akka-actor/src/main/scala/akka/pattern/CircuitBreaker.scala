@@ -274,7 +274,7 @@ class CircuitBreaker(
    */
   @inline
   private[this] def swapState(oldState: State, newState: State): Boolean =
-    Unsafe.instance.compareAndSwapObject(this, AbstractCircuitBreaker.stateOffset, oldState, newState)
+    Unsafe.UNSAFE.compareAndSwapObject(this, AbstractCircuitBreaker.stateOffset, oldState, newState)
 
   /**
    * Helper method for accessing underlying state via Unsafe
@@ -283,14 +283,14 @@ class CircuitBreaker(
    */
   @inline
   private[this] def currentState: State =
-    Unsafe.instance.getObjectVolatile(this, AbstractCircuitBreaker.stateOffset).asInstanceOf[State]
+    Unsafe.UNSAFE.getObjectVolatile(this, AbstractCircuitBreaker.stateOffset).asInstanceOf[State]
 
   /**
    * Helper method for updating the underlying resetTimeout via Unsafe
    */
   @inline
   private[this] def swapResetTimeout(oldResetTimeout: FiniteDuration, newResetTimeout: FiniteDuration): Boolean =
-    Unsafe.instance.compareAndSwapObject(
+    Unsafe.UNSAFE.compareAndSwapObject(
       this,
       AbstractCircuitBreaker.resetTimeoutOffset,
       oldResetTimeout,
@@ -301,7 +301,7 @@ class CircuitBreaker(
    */
   @inline
   private[this] def currentResetTimeout: FiniteDuration =
-    Unsafe.instance.getObjectVolatile(this, AbstractCircuitBreaker.resetTimeoutOffset).asInstanceOf[FiniteDuration]
+    Unsafe.UNSAFE.getObjectVolatile(this, AbstractCircuitBreaker.resetTimeoutOffset).asInstanceOf[FiniteDuration]
 
   /**
    * Wraps invocations of asynchronous calls that need to be protected.

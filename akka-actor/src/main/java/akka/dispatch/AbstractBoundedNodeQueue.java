@@ -36,29 +36,29 @@ public abstract class AbstractBoundedNodeQueue<T> {
     }
 
     private void setEnq(Node<T> n) {
-        Unsafe.instance.putObjectVolatile(this, enqOffset, n);
+        Unsafe.UNSAFE.putObjectVolatile(this, enqOffset, n);
     }
 
     @SuppressWarnings("unchecked")
     private Node<T> getEnq() {
-        return (Node<T>)Unsafe.instance.getObjectVolatile(this, enqOffset);
+        return (Node<T>)Unsafe.UNSAFE.getObjectVolatile(this, enqOffset);
     }
 
     private boolean casEnq(Node<T> old, Node<T> nju) {
-        return Unsafe.instance.compareAndSwapObject(this, enqOffset, old, nju);
+        return Unsafe.UNSAFE.compareAndSwapObject(this, enqOffset, old, nju);
     }
 
     private void setDeq(Node<T> n) {
-        Unsafe.instance.putObjectVolatile(this, deqOffset, n);
+        Unsafe.UNSAFE.putObjectVolatile(this, deqOffset, n);
     }
 
     @SuppressWarnings("unchecked")
     private Node<T> getDeq() {
-        return (Node<T>)Unsafe.instance.getObjectVolatile(this, deqOffset);
+        return (Node<T>)Unsafe.UNSAFE.getObjectVolatile(this, deqOffset);
     }
 
     private boolean casDeq(Node<T> old, Node<T> nju) {
-        return Unsafe.instance.compareAndSwapObject(this, deqOffset, old, nju);
+        return Unsafe.UNSAFE.compareAndSwapObject(this, deqOffset, old, nju);
     }
 
     protected final Node<T> peekNode() {
@@ -178,8 +178,8 @@ public abstract class AbstractBoundedNodeQueue<T> {
 
     static {
         try {
-          enqOffset = Unsafe.instance.objectFieldOffset(AbstractBoundedNodeQueue.class.getDeclaredField("_enqDoNotCallMeDirectly"));
-          deqOffset = Unsafe.instance.objectFieldOffset(AbstractBoundedNodeQueue.class.getDeclaredField("_deqDoNotCallMeDirectly"));
+          enqOffset = Unsafe.UNSAFE.objectFieldOffset(AbstractBoundedNodeQueue.class.getDeclaredField("_enqDoNotCallMeDirectly"));
+          deqOffset = Unsafe.UNSAFE.objectFieldOffset(AbstractBoundedNodeQueue.class.getDeclaredField("_deqDoNotCallMeDirectly"));
         } catch(Throwable t){
             throw new ExceptionInInitializerError(t);
         }
@@ -193,18 +193,18 @@ public abstract class AbstractBoundedNodeQueue<T> {
 
         @SuppressWarnings("unchecked")
         public final Node<T> next() {
-            return (Node<T>)Unsafe.instance.getObjectVolatile(this, nextOffset);
+            return (Node<T>)Unsafe.UNSAFE.getObjectVolatile(this, nextOffset);
         }
 
         protected final void setNext(final Node<T> newNext) {
-          Unsafe.instance.putOrderedObject(this, nextOffset, newNext);
+          Unsafe.UNSAFE.putOrderedObject(this, nextOffset, newNext);
         }
         
         private final static long nextOffset;
         
         static {
             try {
-                nextOffset = Unsafe.instance.objectFieldOffset(Node.class.getDeclaredField("_nextDoNotCallMeDirectly"));
+                nextOffset = Unsafe.UNSAFE.objectFieldOffset(Node.class.getDeclaredField("_nextDoNotCallMeDirectly"));
             } catch(Throwable t){
                 throw new ExceptionInInitializerError(t);
             } 

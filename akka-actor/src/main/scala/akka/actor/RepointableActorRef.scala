@@ -57,17 +57,17 @@ private[akka] class RepointableActorRef(
     _lookupDoNotCallMeDirectly
   }
 
-  def underlying: Cell = Unsafe.instance.getObjectVolatile(this, cellOffset).asInstanceOf[Cell]
-  def lookup = Unsafe.instance.getObjectVolatile(this, lookupOffset).asInstanceOf[Cell]
+  def underlying: Cell = Unsafe.UNSAFE.getObjectVolatile(this, cellOffset).asInstanceOf[Cell]
+  def lookup = Unsafe.UNSAFE.getObjectVolatile(this, lookupOffset).asInstanceOf[Cell]
 
   @tailrec final def swapCell(next: Cell): Cell = {
     val old = underlying
-    if (Unsafe.instance.compareAndSwapObject(this, cellOffset, old, next)) old else swapCell(next)
+    if (Unsafe.UNSAFE.compareAndSwapObject(this, cellOffset, old, next)) old else swapCell(next)
   }
 
   @tailrec final def swapLookup(next: Cell): Cell = {
     val old = lookup
-    if (Unsafe.instance.compareAndSwapObject(this, lookupOffset, old, next)) old else swapLookup(next)
+    if (Unsafe.UNSAFE.compareAndSwapObject(this, lookupOffset, old, next)) old else swapLookup(next)
   }
 
   /**

@@ -111,7 +111,7 @@ abstract class MessageDispatcher(val configurator: MessageDispatcherConfigurator
   }
 
   private final def addInhabitants(add: Long): Long = {
-    val old = Unsafe.instance.getAndAddLong(this, inhabitantsOffset, add)
+    val old = Unsafe.UNSAFE.getAndAddLong(this, inhabitantsOffset, add)
     val ret = old + add
     if (ret < 0) {
       // We haven't succeeded in decreasing the inhabitants yet but the simple fact that we're trying to
@@ -123,11 +123,11 @@ abstract class MessageDispatcher(val configurator: MessageDispatcherConfigurator
     ret
   }
 
-  final def inhabitants: Long = Unsafe.instance.getLongVolatile(this, inhabitantsOffset)
+  final def inhabitants: Long = Unsafe.UNSAFE.getLongVolatile(this, inhabitantsOffset)
 
-  private final def shutdownSchedule: Int = Unsafe.instance.getIntVolatile(this, shutdownScheduleOffset)
+  private final def shutdownSchedule: Int = Unsafe.UNSAFE.getIntVolatile(this, shutdownScheduleOffset)
   private final def updateShutdownSchedule(expect: Int, update: Int): Boolean =
-    Unsafe.instance.compareAndSwapInt(this, shutdownScheduleOffset, expect, update)
+    Unsafe.UNSAFE.compareAndSwapInt(this, shutdownScheduleOffset, expect, update)
 
   /**
    *  Creates and returns a mailbox for the given actor.

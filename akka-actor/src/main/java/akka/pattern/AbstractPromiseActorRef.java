@@ -13,10 +13,10 @@ final class AbstractPromiseActorRef {
   static {
     try {
       stateOffset =
-          Unsafe.instance.objectFieldOffset(
+          Unsafe.UNSAFE.objectFieldOffset(
               PromiseActorRef.class.getDeclaredField("_stateDoNotCallMeDirectly"));
       watchedByOffset =
-          Unsafe.instance.objectFieldOffset(
+          Unsafe.UNSAFE.objectFieldOffset(
               PromiseActorRef.class.getDeclaredField("_watchedByDoNotCallMeDirectly"));
     } catch (Throwable t) {
       throw new ExceptionInInitializerError(t);

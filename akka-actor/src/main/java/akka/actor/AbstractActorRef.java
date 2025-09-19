@@ -13,10 +13,10 @@ final class AbstractActorRef {
   static {
     try {
       cellOffset =
-          Unsafe.instance.objectFieldOffset(
+          Unsafe.UNSAFE.objectFieldOffset(
               RepointableActorRef.class.getDeclaredField("_cellDoNotCallMeDirectly"));
       lookupOffset =
-          Unsafe.instance.objectFieldOffset(
+          Unsafe.UNSAFE.objectFieldOffset(
               RepointableActorRef.class.getDeclaredField("_lookupDoNotCallMeDirectly"));
     } catch (Throwable t) {
       throw new ExceptionInInitializerError(t);

@@ -260,13 +260,13 @@ private[remote] class Association(
    */
   @inline
   private[artery] def swapState(oldState: AssociationState, newState: AssociationState): Boolean =
-    Unsafe.instance.compareAndSwapObject(this, AbstractAssociation.sharedStateOffset, oldState, newState)
+    Unsafe.UNSAFE.compareAndSwapObject(this, AbstractAssociation.sharedStateOffset, oldState, newState)
 
   /**
    * @return Reference to current shared state
    */
   def associationState: AssociationState =
-    Unsafe.instance.getObjectVolatile(this, AbstractAssociation.sharedStateOffset).asInstanceOf[AssociationState]
+    Unsafe.UNSAFE.getObjectVolatile(this, AbstractAssociation.sharedStateOffset).asInstanceOf[AssociationState]
 
   def setControlIdleKillSwitch(killSwitch: OptionVal[SharedKillSwitch]): Unit = {
     val current = associationState

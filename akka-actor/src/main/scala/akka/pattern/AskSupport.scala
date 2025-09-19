@@ -543,11 +543,11 @@ private[akka] final class PromiseActorRef(
 
   @inline
   private[this] def watchedBy: Set[ActorRef] =
-    Unsafe.instance.getObjectVolatile(this, watchedByOffset).asInstanceOf[Set[ActorRef]]
+    Unsafe.UNSAFE.getObjectVolatile(this, watchedByOffset).asInstanceOf[Set[ActorRef]]
 
   @inline
   private[this] def updateWatchedBy(oldWatchedBy: Set[ActorRef], newWatchedBy: Set[ActorRef]): Boolean =
-    Unsafe.instance.compareAndSwapObject(this, watchedByOffset, oldWatchedBy, newWatchedBy)
+    Unsafe.UNSAFE.compareAndSwapObject(this, watchedByOffset, oldWatchedBy, newWatchedBy)
 
   @tailrec // Returns false if the Promise is already completed
   private[this] final def addWatcher(watcher: ActorRef): Boolean = watchedBy match {
@@ -568,14 +568,14 @@ private[akka] final class PromiseActorRef(
   }
 
   @inline
-  private[this] def state: AnyRef = Unsafe.instance.getObjectVolatile(this, stateOffset)
+  private[this] def state: AnyRef = Unsafe.UNSAFE.getObjectVolatile(this, stateOffset)
 
   @inline
   private[this] def updateState(oldState: AnyRef, newState: AnyRef): Boolean =
-    Unsafe.instance.compareAndSwapObject(this, stateOffset, oldState, newState)
+    Unsafe.UNSAFE.compareAndSwapObject(this, stateOffset, oldState, newState)
 
   @inline
-  private[this] def setState(newState: AnyRef): Unit = Unsafe.instance.putObjectVolatile(this, stateOffset, newState)
+  private[this] def setState(newState: AnyRef): Unit = Unsafe.UNSAFE.putObjectVolatile(this, stateOffset, newState)
 
   override def getParent: InternalActorRef = provider.tempContainer
 

@@ -5,7 +5,6 @@
 package akka.remote.artery
 
 import scala.util.Random
-
 import akka.testkit.AkkaSpec
 import akka.util.Unsafe
 
