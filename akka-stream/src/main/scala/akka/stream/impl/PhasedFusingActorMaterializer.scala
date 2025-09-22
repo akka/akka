@@ -50,7 +50,7 @@ import akka.util.OptionVal
 @InternalApi private[akka] object PhasedFusingActorMaterializer {
   // Compile time constant
   final val Debug = false
-  final val Mailbox: String = "akka.stream.materializer.mailbox"
+  final val Mailbox = "akka.stream.materializer.mailbox"
 
   val DefaultPhase: Phase[Any] = new Phase[Any] {
     override def apply(
