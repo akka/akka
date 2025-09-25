@@ -4,19 +4,26 @@
 
 package akka.actor;
 
-import akka.util.Unsafe;
+import akka.annotation.InternalApi;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
 
+/** INTERNAL API */
+@InternalApi
 final class AbstractActorRef {
-  static final long cellOffset;
-  static final long lookupOffset;
+
+  static final VarHandle cellHandle;
+  static final VarHandle lookupHandle;
 
   static {
     try {
-      cellOffset =
-          Unsafe.instance.objectFieldOffset(
+      MethodHandles.Lookup lookup =
+          MethodHandles.privateLookupIn(RepointableActorRef.class, MethodHandles.lookup());
+      cellHandle =
+          lookup.unreflectVarHandle(
               RepointableActorRef.class.getDeclaredField("_cellDoNotCallMeDirectly"));
-      lookupOffset =
-          Unsafe.instance.objectFieldOffset(
+      lookupHandle =
+          lookup.unreflectVarHandle(
               RepointableActorRef.class.getDeclaredField("_lookupDoNotCallMeDirectly"));
     } catch (Throwable t) {
       throw new ExceptionInInitializerError(t);
