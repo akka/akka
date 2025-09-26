@@ -4,11 +4,17 @@
 
 package akka.dispatch;
 
+import akka.annotation.InternalApi;
+
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
 
+/**
+ * INTERNAL API
+ */
+@InternalApi
 final class AbstractMailbox {
-    final static VarHandle mailboxStatusHandle;
+    private final static VarHandle mailboxStatusHandle;
     final static VarHandle systemMessageHandle;
 
     static {
@@ -20,5 +26,17 @@ final class AbstractMailbox {
         } catch(Throwable t){
             throw new ExceptionInInitializerError(t);
         }
+    }
+
+    public static int currentMailboxStatus(Mailbox mailbox) {
+      return (int)mailboxStatusHandle.getVolatile(mailbox);
+    }
+
+    public static boolean updateStatus(Mailbox mailbox, int oldStatus, int newStatus) {
+      return mailboxStatusHandle.compareAndSet(mailbox, oldStatus, newStatus);
+    }
+
+    public static void setStatus(Mailbox mailbox, int newStatus) {
+      AbstractMailbox.mailboxStatusHandle.setVolatile(mailbox, newStatus);
     }
 }

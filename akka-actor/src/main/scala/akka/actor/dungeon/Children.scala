@@ -115,11 +115,11 @@ private[akka] trait Children { this: ActorCell =>
 
   @nowarn @volatile private var _nextNameDoNotCallMeDirectly = 0L
   final protected def randomName(sb: java.lang.StringBuilder): String = {
-    val num = AbstractActorCell.nextNameHandle.getAndAdd(this, 1L).asInstanceOf[Long]
+    val num = AbstractActorCell.nextNameNumber(this)
     Helpers.base64(num, sb)
   }
   final protected def randomName(): String = {
-    val num = AbstractActorCell.nextNameHandle.getAndAdd(this, 1L).asInstanceOf[Long]
+    val num = AbstractActorCell.nextNameNumber(this)
     Helpers.base64(num)
   }
 

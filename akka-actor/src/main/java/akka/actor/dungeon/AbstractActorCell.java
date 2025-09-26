@@ -5,14 +5,17 @@
 package akka.actor.dungeon;
 
 import akka.actor.ActorCell;
+import akka.annotation.InternalApi;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
 import java.lang.reflect.Field;
 
+/** INTERNAL API */
+@InternalApi
 final class AbstractActorCell {
   static final VarHandle mailboxHandle;
   static final VarHandle childrenHandle;
-  static final VarHandle nextNameHandle;
+  private static final VarHandle nextNameHandle;
   static final VarHandle functionRefsHandle;
 
   static {
@@ -45,5 +48,9 @@ final class AbstractActorCell {
     } catch (Throwable t) {
       throw new ExceptionInInitializerError(t);
     }
+  }
+
+  static long nextNameNumber(Children children) {
+    return (long) nextNameHandle.getAndAdd(children, 1L);
   }
 }
