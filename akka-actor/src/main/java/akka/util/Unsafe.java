@@ -12,7 +12,7 @@ import java.util.Arrays;
 /** INTERNAL API */
 @InternalApi
 public final class Unsafe {
-  public static final sun.misc.Unsafe instance;
+  private static final sun.misc.Unsafe instance;
 
   private static final long stringValueFieldOffset;
   private static final boolean isJavaVersion9Plus;
