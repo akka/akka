@@ -4,8 +4,9 @@
 
 package akka.dispatch;
 
-import akka.util.Unsafe;
-
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
+import java.lang.reflect.Field;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -45,7 +46,7 @@ public abstract class AbstractNodeQueue<T> extends AtomicReference<AbstractNodeQ
      */
     @SuppressWarnings("unchecked")
     protected final Node<T> peekNode() {
-        final Node<T> tail = ((Node<T>)Unsafe.UNSAFE.getObjectVolatile(this, tailOffset));
+        final Node<T> tail = ((Node<T>)tailHandle.getVolatile(this));
         Node<T> next = tail.next();
         if (next == null && get() != tail) {
             // if tail != head this is not going to change until producer makes progress
@@ -101,7 +102,7 @@ public abstract class AbstractNodeQueue<T> extends AtomicReference<AbstractNodeQ
      * @return true if queue was empty at some point in the past
      */
     public final boolean isEmpty() {
-        return Unsafe.UNSAFE.getObjectVolatile(this, tailOffset) == get();
+        return tailHandle.getVolatile(this) == get();
     }
 
     /**
@@ -117,8 +118,8 @@ public abstract class AbstractNodeQueue<T> extends AtomicReference<AbstractNodeQ
     public final int count() {
         int count = 0;
         final Node<T> head = get();
-        for(Node<T> n = ((Node<T>) Unsafe.UNSAFE.getObjectVolatile(this, tailOffset)).next();
-            n != null && count < Integer.MAX_VALUE;
+        for(Node<T> n = ((Node<T>) tailHandle.getVolatile(this)).next();
+            n != null && count < Integer.MAX_VALUE; 
             n = n.next()) {
           ++count;
           // only iterate up to the point where head was when starting: this is a moving queue!
@@ -153,7 +154,7 @@ public abstract class AbstractNodeQueue<T> extends AtomicReference<AbstractNodeQ
      */
     @SuppressWarnings("unchecked")
     public final Node<T> pollNode() {
-      final Node<T> tail = (Node<T>) Unsafe.UNSAFE.getObjectVolatile(this, tailOffset);
+      final Node<T> tail = (Node<T>) tailHandle.getVolatile(this);
       Node<T> next = tail.next();
       if (next == null && get() != tail) {
           // if tail != head this is not going to change until producer makes progress
@@ -166,17 +167,19 @@ public abstract class AbstractNodeQueue<T> extends AtomicReference<AbstractNodeQ
       else {
         tail.value = next.value;
         next.value = null;
-        Unsafe.UNSAFE.putOrderedObject(this, tailOffset, next);
+        tailHandle.setRelease(this, next);
         tail.setNext(null);
         return tail;
       }
     }
 
-    private final static long tailOffset;
+    private final static VarHandle tailHandle;
 
     static {
         try {
-          tailOffset = Unsafe.UNSAFE.objectFieldOffset(AbstractNodeQueue.class.getDeclaredField("_tailDoNotCallMeDirectly"));
+          MethodHandles.Lookup lookup = MethodHandles.privateLookupIn(AbstractNodeQueue.class, MethodHandles.lookup());
+          Field tailField = AbstractNodeQueue.class.getDeclaredField("_tailDoNotCallMeDirectly");
+          tailHandle = lookup.unreflectVarHandle(tailField);
         } catch(Throwable t){
             throw new ExceptionInInitializerError(t);
         }
@@ -197,18 +200,20 @@ public abstract class AbstractNodeQueue<T> extends AtomicReference<AbstractNodeQ
 
         @SuppressWarnings("unchecked")
         public final Node<T> next() {
-            return (Node<T>)Unsafe.UNSAFE.getObjectVolatile(this, nextOffset);
+            return (Node<T>) nextHandle.getVolatile(this);
         }
 
         protected final void setNext(final Node<T> newNext) {
-          Unsafe.UNSAFE.putOrderedObject(this, nextOffset, newNext);
+          nextHandle.setRelease(this, newNext);
         }
         
-        private final static long nextOffset;
+        private final static VarHandle nextHandle;
         
         static {
             try {
-                nextOffset = Unsafe.UNSAFE.objectFieldOffset(Node.class.getDeclaredField("_nextDoNotCallMeDirectly"));
+                MethodHandles.Lookup lookup = MethodHandles.privateLookupIn(Node.class, MethodHandles.lookup());
+                Field nextField = Node.class.getDeclaredField("_nextDoNotCallMeDirectly");
+                nextHandle = lookup.unreflectVarHandle(nextField);
             } catch(Throwable t){
                 throw new ExceptionInInitializerError(t);
             } 

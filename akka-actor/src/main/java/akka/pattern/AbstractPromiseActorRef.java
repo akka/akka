@@ -4,20 +4,24 @@
 
 package akka.pattern;
 
-import akka.util.Unsafe;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
+import java.lang.reflect.Field;
 
 final class AbstractPromiseActorRef {
-  static final long stateOffset;
-  static final long watchedByOffset;
+  static final VarHandle stateHandle;
+  static final VarHandle watchedByHandle;
 
   static {
     try {
-      stateOffset =
-          Unsafe.UNSAFE.objectFieldOffset(
-              PromiseActorRef.class.getDeclaredField("_stateDoNotCallMeDirectly"));
-      watchedByOffset =
-          Unsafe.UNSAFE.objectFieldOffset(
-              PromiseActorRef.class.getDeclaredField("_watchedByDoNotCallMeDirectly"));
+      MethodHandles.Lookup lookup =
+          MethodHandles.privateLookupIn(PromiseActorRef.class, MethodHandles.lookup());
+      Field stateField = PromiseActorRef.class.getDeclaredField("_stateDoNotCallMeDirectly");
+      stateHandle = lookup.unreflectVarHandle(stateField);
+
+      Field watchedByField =
+          PromiseActorRef.class.getDeclaredField("_watchedByDoNotCallMeDirectly");
+      watchedByHandle = lookup.unreflectVarHandle(watchedByField);
     } catch (Throwable t) {
       throw new ExceptionInInitializerError(t);
     }

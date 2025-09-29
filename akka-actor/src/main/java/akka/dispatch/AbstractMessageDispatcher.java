@@ -4,16 +4,20 @@
 
 package akka.dispatch;
 
-import akka.util.Unsafe;
+
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
 
 abstract class AbstractMessageDispatcher {
-    final static long shutdownScheduleOffset;
-    final static long inhabitantsOffset;
+    final static VarHandle shutdownScheduleHandle;
+    final static VarHandle inhabitantsHandle;
 
     static {
         try {
-          shutdownScheduleOffset = Unsafe.UNSAFE.objectFieldOffset(MessageDispatcher.class.getDeclaredField("_shutdownScheduleDoNotCallMeDirectly"));
-          inhabitantsOffset = Unsafe.UNSAFE.objectFieldOffset(MessageDispatcher.class.getDeclaredField("_inhabitantsDoNotCallMeDirectly"));
+          MethodHandles.Lookup lookup =
+              MethodHandles.privateLookupIn(MessageDispatcher.class, MethodHandles.lookup());
+          shutdownScheduleHandle = lookup.unreflectVarHandle(MessageDispatcher.class.getDeclaredField("_shutdownScheduleDoNotCallMeDirectly"));
+          inhabitantsHandle = lookup.unreflectVarHandle(MessageDispatcher.class.getDeclaredField("_inhabitantsDoNotCallMeDirectly"));
         } catch(Throwable t){
             throw new ExceptionInInitializerError(t);
         }

@@ -13,13 +13,14 @@ import scala.concurrent.duration.{ Duration, FiniteDuration }
 import scala.util.control.NonFatal
 import com.typesafe.config.Config
 import akka.actor._
+import akka.annotation.InternalApi
 import akka.annotation.InternalStableApi
 import akka.dispatch.affinity.AffinityPoolConfigurator
 import akka.dispatch.sysmsg._
 import akka.event.EventStream
 import akka.event.Logging.{ Debug, Error, LogEventException }
 import akka.util.JavaVersion
-import akka.util.{ Index, Unsafe }
+import akka.util.Index
 
 final case class Envelope private (message: Any, sender: ActorRef) {
 
@@ -60,6 +61,7 @@ private[akka] trait LoadMetrics { self: Executor =>
 /**
  * INTERNAL API
  */
+@InternalApi
 private[akka] object MessageDispatcher {
   val UNSCHEDULED = 0 //WARNING DO NOT CHANGE THE VALUE OF THIS: It relies on the faster init of 0 in AbstractMessageDispatcher
   val SCHEDULED = 1
@@ -96,7 +98,6 @@ abstract class MessageDispatcher(val configurator: MessageDispatcherConfigurator
     with BatchingExecutor
     with ExecutionContextExecutor {
 
-  import AbstractMessageDispatcher.{ inhabitantsOffset, shutdownScheduleOffset }
   import MessageDispatcher._
   import configurator.prerequisites
 
@@ -111,7 +112,7 @@ abstract class MessageDispatcher(val configurator: MessageDispatcherConfigurator
   }
 
   private final def addInhabitants(add: Long): Long = {
-    val old = Unsafe.UNSAFE.getAndAddLong(this, inhabitantsOffset, add)
+    val old = AbstractMessageDispatcher.inhabitantsHandle.getAndAdd(this, add).asInstanceOf[Long]
     val ret = old + add
     if (ret < 0) {
       // We haven't succeeded in decreasing the inhabitants yet but the simple fact that we're trying to
@@ -123,11 +124,12 @@ abstract class MessageDispatcher(val configurator: MessageDispatcherConfigurator
     ret
   }
 
-  final def inhabitants: Long = Unsafe.UNSAFE.getLongVolatile(this, inhabitantsOffset)
+  final def inhabitants: Long = AbstractMessageDispatcher.inhabitantsHandle.getVolatile(this).asInstanceOf[Long]
 
-  private final def shutdownSchedule: Int = Unsafe.UNSAFE.getIntVolatile(this, shutdownScheduleOffset)
+  private final def shutdownSchedule: Int =
+    AbstractMessageDispatcher.shutdownScheduleHandle.getVolatile(this).asInstanceOf[Int]
   private final def updateShutdownSchedule(expect: Int, update: Int): Boolean =
-    Unsafe.UNSAFE.compareAndSwapInt(this, shutdownScheduleOffset, expect, update)
+    AbstractMessageDispatcher.shutdownScheduleHandle.compareAndSet(this, expect, update)
 
   /**
    *  Creates and returns a mailbox for the given actor.
