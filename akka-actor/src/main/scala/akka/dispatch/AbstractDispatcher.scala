@@ -112,7 +112,7 @@ abstract class MessageDispatcher(val configurator: MessageDispatcherConfigurator
   }
 
   private final def addInhabitants(add: Long): Long = {
-    val old = AbstractMessageDispatcher.inhabitantsHandle.getAndAdd(this, add).asInstanceOf[Long]
+    val old = getAndAddInhabitants(add)
     val ret = old + add
     if (ret < 0) {
       // We haven't succeeded in decreasing the inhabitants yet but the simple fact that we're trying to
@@ -124,12 +124,11 @@ abstract class MessageDispatcher(val configurator: MessageDispatcherConfigurator
     ret
   }
 
-  final def inhabitants: Long = AbstractMessageDispatcher.inhabitantsHandle.getVolatile(this).asInstanceOf[Long]
+  final def inhabitants: Long = volatileGetInhabitants
 
-  private final def shutdownSchedule: Int =
-    AbstractMessageDispatcher.shutdownScheduleHandle.getVolatile(this).asInstanceOf[Int]
+  private final def shutdownSchedule: Int = volatileGetShutdownSchedule
   private final def updateShutdownSchedule(expect: Int, update: Int): Boolean =
-    AbstractMessageDispatcher.shutdownScheduleHandle.compareAndSet(this, expect, update)
+    compareAndSetShutdownSchedule(expect, update)
 
   /**
    *  Creates and returns a mailbox for the given actor.

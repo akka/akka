@@ -9,8 +9,8 @@ import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
 
 abstract class AbstractMessageDispatcher {
-    final static VarHandle shutdownScheduleHandle;
-    final static VarHandle inhabitantsHandle;
+    private final static VarHandle shutdownScheduleHandle;
+    private final static VarHandle inhabitantsHandle;
 
     static {
         try {
@@ -22,4 +22,22 @@ abstract class AbstractMessageDispatcher {
             throw new ExceptionInInitializerError(t);
         }
     }
+
+    // Note: manual forwarders to be certain we avoid boxing the ints/longs
+    long volatileGetInhabitants() {
+      return (long) inhabitantsHandle.getVolatile(this);
+    }
+
+    long getAndAddInhabitants(long add) {
+      return (long) inhabitantsHandle.getAndAdd(this, add);
+    }
+
+    int volatileGetShutdownSchedule() {
+      return (int) shutdownScheduleHandle.getVolatile(this);
+    }
+
+    boolean compareAndSetShutdownSchedule(int expect, int update) {
+      return shutdownScheduleHandle.compareAndSet(this, expect, update);
+    }
+
 }

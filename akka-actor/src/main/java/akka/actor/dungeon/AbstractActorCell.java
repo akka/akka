@@ -47,7 +47,7 @@ final class AbstractActorCell {
   }
 
   // Note: manual forwarder to be certain we avoid boxing the long
-  static long nextNameNumber(Children children) {
+  static long getAndAddNextName(Children children) {
     return (long) nextNameHandle.getAndAdd(children, 1L);
   }
 }

@@ -112,7 +112,7 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
   protected var _systemQueueDoNotCallMeDirectly: SystemMessage = _ //null by default
 
   @inline
-  final def currentStatus: Mailbox.Status = AbstractMailbox.currentMailboxStatus(this)
+  final def currentStatus: Mailbox.Status = AbstractMailbox.volatileGetMailboxStatus(this)
   @inline
   final def shouldProcessMessage: Boolean = (currentStatus & shouldNotProcessMask) == 0
 
@@ -130,11 +130,11 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
 
   @inline
   protected final def updateStatus(oldStatus: Status, newStatus: Status): Boolean =
-    AbstractMailbox.updateStatus(this, oldStatus, newStatus)
+    AbstractMailbox.compareAndSetMailboxStatus(this, oldStatus, newStatus)
 
   @inline
   protected final def setStatus(newStatus: Status): Unit =
-    AbstractMailbox.setStatus(this, newStatus)
+    AbstractMailbox.volatileSetMailboxStatus(this, newStatus)
 
   /**
    * Reduce the suspend count by one. Caller does not need to worry about whether

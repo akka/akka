@@ -30,15 +30,15 @@ final class AbstractMailbox {
 
 
     // Note: manual forwarder to be certain we avoid boxing the int
-    public static int currentMailboxStatus(Mailbox mailbox) {
+    public static int volatileGetMailboxStatus(Mailbox mailbox) {
       return (int)mailboxStatusHandle.getVolatile(mailbox);
     }
 
-    public static boolean updateStatus(Mailbox mailbox, int oldStatus, int newStatus) {
+    public static boolean compareAndSetMailboxStatus(Mailbox mailbox, int oldStatus, int newStatus) {
       return mailboxStatusHandle.compareAndSet(mailbox, oldStatus, newStatus);
     }
 
-    public static void setStatus(Mailbox mailbox, int newStatus) {
+    public static void volatileSetMailboxStatus(Mailbox mailbox, int newStatus) {
       AbstractMailbox.mailboxStatusHandle.setVolatile(mailbox, newStatus);
     }
 }
