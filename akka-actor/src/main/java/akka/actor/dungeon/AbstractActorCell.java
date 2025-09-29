@@ -25,32 +25,28 @@ final class AbstractActorCell {
       Field mailboxField =
           ActorCell.class.getDeclaredField(
               "akka$actor$dungeon$Dispatch$$_mailboxDoNotCallMeDirectly");
-      mailboxField.setAccessible(true);
       mailboxHandle = lookup.unreflectVarHandle(mailboxField);
 
       Field childrenField =
           ActorCell.class.getDeclaredField(
               "akka$actor$dungeon$Children$$_childrenRefsDoNotCallMeDirectly");
-      childrenField.setAccessible(true);
       childrenHandle = lookup.unreflectVarHandle(childrenField);
 
       Field nextNameField =
           ActorCell.class.getDeclaredField(
               "akka$actor$dungeon$Children$$_nextNameDoNotCallMeDirectly");
-      nextNameField.setAccessible(true);
       nextNameHandle = lookup.unreflectVarHandle(nextNameField);
 
       Field functionRefsField =
           ActorCell.class.getDeclaredField(
               "akka$actor$dungeon$Children$$_functionRefsDoNotCallMeDirectly");
-      functionRefsField.setAccessible(true);
       functionRefsHandle = lookup.unreflectVarHandle(functionRefsField);
     } catch (Throwable t) {
       throw new ExceptionInInitializerError(t);
     }
   }
 
-  // Note: manual forwarder to ensure avoiding boxing
+  // Note: manual forwarder to be certain we avoid boxing the long
   static long nextNameNumber(Children children) {
     return (long) nextNameHandle.getAndAdd(children, 1L);
   }

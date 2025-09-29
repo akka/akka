@@ -28,6 +28,8 @@ final class AbstractMailbox {
         }
     }
 
+
+    // Note: manual forwarder to be certain we avoid boxing the int
     public static int currentMailboxStatus(Mailbox mailbox) {
       return (int)mailboxStatusHandle.getVolatile(mailbox);
     }
