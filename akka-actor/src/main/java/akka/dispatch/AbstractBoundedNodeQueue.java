@@ -4,9 +4,7 @@
 
 package akka.dispatch;
 
-import java.lang.invoke.MethodHandles;
-import java.lang.invoke.VarHandle;
-import java.lang.reflect.Field;
+import akka.util.Unsafe;
 
 /**
  * Lock-free bounded non-blocking multiple-producer single-consumer queue based on the works of:
@@ -38,29 +36,29 @@ public abstract class AbstractBoundedNodeQueue<T> {
     }
 
     private void setEnq(Node<T> n) {
-      enqHandle.setVolatile(this, n);
+        Unsafe.UNSAFE.putObjectVolatile(this, enqOffset, n);
     }
 
     @SuppressWarnings("unchecked")
     private Node<T> getEnq() {
-        return (Node<T>) enqHandle.getVolatile(this);
+        return (Node<T>)Unsafe.UNSAFE.getObjectVolatile(this, enqOffset);
     }
 
     private boolean casEnq(Node<T> old, Node<T> nju) {
-        return enqHandle.compareAndSet(this, old, nju);
+        return Unsafe.UNSAFE.compareAndSwapObject(this, enqOffset, old, nju);
     }
 
     private void setDeq(Node<T> n) {
-      deqHandle.setVolatile(this, n);
+        Unsafe.UNSAFE.putObjectVolatile(this, deqOffset, n);
     }
 
     @SuppressWarnings("unchecked")
     private Node<T> getDeq() {
-        return (Node<T>)deqHandle.getVolatile(this);
+        return (Node<T>)Unsafe.UNSAFE.getObjectVolatile(this, deqOffset);
     }
 
     private boolean casDeq(Node<T> old, Node<T> nju) {
-        return deqHandle.compareAndSet(this, old, nju);
+        return Unsafe.UNSAFE.compareAndSwapObject(this, deqOffset, old, nju);
     }
 
     protected final Node<T> peekNode() {
@@ -176,17 +174,12 @@ public abstract class AbstractBoundedNodeQueue<T> {
         }
     }
 
-    private final static VarHandle enqHandle;
-    private final static VarHandle deqHandle;
+    private final static long enqOffset, deqOffset;
 
     static {
         try {
-          MethodHandles.Lookup lookup = MethodHandles.privateLookupIn(AbstractBoundedNodeQueue.class, MethodHandles.lookup());
-          Field enqField = AbstractBoundedNodeQueue.class.getDeclaredField("_enqDoNotCallMeDirectly");
-          enqHandle = lookup.unreflectVarHandle(enqField);
-
-          Field deqField = AbstractBoundedNodeQueue.class.getDeclaredField("_deqDoNotCallMeDirectly");
-          deqHandle = lookup.unreflectVarHandle(deqField);
+          enqOffset = Unsafe.UNSAFE.objectFieldOffset(AbstractBoundedNodeQueue.class.getDeclaredField("_enqDoNotCallMeDirectly"));
+          deqOffset = Unsafe.UNSAFE.objectFieldOffset(AbstractBoundedNodeQueue.class.getDeclaredField("_deqDoNotCallMeDirectly"));
         } catch(Throwable t){
             throw new ExceptionInInitializerError(t);
         }
@@ -200,20 +193,18 @@ public abstract class AbstractBoundedNodeQueue<T> {
 
         @SuppressWarnings("unchecked")
         public final Node<T> next() {
-            return (Node<T>) nextHandle.getVolatile(this);
+            return (Node<T>)Unsafe.UNSAFE.getObjectVolatile(this, nextOffset);
         }
 
         protected final void setNext(final Node<T> newNext) {
-          nextHandle.setRelease(this, newNext);
+          Unsafe.UNSAFE.putOrderedObject(this, nextOffset, newNext);
         }
         
-        private final static VarHandle nextHandle;
+        private final static long nextOffset;
         
         static {
             try {
-              MethodHandles.Lookup lookup = MethodHandles.privateLookupIn(Node.class, MethodHandles.lookup());
-              Field nextField = Node.class.getDeclaredField("_nextDoNotCallMeDirectly");
-              nextHandle = lookup.unreflectVarHandle(nextField);
+                nextOffset = Unsafe.UNSAFE.objectFieldOffset(Node.class.getDeclaredField("_nextDoNotCallMeDirectly"));
             } catch(Throwable t){
                 throw new ExceptionInInitializerError(t);
             } 

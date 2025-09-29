@@ -58,6 +58,7 @@ import akka.stream.scaladsl.MergeHub
 import akka.stream.scaladsl.Source
 import akka.util.OptionVal
 import akka.util.PrettyDuration._
+import akka.util.Unsafe
 import akka.util.WildcardIndex
 
 /**
@@ -259,13 +260,13 @@ private[remote] class Association(
    */
   @inline
   private[artery] def swapState(oldState: AssociationState, newState: AssociationState): Boolean =
-    AbstractAssociation.sharedStateHandle.compareAndSet(this, oldState, newState)
+    Unsafe.UNSAFE.compareAndSwapObject(this, AbstractAssociation.sharedStateOffset, oldState, newState)
 
   /**
    * @return Reference to current shared state
    */
   def associationState: AssociationState =
-    AbstractAssociation.sharedStateHandle.getVolatile(this).asInstanceOf[AssociationState]
+    Unsafe.UNSAFE.getObjectVolatile(this, AbstractAssociation.sharedStateOffset).asInstanceOf[AssociationState]
 
   def setControlIdleKillSwitch(killSwitch: OptionVal[SharedKillSwitch]): Unit = {
     val current = associationState

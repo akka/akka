@@ -16,7 +16,7 @@ import akka.actor._
 import akka.annotation.InternalApi
 import akka.annotation.InternalStableApi
 import akka.serialization.{ Serialization, SerializationExtension, Serializers }
-import akka.util.Helpers
+import akka.util.{ Helpers, Unsafe }
 
 /**
  * INTERNAL API
@@ -39,7 +39,7 @@ private[akka] trait Children { this: ActorCell =>
   private var _childrenRefsDoNotCallMeDirectly: ChildrenContainer = EmptyChildrenContainer
 
   def childrenRefs: ChildrenContainer =
-    AbstractActorCell.childrenHandle.getVolatile(this).asInstanceOf[ChildrenContainer]
+    Unsafe.UNSAFE.getObjectVolatile(this, AbstractActorCell.childrenOffset).asInstanceOf[ChildrenContainer]
 
   final def children: immutable.Iterable[ActorRef] = childrenRefs.children
 
@@ -63,7 +63,7 @@ private[akka] trait Children { this: ActorCell =>
 
   @nowarn @volatile private var _functionRefsDoNotCallMeDirectly = Map.empty[String, FunctionRef]
   private def functionRefs: Map[String, FunctionRef] =
-    AbstractActorCell.functionRefsHandle.getVolatile(this).asInstanceOf[Map[String, FunctionRef]]
+    Unsafe.UNSAFE.getObjectVolatile(this, AbstractActorCell.functionRefsOffset).asInstanceOf[Map[String, FunctionRef]]
 
   private[akka] def getFunctionRefOrNobody(name: String, uid: Int = ActorCell.undefinedUid): InternalActorRef =
     functionRefs.getOrElse(name, Children.GetNobody()) match {
@@ -82,7 +82,7 @@ private[akka] trait Children { this: ActorCell =>
     @tailrec def rec(): Unit = {
       val old = functionRefs
       val added = old.updated(childPath.name, ref)
-      if (!AbstractActorCell.functionRefsHandle.compareAndSet(this, old, added)) rec()
+      if (!Unsafe.UNSAFE.compareAndSwapObject(this, AbstractActorCell.functionRefsOffset, old, added)) rec()
     }
     rec()
 
@@ -97,7 +97,7 @@ private[akka] trait Children { this: ActorCell =>
       if (!old.contains(name)) false
       else {
         val removed = old - name
-        if (!AbstractActorCell.functionRefsHandle.compareAndSet(this, old, removed)) rec()
+        if (!Unsafe.UNSAFE.compareAndSwapObject(this, AbstractActorCell.functionRefsOffset, old, removed)) rec()
         else {
           ref.stop()
           true
@@ -108,18 +108,19 @@ private[akka] trait Children { this: ActorCell =>
   }
 
   protected def stopFunctionRefs(): Unit = {
-    val refs =
-      AbstractActorCell.functionRefsHandle.getAndSet(this, Map.empty).asInstanceOf[Map[String, FunctionRef]]
+    val refs = Unsafe.UNSAFE
+      .getAndSetObject(this, AbstractActorCell.functionRefsOffset, Map.empty)
+      .asInstanceOf[Map[String, FunctionRef]]
     refs.valuesIterator.foreach(_.stop())
   }
 
   @nowarn @volatile private var _nextNameDoNotCallMeDirectly = 0L
   final protected def randomName(sb: java.lang.StringBuilder): String = {
-    val num = AbstractActorCell.nextNameNumber(this)
+    val num = Unsafe.UNSAFE.getAndAddLong(this, AbstractActorCell.nextNameOffset, 1)
     Helpers.base64(num, sb)
   }
   final protected def randomName(): String = {
-    val num = AbstractActorCell.nextNameNumber(this)
+    val num = Unsafe.UNSAFE.getAndAddLong(this, AbstractActorCell.nextNameOffset, 1)
     Helpers.base64(num)
   }
 
@@ -147,11 +148,8 @@ private[akka] trait Children { this: ActorCell =>
   /*
    * low level CAS helpers
    */
-  @inline private final def swapChildrenRefs(
-      oldChildren: ChildrenContainer,
-      newChildren: ChildrenContainer): Boolean = {
-    AbstractActorCell.childrenHandle.compareAndSet(this, oldChildren, newChildren)
-  }
+  @inline private final def swapChildrenRefs(oldChildren: ChildrenContainer, newChildren: ChildrenContainer): Boolean =
+    Unsafe.UNSAFE.compareAndSwapObject(this, AbstractActorCell.childrenOffset, oldChildren, newChildren)
 
   @tailrec final def reserveChild(name: String): Boolean = {
     val c = childrenRefs
@@ -183,9 +181,8 @@ private[akka] trait Children { this: ActorCell =>
     }
   }
 
-  final protected def setTerminated(): Unit = {
-    AbstractActorCell.childrenHandle.setVolatile(this, TerminatedChildrenContainer)
-  }
+  final protected def setTerminated(): Unit =
+    Unsafe.UNSAFE.putObjectVolatile(this, AbstractActorCell.childrenOffset, TerminatedChildrenContainer)
 
   /*
    * ActorCell-internal API

@@ -18,7 +18,7 @@ import scala.util.control.NoStackTrace
 import akka.actor._
 import akka.annotation.{ InternalApi, InternalStableApi }
 import akka.dispatch.sysmsg._
-import akka.util.Timeout
+import akka.util.{ Timeout, Unsafe }
 import akka.util.ByteString
 
 /**
@@ -510,6 +510,7 @@ private[akka] final class PromiseActorRef(
     _mcn: String,
     refPathPrefix: String)
     extends MinimalActorRef {
+  import AbstractPromiseActorRef.{ stateOffset, watchedByOffset }
   import PromiseActorRef._
 
   // This is necessary for weaving the PromiseActorRef into the asked message, i.e. the replyTo pattern.
@@ -542,11 +543,11 @@ private[akka] final class PromiseActorRef(
 
   @inline
   private[this] def watchedBy: Set[ActorRef] =
-    AbstractPromiseActorRef.watchedByHandle.getVolatile(this).asInstanceOf[Set[ActorRef]]
+    Unsafe.UNSAFE.getObjectVolatile(this, watchedByOffset).asInstanceOf[Set[ActorRef]]
 
   @inline
   private[this] def updateWatchedBy(oldWatchedBy: Set[ActorRef], newWatchedBy: Set[ActorRef]): Boolean =
-    AbstractPromiseActorRef.watchedByHandle.compareAndSet(this, oldWatchedBy, newWatchedBy)
+    Unsafe.UNSAFE.compareAndSwapObject(this, watchedByOffset, oldWatchedBy, newWatchedBy)
 
   @tailrec // Returns false if the Promise is already completed
   private[this] final def addWatcher(watcher: ActorRef): Boolean = watchedBy match {
@@ -567,16 +568,14 @@ private[akka] final class PromiseActorRef(
   }
 
   @inline
-  private[this] def state: AnyRef =
-    AbstractPromiseActorRef.stateHandle.getVolatile(this)
+  private[this] def state: AnyRef = Unsafe.UNSAFE.getObjectVolatile(this, stateOffset)
 
   @inline
   private[this] def updateState(oldState: AnyRef, newState: AnyRef): Boolean =
-    AbstractPromiseActorRef.stateHandle.compareAndSet(this, oldState, newState)
+    Unsafe.UNSAFE.compareAndSwapObject(this, stateOffset, oldState, newState)
 
   @inline
-  private[this] def setState(newState: AnyRef): Unit =
-    AbstractPromiseActorRef.stateHandle.setVolatile(this, newState)
+  private[this] def setState(newState: AnyRef): Unit = Unsafe.UNSAFE.putObjectVolatile(this, stateOffset, newState)
 
   override def getParent: InternalActorRef = provider.tempContainer
 

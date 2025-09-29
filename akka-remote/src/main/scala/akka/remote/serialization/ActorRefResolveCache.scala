@@ -6,7 +6,6 @@ package akka.remote.serialization
 
 import scala.annotation.nowarn
 import scala.reflect.ClassTag
-
 import akka.actor.ActorRef
 import akka.actor.ActorSystem
 import akka.actor.ClassicActorSystemProvider

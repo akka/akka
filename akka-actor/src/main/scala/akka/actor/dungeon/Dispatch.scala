@@ -20,6 +20,7 @@ import akka.dispatch.sysmsg._
 import akka.event.Logging.Error
 import akka.serialization.{ DisabledJavaSerializer, SerializationExtension, Serializers }
 import akka.serialization.Serialization
+import akka.util.Unsafe
 
 @SerialVersionUID(1L)
 final case class SerializationCheckFailedException private[dungeon] (msg: Object, cause: Throwable)
@@ -41,13 +42,12 @@ private[akka] trait Dispatch { this: ActorCell =>
     _mailboxDoNotCallMeDirectly
   }
 
-  @inline final def mailbox: Mailbox = {
-    AbstractActorCell.mailboxHandle.getVolatile(this).asInstanceOf[Mailbox]
-  }
+  @inline final def mailbox: Mailbox =
+    Unsafe.UNSAFE.getObjectVolatile(this, AbstractActorCell.mailboxOffset).asInstanceOf[Mailbox]
 
   @tailrec final def swapMailbox(newMailbox: Mailbox): Mailbox = {
     val oldMailbox = mailbox
-    if (!AbstractActorCell.mailboxHandle.compareAndSet(this, oldMailbox, newMailbox))
+    if (!Unsafe.UNSAFE.compareAndSwapObject(this, AbstractActorCell.mailboxOffset, oldMailbox, newMailbox))
       swapMailbox(newMailbox)
     else oldMailbox
   }

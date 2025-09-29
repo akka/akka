@@ -4,25 +4,20 @@
 
 package akka.pattern;
 
-import java.lang.invoke.MethodHandles;
-import java.lang.invoke.VarHandle;
-import java.lang.reflect.Field;
+import akka.util.Unsafe;
 
 class AbstractCircuitBreaker {
-  protected static final VarHandle currentStateHandle;
-  protected static final VarHandle resetTimeoutHandle;
+  protected static final long stateOffset;
+  protected static final long resetTimeoutOffset;
 
   static {
     try {
-      MethodHandles.Lookup lookup =
-          MethodHandles.privateLookupIn(CircuitBreaker.class, MethodHandles.lookup());
-      Field currentStateField =
-          CircuitBreaker.class.getDeclaredField("_currentStateDoNotCallMeDirectly");
-      currentStateHandle = lookup.unreflectVarHandle(currentStateField);
-
-      Field resetTimeoutField =
-          CircuitBreaker.class.getDeclaredField("_currentResetTimeoutDoNotCallMeDirectly");
-      resetTimeoutHandle = lookup.unreflectVarHandle(resetTimeoutField);
+      stateOffset =
+          Unsafe.UNSAFE.objectFieldOffset(
+              CircuitBreaker.class.getDeclaredField("_currentStateDoNotCallMeDirectly"));
+      resetTimeoutOffset =
+          Unsafe.UNSAFE.objectFieldOffset(
+              CircuitBreaker.class.getDeclaredField("_currentResetTimeoutDoNotCallMeDirectly"));
     } catch (Throwable t) {
       throw new ExceptionInInitializerError(t);
     }

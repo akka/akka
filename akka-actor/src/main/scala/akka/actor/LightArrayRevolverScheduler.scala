@@ -16,8 +16,7 @@ import com.typesafe.config.Config
 import akka.dispatch.AbstractNodeQueue
 import akka.event.LoggingAdapter
 import akka.util.Helpers
-
-import java.lang.invoke.MethodHandles
+import akka.util.Unsafe.UNSAFE
 
 /**
  * This scheduler implementation is based on a revolving wheel of buckets,
@@ -335,10 +334,7 @@ class LightArrayRevolverScheduler(config: Config, log: LoggingAdapter, threadFac
 }
 
 object LightArrayRevolverScheduler {
-  private[this] val taskHandle =
-    MethodHandles
-      .privateLookupIn(classOf[TaskHolder], MethodHandles.lookup())
-      .unreflectVarHandle(classOf[TaskHolder].getDeclaredField("task"))
+  private[this] val taskOffset = UNSAFE.objectFieldOffset(classOf[TaskHolder].getDeclaredField("task"))
 
   private class TaskQueue extends AbstractNodeQueue[TaskHolder]
 
@@ -357,7 +353,7 @@ object LightArrayRevolverScheduler {
     private final def extractTask(replaceWith: Runnable): Runnable =
       task match {
         case t @ (ExecutedTask | CancelledTask) => t
-        case x                                  => if (taskHandle.compareAndSet(this, x, replaceWith)) x else extractTask(replaceWith)
+        case x                                  => if (UNSAFE.compareAndSwapObject(this, taskOffset, x, replaceWith)) x else extractTask(replaceWith)
       }
 
     private[akka] final def executeTask(): Boolean = extractTask(ExecutedTask) match {

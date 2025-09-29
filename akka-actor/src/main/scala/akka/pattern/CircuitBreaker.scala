@@ -24,6 +24,7 @@ import akka.AkkaException
 import akka.actor.ClassicActorSystemProvider
 import akka.actor.Scheduler
 import akka.pattern.internal.{ CircuitBreakerNoopTelemetry, CircuitBreakerTelemetry }
+import akka.util.Unsafe
 
 /**
  * Companion object providing factory methods for Circuit Breaker which runs callbacks in caller's thread
@@ -272,9 +273,8 @@ class CircuitBreaker(
    * @return Whether the previous state matched correctly
    */
   @inline
-  private[this] def swapState(oldState: State, newState: State): Boolean = {
-    AbstractCircuitBreaker.currentStateHandle.compareAndSet(this, oldState, newState)
-  }
+  private[this] def swapState(oldState: State, newState: State): Boolean =
+    Unsafe.UNSAFE.compareAndSwapObject(this, AbstractCircuitBreaker.stateOffset, oldState, newState)
 
   /**
    * Helper method for accessing underlying state via Unsafe
@@ -283,21 +283,25 @@ class CircuitBreaker(
    */
   @inline
   private[this] def currentState: State =
-    AbstractCircuitBreaker.currentStateHandle.getVolatile(this).asInstanceOf[State]
+    Unsafe.UNSAFE.getObjectVolatile(this, AbstractCircuitBreaker.stateOffset).asInstanceOf[State]
 
   /**
    * Helper method for updating the underlying resetTimeout via Unsafe
    */
   @inline
   private[this] def swapResetTimeout(oldResetTimeout: FiniteDuration, newResetTimeout: FiniteDuration): Boolean =
-    AbstractCircuitBreaker.resetTimeoutHandle.compareAndSet(this, oldResetTimeout, newResetTimeout)
+    Unsafe.UNSAFE.compareAndSwapObject(
+      this,
+      AbstractCircuitBreaker.resetTimeoutOffset,
+      oldResetTimeout,
+      newResetTimeout)
 
   /**
    * Helper method for accessing to the underlying resetTimeout via Unsafe
    */
   @inline
   private[this] def currentResetTimeout: FiniteDuration =
-    AbstractCircuitBreaker.resetTimeoutHandle.getVolatile(this).asInstanceOf[FiniteDuration]
+    Unsafe.UNSAFE.getObjectVolatile(this, AbstractCircuitBreaker.resetTimeoutOffset).asInstanceOf[FiniteDuration]
 
   /**
    * Wraps invocations of asynchronous calls that need to be protected.

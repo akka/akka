@@ -15,6 +15,7 @@ import akka.annotation.InternalApi
 import akka.dispatch._
 import akka.dispatch.sysmsg._
 import akka.event.Logging.Warning
+import akka.util.Unsafe
 
 /**
  * This actor ref starts out with some dummy cell (by default just enqueuing
@@ -37,7 +38,7 @@ private[akka] class RepointableActorRef(
     extends ActorRefWithCell
     with RepointableRef {
 
-  import AbstractActorRef.{ cellHandle, lookupHandle }
+  import AbstractActorRef.{ cellOffset, lookupOffset }
 
   /*
    * H E R E   B E   D R A G O N S !
@@ -56,17 +57,17 @@ private[akka] class RepointableActorRef(
     _lookupDoNotCallMeDirectly
   }
 
-  def underlying: Cell = cellHandle.getVolatile(this).asInstanceOf[Cell]
-  def lookup = lookupHandle.getVolatile(this).asInstanceOf[Cell]
+  def underlying: Cell = Unsafe.UNSAFE.getObjectVolatile(this, cellOffset).asInstanceOf[Cell]
+  def lookup = Unsafe.UNSAFE.getObjectVolatile(this, lookupOffset).asInstanceOf[Cell]
 
   @tailrec final def swapCell(next: Cell): Cell = {
     val old = underlying
-    if (cellHandle.compareAndSet(this, old, next)) old else swapCell(next)
+    if (Unsafe.UNSAFE.compareAndSwapObject(this, cellOffset, old, next)) old else swapCell(next)
   }
 
   @tailrec final def swapLookup(next: Cell): Cell = {
     val old = lookup
-    if (lookupHandle.compareAndSet(this, old, next)) old else swapLookup(next)
+    if (Unsafe.UNSAFE.compareAndSwapObject(this, lookupOffset, old, next)) old else swapLookup(next)
   }
 
   /**
