@@ -18,7 +18,7 @@ import scala.util.control.NoStackTrace
 import akka.actor._
 import akka.annotation.{ InternalApi, InternalStableApi }
 import akka.dispatch.sysmsg._
-import akka.util.{ Timeout, Unsafe }
+import akka.util.Timeout
 import akka.util.ByteString
 
 /**
@@ -510,7 +510,6 @@ private[akka] final class PromiseActorRef(
     _mcn: String,
     refPathPrefix: String)
     extends MinimalActorRef {
-  import AbstractPromiseActorRef.{ stateOffset, watchedByOffset }
   import PromiseActorRef._
 
   // This is necessary for weaving the PromiseActorRef into the asked message, i.e. the replyTo pattern.
@@ -543,11 +542,11 @@ private[akka] final class PromiseActorRef(
 
   @inline
   private[this] def watchedBy: Set[ActorRef] =
-    Unsafe.instance.getObjectVolatile(this, watchedByOffset).asInstanceOf[Set[ActorRef]]
+    AbstractPromiseActorRef.watchedByHandle.getVolatile(this).asInstanceOf[Set[ActorRef]]
 
   @inline
   private[this] def updateWatchedBy(oldWatchedBy: Set[ActorRef], newWatchedBy: Set[ActorRef]): Boolean =
-    Unsafe.instance.compareAndSwapObject(this, watchedByOffset, oldWatchedBy, newWatchedBy)
+    AbstractPromiseActorRef.watchedByHandle.compareAndSet(this, oldWatchedBy, newWatchedBy)
 
   @tailrec // Returns false if the Promise is already completed
   private[this] final def addWatcher(watcher: ActorRef): Boolean = watchedBy match {
@@ -568,14 +567,16 @@ private[akka] final class PromiseActorRef(
   }
 
   @inline
-  private[this] def state: AnyRef = Unsafe.instance.getObjectVolatile(this, stateOffset)
+  private[this] def state: AnyRef =
+    AbstractPromiseActorRef.stateHandle.getVolatile(this)
 
   @inline
   private[this] def updateState(oldState: AnyRef, newState: AnyRef): Boolean =
-    Unsafe.instance.compareAndSwapObject(this, stateOffset, oldState, newState)
+    AbstractPromiseActorRef.stateHandle.compareAndSet(this, oldState, newState)
 
   @inline
-  private[this] def setState(newState: AnyRef): Unit = Unsafe.instance.putObjectVolatile(this, stateOffset, newState)
+  private[this] def setState(newState: AnyRef): Unit =
+    AbstractPromiseActorRef.stateHandle.setVolatile(this, newState)
 
   override def getParent: InternalActorRef = provider.tempContainer
 
