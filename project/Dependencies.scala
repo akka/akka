@@ -26,8 +26,8 @@ object Dependencies {
   val logbackVersion = "1.5.18"
   val scalaFortifyVersion = "1.0.22"
   val fortifySCAVersion = "22.1"
-  val jacksonCoreVersion = "2.18.4" // https://github.com/FasterXML/jackson/wiki/Jackson-Releases
-  val jacksonDatabindVersion = jacksonCoreVersion // https://github.com/FasterXML/jackson/wiki/Jackson-Releases
+  val jacksonCoreVersion = "2.18.4.1" // 2.18 is LTS, https://github.com/FasterXML/jackson/wiki/Jackson-Releases
+  val jacksonDatabindVersion = "2.18.4" // https://github.com/FasterXML/jackson-databind/tags
 
   // Also update URLs in link-validator.conf
   val scala213Version = "2.13.15"
