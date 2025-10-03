@@ -28,6 +28,7 @@ object Dependencies {
   val fortifySCAVersion = "22.1"
   val jacksonCoreVersion = "2.18.4.1" // 2.18 is LTS, https://github.com/FasterXML/jackson/wiki/Jackson-Releases
   val jacksonDatabindVersion = "2.18.4" // https://github.com/FasterXML/jackson-databind/tags
+  val jacksonModuleScalaVersion = "2.18.4" // https://github.com/FasterXML/jackson-module-scala/tags
 
   // Also update URLs in link-validator.conf
   val scala213Version = "2.13.15"
@@ -82,7 +83,7 @@ object Dependencies {
     val jacksonDatabind = "com.fasterxml.jackson.core" % "jackson-databind" % jacksonDatabindVersion // ApacheV2
     val jacksonJdk8 = "com.fasterxml.jackson.datatype" % "jackson-datatype-jdk8" % jacksonCoreVersion // ApacheV2
     val jacksonJsr310 = "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % jacksonCoreVersion // ApacheV2
-    val jacksonScala = "com.fasterxml.jackson.module" %% "jackson-module-scala" % jacksonCoreVersion // ApacheV2
+    val jacksonScala = "com.fasterxml.jackson.module" %% "jackson-module-scala" % jacksonModuleScalaVersion // ApacheV2
     val jacksonParameterNames = "com.fasterxml.jackson.module" % "jackson-module-parameter-names" % jacksonCoreVersion // ApacheV2
     val jacksonCbor = "com.fasterxml.jackson.dataformat" % "jackson-dataformat-cbor" % jacksonCoreVersion // ApacheV2
     val lz4Java = "org.lz4" % "lz4-java" % "1.8.0" // ApacheV2
