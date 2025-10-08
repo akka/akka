@@ -1,41 +1,51 @@
 Akka
 ====
-The Akka family of projects is managed by teams at [Akka](https://akka.io/) with help from the community.
 
-We believe that writing correct concurrent & distributed, resilient and elastic applications is too hard.
-Most of the time it's because we are using the wrong tools and the wrong level of abstraction.
+*Akka is a powerful platform that simplifies building and operating highly responsive, resilient, and scalable services.*
 
-Akka is here to change that.
+The platform consists of
+* the [**Akka SDK**](https://doc.akka.io/java/index.html) for straightforward, rapid development with AI assist and automatic clustering. Services built with the Akka SDK are automatically clustered and can be deployed on any infrastructure.
+* and [**Akka Automated Operations**](https://doc.akka.io/operations/akka-platform.html), a managed solution that handles everything for Akka SDK services from auto-elasticity to multi-region high availability running safely within your VPC.
+
+The **Akka SDK** and **Akka Automated Operations** are built upon the foundational [**Akka libraries**](https://doc.akka.io/libraries/akka-dependencies/current/), providing the building blocks for distributed systems.
+
+Akka has been downloaded more than 1 billion times and has powered thousands of systems for over 15 years.  Akka enables millions of concurrent users, terabyte stream processing, low-latency read/write data access, 99.9999% availability, and multi-region high availability and disaster recovery (HA/DR).
+
+Akka is used to build agentic AI, AI inference, transactional, analytical, digital twin, IOT, and edge-to-cloud systems. It is simple to learn and operate. Akka creates production-ready systems without requiring prior knowledge of events, threading, or distributed systems.
+
+
+Akka core library
+=================
+
+The Akka core library provides:
+
+* Multi-threaded behavior without the use of low-level concurrency constructs like
+  atomics or locks &#8212; relieving you from even thinking about memory visibility issues.
+* Transparent remote communication between systems and their components &#8212; relieving you from writing and maintaining difficult networking code.
+* A clustered, high-availability architecture that is elastic, scales in or out, on demand &#8212; enabling you to deliver a truly reactive system.
+
+At Akka's core is the actor model which provides a level of abstraction that makes it
+easier to write correct concurrent, parallel and distributed systems. The actor
+model spans the full set of Akka libraries, providing you with a consistent way
+of understanding and using them. Thus, Akka offers a depth of integration that
+you cannot achieve by picking libraries to solve individual problems and trying
+to piece them together.
 
 Using the Actor Model we raise the abstraction level and provide a better platform to build correct concurrent and scalable applications. This model is a perfect match for the principles laid out in the [Reactive Manifesto](https://www.reactivemanifesto.org/).
 
 For resilience, we adopt the "Let it crash" model which the telecom industry has used with great success to build applications that self-heal and systems that never stop.
 
-Actors also provide the abstraction for transparent distribution and the basis for truly scalable and fault-tolerant applications.
-
-Learn more at [akka.io](https://akka.io/).
+Akka actors also provide the abstraction for transparent distribution and the basis for truly scalable and fault-tolerant applications.
 
 Reference Documentation
 -----------------------
 
-The reference documentation is available at [doc.akka.io](https://doc.akka.io),
-for [Scala](https://doc.akka.io/libraries/akka-core/current/?language=scala) and [Java](https://doc.akka.io/libraries/akka-core/current/?language=java).
-
-Current versions of all Akka libraries
---------------------------------------
-
 The current versions of all Akka libraries are listed on the [Akka Dependencies](https://doc.akka.io/libraries/akka-dependencies/current/) page. Releases of the Akka core libraries in this repository are listed on the [GitHub releases](https://github.com/akka/akka/releases) page.
 
-Community
----------
-You can join these groups and chats to discuss and ask Akka related questions:
+The reference documentation for all Akka libraries is available via [doc.akka.io/libraries/](https://doc.akka.io/libraries/), details for the Akka core libraries
+for [Scala](https://doc.akka.io/libraries/akka-core/current/?language=scala) and [Java](https://doc.akka.io/libraries/akka-core/current/?language=java).
 
-- Forums: [discuss.akka.io](https://discuss.akka.io)
-- Issue tracker: [![github: akka/akka](https://img.shields.io/badge/github%3A-issues-blue.svg?style=flat-square)](https://github.com/akka/akka/issues)
-
-In addition to that, you may enjoy following:
-
-- Questions tagged [#akka on StackOverflow](https://stackoverflow.com/questions/tagged/akka)
+The current versions of all Akka libraries are listed on the [Akka Dependencies](https://doc.akka.io/libraries/akka-dependencies/current/) page. Releases of the Akka core libraries in this repository are listed on the [GitHub releases](https://github.com/akka/akka/releases) page.
 
 Contributing
 ------------
