@@ -16,7 +16,7 @@ Learn more at [akka.io](https://akka.io).
 
 ## Source Code
 
-Akka uses Git and is hosted at [Github akka/akka](https://github.com/akka/akka).
+Akka uses Git and is hosted at [Github akka/akka-core](https://github.com/akka/akka-core).
 
 ## Releases Repository
 

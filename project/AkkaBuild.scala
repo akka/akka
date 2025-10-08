@@ -144,18 +144,18 @@ object AkkaBuild {
       val tagOrBranch =
         if (isSnapshot.value) "main"
         else "v" + version.value
-      Seq(("BUSL-1.1", url(s"https://raw.githubusercontent.com/akka/akka/${tagOrBranch}/LICENSE")))
+      Seq(("BUSL-1.1", url(s"https://raw.githubusercontent.com/akka/akka-core/${tagOrBranch}/LICENSE")))
     },
     homepage := Some(url("https://akka.io/")),
     description := "Akka is a toolkit for building highly concurrent, distributed, and resilient message-driven applications for Java and Scala.",
     scmInfo := Some(
         ScmInfo(
-          url("https://github.com/akka/akka"),
-          "scm:git:https://github.com/akka/akka.git",
-          "scm:git:git@github.com:akka/akka.git")),
+          url("https://github.com/akka/akka-core"),
+          "scm:git:https://github.com/akka/akka-core.git",
+          "scm:git:git@github.com:akka/akka-core.git")),
     releaseNotesURL := (
         if (isSnapshot.value) None
-        else Some(url(s"https://github.com/akka/akka/releases/tag/v${version.value}"))
+        else Some(url(s"https://github.com/akka/akka-core/releases/tag/v${version.value}"))
       ),
     apiURL := Some(url(s"https://doc.akka.io/api/akka-core/${version.value}")),
     initialCommands :=
@@ -238,7 +238,7 @@ object AkkaBuild {
     mavenLocalResolverSettings,
     docLintingSettings,
     JdkOptions.targetJdkSettings,
-    // a workaround for https://github.com/akka/akka/issues/27661
+    // a workaround for https://github.com/akka/akka-core/issues/27661
     // see also project/Protobuf.scala that introduces /../ to make "intellij happy"
     MultiJvm / assembly / fullClasspath := {
       val old = (MultiJvm / assembly / fullClasspath).value.toVector
@@ -280,7 +280,7 @@ object AkkaBuild {
            | > akka-docs/paradox          Build documentation
            | > akka-docs/paradoxBrowse    Browse the generated documentation
            |
-           | Contributing guide: https://github.com/akka/akka/blob/main/CONTRIBUTING.md
+           | Contributing guide: https://github.com/akka/akka-core/blob/main/CONTRIBUTING.md
            | tips: prefix commands with + to run against cross Scala versions.
            |
            |""".stripMargin))

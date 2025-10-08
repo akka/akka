@@ -209,7 +209,7 @@ class SigarMetricsCollector(address: Address, decayFactor: Double, sigar: SigarP
   // Construction complete.
 
   override def metrics(): Set[Metric] = {
-    // Must obtain cpuPerc in one shot. See https://github.com/akka/akka/issues/16121
+    // Must obtain cpuPerc in one shot. See https://github.com/akka/akka-core/issues/16121
     val cpuPerc = sigar.getCpuPerc
     super.metrics().union(Set(cpuCombined(cpuPerc), cpuStolen(cpuPerc)).flatten)
   }

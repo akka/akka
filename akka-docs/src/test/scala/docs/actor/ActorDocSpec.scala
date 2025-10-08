@@ -676,7 +676,7 @@ class ActorDocSpec extends AkkaSpec("""
 
   "using CoordinatedShutdown" in {
     // other snippets moved to docs.actor.typed.CoordinatedActorShutdownSpec
-    { // https://github.com/akka/akka/issues/29056
+    { // https://github.com/akka/akka-core/issues/29056
       val someActor = system.actorOf(Props(classOf[Replier], this))
       someActor ! PoisonPill
       //#coordinated-shutdown-addActorTerminationTask

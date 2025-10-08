@@ -179,7 +179,7 @@ class FSMActorSpec extends AkkaSpec(Map("akka.actor.debug.fsm" -> true)) with Im
     "run onTermination upon ActorRef.stop()" in {
       val started = TestLatch(1)
 
-      // can't be anonymous class due to https://github.com/akka/akka/issues/32128
+      // can't be anonymous class due to https://github.com/akka/akka-core/issues/32128
       class FsmActor extends Actor with FSM[Int, Null] {
         override def preStart() = {
           started.countDown()
@@ -224,7 +224,7 @@ class FSMActorSpec extends AkkaSpec(Map("akka.actor.debug.fsm" -> true)) with Im
     "cancel all timers when terminated" in {
       val timerNames = List("timer-1", "timer-2", "timer-3")
 
-      // can't be anonymous class due to https://github.com/akka/akka/issues/32128
+      // can't be anonymous class due to https://github.com/akka/akka-core/issues/32128
       class FsmActor extends Actor with FSM[String, Null] {
         startWith("not-started", null)
         when("not-started") {

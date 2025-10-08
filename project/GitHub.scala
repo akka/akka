@@ -18,6 +18,6 @@ object GitHub {
 
   def url(v: String): String = {
     val branch = if (v.endsWith("SNAPSHOT")) "main" else "v" + v
-    "https://github.com/akka/akka/tree/" + branch
+    "https://github.com/akka/akka-core/tree/" + branch
   }
 }

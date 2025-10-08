@@ -112,7 +112,7 @@ private[stream] final class SinkRefStageImpl[In] private[akka] (val initialPartn
             observeAndValidateSender(
               partner,
               "Illegal initialPartnerRef! This may be a bug, please report your " +
-              "usage and complete stack trace on the issue tracker: https://github.com/akka/akka")
+              "usage and complete stack trace on the issue tracker: https://github.com/akka/akka-core")
             tryPull()
           case _ =>
             log.debug(

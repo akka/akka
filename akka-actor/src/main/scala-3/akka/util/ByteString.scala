@@ -760,7 +760,7 @@ sealed abstract class ByteString
   def apply(idx: Int): Byte
   private[akka] def byteStringCompanion: ByteString.Companion
   // override so that toString will also be `ByteString(...)` for the concrete subclasses
-  // of ByteString which changed for Scala 2.12, see https://github.com/akka/akka/issues/21774
+  // of ByteString which changed for Scala 2.12, see https://github.com/akka/akka-core/issues/21774
   override final def className: String = "ByteString"
 
   override def isEmpty: Boolean = length == 0

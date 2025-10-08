@@ -458,8 +458,8 @@ See @ref:[Reliable Delivery](reliable-delivery.md)
 
 ## Example project
 
-@java[[Cluster example project](https://github.com/akka/akka/tree/main/samples/akka-sample-cluster-java#readme) [(sources zip)](../attachments/akka-samples-cluster-java.zip)]
-@scala[[Cluster example project](https://github.com/akka/akka/tree/main/samples/akka-sample-cluster-scala#readme) [(sources zip)](../attachments/akka-samples-cluster-scala.zip)]
+@java[[Cluster example project](https://github.com/akka/akka-core/tree/main/samples/akka-sample-cluster-java#readme) [(sources zip)](../attachments/akka-samples-cluster-java.zip)]
+@scala[[Cluster example project](https://github.com/akka/akka-core/tree/main/samples/akka-sample-cluster-scala#readme) [(sources zip)](../attachments/akka-samples-cluster-scala.zip)]
 is an example project that can be downloaded, and with instructions of how to run.
 
 This project contains samples illustrating different Cluster features, such as

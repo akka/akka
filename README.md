@@ -24,14 +24,14 @@ for [Scala](https://doc.akka.io/libraries/akka-core/current/?language=scala) and
 Current versions of all Akka libraries
 --------------------------------------
 
-The current versions of all Akka libraries are listed on the [Akka Dependencies](https://doc.akka.io/libraries/akka-dependencies/current/) page. Releases of the Akka core libraries in this repository are listed on the [GitHub releases](https://github.com/akka/akka/releases) page.
+The current versions of all Akka libraries are listed on the [Akka Dependencies](https://doc.akka.io/libraries/akka-dependencies/current/) page. Releases of the Akka core libraries in this repository are listed on the [GitHub releases](https://github.com/akka/akka-core/releases) page.
 
 Community
 ---------
 You can join these groups and chats to discuss and ask Akka related questions:
 
 - Forums: [discuss.akka.io](https://discuss.akka.io)
-- Issue tracker: [![github: akka/akka](https://img.shields.io/badge/github%3A-issues-blue.svg?style=flat-square)](https://github.com/akka/akka/issues)
+- Issue tracker: [![github: akka/akka-core](https://img.shields.io/badge/github%3A-issues-blue.svg?style=flat-square)](https://github.com/akka/akka-core/issues)
 
 In addition to that, you may enjoy following:
 
@@ -46,7 +46,7 @@ the best way to make it happen is to help out by submitting a pull request imple
 We welcome contributions from all, even you are not yet familiar with this project,
 We are happy to get you started, and will guide you through the process once you've submitted your PR.
 
-Refer to the [CONTRIBUTING.md](https://github.com/akka/akka/blob/main/CONTRIBUTING.md) file for more details about the workflow,
+Refer to the [CONTRIBUTING.md](https://github.com/akka/akka-core/blob/main/CONTRIBUTING.md) file for more details about the workflow,
 and general hints on how to prepare your pull request. You can also ask for clarifications or guidance in GitHub issues directly,
 or in the akka/dev chat if a more real time communication would be of benefit.
 

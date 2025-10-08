@@ -878,7 +878,7 @@ private[akka] class ActorSystemImpl(
         // could be NPE in RARP if transport not initialized yet
         throw new IllegalStateException(
           "uid accessed before provider has been initialized. " +
-          "This is a bug, please report at https://github.com/akka/akka/issues",
+          "This is a bug, please report at https://github.com/akka/akka-core/issues",
           exc)
     }
   }
@@ -1096,7 +1096,7 @@ private[akka] class ActorSystemImpl(
       throw new IllegalStateException(
         "The calling code expected that the ActorSystem was initialized but it wasn't yet. " +
         "This is probably a bug in the ActorSystem initialization sequence often related to initialization of extensions. " +
-        "Please report at https://github.com/akka/akka/issues.")
+        "Please report at https://github.com/akka/akka-core/issues.")
   private lazy val _start: this.type = try {
 
     registerOnTermination(stopScheduler())

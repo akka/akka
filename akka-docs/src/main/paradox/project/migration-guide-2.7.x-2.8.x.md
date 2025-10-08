@@ -17,7 +17,7 @@ A few deprecated features and OSGi has been removed in Akka 2.8.x, see sections 
 OSGi packaging and support in Akka has been dropped.
 
 Projects using OSGi will need to re-package or find another solution for using OSGi, you can find some possible hints
-in issue: https://github.com/akka/akka/issues/28304
+in issue: https://github.com/akka/akka-core/issues/28304
 
 ## Deprecated Classic Remoting has been removed.
 
