@@ -1,4 +1,4 @@
-# Akka Documentation
+# Akka libraries
 
 @@toc { depth=2 }
 
