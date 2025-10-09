@@ -1,4 +1,4 @@
-# Akka libraries
+# Akka core
 
 @@toc { depth=2 }
 
