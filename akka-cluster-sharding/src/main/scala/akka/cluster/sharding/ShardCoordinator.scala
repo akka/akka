@@ -5,6 +5,7 @@
 package akka.cluster.sharding
 
 import java.util.UUID
+import java.util.concurrent.CompletionStage
 
 import scala.annotation.nowarn
 import scala.collection.immutable
@@ -197,9 +198,14 @@ object ShardCoordinator {
 
   /**
    * Java API: Java implementations of custom shard allocation and rebalancing logic used by the [[ShardCoordinator]]
-   * should extend this abstract class and implement the two methods.
+   * should extend this abstract class and override [[allocateNewShard]] and [[rebalanceShard]].
+   *
+   * Earlier versions of this API had different extension points.  Overriding those is still supported
+   * but they may be removed in a future release.
    */
   abstract class AbstractShardAllocationStrategy extends ShardAllocationStrategy {
+    import java.util.concurrent.CompletableFuture
+
     override final def allocateShard(
         requester: ActorRef,
         shardId: ShardId,
@@ -220,6 +226,11 @@ object ShardCoordinator {
     /**
      * Invoked when the location of a new shard is to be decided.
      *
+     * The default implementation defers to [[allocateNewShard]].  In earlier versions of this API, this
+     * Scala Future-returning method was the extension point.
+     *
+     * New implementations of this class should prefer to override [[allocateNewShard]].
+     *
      * @param requester               actor reference to the [[ShardRegion]] that requested the location of the
      *                                shard, can be returned if preference should be given to the node where the shard was first accessed
      * @param shardId                 the id of the shard to allocate
@@ -231,10 +242,41 @@ object ShardCoordinator {
     def allocateShard(
         requester: ActorRef,
         shardId: String,
-        currentShardAllocations: java.util.Map[ActorRef, immutable.IndexedSeq[String]]): Future[ActorRef]
+        currentShardAllocations: java.util.Map[ActorRef, immutable.IndexedSeq[String]]): Future[ActorRef] = {
+      import scala.jdk.FutureConverters.CompletionStageOps
+      allocateNewShard(requester, shardId, currentShardAllocations).asScala
+    }
+
+    /**
+     * Invoked when the location of a new shard is to be decided.
+     *
+     * New implementations of this class should override this method instead of overriding [[allocateShard]].
+     *
+     * For compatibility with earlier versions of this API, this method's default implementation returns
+     * an immediately-failing [[java.util.concurrent.CompletionStage]].
+     *
+     * @param requester               actor reference to the [[ShardRegion]] that requested the location of the
+     *                                shard, can be returned if preference should be given to the node where the shard was first accessed
+     * @param shardId                 the id of the shard to allocate
+     * @param currentShardAllocations all actor refs to `ShardRegion` and their current allocated shards,
+     *                                in the order they were allocated
+     *  @return a [[java.util.concurrent.CompletionStage]] of the actor ref of the [[ShardRegion]] that is to be responsible for the shard,
+     *          must be one of the references included in the `currentShardAllocations` parameter
+     */
+    @nowarn("msg=never used")
+    def allocateNewShard(
+        requester: ActorRef,
+        shardId: String,
+        currentShardAllocations: java.util.Map[ActorRef, immutable.IndexedSeq[String]]): CompletionStage[ActorRef] =
+      CompletableFuture.failedStage(new scala.NotImplementedError("Must override allocateNewShard or allocateShard"))
 
     /**
      * Invoked periodically to decide which shards to rebalance to another location.
+     *
+     * The default implementation defers to [[rebalanceShards]].  In earlier versions of this API, this
+     * Scala Future-returning method was the extension point.
+     *
+     * New implementations of this class should prefer to override [[rebalanceShards]].
      *
      * @param currentShardAllocations all actor refs to `ShardRegion` and their current allocated shards,
      *                                in the order they were allocated
@@ -244,7 +286,31 @@ object ShardCoordinator {
      */
     def rebalance(
         currentShardAllocations: java.util.Map[ActorRef, immutable.IndexedSeq[String]],
-        rebalanceInProgress: java.util.Set[String]): Future[java.util.Set[String]]
+        rebalanceInProgress: java.util.Set[String]): Future[java.util.Set[String]] = {
+      import scala.jdk.FutureConverters.CompletionStageOps
+      rebalanceShards(currentShardAllocations, rebalanceInProgress).asScala
+    }
+
+    /**
+     * Invoked periodically to decide which shards to rebalance to another location.
+     *
+     * New implementations of this class should override this method instead of overriding [[rebalance]].
+     *
+     * For compatibility with earlier versions of this API, this method's default implementation returns
+     * an immediately-failing [[java.util.concurrent.CompletionStage]].
+     *
+     * @param currentShardAllocations all actor refs to `ShardRegion` and their current allocated shards,
+     *                                in the order they were allocated
+     * @param rebalanceInProgress     set of shards that are currently being rebalanced, i.e.
+     *                                you should not include these in the returned set
+     * @return a [[java.util.concurrent.CompletionStage]] of the set of shards to be migrated, may be empty to skip rebalance in this round
+     */
+    @nowarn("msg=never used")
+    def rebalanceShards(
+        currentShardAllocations: java.util.Map[ActorRef, immutable.IndexedSeq[String]],
+        rebalanceInProgress: java.util.Set[String]): CompletionStage[java.util.Set[String]] =
+      CompletableFuture.failedStage(new scala.NotImplementedError("Must override rebalanceShard or rebalance"))
+
   }
 
   private val emptyRebalanceResult = Future.successful(Set.empty[ShardId])
