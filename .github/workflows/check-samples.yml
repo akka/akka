@@ -37,6 +37,7 @@ jobs:
         with:
           repository: akka/github-actions-scripts
           path: scripts
+          fetch-depth: 0
 
       - name: Setup global resolver
         run: |
