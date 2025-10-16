@@ -19,6 +19,19 @@ jobs:
     name: Check Sample Projects
     runs-on: Akka-Default
     steps:
+      - name: Checkout Global Scripts
+        # This MUST be before the main checkout or else the dynver will not work
+        uses: actions/checkout@v4
+        with:
+          repository: akka/github-actions-scripts
+          path: scripts
+          fetch-depth: 0
+
+      - name: Setup global resolver
+        run: |
+          chmod +x ./scripts/setup_global_resolver.sh
+          ./scripts/setup_global_resolver.sh
+          
       - name: Checkout
         # https://github.com/actions/checkout/releases
         # v4.1.1
@@ -31,17 +44,6 @@ jobs:
         run: |-
           git fetch origin pull/${{ github.event.pull_request.number }}/merge:scratch
           git checkout scratch
-
-      - name: Checkout Global Scripts
-        uses: actions/checkout@v4
-        with:
-          repository: akka/github-actions-scripts
-          path: scripts
-
-      - name: Setup global resolver
-        run: |
-          chmod +x ./scripts/setup_global_resolver.sh
-          ./scripts/setup_global_resolver.sh
 
       - name: Cache Coursier cache
         # https://github.com/coursier/cache-action/releases
