@@ -20,6 +20,7 @@ jobs:
     runs-on: Akka-Default
     steps:
       - name: Checkout Global Scripts
+        # This MUST be before the main checkout or else the dynver will not work
         uses: actions/checkout@v4
         with:
           repository: akka/github-actions-scripts
