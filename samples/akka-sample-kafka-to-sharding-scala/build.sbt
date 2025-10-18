@@ -5,8 +5,6 @@ val AkkaHttpVersion = "10.7.0"
 val EmbeddedKafkaVersion = "3.7.0"
 val LogbackVersion = "1.5.18"
 
-resolvers += "Akka library repository".at("https://repo.akka.io/maven")
-
 ThisBuild / scalaVersion := "2.13.15"
 ThisBuild / organization := "com.lightbend.akka.samples"
 ThisBuild / Compile / scalacOptions ++= Seq(
@@ -18,9 +16,6 @@ ThisBuild / Compile / scalacOptions ++= Seq(
 ThisBuild / Test / javacOptions ++= Seq("-Xlint:unchecked", "-Xlint:deprecation")
 ThisBuild / Test / testOptions += Tests.Argument("-oDF")
 ThisBuild / licenses := Seq(("CC0", url("http://creativecommons.org/publicdomain/zero/1.0")))
-ThisBuild / resolvers ++= Seq(
-  "Akka Snapshots".at("https://repo.akka.io/snapshots"),
-  Resolver.bintrayRepo("akka", "snapshots"))
 
 ThisBuild / run / fork := true
 ThisBuild / run / connectInput := true
@@ -30,7 +25,6 @@ lazy val `akka-sample-kafka-to-sharding` = project.in(file(".")).aggregate(produ
 lazy val kafka = project
   .in(file("kafka"))
   .settings(
-    resolvers += "Akka library repository".at("https://repo.akka.io/maven"),
     libraryDependencies ++= Seq(
         "ch.qos.logback" % "logback-classic" % LogbackVersion,
         "org.slf4j" % "log4j-over-slf4j" % "2.0.17",
@@ -41,7 +35,6 @@ lazy val client = project
   .in(file("client"))
   .enablePlugins(AkkaGrpcPlugin)
   .settings(
-    resolvers += "Akka library repository".at("https://repo.akka.io/maven"),
     libraryDependencies ++= Seq(
         "com.typesafe.akka" %% "akka-stream" % AkkaVersion,
         "com.typesafe.akka" %% "akka-pki" % AkkaVersion,
@@ -52,7 +45,6 @@ lazy val processor = project
   .in(file("processor"))
   .enablePlugins(AkkaGrpcPlugin)
   .settings(
-    resolvers += "Akka library repository".at("https://repo.akka.io/maven"),
     libraryDependencies ++= Seq(
         "com.typesafe.akka" %% "akka-stream-kafka" % AlpakkaKafkaVersion,
         "com.typesafe.akka" %% "akka-stream-kafka-cluster-sharding" % AlpakkaKafkaVersion,
@@ -72,7 +64,6 @@ lazy val producer = project
   .in(file("producer"))
   .settings(Compile / PB.targets := Seq(scalapb.gen() -> (Compile / sourceManaged).value))
   .settings(
-    resolvers += "Akka library repository".at("https://repo.akka.io/maven"),
     libraryDependencies ++= Seq(
         "com.typesafe.akka" %% "akka-stream-kafka" % AlpakkaKafkaVersion,
         "com.typesafe.akka" %% "akka-stream" % AkkaVersion,

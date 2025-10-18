@@ -3,8 +3,6 @@ val AkkaHttpVersion = "10.7.1"
 val AkkaDiagnostics = "2.2.1"
 val LogbackVersion = "1.5.18"
 
-resolvers += "Akka library repository".at("https://repo.akka.io/maven")
-
 lazy val commonScalacOptions =
   Seq("-deprecation", "-feature", "-unchecked", "-Xlint", "-Ywarn-unused:imports", "-encoding", "UTF-8")
 
@@ -24,7 +22,6 @@ lazy val killrweather = project
   .settings(commonSettings)
   .settings(
     mainClass := Some("sample.killrweather.KillrWeather"),
-    resolvers += "Akka library repository".at("https://repo.akka.io/maven"),
     libraryDependencies ++= Seq(
         "com.typesafe.akka" %% "akka-cluster-sharding-typed" % AkkaVersion,
         "com.typesafe.akka" %% "akka-serialization-jackson" % AkkaVersion,
@@ -40,7 +37,6 @@ lazy val `killrweather-fog` = project
   .settings(commonSettings)
   .settings(
     mainClass := Some("sample.killrweather.fog.Fog"),
-    resolvers += "Akka library repository".at("https://repo.akka.io/maven"),
     libraryDependencies ++= Seq(
         "com.typesafe.akka" %% "akka-actor-typed" % AkkaVersion,
         "com.typesafe.akka" %% "akka-stream-typed" % AkkaVersion,
