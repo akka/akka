@@ -26,7 +26,7 @@ The Akka dependencies are available from Akka’s secure library repository. To 
 
 ## Snapshots Repository
 
-Snapshot builds are available from the repository at `https://repo.akka.io/snapshots`. All Akka modules that belong to the same build have the same version.
+Snapshot builds are available from the repository at `https://repo.akka.io/TOKEN/secure/snapshots`. All Akka modules that belong to the same build have the same version.
 
 @@@ warning
 
@@ -39,7 +39,7 @@ The use of Akka SNAPSHOTs, nightlies and milestone releases is discouraged unles
 Make sure that you add the repository to the sbt resolvers:
 
 ```
-resolvers += "Akka library snapshot repository".at("https://repo.akka.io/snapshots")
+resolvers += "Akka library snapshot repository".at("https://repo.akka.io/TOKEN/secure/snapshots")
 ```
 
 Define the library dependencies with the complete version. For example:
@@ -60,7 +60,7 @@ Make sure that you add the repository to the Maven repositories in pom.xml:
     <repository>
       <id>akka-repository</id>
       <name>Akka library snapshot repository</name>
-      <url>https://repo.akka.io/snapshots</url>
+      <url>https://repo.akka.io/TOKEN/secure/snapshots</url>
     </repository>
   </repositories>
 </repositories>
