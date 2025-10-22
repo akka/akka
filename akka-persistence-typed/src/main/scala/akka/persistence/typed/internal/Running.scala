@@ -60,6 +60,7 @@ import akka.persistence.typed.{
 import akka.persistence.typed.ReplicaId
 import akka.persistence.typed.ReplicationId
 import akka.persistence.typed.internal
+import akka.persistence.typed.internal.EventSourcedBehaviorImpl.GetVersion
 import akka.persistence.typed.internal.EventSourcedBehaviorImpl.WithMetadataAccessible
 import akka.persistence.typed.internal.EventSourcedBehaviorImpl.{ GetSeenSequenceNr, GetState, GetStateReply }
 import akka.persistence.typed.internal.EventSourcedBehaviorImpl.WithSeqNrAccessible
@@ -283,6 +284,7 @@ private[akka] object Running {
       case SnapshotterResponse(r)                    => onDeleteSnapshotResponse(r, state.state)
       case get: GetState[S @unchecked]               => onGetState(get)
       case get: GetSeenSequenceNr                    => onGetSeenSequenceNr(get)
+      case get: GetVersion                           => onGetVersion(get)
       case _                                         => Behaviors.unhandled
     }
 
@@ -483,6 +485,11 @@ private[akka] object Running {
       this
     }
 
+    def onGetVersion(get: GetVersion): Behavior[InternalProtocol] = {
+      get.replyTo ! state.version
+      this
+    }
+
     private def handleExternalReplicatedEventPersist(
         replication: ReplicationSetup,
         event: ReplicatedEvent[E],
@@ -553,6 +560,7 @@ private[akka] object Running {
 
       val shouldSnapshotAfterPersist = setup.shouldSnapshot(newState2.state, transformedEvent, newState2.seqNr)
       val updatedSeen = newState2.seenPerReplica.updated(event.originReplica, event.originSequenceNr)
+
       persistingEvents(
         newState2.copy(seenPerReplica = updatedSeen, version = updatedVersion),
         state,
@@ -823,6 +831,7 @@ private[akka] object Running {
         case pe: PublishedEventImpl                    => onPublishedEvent(pe)
         case get: GetState[S @unchecked]               => stashInternal(get)
         case getSeqNr: GetSeenSequenceNr               => onGetSeenSequenceNr(getSeqNr)
+        case getVersion: GetVersion                    => onGetVersion(getVersion)
         case SnapshotterResponse(r)                    => onDeleteSnapshotResponse(r, visibleState.state)
         case RecoveryTickEvent(_)                      => Behaviors.unhandled
         case RecoveryPermitGranted                     => Behaviors.unhandled
@@ -844,6 +853,11 @@ private[akka] object Running {
 
     def onGetSeenSequenceNr(get: GetSeenSequenceNr): PersistingEvents = {
       get.replyTo ! state.seenPerReplica.getOrElse(get.replica, 0L)
+      this
+    }
+
+    def onGetVersion(get: GetVersion): Behavior[InternalProtocol] = {
+      get.replyTo ! state.version
       this
     }
 
@@ -1028,6 +1042,7 @@ private[akka] object Running {
         case SnapshotterResponse(r)                    => onDeleteSnapshotResponse(r, state.state)
         case get: GetState[S @unchecked]               => stashInternal(get)
         case getSeqNr: GetSeenSequenceNr               => onGetSeenSequenceNr(getSeqNr)
+        case getVersion: GetVersion                    => onGetVersion(getVersion)
         case _                                         => Behaviors.unhandled
       }
     }
@@ -1049,6 +1064,11 @@ private[akka] object Running {
 
     def onGetSeenSequenceNr(get: GetSeenSequenceNr): WaitingAsyncEffect = {
       get.replyTo ! state.seenPerReplica.getOrElse(get.replica, 0L)
+      this
+    }
+
+    def onGetVersion(get: GetVersion): Behavior[InternalProtocol] = {
+      get.replyTo ! state.version
       this
     }
 
@@ -1120,6 +1140,7 @@ private[akka] object Running {
         case SnapshotterResponse(r)                            => onDeleteSnapshotResponse(r, state.state)
         case get: GetState[S @unchecked]                       => stashInternal(get)
         case getSeqNr: GetSeenSequenceNr                       => onGetSeenSequenceNr(getSeqNr)
+        case getVersion: GetVersion                            => onGetVersion(getVersion)
         case _                                                 => Behaviors.unhandled
       }
     }
@@ -1231,6 +1252,8 @@ private[akka] object Running {
         stashInternal(get)
       case get: GetSeenSequenceNr =>
         stashInternal(get)
+      case get: GetVersion =>
+        stashInternal(get)
       case _ =>
         Behaviors.unhandled
     }
@@ -1281,6 +1304,8 @@ private[akka] object Running {
       case get: GetState[S @unchecked] =>
         stashInternal(get)
       case get: GetSeenSequenceNr =>
+        stashInternal(get)
+      case get: GetVersion =>
         stashInternal(get)
       case _ =>
         Behaviors.unhandled

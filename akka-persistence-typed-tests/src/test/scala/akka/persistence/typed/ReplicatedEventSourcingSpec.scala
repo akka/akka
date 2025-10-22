@@ -28,7 +28,10 @@ import scala.concurrent.duration.DurationInt
 
 import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
+import akka.persistence.typed.internal.EventSourcedBehaviorImpl.GetSeenSequenceNr
+import akka.persistence.typed.internal.EventSourcedBehaviorImpl.GetVersion
 import akka.persistence.typed.internal.ReplicatedEventMetadata
+import akka.persistence.typed.internal.VersionVector
 import akka.persistence.typed.scaladsl.EventWithMetadata
 
 object ReplicatedEventSourcingSpec {
@@ -238,14 +241,133 @@ class ReplicatedEventSourcingSpec
 
         r1 ! StoreMe("2 from r1", probe.ref)
         r2 ! StoreMe("2 from r2", probe.ref)
+        r2 ! StoreMe("3 from r2", probe.ref)
 
         eventually {
           val probe = createTestProbe[State]()
           r1 ! GetState(probe.ref)
-          probe.expectMessageType[State].all.toSet shouldEqual Set("1 from r1", "1 from r2", "2 from r1", "2 from r2")
+          val expected = Set("1 from r1", "1 from r2", "2 from r1", "2 from r2", "3 from r2")
+          probe.expectMessageType[State].all.toSet shouldEqual expected
           r2 ! GetState(probe.ref)
-          probe.expectMessageType[State].all.toSet shouldEqual Set("1 from r1", "1 from r2", "2 from r1", "2 from r2")
+          probe.expectMessageType[State].all.toSet shouldEqual expected
         }
+      }
+    }
+
+    "recover version and seenSeqNrPerReplica" in {
+      val entityId = nextEntityId
+      val r1Behavior = testBehavior(entityId, "R1")
+      val r2Behavior = testBehavior(entityId, "R2")
+      val probe = createTestProbe[Done]()
+
+      def assertFirst(r1: ActorRef[Command], r2: ActorRef[Command]): Unit = {
+        val seenSeqNrProbe = createTestProbe[Long]()
+        r1.unsafeUpcast[Any].tell(GetSeenSequenceNr(ReplicaId("R1"), seenSeqNrProbe.ref))
+        seenSeqNrProbe.receiveMessage() shouldEqual 0L // not tracking self
+        r1.unsafeUpcast[Any].tell(GetSeenSequenceNr(ReplicaId("R2"), seenSeqNrProbe.ref))
+        seenSeqNrProbe.receiveMessage() shouldEqual 0L // no events from R2 yet
+
+        r2.unsafeUpcast[Any].tell(GetSeenSequenceNr(ReplicaId("R1"), seenSeqNrProbe.ref))
+        seenSeqNrProbe.receiveMessage() shouldEqual 2L
+        r2.unsafeUpcast[Any].tell(GetSeenSequenceNr(ReplicaId("R2"), seenSeqNrProbe.ref))
+        seenSeqNrProbe.receiveMessage() shouldEqual 0L // not tracking self
+
+        val versionProbe = createTestProbe[VersionVector]()
+        r1.unsafeUpcast[Any].tell(GetVersion(versionProbe.ref))
+        val v1 = versionProbe.receiveMessage()
+        v1.versionAt("R1") shouldEqual 2L
+        v1.versionAt("R2") shouldEqual 0L
+
+        r2.unsafeUpcast[Any].tell(GetVersion(versionProbe.ref))
+        val v2 = versionProbe.receiveMessage()
+        v2.versionAt("R1") shouldEqual 2L
+        v2.versionAt("R2") shouldEqual 0L
+      }
+
+      {
+        // first incarnation, only persist in R1
+        val r1 = spawn(r1Behavior)
+        val r2 = spawn(r2Behavior)
+        r1 ! StoreMe("1 from r1", probe.ref)
+        r1 ! StoreMe("2 from r1", probe.ref)
+
+        eventually {
+          val probe = createTestProbe[State]()
+          r1 ! GetState(probe.ref)
+          val expected = Set("1 from r1", "2 from r1")
+          probe.expectMessageType[State].all.toSet shouldEqual expected
+          r2 ! GetState(probe.ref)
+          probe.expectMessageType[State].all.toSet shouldEqual expected
+        }
+
+        assertFirst(r1, r2)
+
+        r1 ! Stop
+        r2 ! Stop
+        probe.expectTerminated(r1)
+        probe.expectTerminated(r2)
+      }
+
+      def assertSecond(r1: ActorRef[Command], r2: ActorRef[Command]): Unit = {
+        val seenSeqNrProbe = createTestProbe[Long]()
+        r1.unsafeUpcast[Any].tell(GetSeenSequenceNr(ReplicaId("R1"), seenSeqNrProbe.ref))
+        seenSeqNrProbe.receiveMessage() shouldEqual 0L // not tracking self
+        r1.unsafeUpcast[Any].tell(GetSeenSequenceNr(ReplicaId("R2"), seenSeqNrProbe.ref))
+        seenSeqNrProbe.receiveMessage() shouldEqual 5L
+
+        r2.unsafeUpcast[Any].tell(GetSeenSequenceNr(ReplicaId("R1"), seenSeqNrProbe.ref))
+        seenSeqNrProbe.receiveMessage() shouldEqual 2L
+        r2.unsafeUpcast[Any].tell(GetSeenSequenceNr(ReplicaId("R2"), seenSeqNrProbe.ref))
+        seenSeqNrProbe.receiveMessage() shouldEqual 0L // not tracking self
+
+        val versionProbe = createTestProbe[VersionVector]()
+        r1.unsafeUpcast[Any].tell(GetVersion(versionProbe.ref))
+        val v1 = versionProbe.receiveMessage()
+        v1.versionAt("R1") shouldEqual 2L
+        v1.versionAt("R2") shouldEqual 5L
+
+        r2.unsafeUpcast[Any].tell(GetVersion(versionProbe.ref))
+        val v2 = versionProbe.receiveMessage()
+        v2.versionAt("R1") shouldEqual 2L
+        v2.versionAt("R2") shouldEqual 5L
+      }
+
+      {
+        // second incarnation, only persisting in R2
+        val r1 = spawn(r1Behavior)
+        val r2 = spawn(r2Behavior)
+
+        // should recover to the same
+        assertFirst(r1, r2)
+
+        r2 ! StoreMe("1 from r2", probe.ref)
+        r2 ! StoreMe("2 from r2", probe.ref)
+        r2 ! StoreMe("3 from r2", probe.ref)
+
+        eventually {
+          val probe = createTestProbe[State]()
+          r1 ! GetState(probe.ref)
+          val expected = Set("1 from r1", "2 from r1", "1 from r2", "2 from r2", "3 from r2")
+          probe.expectMessageType[State].all.toSet shouldEqual expected
+          r2 ! GetState(probe.ref)
+          probe.expectMessageType[State].all.toSet shouldEqual expected
+        }
+
+        assertSecond(r1, r2)
+
+        r1 ! Stop
+        r2 ! Stop
+        probe.expectTerminated(r1)
+        probe.expectTerminated(r2)
+      }
+
+      {
+        // third incarnation
+        val r1 = spawn(r1Behavior)
+        val r2 = spawn(r2Behavior)
+
+        // should recover to the same
+        assertSecond(r1, r2)
       }
     }
 
@@ -709,4 +831,5 @@ class ReplicatedEventSourcingSpec
       stateProbe.expectMessage(State(Vector("FROM R1", "from r2")))
     }
   }
+
 }

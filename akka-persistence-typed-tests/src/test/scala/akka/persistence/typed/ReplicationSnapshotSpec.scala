@@ -15,6 +15,8 @@ import akka.actor.typed.{ ActorRef, Behavior }
 import akka.persistence.testkit.{ PersistenceTestKitPlugin, PersistenceTestKitSnapshotPlugin }
 import akka.persistence.testkit.query.scaladsl.PersistenceTestKitReadJournal
 import akka.persistence.testkit.scaladsl.{ PersistenceTestKit, SnapshotTestKit }
+import akka.persistence.typed.internal.EventSourcedBehaviorImpl.GetSeenSequenceNr
+import akka.persistence.typed.internal.EventSourcedBehaviorImpl.GetVersion
 import akka.persistence.typed.internal.{ ReplicatedPublishedEventMetaData, VersionVector }
 import akka.persistence.typed.scaladsl.ReplicatedEventSourcing
 
@@ -114,6 +116,66 @@ class ReplicationSnapshotSpec
         val stateProbe = createTestProbe[State]()
         r2 ! GetState(stateProbe.ref)
         stateProbe.expectMessage(State(Vector("r1 1", "r1 2")))
+      }
+    }
+
+    "recover version and seenSeqNrPerReplica" in {
+      val entityId = nextEntityId
+      val persistenceIdR1 = s"$EntityType|$entityId|R1"
+      val persistenceIdR2 = s"$EntityType|$entityId|R2"
+      val probe = createTestProbe[Done]()
+      val r2EventProbe = createTestProbe[EventAndContext]()
+
+      def assertFirst(r1: ActorRef[Command], r2: ActorRef[Command]): Unit = {
+        val seenSeqNrProbe = createTestProbe[Long]()
+        r1.unsafeUpcast[Any].tell(GetSeenSequenceNr(ReplicaId("R1"), seenSeqNrProbe.ref))
+        seenSeqNrProbe.receiveMessage() shouldEqual 0L // not tracking self
+        r1.unsafeUpcast[Any].tell(GetSeenSequenceNr(ReplicaId("R2"), seenSeqNrProbe.ref))
+        seenSeqNrProbe.receiveMessage() shouldEqual 0L // no events from R2 yet
+
+        r2.unsafeUpcast[Any].tell(GetSeenSequenceNr(ReplicaId("R1"), seenSeqNrProbe.ref))
+        seenSeqNrProbe.receiveMessage() shouldEqual 2L
+        r2.unsafeUpcast[Any].tell(GetSeenSequenceNr(ReplicaId("R2"), seenSeqNrProbe.ref))
+        seenSeqNrProbe.receiveMessage() shouldEqual 0L // not tracking self
+
+        val versionProbe = createTestProbe[VersionVector]()
+        r1.unsafeUpcast[Any].tell(GetVersion(versionProbe.ref))
+        val v1 = versionProbe.receiveMessage()
+        v1.versionAt("R1") shouldEqual 2L
+        v1.versionAt("R2") shouldEqual 0L
+
+        r2.unsafeUpcast[Any].tell(GetVersion(versionProbe.ref))
+        val v2 = versionProbe.receiveMessage()
+        v2.versionAt("R1") shouldEqual 2L
+        v2.versionAt("R2") shouldEqual 0L
+      }
+
+      {
+        val r1 = spawn(behaviorWithSnapshotting(entityId, R1))
+        val r2 = spawn(behaviorWithSnapshotting(entityId, R2, r2EventProbe.ref))
+        r1 ! StoreMe("r1 1", probe.ref)
+        r1 ! StoreMe("r1 2", probe.ref)
+        r2EventProbe.expectMessageType[EventAndContext]
+        r2EventProbe.expectMessageType[EventAndContext]
+
+        snapshotTestKit.expectNextPersisted(persistenceIdR1, State(Vector("r1 1", "r1 2")))
+        snapshotTestKit.expectNextPersisted(persistenceIdR2, State(Vector("r1 1", "r1 2")))
+
+        assertFirst(r1, r2)
+
+        r1 ! Stop
+        r2 ! Stop
+        probe.expectTerminated(r1)
+        probe.expectTerminated(r2)
+      }
+
+      // restart r2 from a snapshot
+      {
+        val r1 = spawn(behaviorWithSnapshotting(entityId, R1))
+        val r2 = spawn(behaviorWithSnapshotting(entityId, R2))
+
+        // should recover to the same
+        assertFirst(r1, r2)
       }
     }
   }

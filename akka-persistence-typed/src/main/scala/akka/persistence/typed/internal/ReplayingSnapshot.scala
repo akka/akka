@@ -14,6 +14,7 @@ import akka.persistence.SnapshotProtocol.LoadSnapshotResult
 import akka.persistence.typed.{ RecoveryFailed, ReplicaId }
 import akka.persistence.typed.internal.EventSourcedBehaviorImpl.{ GetSeenSequenceNr, GetState }
 import akka.persistence.typed.SnapshotRecovered
+import akka.persistence.typed.internal.EventSourcedBehaviorImpl.GetVersion
 
 /**
  * INTERNAL API
@@ -72,6 +73,7 @@ private[akka] class ReplayingSnapshot[C, E, S](override val setup: BehaviorSetup
               onCommand(cmd)
           case get: GetState[S @unchecked]           => stashInternal(get)
           case get: GetSeenSequenceNr                => stashInternal(get)
+          case get: GetVersion                       => stashInternal(get)
           case RecoveryPermitGranted                 => Behaviors.unhandled // should not happen, we already have the permit
           case ContinueUnstash                       => Behaviors.unhandled
           case _: AsyncEffectCompleted[_, _, _]      => Behaviors.unhandled

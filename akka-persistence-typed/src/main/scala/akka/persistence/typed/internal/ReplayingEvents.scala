@@ -31,6 +31,7 @@ import akka.persistence.typed.SingleEventSeq
 import akka.persistence.typed.internal.BehaviorSetup.SnapshotWithoutRetention
 import akka.persistence.typed.internal.EventSourcedBehaviorImpl.GetSeenSequenceNr
 import akka.persistence.typed.internal.EventSourcedBehaviorImpl.GetState
+import akka.persistence.typed.internal.EventSourcedBehaviorImpl.GetVersion
 import akka.persistence.typed.internal.EventSourcedBehaviorImpl.WithMetadataAccessible
 import akka.persistence.typed.internal.EventSourcedBehaviorImpl.WithSeqNrAccessible
 import akka.persistence.typed.internal.ReplayingEvents.ReplayingState
@@ -114,6 +115,7 @@ private[akka] final class ReplayingEvents[C, E, S](
       case cmd: IncomingCommand[C @unchecked]         => onInternalCommand(cmd)
       case get: GetState[S @unchecked]                => stashInternal(get)
       case get: GetSeenSequenceNr                     => stashInternal(get)
+      case get: GetVersion                            => stashInternal(get)
       case RecoveryPermitGranted                      => Behaviors.unhandled // should not happen, we already have the permit
       case ContinueUnstash                            => Behaviors.unhandled
       case _: AsyncEffectCompleted[_, _, _]           => Behaviors.unhandled
@@ -157,6 +159,7 @@ private[akka] final class ReplayingEvents[C, E, S](
                         version = VersionVector(replication.replicaId.id, repr.sequenceNr),
                         concurrent = false)
                     }
+
                   replication.setContext(recoveryRunning = true, meta.originReplica, meta.concurrent)
                   Some((meta, replication.replicaId, replication))
                 case None => None
@@ -171,17 +174,21 @@ private[akka] final class ReplayingEvents[C, E, S](
             }
 
             replicatedMetaAndSelfReplica match {
-              case Some((meta, selfReplica, replication)) if meta.originReplica != selfReplica =>
+              case Some((meta, selfReplica, replication)) =>
                 // keep track of highest origin seqnr per other replica
+                val updatedSeen =
+                  if (meta.originReplica == selfReplica)
+                    state.seenSeqNrPerReplica
+                  else
+                    state.seenSeqNrPerReplica + (meta.originReplica -> meta.originSequenceNr)
+
                 state = state.copy(
                   state = newState,
                   eventSeenInInterval = true,
                   version = meta.version,
-                  seenSeqNrPerReplica = state.seenSeqNrPerReplica + (meta.originReplica -> meta.originSequenceNr))
+                  seenSeqNrPerReplica = updatedSeen)
                 replication.clearContext()
-              case Some((_, _, replication)) =>
-                replication.clearContext()
-                state = state.copy(state = newState, eventSeenInInterval = true)
+
               case _ =>
                 state = state.copy(state = newState, eventSeenInInterval = true)
             }
@@ -305,10 +312,18 @@ private[akka] final class ReplayingEvents[C, E, S](
       onRecoveryComplete(setup.context)
       tryReturnRecoveryPermit("replay completed successfully")
       if (setup.internalLogger.isDebugEnabled) {
-        setup.internalLogger.debug(
-          "Recovery for persistenceId [{}] took {}",
-          setup.persistenceId,
-          (System.nanoTime() - state.recoveryStartTime).nanos.pretty)
+        if (setup.replication.isDefined)
+          setup.internalLogger.debug(
+            "Recovery for persistenceId [{}] took {}, version [{}], seenSeqNrPerReplica [{}]",
+            setup.persistenceId,
+            (System.nanoTime() - state.recoveryStartTime).nanos.pretty,
+            state.version,
+            state.seenSeqNrPerReplica)
+        else
+          setup.internalLogger.debug(
+            "Recovery for persistenceId [{}] took {}",
+            setup.persistenceId,
+            (System.nanoTime() - state.recoveryStartTime).nanos.pretty)
       }
 
       setup.onSignal(state.state, RecoveryCompleted, catchAndLog = false)
