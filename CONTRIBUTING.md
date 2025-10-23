@@ -31,28 +31,28 @@ Akka uses tags to categorise issues into groups or mark their phase in developme
 
 Most notably, many tags start with a `t:` prefix (as in `topic:`), categorizing issues in which module they are related. Examples are:
 
-- [t:core](https://github.com/akka/akka/issues?utf8=%E2%9C%93&q=is%3Aissue%20is%3Aopen%20label%3At%3Acore)
-- [t:stream](https://github.com/akka/akka/issues?q=is%3Aissue+is%3Aopen+label%3At%3Astream)
-- see [all tags here](https://github.com/akka/akka/labels)
+- [t:core](https://github.com/akka/akka-core/issues?utf8=%E2%9C%93&q=is%3Aissue%20is%3Aopen%20label%3At%3Acore)
+- [t:stream](https://github.com/akka/akka-core/issues?q=is%3Aissue+is%3Aopen+label%3At%3Astream)
+- see [all tags here](https://github.com/akka/akka-core/labels)
 
 In general *all issues are open for anyone working on them*. However, if you're new to the project and looking for an issue
 that will be accepted and likely is a nice one to get started you should check out the following tags:
 
-- [good first issue](https://github.com/akka/akka/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22) - which identifies simple entry-level tickets, such as improvements of documentation or tests. If you're not sure how to solve a ticket but would like to work on it, feel free to ask in the issue about clarification or tips.
-- [help wanted](https://github.com/akka/akka/labels/help%20wanted) - identifies issues that the core team will likely not have time to work on or that are nice entry-level tickets. If you're not sure how to solve a ticket but would like to work on it, feel free to ask in the issue about clarification or tips.
-- [nice-to-have (low-priority)](https://github.com/akka/akka/labels/nice-to-have%20%28low-prio%29) - are tasks which make sense but are not a very high priority (in the face of other very high priority issues). If you see something interesting in this list, a contribution would be really wonderful!
+- [good first issue](https://github.com/akka/akka-core/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22) - which identifies simple entry-level tickets, such as improvements of documentation or tests. If you're not sure how to solve a ticket but would like to work on it, feel free to ask in the issue about clarification or tips.
+- [help wanted](https://github.com/akka/akka-core/labels/help%20wanted) - identifies issues that the core team will likely not have time to work on or that are nice entry-level tickets. If you're not sure how to solve a ticket but would like to work on it, feel free to ask in the issue about clarification or tips.
+- [nice-to-have (low-priority)](https://github.com/akka/akka-core/labels/nice-to-have%20%28low-prio%29) - are tasks which make sense but are not a very high priority (in the face of other very high priority issues). If you see something interesting in this list, a contribution would be really wonderful!
 
 Another group of issues is those which start from a number. They're used to signal in what phase of development an issue is:
 
-- [0 - new](https://github.com/akka/akka/labels/0%20-%20new) - is assigned when an issue is unclear on its purpose or if it is valid or not. Sometimes the additional tag `discuss` is used if they propose large-scale changes and need more discussion before moving into triaged (or being closed as invalid).
-- [1 - triaged](https://github.com/akka/akka/labels/1%20-%20triaged) - roughly speaking means "this issue makes sense". Triaged issues are safe to pick up for contributing in terms of the likeliness of a patch for it being accepted. It is not recommended to start working on an issue that is not triaged.
-- [2 - pick next](https://github.com/akka/akka/labels/2%20-%20pick%20next) - used to mark issues that are next up in the queue to be worked on. Sometimes it's also used to mark which PRs are expected to be reviewed/merged for the next release. The tag is non-binding and mostly used as an organisational helper.
-- [3 - in progress](https://github.com/akka/akka/labels/3%20-%20in%20progress) - means someone is working on this ticket. If you see an issue that has the tag but seems inactive, it could have been an omission with removing the tag. Feel free to ping the ticket then if it's still being worked on.
+- [0 - new](https://github.com/akka/akka-core/labels/0%20-%20new) - is assigned when an issue is unclear on its purpose or if it is valid or not. Sometimes the additional tag `discuss` is used if they propose large-scale changes and need more discussion before moving into triaged (or being closed as invalid).
+- [1 - triaged](https://github.com/akka/akka-core/labels/1%20-%20triaged) - roughly speaking means "this issue makes sense". Triaged issues are safe to pick up for contributing in terms of the likeliness of a patch for it being accepted. It is not recommended to start working on an issue that is not triaged.
+- [2 - pick next](https://github.com/akka/akka-core/labels/2%20-%20pick%20next) - used to mark issues that are next up in the queue to be worked on. Sometimes it's also used to mark which PRs are expected to be reviewed/merged for the next release. The tag is non-binding and mostly used as an organisational helper.
+- [3 - in progress](https://github.com/akka/akka-core/labels/3%20-%20in%20progress) - means someone is working on this ticket. If you see an issue that has the tag but seems inactive, it could have been an omission with removing the tag. Feel free to ping the ticket then if it's still being worked on.
 
 The last group of special tags indicates specific states a ticket is in:
 
-- [bug](https://github.com/akka/akka/labels/bug) indicates potential production issues. Bugs take priority in being fixed above features. The core team dedicates some days to work on bugs in each sprint. Bugs which have reproducers are also great for community contributions as they're well-isolated. Sometimes we're not as lucky to have reproducers, though, then a bugfix should also include a test reproducing the original error along with the fix.
-- [failed](https://github.com/akka/akka/labels/failed) indicates a CI failure (for example, from a nightly build). These tickets usually include a stacktrace + link to the failed job, and we'll add a comment when we see the same problem again. Since these tickets can either indicate tests with incorrect assumptions, or legitimate issues in the production code, we look at them periodically. When the same problem isn't seen again over a period of 6 months we assume it to be a rare flaky test or a problem that might have since been fixed, so we close the issue until it pops up again.
+- [bug](https://github.com/akka/akka-core/labels/bug) indicates potential production issues. Bugs take priority in being fixed above features. The core team dedicates some days to work on bugs in each sprint. Bugs which have reproducers are also great for community contributions as they're well-isolated. Sometimes we're not as lucky to have reproducers, though, then a bugfix should also include a test reproducing the original error along with the fix.
+- [failed](https://github.com/akka/akka-core/labels/failed) indicates a CI failure (for example, from a nightly build). These tickets usually include a stacktrace + link to the failed job, and we'll add a comment when we see the same problem again. Since these tickets can either indicate tests with incorrect assumptions, or legitimate issues in the production code, we look at them periodically. When the same problem isn't seen again over a period of 6 months we assume it to be a rare flaky test or a problem that might have since been fixed, so we close the issue until it pops up again.
 
 Pull request validation states:
 
@@ -60,7 +60,7 @@ Pull request validation states:
 
 ## Akka contributing guidelines
 
-These guidelines apply to all Akka projects, by which we mean both the `akka/akka` repository,
+These guidelines apply to all Akka projects, by which we mean both the `akka/akka-core` repository,
 as well as any plugins or additional repositories located under the Akka GitHub organisation.
 
 These guidelines are meant to be a living document that should be changed and adapted as needed.
@@ -71,15 +71,15 @@ We encourage changes that make it easier to achieve our goals efficiently.
 The steps below describe how to get a patch into the main development branch (`main`).
 The steps are exactly the same for everyone involved in the project, including the core team and first-time contributors.
 
-1. To avoid duplicated effort, it might be good to check the [issue tracker](https://github.com/akka/akka/issues) and [existing pull requests](https://github.com/akka/akka/pulls) for existing work.
-   - If there is no ticket yet, feel free to [create one](https://github.com/akka/akka/issues/new) to discuss the problem and the approach you want to take to solve it.
-1. [Fork the project](https://github.com/akka/akka#fork-destination-box) on GitHub. You'll need to create a feature-branch for your work on your fork, as this way you'll be able to submit a pull request against the mainline Akka.
+1. To avoid duplicated effort, it might be good to check the [issue tracker](https://github.com/akka/akka-core/issues) and [existing pull requests](https://github.com/akka/akka-core/pulls) for existing work.
+   - If there is no ticket yet, feel free to [create one](https://github.com/akka/akka-core/issues/new) to discuss the problem and the approach you want to take to solve it.
+1. [Fork the project](https://github.com/akka/akka-core#fork-destination-box) on GitHub. You'll need to create a feature-branch for your work on your fork, as this way you'll be able to submit a pull request against the mainline Akka.
 1. Create a branch on your fork and work on the feature. For example: `git checkout -b custom-headers-akka-http`
    - Please make sure to follow the general quality guidelines (specified below) when developing your patch.
    - Please write additional tests covering your feature and adjust existing ones if needed before submitting your pull request. The `validatePullRequest` sbt task ([explained below](#the-validatepullrequest-task)) may come in handy to verify your changes are correct.
    - Use the `verifyCodeStyle` sbt task to ensure your code is properly formatted and includes the proper copyright headers.
 1. Once your feature is complete, prepare the commit following our [Creating Commits And Writing Commit Messages](#creating-commits-and-writing-commit-messages). For example, a good commit message would be: `feat: Adding compression support for Manifests #22222` (note the reference to the ticket it aimed to resolve).
-1. If it's a new feature or a change of behavior, document it on the [akka-docs](https://github.com/akka/akka/tree/main/akka-docs). When the feature touches Scala and Java DSL, document both the Scala and Java APIs.
+1. If it's a new feature or a change of behavior, document it on the [akka-docs](https://github.com/akka/akka-core/tree/main/akka-docs). When the feature touches Scala and Java DSL, document both the Scala and Java APIs.
 1. Now it's finally time to [submit the pull request](https://help.github.com/articles/using-pull-requests)!
     - Please make sure to include a reference to the issue you're solving *in the comment* for the Pull Request, as this will cause the PR to be linked properly with the issue. Examples of good phrases for this are: "Resolves #1234" or "Refs #1234".
 1. If you have not already done so, you will be asked by our CLA bot to [sign the Lightbend CLA](https://www.lightbend.com/contribute/cla/akka) online. CLA stands for Contributor License Agreement and protects intellectual property disputes from harming the project.
@@ -102,7 +102,7 @@ The TL;DR; of the above very precise workflow version is:
 6. Keep polishing it until getting the required number of approvals
 7. Profit!
 
-> **Note:** Github Actions runs all the workflows for the forked project. We have filters to ensure that each action efectively runs only for the `akka/akka` repository, but you may also want to [disable Github Actions](https://docs.github.com/en/github/administering-a-repository/managing-repository-settings/disabling-or-limiting-github-actions-for-a-repository) entirely in your fork.
+> **Note:** Github Actions runs all the workflows for the forked project. We have filters to ensure that each action efectively runs only for the `akka/akka-core` repository, but you may also want to [disable Github Actions](https://docs.github.com/en/github/administering-a-repository/managing-repository-settings/disabling-or-limiting-github-actions-for-a-repository) entirely in your fork.
 
 #### Backporting
 
@@ -295,7 +295,7 @@ run `protobufGenerate`. The generated files are put in each project's `src/main/
 The generated files are automatically transformed to use the shaded version of protobuf.
 
 Generation depends on protoc `3.11.4` being on the path. See [protobuf project](https://github.com/protocolbuffers/protobuf#protocol-compiler-installation) for installation instructions, and
-[Protobuf.scala](https://github.com/akka/akka/blob/main/project/Protobuf.scala) for details of how to override
+[Protobuf.scala](https://github.com/akka/akka-core/blob/main/project/Protobuf.scala) for details of how to override
 the settings for generation.
 
 ### Pull request requirements
@@ -489,7 +489,7 @@ There are a number of ways timeouts can be defined in Akka tests. The following 
 
 Special care should be given to `expectNoMessage` calls, which indeed will wait for the entire timeout before continuing. Therefore a shorter timeout should be used in those, for example `200.millis` or `300.millis`. Prefer the method without timeout parameter, which will use the configured `expect-no-message-default` timeout.
 
-You can read up on `remaining` and friends in [TestKit.scala](https://github.com/akka/akka/blob/main/akka-testkit/src/main/scala/akka/testkit/TestKit.scala).
+You can read up on `remaining` and friends in [TestKit.scala](https://github.com/akka/akka-core/blob/main/akka-testkit/src/main/scala/akka/testkit/TestKit.scala).
 
 ### Contributing modules
 
