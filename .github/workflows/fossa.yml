@@ -12,7 +12,7 @@ jobs:
   fossa:
     name: Fossa
     runs-on: Akka-Default
-    if: github.repository == 'akka/akka'
+    if: github.event.repository.fork == false
     steps:
       - name: Checkout Global Scripts
         uses: actions/checkout@v4
