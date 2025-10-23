@@ -67,7 +67,7 @@ final case class Address private[akka] (protocol: String, system: String, host: 
   def hasGlobalScope: Boolean = host.isDefined
 
   // store hashCode
-  @transient override lazy val hashCode: Int = scala.util.hashing.MurmurHash3.productHash(this)
+  @transient override lazy val hashCode: Int = scala.util.hashing.MurmurHash3.caseClassHash(this)
 
   /**
    * Returns the canonical String representation of this Address formatted as:
