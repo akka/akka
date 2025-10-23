@@ -109,7 +109,7 @@ private[akka] object Unpersistent {
 
     private var sequenceNr: Long = initialSequenceNr
     private var state: State = initialState
-    private var metadata: Option[Any] = None
+    private var metadataState: Option[Any] = None
     private val stashedCommands = ListBuffer.empty[Command]
 
     private def snapshotMetadata() =
@@ -143,7 +143,7 @@ private[akka] object Unpersistent {
 
           case Persist(event, metadataEntries) =>
             sequenceNr += 1
-            metadata = if (metadataEntries.isEmpty) None else Some(CompositeMetadata(metadataEntries))
+            metadataState = if (metadataEntries.isEmpty) None else Some(CompositeMetadata(metadataEntries))
             state = eventHandler(state, event)
             onEvent(event, sequenceNr, tagger(state, event))
             shouldSnapshot = shouldSnapshot || snapshotRequested(event)
@@ -155,7 +155,7 @@ private[akka] object Unpersistent {
                 val event = evtWithMeta.event
                 val metadataEntries = evtWithMeta.metadataEntries
                 sequenceNr += 1
-                metadata = if (metadataEntries.isEmpty) None else Some(CompositeMetadata(metadataEntries))
+                metadataState = if (metadataEntries.isEmpty) None else Some(CompositeMetadata(metadataEntries))
                 state = eventHandler(state, event)
                 val tags = tagger(state, event)
                 (event, sequenceNr, tags)
@@ -219,7 +219,7 @@ private[akka] object Unpersistent {
     }
 
     override def metadata[M: ClassTag]: Option[M] =
-      CompositeMetadata.extract[M](metadata)
+      CompositeMetadata.extract[M](metadataState)
   }
 
   private class WrappedDurableStateBehavior[Command, State](
