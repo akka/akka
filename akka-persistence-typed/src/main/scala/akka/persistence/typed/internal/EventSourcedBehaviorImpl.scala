@@ -85,6 +85,11 @@ private[akka] object EventSourcedBehaviorImpl {
    */
   final case class GetSeenSequenceNr(replica: ReplicaId, replyTo: ActorRef[Long]) extends InternalProtocol
 
+  /**
+   * For testing purposes
+   */
+  final case class GetVersion(replyTo: ActorRef[VersionVector]) extends InternalProtocol
+
   trait WithSeqNrAccessible {
     def currentSequenceNumber: Long
   }
