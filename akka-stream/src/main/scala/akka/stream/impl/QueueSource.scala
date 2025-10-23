@@ -41,7 +41,8 @@ import akka.stream.stage._
   val out = Outlet[T]("queueSource.out")
   override val shape: SourceShape[T] = SourceShape.of(out)
 
-  override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
+  override def createLogicAndMaterializedValue(
+      inheritedAttributes: Attributes): (GraphStageLogic, SourceQueueWithComplete[T]) = {
     val completion = Promise[Done]()
     val name = inheritedAttributes.nameOrDefault(getClass.toString)
 

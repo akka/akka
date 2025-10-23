@@ -245,7 +245,8 @@ import akka.stream.stage._
 
   override protected def initialAttributes: Attributes = DefaultAttributes.seqSink
 
-  override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
+  override def createLogicAndMaterializedValue(
+      inheritedAttributes: Attributes): (GraphStageLogic with InHandler, Future[That]) = {
     val p: Promise[That] = Promise()
     val logic = new GraphStageLogic(shape) with InHandler {
       val buf = cbf.newBuilder
@@ -302,7 +303,8 @@ import akka.stream.stage._
 
   override def toString: String = "QueueSink"
 
-  override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
+  override def createLogicAndMaterializedValue(
+      inheritedAttributes: Attributes): (GraphStageLogic, SinkQueueWithCancel[T]) = {
     val stageLogic = new GraphStageLogic(shape) with InHandler with SinkQueueWithCancel[T] {
 
       val maxBuffer = inheritedAttributes.get[InputBuffer](InputBuffer(16, 16)).max

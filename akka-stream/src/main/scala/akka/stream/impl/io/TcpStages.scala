@@ -52,7 +52,9 @@ import akka.util.ByteString
     throw new UnsupportedOperationException("Not used")
 
   // TODO: Timeout on bind
-  override def createLogicAndMaterializedValue(inheritedAttributes: Attributes, eagerMaterialzer: Materializer) = {
+  override def createLogicAndMaterializedValue(
+      inheritedAttributes: Attributes,
+      eagerMaterialzer: Materializer): (GraphStageLogic, Future[StreamTcp.ServerBinding]) = {
     val bindingPromise = Promise[ServerBinding]()
 
     val logic = new TimerGraphStageLogic(shape) with StageLogging {
