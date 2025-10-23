@@ -93,7 +93,7 @@ class LoggingReceiveSpec extends AnyWordSpec with BeforeAndAfterAll {
           case null =>
         }
 
-        val actor = TestActorRef(new Actor {
+        val actor: TestActorRef[Actor] = TestActorRef(new Actor {
           def switch: Actor.Receive = { case "becomenull" => context.become(r, false) }
           def receive =
             switch.orElse(LoggingReceive {

@@ -77,7 +77,7 @@ object ActorSystemSpec {
 
   class SlowDispatcher(_config: Config, _prerequisites: DispatcherPrerequisites)
       extends MessageDispatcherConfigurator(_config, _prerequisites) {
-    private val instance = new Dispatcher(
+    private val instance: Dispatcher = new Dispatcher(
       this,
       this.config.getString("id"),
       this.config.getInt("throughput"),
