@@ -93,7 +93,7 @@ case class MockitoSigarProvider(
 /**
  * Used when testing metrics without full cluster
  *
- * TODO change factory after https://github.com/akka/akka/issues/16369
+ * TODO change factory after https://github.com/akka/akka-core/issues/16369
  */
 trait MetricsCollectorFactory { this: AkkaSpec =>
   import MetricsConfig._

@@ -197,7 +197,7 @@ abstract class AdaptiveLoadBalancingRouterSpec
       enterBarrier("after-2")
     }
 
-    // Excluded on GH Actions: https://github.com/akka/akka/issues/30486
+    // Excluded on GH Actions: https://github.com/akka/akka-core/issues/30486
     "prefer node with more free heap capacity" taggedAs (LongRunningTest, GHExcludeTest) in {
       System.gc()
       enterBarrier("gc")
@@ -231,7 +231,7 @@ abstract class AdaptiveLoadBalancingRouterSpec
       enterBarrier("after-3")
     }
 
-    // Excluded on GH Actions: https://github.com/akka/akka/issues/30486
+    // Excluded on GH Actions: https://github.com/akka/akka-core/issues/30486
     "create routees from configuration" taggedAs (LongRunningTest, GHExcludeTest) in {
       runOn(node1) {
         val router3 = system.actorOf(FromConfig.props(Props[Memory]()), "router3")
@@ -243,7 +243,7 @@ abstract class AdaptiveLoadBalancingRouterSpec
       enterBarrier("after-4")
     }
 
-    // Excluded on GH Actions: https://github.com/akka/akka/issues/30486
+    // Excluded on GH Actions: https://github.com/akka/akka-core/issues/30486
     "create routees from cluster.enabled configuration" taggedAs (LongRunningTest, GHExcludeTest) in {
       runOn(node1) {
         val router4 = system.actorOf(FromConfig.props(Props[Memory]()), "router4")

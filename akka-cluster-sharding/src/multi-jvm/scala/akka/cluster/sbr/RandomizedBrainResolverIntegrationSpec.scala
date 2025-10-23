@@ -405,7 +405,7 @@ class RandomizedSplitBrainResolverIntegrationSpec
 
     for (scenario <- scenarios) {
       scenario.toString taggedAs (LongRunningTest) in {
-        // temporarily disabled for aeron-udp in multi-node: https://github.com/akka/akka/pull/30706/
+        // temporarily disabled for aeron-udp in multi-node: https://github.com/akka/akka-core/pull/30706/
         val arteryConfig = system.settings.config.getConfig("akka.remote.artery")
         if (arteryConfig.getInt("canonical.port") == 6000 &&
             arteryConfig.getString("transport") == "aeron-udp") {

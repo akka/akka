@@ -171,7 +171,7 @@ class MetricsBasedResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultT
       router.close()
     }
 
-    // disabled in CI since flaky https://github.com/akka/akka/issues/32401
+    // disabled in CI since flaky https://github.com/akka/akka-core/issues/32401
     "update the underutilizationStreak highestUtilization if current utilization is higher" taggedAs (GHExcludeTest) in {
       val resizer = DefaultOptimalSizeExploringResizer()
       resizer.record = ResizeRecord(
@@ -214,7 +214,7 @@ class MetricsBasedResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultT
       router.close()
     }
 
-    // disabled in CI since flaky https://github.com/akka/akka/issues/32401
+    // disabled in CI since flaky https://github.com/akka/akka-core/issues/32401
     "record the performance log with the correct pool size" taggedAs (GHExcludeTest) in {
       val resizer = DefaultOptimalSizeExploringResizer()
       val router = TestRouter(routees(2))

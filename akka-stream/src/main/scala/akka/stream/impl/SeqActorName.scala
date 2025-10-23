@@ -10,7 +10,7 @@ import akka.annotation.{ DoNotInherit, InternalApi }
 
 /**
  * INTERNAL API
- * As discussed in https://github.com/akka/akka/issues/16613
+ * As discussed in https://github.com/akka/akka-core/issues/16613
  *
  * Generator of sequentially numbered actor names.
  * Pulled out from HTTP internals, most often used used by streams which materialize actors directly

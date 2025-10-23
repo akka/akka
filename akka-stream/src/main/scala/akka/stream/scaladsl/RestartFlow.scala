@@ -432,7 +432,7 @@ object RestartWithBackoffFlow {
    * Temporary attribute that can override the time a [[RestartWithBackoffFlow]] waits
    * for a failure before cancelling.
    *
-   * See https://github.com/akka/akka/issues/24529
+   * See https://github.com/akka/akka-core/issues/24529
    *
    * Will be removed if/when cancellation can include a cause.
    */

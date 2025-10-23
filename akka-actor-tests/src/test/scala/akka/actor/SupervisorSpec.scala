@@ -221,7 +221,7 @@ class SupervisorSpec
     "restart properly when same instance is returned" in {
       val restarts = 3 //max number of restarts
 
-      // can't be anonymous class due to https://github.com/akka/akka/issues/32128
+      // can't be anonymous class due to https://github.com/akka/akka-core/issues/32128
       class ChildActor extends Actor {
         var preRestarts = 0
         var postRestarts = 0
