@@ -129,7 +129,7 @@ object AkkaDisciplinePlugin extends AutoPlugin {
         // Discipline is not needed for the docs compilation run (which uses
         // different compiler phases from the regular run), and in particular
         // '-Ywarn-unused:explicits' breaks 'sbt ++2.13.0-M5 akka-actor/doc'
-        // https://github.com/akka/akka/issues/26119
+        // https://github.com/akka/akka-core/issues/26119
         Compile / doc / scalacOptions --= (
             if (scalaVersion.value.startsWith("3.")) disciplineScalac3Options.toSeq
             else disciplineScalac2Options.toSeq
