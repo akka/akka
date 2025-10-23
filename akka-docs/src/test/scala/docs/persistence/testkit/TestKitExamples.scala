@@ -22,7 +22,6 @@ object PersistenceTestKitSampleSpec {
     val empty: State = new State
   }
   final class State extends CborSerializable {
-    @nowarn("msg=never used")
     def updated(event: Evt): State = this
   }
 }
