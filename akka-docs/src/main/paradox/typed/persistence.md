@@ -94,6 +94,17 @@ Note that the concrete class does not contain any fields with state like a regul
 lost when the actor is stopped or restarted. Updates to the State are always performed in the eventHandler 
 based on the events.
 
+If the state is mutable, it is important that the `emptyState` method creates a new State instance each time
+it is called to ensure that the state is recreated in case of failure restarts.
+
+@@@
+
+@@@ div { .group-scala }
+
+It is recommended to use an immutable state class. If the state is mutable, it is important to use
+the `EventSourcedBehavior.withMutableState` factory method that takes `emptyStateFactory: () => State` parameter
+to make sure that the state instance is recreated in case of failure restarts.
+
 @@@
 
 Next we'll discuss each of these in detail.
@@ -452,6 +463,14 @@ is not used, but then there will be no compilation errors if the reply decision 
 
 Note that the `noReply` is a way of making conscious decision that a reply shouldn't be sent for a specific
 command or the reply will be sent later, perhaps after some asynchronous interaction with other actors or services.
+
+@@@ div { .group-scala }
+
+It is recommended to use an immutable state class. If the state is mutable, it is important to use
+the `EventSourcedBehavior.withEnforcedRepliesMutableState` factory method that takes `emptyStateFactory: () => State`
+parameter to make sure that the state instance is recreated in case of failure restarts.
+
+@@@
 
 ## Serialization
 

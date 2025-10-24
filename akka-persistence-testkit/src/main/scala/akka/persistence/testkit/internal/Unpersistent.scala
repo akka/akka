@@ -54,7 +54,7 @@ private[akka] object Unpersistent {
       findEventSourcedBehavior(behavior, context).fold {
         throw new AssertionError("Did not find the expected EventSourcedBehavior")
       } { esBehavior =>
-        val (initialState, initialSequenceNr) = fromStateAndSequenceNr.getOrElse(esBehavior.emptyState -> 0L)
+        val (initialState, initialSequenceNr) = fromStateAndSequenceNr.getOrElse(esBehavior.emptyState() -> 0L)
         new WrappedEventSourcedBehavior(context, esBehavior, initialState, initialSequenceNr, onEvent, onSnapshot)
       }
     }

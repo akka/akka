@@ -53,6 +53,9 @@ object EventSourcedBehavior {
   /**
    * Create a `Behavior` for a persistent actor.
    *
+   * This can be used when the state is immutable, but if the state is mutable, it is important to use
+   * the `withMutableState` that takes `emptyStateFactory: () => State` parameter.
+   *
    * @param persistenceId stable unique identifier for the event sourced behavior
    * @param emptyState the intial state for the entity before any events have been processed
    * @param commandHandler map commands to effects e.g. persisting events, replying to commands
@@ -63,22 +66,60 @@ object EventSourcedBehavior {
       emptyState: State,
       commandHandler: (State, Command) => Effect[Event, State],
       eventHandler: (State, Event) => State): EventSourcedBehavior[Command, Event, State] = {
+    withMutableState(persistenceId, () => emptyState, commandHandler, eventHandler)
+  }
+
+  /**
+   * Create a `Behavior` with mutable state for a persistent actor.
+   *
+   * When the state is mutable, it is important to use this variant to make sure that the state instance is
+   * recreated in case of failure restarts.
+   *
+   * @param persistenceId stable unique identifier for the event sourced behavior
+   * @param emptyStateFactory factory function of the intial state for the entity before any events have been processed
+   * @param commandHandler map commands to effects e.g. persisting events, replying to commands
+   * @param eventHandler compute the new state given the current state when an event has been persisted
+   */
+  def withMutableState[Command, Event, State](
+      persistenceId: PersistenceId,
+      emptyStateFactory: () => State,
+      commandHandler: (State, Command) => Effect[Event, State],
+      eventHandler: (State, Event) => State): EventSourcedBehavior[Command, Event, State] = {
     val loggerClass = LoggerClass.detectLoggerClassFromStack(classOf[EventSourcedBehavior[_, _, _]], logPrefixSkipList)
-    EventSourcedBehaviorImpl(persistenceId, emptyState, commandHandler, eventHandler, loggerClass)
+    EventSourcedBehaviorImpl(persistenceId, emptyStateFactory, commandHandler, eventHandler, loggerClass)
   }
 
   /**
    * Create a `Behavior` for a persistent actor that is enforcing that replies to commands are not forgotten.
    * Then there will be compilation errors if the returned effect isn't a [[ReplyEffect]], which can be
    * created with [[Effect.reply]], [[Effect.noReply]], [[EffectBuilder.thenReply]], or [[EffectBuilder.thenNoReply]].
+   *
+   * This can be used when the state is immutable, but if the state is mutable, it is important to use
+   * the `withEnforcedRepliesMutableState` that takes `emptyStateFactory: () => State` parameter.
    */
   def withEnforcedReplies[Command, Event, State](
       persistenceId: PersistenceId,
       emptyState: State,
       commandHandler: (State, Command) => ReplyEffect[Event, State],
       eventHandler: (State, Event) => State): EventSourcedBehavior[Command, Event, State] = {
+    withEnforcedRepliesMutableState(persistenceId, () => emptyState, commandHandler, eventHandler)
+  }
+
+  /**
+   * Create a `Behavior` with mutable state for a persistent actor that is enforcing that replies to commands are not forgotten.
+   * Then there will be compilation errors if the returned effect isn't a [[ReplyEffect]], which can be
+   * created with [[Effect.reply]], [[Effect.noReply]], [[EffectBuilder.thenReply]], or [[EffectBuilder.thenNoReply]].
+   *
+   * When the state is mutable, it is important to use this variant to make sure that the state instance is
+   * recreated in case of failure restarts.
+   */
+  def withEnforcedRepliesMutableState[Command, Event, State](
+      persistenceId: PersistenceId,
+      emptyStateFactory: () => State,
+      commandHandler: (State, Command) => ReplyEffect[Event, State],
+      eventHandler: (State, Event) => State): EventSourcedBehavior[Command, Event, State] = {
     val loggerClass = LoggerClass.detectLoggerClassFromStack(classOf[EventSourcedBehavior[_, _, _]], logPrefixSkipList)
-    EventSourcedBehaviorImpl(persistenceId, emptyState, commandHandler, eventHandler, loggerClass)
+    EventSourcedBehaviorImpl(persistenceId, emptyStateFactory, commandHandler, eventHandler, loggerClass)
   }
 
   /**
