@@ -44,7 +44,7 @@ private[akka] object DurableStateBehaviorImpl {
 @InternalApi
 private[akka] final case class DurableStateBehaviorImpl[Command, State](
     persistenceId: PersistenceId,
-    emptyState: State,
+    emptyState: () => State,
     commandHandler: DurableStateBehavior.CommandHandler[Command, State],
     loggerClass: Class[_],
     durableStateStorePluginId: Option[String] = None,
@@ -101,7 +101,7 @@ private[akka] final case class DurableStateBehaviorImpl[Command, State](
           val durableStateSetup = new BehaviorSetup(
             ctx.asInstanceOf[ActorContext[InternalProtocol]],
             persistenceId,
-            emptyState,
+            emptyState(),
             commandHandler,
             actualSignalHandler,
             tag,

@@ -79,7 +79,7 @@ private[akka] object Unpersistent {
       findDurableStateBehavior(behavior, context).fold {
         throw new AssertionError("Did not find the expected DurableStateBehavior")
       } { dsBehavior =>
-        val initialState = fromState.getOrElse(dsBehavior.emptyState)
+        val initialState = fromState.getOrElse(dsBehavior.emptyState())
         new WrappedDurableStateBehavior(context, dsBehavior, initialState, onPersist)
       }
     }
