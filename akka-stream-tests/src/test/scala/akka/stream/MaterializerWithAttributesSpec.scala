@@ -27,18 +27,19 @@ class MaterializerWithAttributesSpec
 
   implicit val materializer: Materializer = Materializer(system, Attributes.name("foo"))
 
-  val attributesSource = new GraphStageWithMaterializedValue[SourceShape[Nothing], Attributes] {
-    val out = Outlet[Nothing]("AttributesSource.out")
-    override val shape = SourceShape(out)
+  val attributesSource: GraphStageWithMaterializedValue[SourceShape[Nothing], Attributes] =
+    new GraphStageWithMaterializedValue[SourceShape[Nothing], Attributes] {
+      val out = Outlet[Nothing]("AttributesSource.out")
+      override val shape = SourceShape(out)
 
-    override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Attributes) =
-      new GraphStageLogic(shape) with OutHandler {
-        override def preStart(): Unit = completeStage()
-        override def onPull(): Unit = completeStage()
+      override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Attributes) =
+        new GraphStageLogic(shape) with OutHandler {
+          override def preStart(): Unit = completeStage()
+          override def onPull(): Unit = completeStage()
 
-        setHandler(out, this)
-      } -> inheritedAttributes
-  }
+          setHandler(out, this)
+        } -> inheritedAttributes
+    }
 
   "SystemMaterializer with attributes" should {
     "apply its attributes to streams it materializes" in {

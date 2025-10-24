@@ -193,7 +193,8 @@ private[remote] class OutboundControlJunction(
   val out: Outlet[OutboundEnvelope] = Outlet("OutboundControlJunction.out")
   override val shape: FlowShape[OutboundEnvelope, OutboundEnvelope] = FlowShape(in, out)
 
-  override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
+  override def createLogicAndMaterializedValue(
+      inheritedAttributes: Attributes): (GraphStageLogic, OutboundControlJunction.OutboundControlIngress) = {
 
     val logic = new GraphStageLogic(shape)
       with InHandler

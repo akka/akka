@@ -16,12 +16,15 @@ import akka.actor.typed.internal.PropsImpl._
 import akka.annotation.InternalApi
 import akka.dispatch.Mailboxes
 
+import scala.annotation.nowarn
+
 /**
  * INTERNAL API
  */
 @InternalApi private[akka] object PropsAdapter {
 
   private final val TypedCreatorFunctionConsumerClazz = classOf[TypedCreatorFunctionConsumer]
+  @nowarn("msg=never used")
   private final val ActorAdapterClazz = classOf[ActorAdapter[_]]
   private final val DefaultTypedDeploy = Deploy.local.copy(mailbox = "akka.actor.typed.default-mailbox")
 

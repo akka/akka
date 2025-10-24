@@ -35,7 +35,7 @@ import akka.stream.stage.OutHandler
     (createStageLogic(matPromise), matPromise.future)
   }
 
-  private def createStageLogic(matPromise: Promise[M]) = new GraphStageLogic(shape) {
+  private def createStageLogic(matPromise: Promise[M]): GraphStageLogic = new GraphStageLogic(shape) {
     import SetupStage._
 
     val subInlet = new SubSinkInlet[U]("SetupFlowStage")
@@ -78,7 +78,7 @@ import akka.stream.stage.OutHandler
     (createStageLogic(matPromise), matPromise.future)
   }
 
-  private def createStageLogic(matPromise: Promise[M]) = new GraphStageLogic(shape) {
+  private def createStageLogic(matPromise: Promise[M]): GraphStageLogic = new GraphStageLogic(shape) {
     import SetupStage._
 
     val subInlet = new SubSinkInlet[T]("SetupSourceStage")

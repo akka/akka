@@ -180,7 +180,7 @@ private[akka] object MetricsKit {
     override def matches(name: String, metric: Metric) = classOf[KnownOpsInTimespanTimer].isInstance(metric)
   }
 
-  val GcMetricsFilter = new MetricFilter {
+  val GcMetricsFilter: MetricFilter = new MetricFilter {
     val keyPattern = """.*\.gc\..*""".r.pattern
 
     override def matches(name: String, metric: Metric) = keyPattern.matcher(name).matches()

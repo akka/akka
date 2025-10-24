@@ -361,7 +361,7 @@ object ByteString {
     }
 
     def compact: CompactByteString =
-      if (isCompact) ByteString1C(bytes) else ByteString1C(toArray)
+      if (isCompact) ByteString1C(bytes) else ByteString1C(toArray())
 
     def asByteBuffer: ByteBuffer = {
       val buffer = ByteBuffer.wrap(bytes, startIndex, length).asReadOnlyBuffer
@@ -441,7 +441,7 @@ object ByteString {
 
     override def toArrayUnsafe(): Array[Byte] = {
       if (startIndex == 0 && length == bytes.length) bytes
-      else toArray
+      else toArray()
     }
   }
 
@@ -833,7 +833,7 @@ sealed abstract class ByteString
    *
    * @return this ByteString copied into a byte array
    */
-  protected[ByteString] def toArray: Array[Byte] = toArray[Byte]
+  protected[ByteString] def toArray(): Array[Byte] = toArray[Byte]
 
   final override def toArray[B >: Byte](implicit arg0: ClassTag[B]): Array[B] = {
     // super uses byteiterator
@@ -869,7 +869,7 @@ sealed abstract class ByteString
    * only read the bytes and never mutate then. For all other intents and purposes, please use the usual
    * toArray method - which provide the immutability guarantees by copying the backing array.
    */
-  def toArrayUnsafe(): Array[Byte] = toArray
+  def toArrayUnsafe(): Array[Byte] = toArray()
 
   override def foreach[@specialized U](f: Byte => U): Unit = iterator.foreach(f)
 
@@ -932,7 +932,7 @@ sealed abstract class ByteString
    * Creates a new ByteBuffer with a copy of all bytes contained in this
    * ByteString.
    */
-  def toByteBuffer: ByteBuffer = ByteBuffer.wrap(toArray)
+  def toByteBuffer: ByteBuffer = ByteBuffer.wrap(toArray())
 
   /**
    * Decodes this ByteString as a UTF-8 encoded String.
