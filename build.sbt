@@ -245,7 +245,7 @@ lazy val docs = akkaModule("akka-docs")
     ScaladocNoVerificationOfDiagrams,
     StreamOperatorsIndexGenerator)
   .disablePlugins(MimaPlugin)
-  // TODO https://github.com/akka/akka/issues/30243
+  // TODO https://github.com/akka/akka-core/issues/30243
   .settings(crossScalaVersions -= akka.Dependencies.scala3Version)
 
 lazy val jackson = akkaModule("akka-serialization-jackson")

@@ -42,7 +42,7 @@ object Publish extends AutoPlugin {
             "akka-contributors",
             "Akka Contributors",
             "akka.official@gmail.com",
-            url("https://github.com/akka/akka/graphs/contributors"))),
+            url("https://github.com/akka/akka-core/graphs/contributors"))),
       publishMavenStyle := true,
       pomIncludeRepository := { x =>
         false

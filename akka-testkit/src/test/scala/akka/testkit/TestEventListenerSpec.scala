@@ -46,7 +46,7 @@ class TestEventListenerSpec extends AkkaSpec with ImplicitSender {
       filter(errorNoCause) should ===(true)
     }
 
-    // The current implementation could be improved. See https://github.com/akka/akka/pull/25125#discussion_r189810017
+    // The current implementation could be improved. See https://github.com/akka/akka-core/pull/25125#discussion_r189810017
     "filter errors with (any) cause" in {
       val filter = EventFilter[Error.NoCause.type]()
       filter(errorWithCause(new AnError)) should ===(true)

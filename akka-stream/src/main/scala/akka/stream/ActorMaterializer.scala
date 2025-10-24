@@ -507,7 +507,7 @@ final class ActorMaterializerSettings @InternalApi private (
   private val asAttributes =
     Attributes(
       Attributes.InputBuffer(initialInputBufferSize, maxInputBufferSize) ::
-      Attributes.CancellationStrategy.Default :: // FIXME: make configurable, see https://github.com/akka/akka/issues/28000
+      Attributes.CancellationStrategy.Default :: // FIXME: make configurable, see https://github.com/akka/akka-core/issues/28000
       Attributes.NestedMaterializationCancellationPolicy.Default ::
       ActorAttributes.Dispatcher(dispatcher) ::
       ActorAttributes.SupervisionStrategy(supervisionDecider) ::

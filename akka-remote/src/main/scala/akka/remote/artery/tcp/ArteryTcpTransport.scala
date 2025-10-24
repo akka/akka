@@ -138,7 +138,7 @@ private[remote] class ArteryTcpTransport(
         Tcp(system).outgoingConnection(
           remoteAddress,
           localAddress,
-          halfClose = true, // issue https://github.com/akka/akka/issues/24392 if set to false
+          halfClose = true, // issue https://github.com/akka/akka-core/issues/24392 if set to false
           connectTimeout = settings.Advanced.Tcp.ConnectionTimeout)
       }
     }

@@ -36,7 +36,7 @@ object Scaladoc extends AutoPlugin {
         Compile / scalacOptions --= Seq("-release", "8"),
         autoAPIMappings := CliOptions.scaladocAutoAPI.get)) ++
     Seq(
-      // Publishing scala3 docs is broken (https://github.com/akka/akka/issues/30788),
+      // Publishing scala3 docs is broken (https://github.com/akka/akka-core/issues/30788),
       // for now we just skip it:
       Compile / doc / sources := (
           if (scalaVersion.value.startsWith("3.")) Seq()

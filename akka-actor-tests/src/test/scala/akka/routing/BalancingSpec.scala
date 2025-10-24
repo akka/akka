@@ -122,7 +122,7 @@ class BalancingSpec extends AkkaSpec("""
 
   "balancing pool" must {
 
-    // FIXME flaky, https://github.com/akka/akka/issues/30860
+    // FIXME flaky, https://github.com/akka/akka-core/issues/30860
     pending
 
     "deliver messages in a balancing fashion when defined programatically" in {

@@ -171,7 +171,7 @@ Stream refs utilise normal actor messaging for their transport, and therefore pr
 
 @@@ warning
   Bulk stream references are not implemented yet.
-  See ticket [Bulk Transfer Stream Refs #24276](https://github.com/akka/akka/issues/24276) to track progress or signal demand for this feature.  
+  See ticket [Bulk Transfer Stream Refs #24276](https://github.com/akka/akka-core/issues/24276) to track progress or signal demand for this feature.  
 @@@
 
 Bulk stream refs can be used to create simple side-channels to transfer humongous amounts

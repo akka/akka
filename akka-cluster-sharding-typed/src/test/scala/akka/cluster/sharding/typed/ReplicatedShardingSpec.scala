@@ -290,8 +290,8 @@ abstract class ReplicatedShardingSpec(replicationType: ReplicationType, configA:
 
       // This is also done in 'afterAll', but we do it here as well so we can see the
       // logging to diagnose
-      // https://github.com/akka/akka/issues/30501 and
-      // https://github.com/akka/akka/issues/30502
+      // https://github.com/akka/akka-core/issues/30501 and
+      // https://github.com/akka/akka-core/issues/30502
       ActorTestKit.shutdown(system2)
     }
   }

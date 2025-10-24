@@ -215,7 +215,7 @@ private[akka] object Running {
 
         source.runWith(Sink.ignore)(SystemMaterializer(system).materializer)
 
-        // TODO support from journal to fast forward https://github.com/akka/akka/issues/29311
+        // TODO support from journal to fast forward https://github.com/akka/akka-core/issues/29311
         state.copy(
           replicationControl =
             state.replicationControl.updated(replicaId, new ReplicationStreamControl {
@@ -1369,7 +1369,7 @@ private[akka] object Running {
       case _ =>
         // case _: Callback[S] should be covered by above case, but needed needed to silence Scala 3 exhaustive match
         throw new IllegalStateException(
-          s"Unexpected effect [${effect.getClass.getName}]. This is a bug, please report https://github.com/akka/akka/issues")
+          s"Unexpected effect [${effect.getClass.getName}]. This is a bug, please report https://github.com/akka/akka-core/issues")
     }
   }
 

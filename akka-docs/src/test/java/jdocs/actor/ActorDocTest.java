@@ -886,7 +886,7 @@ public class ActorDocTest extends AbstractJavaTest {
   public void coordinatedShutdownActorTermination() {
     ActorRef someActor = system.actorOf(Props.create(FirstActor.class));
     someActor.tell(PoisonPill.getInstance(), ActorRef.noSender());
-    // https://github.com/akka/akka/issues/29056
+    // https://github.com/akka/akka-core/issues/29056
     // #coordinated-shutdown-addActorTerminationTask
     CoordinatedShutdown.get(system)
         .addActorTerminationTask(

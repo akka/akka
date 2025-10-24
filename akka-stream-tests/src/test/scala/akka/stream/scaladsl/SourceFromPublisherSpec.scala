@@ -18,7 +18,7 @@ class SourceFromPublisherSpec
     with Matchers {
 
   "Source.fromPublisher" should {
-    // https://github.com/akka/akka/pull/31129
+    // https://github.com/akka/akka-core/pull/31129
     "consider 'inputBuffer' attributes in a correct way" in pendingUntilFixed {
       val publisher = TestPublisher.probe[Int]()
       Source.fromPublisher(publisher).addAttributes(Attributes.inputBuffer(1, 2)).runWith(Sink.ignore)

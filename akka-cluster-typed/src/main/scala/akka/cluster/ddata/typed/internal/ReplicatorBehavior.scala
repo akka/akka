@@ -41,7 +41,7 @@ import akka.util.Timeout
       val classicReplicator = underlyingReplicator match {
         case Some(ref) => ref
         case None      =>
-          // FIXME perhaps add supervisor for restarting, see PR https://github.com/akka/akka/pull/25988
+          // FIXME perhaps add supervisor for restarting, see PR https://github.com/akka/akka-core/pull/25988
           val classicReplicatorProps = dd.Replicator.props(settings)
           ctx.actorOf(classicReplicatorProps, name = "underlying")
       }
