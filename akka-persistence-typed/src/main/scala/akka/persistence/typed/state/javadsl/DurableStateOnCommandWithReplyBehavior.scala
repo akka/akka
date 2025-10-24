@@ -133,7 +133,7 @@ abstract class DurableStateOnCommandWithReplyBehavior[Command, State] private[ak
 
     val behavior = new internal.DurableStateBehaviorImpl[Command, State](
       persistenceId,
-      emptyState,
+      () => emptyState,
       onCommand(_, _).asInstanceOf[EffectImpl[State]],
       getClass).withTag(tag).snapshotAdapter(snapshotAdapter()).withDurableStateStorePluginId(durableStateStorePluginId)
 

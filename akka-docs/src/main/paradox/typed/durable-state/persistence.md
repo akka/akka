@@ -104,6 +104,21 @@ The state is typically defined as an immutable class and a new instance of the s
 You may choose to use a mutable class for the state, and then the command handler may update the state instance, but
 it must still pass the updated state to the `persist` effect.
 
+@@@ div { .group-java }
+
+If the state is mutable, it is important that the `emptyState` method creates a new State instance each time
+it is called to ensure that the state is recreated in case of failure restarts.
+
+@@@
+
+@@@ div { .group-scala }
+
+If the state is mutable, it is important to use the `DurableStateBehavior.withMutableState` factory method that
+takes `emptyStateFactory: () => State` parameter to make sure that the state instance is recreated in case of
+failure restarts.
+
+@@@
+
 More effects are explained in @ref:[Effects and Side Effects](#effects-and-side-effects).
 
 In addition to returning the primary `Effect` for the command, `DurableStateBehavior`s can also 
@@ -206,6 +221,14 @@ Scala
 
 Java
 :  @@snip [PersistentActorCompileOnlyTest.java](/akka-persistence-typed/src/test/java/akka/persistence/typed/javadsl/PersistentActorCompileOnlyTest.java) { #commonChainedEffects }
+
+@@@ div { .group-scala }
+
+It is recommended to use an immutable state class. If the state is mutable, it is important to use
+the `DurableStateBehavior.withEnforcedRepliesMutableState` factory method that takes `emptyStateFactory: () => State`
+parameter to make sure that the state instance is recreated in case of failure restarts.
+
+@@@
 
 ### Side effects ordering and guarantees
 

@@ -41,13 +41,13 @@ class ChaosJournal extends InmemJournal {
   override def asyncWriteMessages(messages: immutable.Seq[AtomicWrite]): Future[immutable.Seq[Try[Unit]]] = {
     val pid = messages.head.persistenceId
     counts = counts.updated(pid, counts.getOrElse(pid, 0) + 1)
-    if (pid == "fail-first-2" && counts(pid) <= 2) {
+    if (pid.startsWith("fail-first-2") && counts(pid) <= 2) {
       Future.failed(TestException("database says no"))
     } else if (pid.startsWith("fail-fifth") && counts(pid) == 5) {
       Future.failed(TestException("database says no"))
     } else if (pid.startsWith("fail-persist")) {
       Future.failed(TestException("database says no"))
-    } else if (pid == "reject-first" && reject) {
+    } else if (pid.startsWith("reject-first") && reject) {
       reject = false
       Future.successful(messages.map(_ =>
         Try {
@@ -99,13 +99,18 @@ class EventSourcedBehaviorFailureSpec
     EventSourcedBehavior[String, String, String](
       pid,
       "",
-      (_, cmd) => {
-        if (cmd == "wrong")
+      (state, cmd) => {
+        if (cmd == "get") {
+          probe.tell(s"state [$state]")
+          Effect.none
+        } else if (cmd == "wrong") {
           throw TestException("wrong command")
-        probe.tell("persisting")
-        Effect.persist(cmd).thenRun { _ =>
-          probe.tell("persisted")
-          if (cmd == "wrong-callback") throw TestException("wrong command")
+        } else {
+          probe.tell("persisting")
+          Effect.persist(cmd).thenRun { _ =>
+            probe.tell("persisted")
+            if (cmd == "wrong-callback") throw TestException("wrong command")
+          }
         }
       },
       (state, event) => {
@@ -121,6 +126,52 @@ class EventSourcedBehaviorFailureSpec
       case (_, PreRestart) =>
         probe.tell("restarting")
     })
+
+  final class MutableState(var value: String) {
+    def add(s: String): Unit =
+      value = value + s
+  }
+
+  def failingPersistentActorWithMutableState(
+      pid: PersistenceId,
+      probe: ActorRef[String],
+      additionalSignalHandler: PartialFunction[(MutableState, Signal), Unit] = PartialFunction.empty)
+      : EventSourcedBehavior[String, String, MutableState] =
+    EventSourcedBehavior
+      .withMutableState[String, String, MutableState](
+        pid,
+        () => new MutableState(""),
+        (state, cmd) => {
+          if (cmd == "get") {
+            probe.tell(s"state [${state.value}]")
+            Effect.none
+          } else if (cmd == "wrong") {
+            // eh, don't try this at home
+            state.add("wrong")
+            throw TestException("wrong command")
+          } else {
+            probe.tell("persisting")
+            Effect.persist(cmd).thenRun { _ =>
+              probe.tell("persisted")
+              if (cmd == "wrong-callback") throw TestException("wrong command")
+            }
+          }
+        },
+        (state, event) => {
+          if (event == "wrong-event")
+            throw TestException("wrong event")
+          probe.tell(event)
+          state.add(event)
+          state
+        })
+      .receiveSignal(additionalSignalHandler.orElse {
+        case (_, RecoveryCompleted) =>
+          probe.tell("starting")
+        case (_, PostStop) =>
+          probe.tell("stopped")
+        case (_, PreRestart) =>
+          probe.tell("restarting")
+      })
 
   "A typed persistent actor (failures)" must {
 
@@ -236,12 +287,18 @@ class EventSourcedBehaviorFailureSpec
       probe.expectMessage("one")
       probe.expectMessage("restarting")
       probe.expectMessage("starting")
+      c ! "get"
+      probe.expectMessage("state []")
+
       // fail
       c ! "two"
       probe.expectMessage("persisting")
       probe.expectMessage("two")
       probe.expectMessage("restarting")
       probe.expectMessage("starting")
+      c ! "get"
+      probe.expectMessage("state []")
+
       // work!
       c ! "three"
       probe.expectMessage("persisting")
@@ -249,6 +306,8 @@ class EventSourcedBehaviorFailureSpec
       probe.expectMessage("persisted")
       // no restart
       probe.expectNoMessage()
+      c ! "get"
+      probe.expectMessage("state [three]")
     }
 
     "restart with backoff for recovery" in {
@@ -310,6 +369,9 @@ class EventSourcedBehaviorFailureSpec
         probe.expectMessage("starting")
         c ! "wrong"
         probe.expectMessage("restarting")
+        probe.expectMessage("starting")
+        c ! "get"
+        probe.expectMessage("state []")
       }
     }
 
@@ -354,5 +416,60 @@ class EventSourcedBehaviorFailureSpec
         probe.expectMessage("stopped")
       }
     }
+  }
+
+  "A typed persistent actor (failures) with mutable state" must {
+    "restart with backoff" in {
+      val probe = TestProbe[String]()
+      val behav = failingPersistentActorWithMutableState(PersistenceId.ofUniqueId("fail-first-2-mutable"), probe.ref)
+        .onPersistFailure(
+          SupervisorStrategy.restartWithBackoff(1.milli, 10.millis, 0.1).withLoggingEnabled(enabled = false))
+      val c = spawn(behav)
+      probe.expectMessage("starting")
+      // fail
+      c ! "one"
+      probe.expectMessage("persisting")
+      probe.expectMessage("one")
+      probe.expectMessage("restarting")
+      probe.expectMessage("starting")
+      c ! "get"
+      probe.expectMessage("state []")
+
+      // fail
+      c ! "two"
+      probe.expectMessage("persisting")
+      probe.expectMessage("two")
+      probe.expectMessage("restarting")
+      probe.expectMessage("starting")
+      c ! "get"
+      probe.expectMessage("state []")
+
+      // work!
+      c ! "three"
+      probe.expectMessage("persisting")
+      probe.expectMessage("three")
+      probe.expectMessage("persisted")
+      // no restart
+      probe.expectNoMessage()
+      c ! "get"
+      probe.expectMessage("state [three]")
+    }
+
+    "restart supervisor strategy if command handler throws" in {
+      LoggingTestKit.error[TestException].expect {
+        val probe = TestProbe[String]()
+        val behav = Behaviors
+          .supervise(failingPersistentActorWithMutableState(PersistenceId.ofUniqueId("wrong-command-2"), probe.ref))
+          .onFailure[TestException](SupervisorStrategy.restart)
+        val c = spawn(behav)
+        probe.expectMessage("starting")
+        c ! "wrong"
+        probe.expectMessage("restarting")
+        probe.expectMessage("starting")
+        c ! "get"
+        probe.expectMessage("state []")
+      }
+    }
+
   }
 }

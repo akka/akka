@@ -67,6 +67,9 @@ abstract class EventSourcedOnCommandBehavior[Command, Event, State](
    * This object will be passed into this behaviors handlers, until a new state replaces it.
    *
    * Also known as "zero state" or "neutral state".
+   *
+   * If the state is mutable, it is important that this creates a new State instance each time it is called
+   * to ensure that the state is recreated in case of failure restarts.
    */
   protected def emptyState: State
 
@@ -217,7 +220,7 @@ abstract class EventSourcedOnCommandBehavior[Command, Event, State](
 
     var behavior = new internal.EventSourcedBehaviorImpl[Command, Event, State](
       persistenceId,
-      emptyState,
+      () => emptyState,
       (state, cmd) => this.onCommand(state, cmd).asInstanceOf[EffectImpl[Event, State]],
       this.onEvent,
       getClass)

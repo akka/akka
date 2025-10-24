@@ -54,7 +54,7 @@ private[akka] object Unpersistent {
       findEventSourcedBehavior(behavior, context).fold {
         throw new AssertionError("Did not find the expected EventSourcedBehavior")
       } { esBehavior =>
-        val (initialState, initialSequenceNr) = fromStateAndSequenceNr.getOrElse(esBehavior.emptyState -> 0L)
+        val (initialState, initialSequenceNr) = fromStateAndSequenceNr.getOrElse(esBehavior.emptyState() -> 0L)
         new WrappedEventSourcedBehavior(context, esBehavior, initialState, initialSequenceNr, onEvent, onSnapshot)
       }
     }
@@ -79,7 +79,7 @@ private[akka] object Unpersistent {
       findDurableStateBehavior(behavior, context).fold {
         throw new AssertionError("Did not find the expected DurableStateBehavior")
       } { dsBehavior =>
-        val initialState = fromState.getOrElse(dsBehavior.emptyState)
+        val initialState = fromState.getOrElse(dsBehavior.emptyState())
         new WrappedDurableStateBehavior(context, dsBehavior, initialState, onPersist)
       }
     }

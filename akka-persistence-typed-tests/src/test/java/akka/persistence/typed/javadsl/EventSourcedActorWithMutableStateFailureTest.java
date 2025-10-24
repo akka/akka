@@ -24,12 +24,30 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.scalatestplus.junit.JUnitSuite;
 
-class FailingEventSourcedActor extends EventSourcedBehavior<String, String, String> {
+class FailingEventSourcedActorWithMutableState
+    extends EventSourcedBehavior<
+        String, String, FailingEventSourcedActorWithMutableState.MutableState> {
+
+  static final class MutableState {
+    private String value;
+
+    MutableState(String value) {
+      this.value = value;
+    }
+
+    void add(String s) {
+      value = value + s;
+    }
+
+    String getValue() {
+      return value;
+    }
+  }
 
   private final ActorRef<String> probe;
   private final ActorRef<Throwable> recoveryFailureProbe;
 
-  FailingEventSourcedActor(
+  FailingEventSourcedActorWithMutableState(
       PersistenceId persistenceId,
       ActorRef<String> probe,
       ActorRef<Throwable> recoveryFailureProbe) {
@@ -42,7 +60,7 @@ class FailingEventSourcedActor extends EventSourcedBehavior<String, String, Stri
   }
 
   @Override
-  public SignalHandler<String> signalHandler() {
+  public SignalHandler<MutableState> signalHandler() {
     return newSignalHandlerBuilder()
         .onSignal(
             RecoveryCompleted.instance(),
@@ -58,15 +76,15 @@ class FailingEventSourcedActor extends EventSourcedBehavior<String, String, Stri
   }
 
   @Override
-  public String emptyState() {
-    return "";
+  public MutableState emptyState() {
+    return new MutableState("");
   }
 
   @Override
-  public CommandHandler<String, String, String> commandHandler() {
+  public CommandHandler<String, String, MutableState> commandHandler() {
     return (state, command) -> {
       if (command.equals("get")) {
-        probe.tell("state [" + state + "]");
+        probe.tell("state [" + state.getValue() + "]");
         return Effect().none();
       } else {
         probe.tell("persisting");
@@ -76,15 +94,16 @@ class FailingEventSourcedActor extends EventSourcedBehavior<String, String, Stri
   }
 
   @Override
-  public EventHandler<String, String> eventHandler() {
+  public EventHandler<MutableState, String> eventHandler() {
     return (state, event) -> {
       probe.tell(event);
-      return state + event;
+      state.add(event);
+      return state;
     };
   }
 }
 
-public class EventSourcedActorFailureTest extends JUnitSuite {
+public class EventSourcedActorWithMutableStateFailureTest extends JUnitSuite {
 
   public static final Config config = conf().withFallback(ConfigFactory.load());
 
@@ -94,7 +113,7 @@ public class EventSourcedActorFailureTest extends JUnitSuite {
 
   public static Behavior<String> fail(
       PersistenceId pid, ActorRef<String> probe, ActorRef<Throwable> recoveryFailureProbe) {
-    return new FailingEventSourcedActor(pid, probe, recoveryFailureProbe);
+    return new FailingEventSourcedActorWithMutableState(pid, probe, recoveryFailureProbe);
   }
 
   public static Behavior<String> fail(PersistenceId pid, ActorRef<String> probe) {

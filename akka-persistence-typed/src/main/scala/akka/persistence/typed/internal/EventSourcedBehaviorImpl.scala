@@ -103,7 +103,7 @@ private[akka] object EventSourcedBehaviorImpl {
 @InternalApi
 private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
     persistenceId: PersistenceId,
-    emptyState: State,
+    emptyState: () => State,
     commandHandler: EventSourcedBehavior.CommandHandler[Command, Event, State],
     eventHandler: EventSourcedBehavior.EventHandler[State, Event],
     loggerClass: Class[_],
@@ -208,7 +208,7 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
           val eventSourcedSetup = new BehaviorSetup(
             ctx.asInstanceOf[ActorContext[InternalProtocol]],
             persistenceId,
-            emptyState,
+            emptyState(),
             commandHandler,
             eventHandler,
             WriterIdentity.newIdentity(),
