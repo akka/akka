@@ -1,0 +1,6 @@
+# Internal API, Mailbox no longer extends ForkJoinTask
+ProblemFilters.exclude[MissingTypesProblem]("akka.dispatch.Mailbox")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.dispatch.Mailbox.getRawResult")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.dispatch.Mailbox.setRawResult")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.dispatch.Mailbox.exec")
+ProblemFilters.exclude[MissingTypesProblem]("akka.dispatch.BalancingDispatcher$SharingMailbox")

@@ -53,12 +53,12 @@ private[akka] object Mailbox {
  * Mailbox and InternalMailbox is separated in two classes because ActorCell is needed for implementation,
  * but can't be exposed to user defined mailbox subclasses.
  *
+ * Must not extend ForkJoinTask: the same mailbox instance is scheduled over and over, and re-submitting
+ * the same task instance to a ForkJoinPool can corrupt its work queue (see issue #33019).
+ *
  * INTERNAL API
  */
-private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
-    extends ForkJoinTask[Unit]
-    with SystemMessageQueue
-    with Runnable {
+private[akka] abstract class Mailbox(val messageQueue: MessageQueue) extends SystemMessageQueue with Runnable {
 
   import Mailbox._
 
@@ -233,24 +233,6 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
       dispatcher.registerForExecution(this, hasMessageHint = false, hasSystemMessageHint = false)
     }
   }
-
-  override final def getRawResult(): Unit = ()
-  override final def setRawResult(unit: Unit): Unit = ()
-  final override def exec(): Boolean =
-    try {
-      run(); false
-    } catch {
-      case _: InterruptedException =>
-        Thread.currentThread().interrupt()
-        false
-      case anything: Throwable =>
-        val t = Thread.currentThread()
-        t.getUncaughtExceptionHandler match {
-          case null =>
-          case some => some.uncaughtException(t, anything)
-        }
-        throw anything
-    }
 
   /**
    * Process the messages in the mailbox
