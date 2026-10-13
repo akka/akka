@@ -38,10 +38,12 @@ object ForkJoinExecutorConfigurator {
         unhandledExceptionHandler: Thread.UncaughtExceptionHandler) =
       this(parallelism, threadFactory, unhandledExceptionHandler, asyncMode = true, 256)
 
+    // Always wrap in a fresh task, also when `r` is a ForkJoinTask such as the Mailbox. The Mailbox never
+    // completes (exec returns false) and is re-submitted on every scheduling, and forking the same ForkJoinTask
+    // instance more than once can corrupt the work queue of the pool through an ABA race, see issue #33019.
     override def execute(r: Runnable): Unit =
       if (r ne null)
-        super.execute(
-          (if (r.isInstanceOf[ForkJoinTask[_]]) r else new AkkaForkJoinTask(r)).asInstanceOf[ForkJoinTask[Any]])
+        super.execute(new AkkaForkJoinTask(r).asInstanceOf[ForkJoinTask[Any]])
       else
         throw new NullPointerException("Runnable was null")
 
