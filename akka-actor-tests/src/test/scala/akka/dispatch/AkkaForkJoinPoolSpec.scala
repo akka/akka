@@ -36,7 +36,7 @@ object AkkaForkJoinPoolSpec {
       val n = runs.incrementAndGet()
       done.countDown()
       if (resubmit && n < totalRuns)
-        pool.execute(this)
+        pool.execute(this: Runnable)
     }
   }
 }
@@ -45,7 +45,8 @@ class AkkaForkJoinPoolSpec extends AnyWordSpec with Matchers {
   import AkkaForkJoinPoolSpec._
 
   private def withPool(f: AkkaForkJoinPool => Unit): Unit = {
-    val pool = new AkkaForkJoinPool(4, ForkJoinPool.defaultForkJoinWorkerThreadFactory, MonitorableThreadFactory.doNothing)
+    val pool =
+      new AkkaForkJoinPool(4, ForkJoinPool.defaultForkJoinWorkerThreadFactory, MonitorableThreadFactory.doNothing)
     try f(pool)
     finally {
       pool.shutdownNow()
@@ -60,7 +61,7 @@ class AkkaForkJoinPoolSpec extends AnyWordSpec with Matchers {
       val task = new ReusableTask(pool, totalRuns, resubmit = false)
       (1 to totalRuns).foreach { _ =>
         val before = task.runs.get
-        pool.execute(task)
+        pool.execute(task: Runnable)
         while (task.runs.get == before) Thread.onSpinWait()
       }
       task.done.await(10, TimeUnit.SECONDS) should ===(true)
@@ -72,7 +73,7 @@ class AkkaForkJoinPoolSpec extends AnyWordSpec with Matchers {
     "submit a fresh task when the same ForkJoinTask instance is re-submitted from a worker thread" in withPool { pool =>
       val totalRuns = 10000
       val task = new ReusableTask(pool, totalRuns, resubmit = true)
-      pool.execute(task)
+      pool.execute(task: Runnable)
       task.done.await(10, TimeUnit.SECONDS) should ===(true)
       task.runs.get should ===(totalRuns)
       task.execs.get should ===(0)
