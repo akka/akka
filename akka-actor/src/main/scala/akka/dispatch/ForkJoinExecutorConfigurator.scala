@@ -39,9 +39,8 @@ object ForkJoinExecutorConfigurator {
       this(parallelism, threadFactory, unhandledExceptionHandler, asyncMode = true, 256)
 
     override def execute(r: Runnable): Unit =
-      if (r ne null)
-        super.execute(
-          (if (r.isInstanceOf[ForkJoinTask[_]]) r else new AkkaForkJoinTask(r)).asInstanceOf[ForkJoinTask[Any]])
+      // always a fresh task, re-submitting the same task instance can corrupt the work queue (issue #33019)
+      if (r ne null) super.execute(new AkkaForkJoinTask(r).asInstanceOf[ForkJoinTask[Any]])
       else
         throw new NullPointerException("Runnable was null")
 

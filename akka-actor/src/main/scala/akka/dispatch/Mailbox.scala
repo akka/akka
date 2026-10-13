@@ -53,9 +53,6 @@ private[akka] object Mailbox {
  * Mailbox and InternalMailbox is separated in two classes because ActorCell is needed for implementation,
  * but can't be exposed to user defined mailbox subclasses.
  *
- * Must not extend ForkJoinTask: the same mailbox instance is scheduled over and over, and re-submitting
- * the same task instance to a ForkJoinPool can corrupt its work queue (see issue #33019).
- *
  * INTERNAL API
  */
 private[akka] abstract class Mailbox(val messageQueue: MessageQueue) extends SystemMessageQueue with Runnable {

@@ -4,8 +4,6 @@
 
 package akka.dispatch
 
-import java.util.concurrent.ForkJoinTask
-
 import com.typesafe.config.ConfigFactory
 import akka.actor.{ Actor, Props }
 import akka.testkit.{ AkkaSpec, ImplicitSender }
@@ -70,11 +68,5 @@ class ForkJoinPoolStarvationSpec extends AkkaSpec(ForkJoinPoolStarvationSpec.con
         expectMsg("All fine")
       }
     }
-
-    "never get the same task instance submitted for repeated mailbox scheduling" in {
-      // re-submitting a reused ForkJoinTask can corrupt the FJP work queue, issue #33019
-      classOf[ForkJoinTask[_]].isAssignableFrom(classOf[Mailbox]) shouldBe false
-    }
-
   }
 }
