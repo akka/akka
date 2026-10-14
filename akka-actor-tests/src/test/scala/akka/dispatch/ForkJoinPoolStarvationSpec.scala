@@ -68,5 +68,6 @@ class ForkJoinPoolStarvationSpec extends AkkaSpec(ForkJoinPoolStarvationSpec.con
         expectMsg("All fine")
       }
     }
+
   }
 }

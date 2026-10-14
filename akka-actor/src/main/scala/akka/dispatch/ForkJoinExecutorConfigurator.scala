@@ -39,8 +39,9 @@ object ForkJoinExecutorConfigurator {
       this(parallelism, threadFactory, unhandledExceptionHandler, asyncMode = true, 256)
 
     override def execute(r: Runnable): Unit =
-      // always a fresh task, re-submitting the same task instance can corrupt the work queue (issue #33019)
-      if (r ne null) super.execute(new AkkaForkJoinTask(r).asInstanceOf[ForkJoinTask[Any]])
+      if (r ne null)
+        super.execute(
+          (if (r.isInstanceOf[ForkJoinTask[_]]) r else new AkkaForkJoinTask(r)).asInstanceOf[ForkJoinTask[Any]])
       else
         throw new NullPointerException("Runnable was null")
 
@@ -51,7 +52,8 @@ object ForkJoinExecutorConfigurator {
    * INTERNAL AKKA USAGE ONLY
    */
   @SerialVersionUID(1L)
-  final class AkkaForkJoinTask(runnable: Runnable) extends ForkJoinTask[Unit] {
+  final class AkkaForkJoinTask(runnable: Runnable) extends ForkJoinTask[Unit] with Runnable {
+    override def run(): Unit = runnable.run()
     override def getRawResult(): Unit = ()
     override def setRawResult(unit: Unit): Unit = ()
     override def exec(): Boolean =
