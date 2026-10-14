@@ -25,6 +25,13 @@ object MailboxSchedulingSpec {
     jdk-pool-dispatcher {
       executor = "akka.dispatch.MailboxSchedulingSpec$JdkPoolConfigurator"
     }
+    affinity-dispatcher {
+      executor = "affinity-pool-executor"
+      affinity-pool-executor {
+        parallelism-min = 4
+        parallelism-max = 4
+      }
+    }
     """
 
   val submitted = new AtomicInteger
@@ -87,6 +94,12 @@ object MailboxSchedulingSpec {
       case "ping" => sender() ! "pong"
     }
   }
+
+  class ThreadNameActor extends Actor {
+    def receive = {
+      case _ => sender() ! Thread.currentThread().getName
+    }
+  }
 }
 
 class MailboxSchedulingSpec extends AkkaSpec(MailboxSchedulingSpec.config) with ImplicitSender {
@@ -143,6 +156,15 @@ class MailboxSchedulingSpec extends AkkaSpec(MailboxSchedulingSpec.config) with 
         // the fatal error triggers termination, which needs the actor to process its termination
         Await.ready(sys.whenTerminated, 10.seconds)
       } finally shutdown(sys)
+    }
+
+    "keep running an actor on the same thread with the affinity pool" in {
+      val ref = system.actorOf(Props[ThreadNameActor]().withDispatcher("affinity-dispatcher"))
+      val threadNames = (1 to 300).map { _ =>
+        ref ! "name"
+        expectMsgType[String]
+      }.toSet
+      threadNames should have size 1
     }
   }
 }
