@@ -52,38 +52,55 @@ CLUSTER_VERSION=$2
 
 if [ -z "$CLUSTER_VERSION" ]
   then
-    # https://cloud.google.com/kubernetes-engine/versioning-and-upgrades#versions_available_for_new_cluster_masters
-    CLUSTER_VERSION=$(gcloud container get-server-config --format="value(defaultClusterVersion)")
-    echo "No cluster version specified. Using the default: $CLUSTER_VERSION"
+    echo "No cluster version specified. Using the default version of each zone"
   else
     echo "Cluster version: $CLUSTER_VERSION"
 fi
 
 # Create cluster, trying each zone in CLUSTER_ZONES (space separated, defaults to the configured zone)
-# in turn, since a zone can be out of capacity (GCE_STOCKOUT)
+# in turn, since a zone can be out of capacity (GCE_STOCKOUT). Within a zone, each machine type in
+# CLUSTER_MACHINE_TYPES (space separated machine-type:disk-type pairs) is tried in turn, since a
+# stockout is usually for a specific machine family and not the whole zone.
 CLUSTER_ZONES=${CLUSTER_ZONES:-$gcloudZone}
+CLUSTER_MACHINE_TYPES=${CLUSTER_MACHINE_TYPES:-"n4-standard-8:hyperdisk-balanced e2-standard-8:pd-balanced"}
 created=false
 for zone in $CLUSTER_ZONES; do
-  echo "Creating cluster $CLUSTER_NAME in zone $zone"
   gcloud config set compute/zone $zone
-  if gcloud container clusters create $CLUSTER_NAME \
-    --cluster-version $CLUSTER_VERSION  \
-    --enable-ip-alias \
-    --image-type cos_containerd \
-    --machine-type n4-standard-8 \
-    --disk-type hyperdisk-balanced \
-    --num-nodes 5 \
-    --no-enable-autoupgrade
-  then
-    created=true
-    break
-  else
-    echo "Failed to create cluster $CLUSTER_NAME in zone $zone"
-    # a failed create can leave the cluster behind in an error state
-    if gcloud container clusters describe $CLUSTER_NAME > /dev/null 2>&1; then
-      gcloud container clusters delete $CLUSTER_NAME --quiet || true
-    fi
+  if [ -z "$CLUSTER_VERSION" ]
+    then
+      # the default version differs between zones, a version from one zone can be unsupported in another
+      # https://cloud.google.com/kubernetes-engine/versioning-and-upgrades#versions_available_for_new_cluster_masters
+      if ! version=$(gcloud container get-server-config --zone $zone --format="value(defaultClusterVersion)")
+        then
+          echo "Failed to get the default cluster version for zone $zone"
+          continue
+      fi
+    else
+      version=$CLUSTER_VERSION
   fi
+  for machineAndDisk in $CLUSTER_MACHINE_TYPES; do
+    machineType=${machineAndDisk%%:*}
+    diskType=${machineAndDisk##*:}
+    echo "Creating cluster $CLUSTER_NAME in zone $zone with machine type $machineType, cluster version $version"
+    if gcloud container clusters create $CLUSTER_NAME \
+      --cluster-version $version \
+      --enable-ip-alias \
+      --image-type cos_containerd \
+      --machine-type $machineType \
+      --disk-type $diskType \
+      --num-nodes 5 \
+      --no-enable-autoupgrade
+    then
+      created=true
+      break 2
+    else
+      echo "Failed to create cluster $CLUSTER_NAME in zone $zone with machine type $machineType"
+      # a failed create can leave the cluster behind in an error state
+      if gcloud container clusters describe $CLUSTER_NAME > /dev/null 2>&1; then
+        gcloud container clusters delete $CLUSTER_NAME --quiet || true
+      fi
+    fi
+  done
 done
 
 if [ "$created" != "true" ]; then
